@@ -1,0 +1,13 @@
+#
+#    __                          __
+#   / /____ ___ ____  ___  ___ _/ /       This file is provided to you by https://github.com/tegonal/github-commons
+#  / __/ -_) _ `/ _ \/ _ \/ _ `/ /        Copyright 2022 Tegonal Genossenschaft <info@tegonal.com>
+#  \__/\__/\_, /\___/_//_/\_,_/_/         It is licensed under Creative Commons Zero v1.0 Universal
+#         /___/                           Please report bugs and contribute back your improvements
+#
+#                                         Version: v2.6.0
+###################################
+
+# Prefer putting braces around variable references even when not strictly required.
+# ==> IMO without braces reads nicer if not necessary
+disable=SC2250

@@ -1,0 +1,8 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+[remote "gt"]
+	url = https://github.com/tegonal/gt
+	fetch = +refs/heads/*:refs/remotes/gt/*

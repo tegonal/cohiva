@@ -1,0 +1,10 @@
+#@ Version: 1.0.0
+tag	file	relativeTarget	sha512
+v2.6.0	src/.github/CODE_OF_CONDUCT.md	../.github/CODE_OF_CONDUCT.md	d648258710c4a50a46e50d262688e4b1f41b551a7a1fd3c5c85e1547d3d6c7980aadf3d33fa25bbfcff1bcfa831ec61f9640f14d590577138f12f7d8d5821dfe
+v2.6.0	src/.github/PULL_REQUEST_TEMPLATE.md	../.github/PULL_REQUEST_TEMPLATE.md	9112d1ea1f72ea250cdfe686fc152e63f2e0cdcea9c46935289471d7a3f54c35af8a3f283570f5d863e936c7782939c7b1548cb7d4ccda712bbf9314926f58cb
+v2.6.0	src/.github/Contributor Agreement.txt	../.github/Contributor Agreement.txt	0b9a8a954edf302ca5fe0062b7e283d3da06a6bc0631a812663095a78b3a734cefb43b725ae342694d770be75206124c42a1150e168fac33f28aebea0bda35ec
+v2.6.0	src/.github/workflows/cleanup.yml	../.github/workflows/cleanup.yml	957accabffe18a97d2f617bdc60dc5fe99a76e46b10f9da7a21b42c1d5ca8379a01f556a1bd21504f6b77464552083368c9c26bd1270c4fdcc860fa7279d501f
+v2.6.0	src/dotfiles/.editorconfig	../.editorconfig	7168032711f7664509ff5c8662c43d41578a32e7514f938c9bbecaf57fad65d52780f11204ffa243696f3d6c9712fa198a9df02a6eee2ad444b4f4f8bd13ad80
+v2.6.0	src/dotfiles/.shellcheckrc	../.shellcheckrc	36614733d9f28043985fe1e90842dab79a17dcbe6ef59c4f10cb7c06c52b7f177c198e40603390afc6e34fc376273b25f2db215599cd6bbd4406e9694fa12952
+v2.6.0	src/gt/pull-hook-functions.sh	../lib/tegonal-gh-commons/src/gt/pull-hook-functions.sh	fc905efddaf110f15a3930691b087cd020ad2f1d8b44cb249ba52e37be535f74212a86186f9b92651195994ea701ffad45d5f0d9742eacd6289a9929a69a8695
+v2.6.0	src/gt/tegonal.data.source.sh	../lib/tegonal-gh-commons/src/gt/tegonal.data.source.sh	2246b367e6c35c1c6e7051df290bc6696e369b9f36b75a4a62a45e5ae9c0813a4b26827079b79a2d8ecb875287a2979020b261da0712d31b0e7aeeb7b1260ac8

@@ -1,0 +1,20 @@
+# idea specific
+.idea/*
+!/.idea/icon.png
+*.iml
+
+.bloop
+.bsp
+.history
+.metals
+.gradle
+.vscode
+metals.sbt
+
+target
+build
+
+# gt specific
+.gt/**/repo
+.gt/**/gpg
+

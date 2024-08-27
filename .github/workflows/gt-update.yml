@@ -1,0 +1,110 @@
+#
+#    __                          __
+#   / /____ ___ ____  ___  ___ _/ /       This script is provided to you by https://github.com/tegonal/gt
+#  / __/ -_) _ `/ _ \/ _ \/ _ `/ /        Copyright 2022 Tegonal Genossenschaft <info@tegonal.com>
+#  \__/\__/\_, /\___/_//_/\_,_/_/         It is licensed under European Union Public License v. 1.2
+#         /___/                           Please report bugs and contribute back your improvements
+#
+#                                         Version: v0.17.4
+###################################
+name: "gt update"
+on:
+  schedule:
+    - cron: '0 4 * * MON'
+  workflow_dispatch:
+
+jobs:
+  determine_remotes:
+    name: Determine Remotes
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'tegonal'
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Import gpg key(s) defined in vars.PUBLIC_GPG_KEYS_WE_TRUST and secrets.PUBLIC_GPG_KEYS_WE_TRUST
+        run: |
+          gpg --import - <<< "${{ vars.PUBLIC_GPG_KEYS_WE_TRUST }}" && success=true \
+            || (echo "could not import GPG keys via vars.PUBLIC_GPG_KEYS_WE_TRUST -- maybe it's not defined"; exit 1) && \
+          false || gpg --import - <<< "${{ secrets.PUBLIC_GPG_KEYS_WE_TRUST }}" && success=true \
+            || (echo "could not import GPG keys via secrets.PUBLIC_GPG_KEYS_WE_TRUST -- maybe it's not defined"; exit 1) && \
+          false || "${success:-false}" && echo "was able to import GPGs either via vars or secrets (or via both -- see above)"
+      - name: Install gt
+        run: |
+          set -e
+          # see install.doc.sh in https://github.com/tegonal/gt, MODIFY THERE NOT HERE (please report bugs)
+          currentDir=$(pwd) && \
+          tmpDir=$(mktemp -d -t gt-download-install-XXXXXXXXXX) && cd "$tmpDir" && \
+          wget "https://raw.githubusercontent.com/tegonal/gt/main/.gt/signing-key.public.asc" && \
+          wget "https://raw.githubusercontent.com/tegonal/gt/main/.gt/signing-key.public.asc.sig" && \
+          gpg --verify ./signing-key.public.asc.sig ./signing-key.public.asc && \
+          echo "public key trusted" && \
+          mkdir ./gpg && \
+          gpg --homedir ./gpg --import ./signing-key.public.asc && \
+          wget "https://raw.githubusercontent.com/tegonal/gt/v0.17.4/install.sh" && \
+          wget "https://raw.githubusercontent.com/tegonal/gt/v0.17.4/install.sh.sig" && \
+          gpg --homedir ./gpg --verify ./install.sh.sig ./install.sh && \
+          chmod +x ./install.sh && \
+          echo "verification successful" || (echo "!! verification failed, don't continue !!"; exit 1) && \
+          ./install.sh && result=true || (echo "installation failed"; exit 1) && \
+          false || cd "$currentDir" && rm -r "$tmpDir" && "${result:-false}"
+          # end install.doc.sh
+      - uses: actions/checkout@v4
+      - id: set-matrix
+        run: |
+          (readarray -t REMOTES; IFS=','; echo "matrix={ 'remote': [ ${REMOTES[*]} ] }" >> "$GITHUB_OUTPUT") < <( gt remote list | sed -E "s/(.*)/'\1'/")
+  Update:
+    needs: determine_remotes
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.determine_remotes.outputs.matrix) }}
+    name: 'Update ${{ matrix.remote }}'
+    steps:
+      - name: Import gpg key(s) defined in vars.PUBLIC_GPG_KEYS_WE_TRUST and secrets.PUBLIC_GPG_KEYS_WE_TRUST
+        run: |
+          gpg --import - <<< "${{ vars.PUBLIC_GPG_KEYS_WE_TRUST }}" && success=true \
+            || (echo "could not import GPG keys via vars.PUBLIC_GPG_KEYS_WE_TRUST -- maybe it's not defined"; exit 1) && \
+          false || gpg --import - <<< "${{ secrets.PUBLIC_GPG_KEYS_WE_TRUST }}" && success=true \
+            || (echo "could not import GPG keys via secrets.PUBLIC_GPG_KEYS_WE_TRUST -- maybe it's not defined"; exit 1) && \
+          false || "${success:-false}" && echo "was able to import GPGs either via vars or secrets (or via both -- see above)"
+      - name: Install gt
+        run: |
+          set -e
+          # see install.doc.sh in https://github.com/tegonal/gt, MODIFY THERE NOT HERE (please report bugs)
+          currentDir=$(pwd) && \
+          tmpDir=$(mktemp -d -t gt-download-install-XXXXXXXXXX) && cd "$tmpDir" && \
+          wget "https://raw.githubusercontent.com/tegonal/gt/main/.gt/signing-key.public.asc" && \
+          wget "https://raw.githubusercontent.com/tegonal/gt/main/.gt/signing-key.public.asc.sig" && \
+          gpg --verify ./signing-key.public.asc.sig ./signing-key.public.asc && \
+          echo "public key trusted" && \
+          mkdir ./gpg && \
+          gpg --homedir ./gpg --import ./signing-key.public.asc && \
+          wget "https://raw.githubusercontent.com/tegonal/gt/v0.17.4/install.sh" && \
+          wget "https://raw.githubusercontent.com/tegonal/gt/v0.17.4/install.sh.sig" && \
+          gpg --homedir ./gpg --verify ./install.sh.sig ./install.sh && \
+          chmod +x ./install.sh && \
+          echo "verification successful" || (echo "!! verification failed, don't continue !!"; exit 1) && \
+          ./install.sh && result=true || (echo "installation failed"; exit 1) && \
+          false || cd "$currentDir" && rm -r "$tmpDir" && "${result:-false}"
+          # end install.doc.sh
+      - uses: actions/checkout@v4
+      - name: reset gpg keys
+        run: gt reset --gpg-only true -r "${{ matrix.remote }}"
+      - name: gt update
+        id: gt_update
+        run: |
+          gt update -r "${{ matrix.remote }}" && gt update -r "${{ matrix.remote }}"
+          echo "remote_version=$(git --git-dir='.gt/remotes/${{ matrix.remote}}/repo/.git' tag | sort --version-sort | tail -n 1)" >> $GITHUB_OUTPUT
+      - name: git status
+        run: git status
+      - name: Create pull request if necessary
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: 'gt/update/${{ matrix.remote }}'
+          base: main
+          title: 'update files of remote ${{ matrix.remote }} to version ${{steps.gt_update.outputs.remote_version}} via gt'
+          commit-message: 'update files of remote ${{ matrix.remote }} to version ${{steps.gt_update.outputs.remote_version}} via gt'
+          body: "following the changes after running `gt update -r \"${{ matrix.remote }}\"` and reset gpg keys"
+          delete-branch: true
+          token: ${{ secrets.AUTO_PR_TOKEN }}
+          push-to-fork: ${{ vars.AUTO_PR_FORK_NAME != '' && vars.AUTO_PR_FORK_NAME || secrets.AUTO_PR_FORK_NAME }}
