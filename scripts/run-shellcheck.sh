@@ -36,7 +36,7 @@ function customRunShellcheck() {
 
 	# shellcheck disable=SC2034   # is passed by name to runShellcheck
 	local -ra dirs2=("$gh_commons_dir")
-	runShellcheck dirs2 "$sourcePath" -name "pull-hook_*.sh"
+	runShellcheck dirs2 "$sourcePath" -name "pull-hook.sh"
 }
 
 ${__SOURCED__:+return}

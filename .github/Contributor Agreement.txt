@@ -8,7 +8,7 @@ Thank you for your interest in contributing to
 currently developed on the platform
   https://github.com/tegonal/cohiva
 and owned by
-  Tegonal Genossenschaft (the “Project Owner”, hereafter "We" or "Us").
+  Tegonal Genossenschaft, Switzerland (the “Project Owner”, hereafter "We" or "Us").
 
 This contributor agreement ("Agreement") documents the rights granted by contributors to
 Us. To make this document effective, please sign it. The consent in the form of a sign-off
