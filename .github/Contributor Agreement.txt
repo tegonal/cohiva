@@ -4,11 +4,11 @@ This agreement is based on the ISA contributor agreement
 https://joinup.ec.europa.eu/collection/eupl/solution/isa-contributor-agreement/release/v11
 which was based in turn on the Harmony contributor agreements harmonyagreements.org.
 Thank you for your interest in contributing to
-  <PROJECT_NAME>
+  cohiva
 currently developed on the platform
-  https://github.com/<OWNER_GITHUB>/<PROJECT_NAME_GITHUB>
+  https://github.com/tegonal/cohiva
 and owned by
-  <OWNER> (the “Project Owner”, hereafter "We" or "Us").
+  Tegonal Genossenschaft (the “Project Owner”, hereafter "We" or "Us").
 
 This contributor agreement ("Agreement") documents the rights granted by contributors to
 Us. To make this document effective, please sign it. The consent in the form of a sign-off

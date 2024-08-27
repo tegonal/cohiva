@@ -18,3 +18,5 @@ build
 .gt/**/repo
 .gt/**/gpg
 
+# python specific
+*.pyc
