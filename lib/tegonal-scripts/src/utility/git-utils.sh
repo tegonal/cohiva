@@ -3,9 +3,9 @@
 #    __                          __
 #   / /____ ___ ____  ___  ___ _/ /       This script is provided to you by https://github.com/tegonal/scripts
 #  / __/ -_) _ `/ _ \/ _ \/ _ `/ /        It is licensed under Apache License 2.0
-#  \__/\__/\_, /\___/_//_/\_,_/_/         Please remotert bugs and contribute back your improvements
+#  \__/\__/\_, /\___/_//_/\_,_/_/         Please report bugs and contribute back your improvements
 #         /___/
-#                                         Version: v3.2.0
+#                                         Version: v3.5.0
 #
 #######  Description  #############
 #
@@ -60,6 +60,8 @@
 #    echo "latest tag on origin: $latestTag"
 #    latestTag=$(latestRemoteTag upstream)
 #    echo "latest tag on upstream: $latestTag"
+#    latestTag=$(latestRemoteTag origin "^v1\.[0-9]+\.[0-9]+$")
+#    echo "latest tag in the major 1.x.x series on origin without release candidates: $latestTag"
 #
 ###################################
 set -euo pipefail
@@ -129,7 +131,7 @@ function hasRemoteTag() {
 	fi
 	local -r tag=$1
 	local -r remote=${2:-"origin"}
-	shift 1 || die "could not shift by 1"
+	shift 1 || traceAndDie "could not shift by 1"
 	local output
 	output=$(git ls-remote -t "$remote") || die "the following command failed (see above): git ls-remote -t \"$remote\""
 	grep "$tag" >/dev/null <<<"$output"
@@ -139,7 +141,7 @@ function remoteTagsSorted() {
 	local remote="origin"
 	if (($# > 0)); then
 		remote=$1
-		shift || die "could not shift by 1"
+		shift 1 || traceAndDie "could not shift by 1"
 	fi
 	git ls-remote --refs --tags "$remote" |
 		cut --delimiter='/' --fields=3 |
@@ -147,13 +149,18 @@ function remoteTagsSorted() {
 }
 
 function latestRemoteTag() {
-	if (($# > 1)); then
-		traceAndDie "you can optionally pass the name of the remote (defaults to origin) to latestRemoteTag but not more, given: %s" "$#"
+	if (($# > 2)); then
+			logError "Maximum 2 arguments can be passed to latestRemoteTag, given \033[0;36m%s\033[0m\n" "$#"
+			echo >&2 '1: remote   	(optional) the name of the remote, defaults to origin'
+			echo >&2 '2: tagFilter	(optional) a regex pattern (as supported by grep -E) which allows to filter available tags before determining the latest, defaults to .* (i.e. include all)'
+			printStackTrace
+			exit 9
 	fi
 	local -r remote=${1:-"origin"}
+	local -r tagFilter=${2:-".*"}
 	local tag
 	#shellcheck disable=SC2310			# we are aware of that || will disable set -e for remoteTagsSorted
-	tag=$(remoteTagsSorted "$remote" | tail -n 1) || die "could not get remote tags sorted, see above"
+	tag=$(remoteTagsSorted "$remote" | grep -E "$tagFilter" | tail -n 1) || die "could not get remote tags sorted for remote %s, see above" "$remote"
 	if [[ -z $tag ]]; then
 		die "looks like remote \033[0;36m%s\033[0m does not have a tag yet." "$remote"
 	fi
