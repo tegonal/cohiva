@@ -20,13 +20,3 @@ jobs:
         run: ./lib/tegonal-scripts/src/ci/install-shellcheck.sh
       - name: before-pr.sh
         run: ./scripts/before-pr.sh
-
-  todo_checker:
-    name: check for TODOs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: check for TODOs
-        uses: tegonal/workflow-helper@v0.3.0
-        with:
-          commands: todo-checker
