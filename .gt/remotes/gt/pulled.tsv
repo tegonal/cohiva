@@ -1,3 +1,3 @@
 #@ Version: 1.1.0
 tag	file	relativeTarget	tagFilter	sha512
-v1.0.3	.github/workflows/gt-update.yml	../.github/workflows/gt-update.yml	.*	cc2ac667bbc089731622efa32b780bf7c784ba82bccad4d3c7e83becb27b9f744dea3d4ec5a7bfdaf2c500df2d2fdc78a681d8bead19f2c29cd6c7abc09dcb9f
+v1.0.4	.github/workflows/gt-update.yml	../.github/workflows/gt-update.yml	.*	c53fbf485404d41067f0a8763e5978f900fa6b599b28da87917e54b2a6ccbe6a4e407b1293bf14819494d967c18cd02ce0bb1cdf04e244e6e509f9cd1e593e5b
