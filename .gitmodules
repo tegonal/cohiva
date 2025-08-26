@@ -1,0 +1,3 @@
+[submodule "django/geno/python-sepa"]
+	path = django/geno/python-sepa
+	url = https://github.com/MarcoSteinacher/python-sepa.git

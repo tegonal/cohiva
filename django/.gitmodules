@@ -1,3 +1,0 @@
-[submodule "python-sepa"]
-	path = geno/python-sepa
-	url = git@github.com:marco-websource/python-sepa.git
