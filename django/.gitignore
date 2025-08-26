@@ -2,6 +2,7 @@
 .*.swp
 NOT_USED
 test.log
+.idea/*
 /.env
 /.coverage
 /test-failure.html
