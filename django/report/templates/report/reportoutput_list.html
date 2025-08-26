@@ -1,0 +1,58 @@
+{% extends "geno/base.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+<link rel="stylesheet" type="text/css" href="/static/admin/css/forms.css" />
+
+{# For Select2 #}
+<link href="/static/select2/css/select2.css" type="text/css" media="all" rel="stylesheet">
+<script type="text/javascript" src="/static/admin/js/vendor/jquery/jquery.js"></script>
+<script type="text/javascript" src="/static/admin/js/jquery.init.js"></script>
+<script type="text/javascript" src="/static/admin/js/calendar.js"></script>
+<script type="text/javascript" src="/static/admin/js/admin/DateTimeShortcuts.js"></script>
+<script type="text/javascript" src="/static/admin/js/core.js"></script>
+<script type="text/javascript" src="/static/admin/js/admin/RelatedObjectLookups.js"></script>
+<script type="text/javascript" src="/static/admin/js/actions.js"></script>
+<script type="text/javascript" src="/static/admin/js/urlify.js"></script>
+<script type="text/javascript" src="/static/admin/js/prepopulate.js"></script>
+<script type="text/javascript" src="/static/admin/js/vendor/xregexp/xregexp.js"></script>
+<script type="text/javascript" src="/static/select2/js/select2.jquery_ready.js"></script>
+<script type="text/javascript" src="/static/select2/js/select2.jquery_ui_sortable.js"></script>
+<script type="text/javascript" src="/static/select2/js/select2.js"></script>
+
+<style type="text/css">
+div.textbox {
+    /*height: 120px;
+    width: 120px;*/
+    max-height: 200px;
+    border: 1px solid #ccc;
+    /* font: 16px/26px Georgia, Garamond, Serif; */
+    overflow: auto;
+}
+</style>
+
+{% endblock extrastyle %}
+
+{% block content %}
+<h1>Report-Output für {{report.name}} (Typ: {{report.report_type.name}})</h1>
+
+<p><a href="download/all/">Alle Daten als ZIP-Datei herunterladen</a></p>
+
+<p>
+<ul>
+{% for output in reportoutput_list %}
+{% ifchanged %}
+</ul>
+<h3>{{ output.group }}</h3>
+<ul>
+{% endifchanged %}
+{% if output.output_type == "text" %}
+<li>{{ output.name }}: <div class="textbox">{{ output.value|linebreaks }}</div></li>
+{% else %}
+<li>{{ output.name }}: <a href="download/{{ output.id }}/">{{ output.value }}</a>{% if output.regeneration_json %} [<a href="regenerate/{{ output.id }}/">Datei neu generieren</a>]{% endif %}</li>
+{% endif %}
+{% endfor %}
+</ul>
+</p>
+
+{% endblock content %}

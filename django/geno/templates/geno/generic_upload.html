@@ -1,0 +1,75 @@
+{% extends "geno/base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block extrastyle %}
+<link rel="stylesheet" href="{% static 'django_tables2/themes/paleblue/css/screen.css' %}" />
+{# For datepicker UI #}
+<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script>
+  /* Configure datepicker */
+  $(function() {
+    $( ".datepicker" ).datepicker({
+      changeMonth: true,
+      changeYear: true,
+      yearRange: "2010:2030",
+      defaultDate: 0,
+      dateFormat: "dd.mm.yy",
+    });
+  });
+  /* Set focus to name field */
+  $(document).ready(function() {
+    window.onload = function() {
+      $("#id_name").focus();
+    };  
+  }); 
+</script>
+
+<!--
+<link rel="stylesheet" type="text/css" href="/static/admin/css/forms.css" />
+<script type="text/javascript" src="/admin/jsi18n/"></script>
+<script type="text/javascript" src="/static/admin/js/jquery.init.js"></script>
+{{ form.media }}
+-->
+
+{% endblock %}
+
+{% block content %}
+
+{% if form_action %}
+<h2>{{info}}</h2>
+{{info_text|safe}}
+<script type="text/javascript" src="/admin/jsi18n/"></script>
+<form enctype="multipart/form-data" action="{{ form_action }}" method="post">
+    {% csrf_token %}
+    <table>
+    {{ form.as_table }}
+    </table>
+    <tr><td><input type="submit" /></tr></td>
+</form>
+{% endif %}
+
+{% if tgtblank == '1' %}[<a href="javascript:close()">Close</a>]{% else %}[<a href="/admin">Zurück</a>]{% endif %} [<a href="javascript:window.scrollTo(0, document.body.scrollHeight)">Nach unten</a>]<br />
+<ul>
+{% for r in response %}
+<li>{{ r.info|safe }}
+<ul>
+{% for o in r.objects %}
+<li>{{ o|safe }}</li>
+{% endfor %}
+</ul>
+</li>
+{% endfor %}
+</ul>
+{% if tgtblank == '1' %}[<a href="javascript:close()">Close</a>]{% else %}[<a href="/admin">Zurück</a>]{% endif %} [<a href="javascript:window.scrollTo(0, 0)">Nach oben</a>]<br />
+
+{% if download_redirect %}
+<script type="text/javascript">
+    window.location.replace('{{ download_redirect }}');
+</script>
+{% endif %}
+
+{% endblock %}
+

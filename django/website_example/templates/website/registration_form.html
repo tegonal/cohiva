@@ -1,0 +1,60 @@
+{% extends "website/base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}Anmeldeformular{% endblock title %}
+{% block heading %}Anmeldeformular{% endblock heading %}
+
+{% block content %}
+
+{% for f in forms %}
+ <h2>{{ f.title }}</h2>
+ <p>{{ f.description|safe|linebreaksbr }}</p>
+ <a name="f{{ f.reg_id}}"></a>
+{% if f.too_early %}
+    <div class="error">Momentan ist leider noch keine Anmeldung möglich. Das Anmeldefenster beginnt am {{f.start_period}}.</div>
+{% elif f.too_late %}
+    <div class="error">Es ist leider keine Anmeldung mehr möglich. Die Anmeldefrist ist am {{f.end_period}} abgelaufen.</div>
+{% elif f.slots_available %}
+  {% if f.form.success %}
+ <p>
+    <div class="confirmation"><b>Vielen Dank! Ihre Anmeldung wurde übermittelt.</b><br>{{ f.form.confirmation_email }}</div>
+  {% else %}
+    {% if f.end_period %}
+      {% if f.start_period %}
+ <p>Die Anmeldefrist dauert vom {{f.start_period}} bis {{f.end_period}}.</p>
+      {% else %}
+ <p>Die Anmeldefrist dauert noch bis {{f.end_period}}.</p>
+      {% endif %}
+    {% endif %}
+ <h3>Ich melde mich für folgenden Termin an:</h3>
+ <p>
+    <form action="{{f.action_url|default:"/intern/anmeldung"}}/#f{{ f.reg_id}}" method="post" class="bigform">
+    {% if f.form.is_valid %}
+      <div class="error">Hoppla! Beim Übermitteln der Angaben ist ein Fehler aufgetreten.</div>
+    {% endif %}
+    {% csrf_token %}
+    <input type="hidden" name="reg_id" value="{{ f.reg_id }}">
+    <ul>
+      {{ f.form.as_ul }}
+      <li><input type="submit" value="Anmeldung abschicken"></li>
+    </ul>
+    </form>
+  {% endif %}
+{% else %}
+    <div class="error">Es sind leider alle Termine ausgebucht, es ist keine Anmeldung mehr möglich.</div>
+{% endif %}
+ </p>
+
+{% if f.only_one_slot %}
+<script language="javascript">
+    document.getElementById("id_slot_0").checked = true;
+</script>
+{% endif %}
+
+{% empty %}
+<p>Zur Zeit gibt es keine offenen Anmeldungen.</p>
+{% endfor %}
+
+{% endblock content %}
+

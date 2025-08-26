@@ -1,0 +1,72 @@
+{% extends "portal/secondary.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block page_content %}
+      <div class="uk-section uk-section-default notch-save-area-horizontal">
+        <div class="uk-container">
+<h3 class="uk-text-center">{{ section_title }}</h3>
+
+{% if error %}
+<div class="uk-alert-danger uk-margin-bottom" uk-alert>
+<a class="uk-alert-close" uk-close></a>
+FEHLER: {{ error }}
+</div>
+{% endif %}
+
+{% if success %}
+<div class="uk-alert-success uk-margin-bottom" uk-alert>
+<a class="uk-alert-close" uk-close></a>
+Folgende Aktionen wurden ausgeführt:
+<ul>
+{% for action in success %}
+<li>{{action}}</li>
+{% endfor %}
+</ul>
+</div>
+{% endif %}
+
+{% if warning %}
+<div class="uk-alert-warning uk-margin-bottom" uk-alert>
+<a class="uk-alert-close" uk-close></a>
+Folgende Aktionen konnten NICHT ausgeführt werden:
+<ul>
+{% for action in warning %}
+<li>{{action}}</li>
+{% endfor %}
+</ul>
+</div>
+{% endif %}
+
+{% if log %}
+<div class="uk-alert-primary uk-margin-bottom" uk-alert>
+<a class="uk-alert-close" uk-close></a>
+Log:
+<ul>
+{% for line in log %}
+<li>{{line}}</li>
+{% endfor %}
+</ul>
+</div>
+{% endif %}
+
+<div class="">
+{% if form %}
+<b>Aktionen zum Ausführen auswählen:</b>
+<form action="" {% if multipart_form %}enctype="multipart/form-data" {% endif %}method="post" class="tabular_form">
+    {% csrf_token %}
+    <ul>
+    {{ form.as_ul }}
+    </ul>
+    <input type="submit" name="commit" value="{{submit_button_text|default:'Sichern'}}"> {# <input type="submit" name="cancel" value="Abbrechen"> #} 
+</form>
+{% else %}
+    Keine Aktionen verfügbar.
+{% endif %}
+</div>
+
+<p class="uk-text-small">&larr;&nbsp;<a href="/portal/tenant-admin/">Zurück/Abbrechen</a></p>
+
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+[tool.ruff]
+line-length = 99
+lint.select = [
+  "E",       # pycodestyle
+  "F",       # pyflakes
+  "UP",      # pyupgrade
+  "B",       # flake8-bugbear
+  "SIM",     # flake8-simplify
+  "I",       # isort
+  "FA100",   # add future annotations
+  "PGH004",  # pygrep-hooks - Use specific rule codes when using noqa
+  "PIE",     # flake8-pie
+  "PLE",     # pylint error
+  "T100",    # flake8-debugger
+  "W",       # pycodestyle
+## TODO: Activate more rules, e.g.
+#  "PLC",     # pylint convention
+#  "PLR",     # pylint refactor
+#  "PLR1714", # Consider merging multiple comparisons
+#  "PLW",     # pylint warning
+#  "PYI",     # flake8-pyi
+#  "RUF",     # ruff
+]
+lint.ignore = [
+  ## TODO: Fix these later:
+  "E501",    # Line too long
+  "E722",    # Do not use bare `except`
+  "E731",    # Do not assign a `lambda` expression, use a `def`
+  "UP031",   # Use format specifiers instead of percent format
+  "B904",    # raise-without-from-inside-except
+  "SIM108",  # if-else-block-instead-of-if-exp
+  "SIM115",  # open-file-with-context-handler
+  "SIM102",  # collapsible-if
+  "SIM113",  # enumerate-for-loop
+  "SIM105",  # suppressible-exception
+  "SIM117",  # multiple-with-statements
+]
+exclude = [
+   "NON_PUBLIC",
+   "geno/python-sepa",  ## third party code
+]
+
+[tool.pylint.main]
+disable = [
+  "missing-docstring",
+#  "too-many-branches",
+#  "too-many-return-statements",
+#  "too-many-ancestors",
+#  "too-few-public-methods",
+#  "fixme",
+]
+#ignore = "tests"
+max-line-length = 99
+

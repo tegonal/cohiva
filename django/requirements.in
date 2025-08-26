@@ -1,0 +1,86 @@
+#  Requirement definition used by pip-tools (pip install pip-tools)
+#
+#  Generate requirements.txt and sync virtualenv with requirements.txt:
+#
+#    pip-compile --strip-extras requirements.in   (--strip-extras will be dafault from v8.0.0)
+#    pip-sync -a   [-a = ask, -n = dry-run ]
+#
+#  Upgrade specific package(s):
+#
+#    pip-compile --upgrade-package Django
+#
+#  Upgrade all packages in an existing requirements.txt:
+#
+#    pip-compile --upgrade
+#
+#  See https://pypi.org/project/pip-tools/ for more options.
+##############################################################################################
+
+## TODO: Change this list based on features/enabled apps in setup process (along with settings e.g. INSTALLED_APPS list)
+
+## Django and core dependencies
+Django >= 4.2, < 5.0
+mysqlclient
+
+## Misc Django admin/UI enhancements and tools
+django-tables2
+django-select2-forms
+django-datetime-widget
+django-email-obfuscator
+
+## File manager app
+django-filer
+
+## Authentication providers
+django-oauth-toolkit
+requests-oauthlib
+djangosaml2idp
+
+## REST API / middleware stuff
+djangorestframework
+dj-rest-auth
+django-cors-headers # Module corsheaders
+
+## Templates / document generation
+#jpt-templated-docs    ## DEPRECATED
+appy
+qrbill
+pypdf
+html2text
+
+## Plotting
+matplotlib
+plotly < 6.1     # for nk-report, plotly 6.1 had issues creating the pdf (kaleido requires Chome?!)
+kaleido          # for nk-report
+
+## Import/export
+openpyxl
+#sepa == 0.5.3+mst1  ## Currently we use patched version in geno/python-sepa installed by install_dependencies.sh!
+caldav
+vdirsyncer
+
+## Misc
+json-with-comments
+
+## GnuCash interface
+piecash
+
+## Mailinglist/newsletter interfaces
+createsend
+mailmanclient
+
+## Rocket.Chat interface
+rocketchat-API
+
+## CMS
+wagtail < 6.0
+
+## Celery (async tasks)
+celery[redis]
+
+## For development
+ruff
+pylint
+coverage
+
+#EOF

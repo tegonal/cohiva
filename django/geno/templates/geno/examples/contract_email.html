@@ -1,0 +1,72 @@
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <title>Test</title>
+  </head>
+  <body text="#000000" bgcolor="#FFFFFF">
+    {{anrede}}<br>
+
+<p style="margin-bottom: 0cm; line-height: 100%"><br/>
+
+</p>
+<p style="margin-bottom: 0.5cm; line-height: 100%">Das Wichtigste in
+Kürze:</p>
+<ul>
+        <li><p style="margin-bottom: 0cm">Anbei schicken wir dir/euch ihr
+        den Termin für deine/eure <b>Wohnungsübergabe</b></p>
+        <li><p style="margin-bottom: 0cm">Ebenfalls bestätigen wir nochmals
+        deinen/euren <b>Einzugstermin</b></p>
+        <li><p>Nicht vergessen: Das «Merkblatt Einzug» für die
+        Organisation deines/eures Umzugs lesen!</p>
+</ul>
+<p style="margin-bottom: 0cm"><br/>
+
+</p>
+<p style="margin-bottom: 0cm"><font size="4" style="font-size: 14pt"><b>Termine
+für Wohnungsübergabe und Einzug</b></font></p>
+<p style="margin-bottom: 0cm">
+
+</p>
+<p style="margin-bottom: 0cm">Dein/euer Termin für die
+Wohnungsübergabe ist:</p>
+<p style="margin-bottom: 0cm"><font color="#ff2600"><b>{{ termin_uebergabe }}</b></font></p>
+<p style="margin-bottom: 0cm">Wir haben für die Wohnungsübergaben
+<b>ca. 45 Minuten</b> eingeplant (bei Gross-WGs ca. 90-105 Minuten).
+Ihr müsst an die Übergabe nichts mitbringen. Wir werden ein
+Protokoll schreiben und euch nach der Übergabe zukommen lassen.</p>
+<p style="margin-bottom: 0cm">
+</p>
+<p style="margin-bottom: 0cm">Dein/euer Termin für dein Einzug ist:</p>
+{% for termin in termine %}
+<p style="margin-bottom: 0cm"><font color="#ff2600"><b>{{ termin }}</b></font></p>
+{% endfor %}
+<p style="margin-bottom: 0cm"><br/>
+
+</p>
+<p style="margin-bottom: 0cm"><font size="4" style="font-size: 14pt"><b>Merkblatt
+Einzug</b></font></p>
+<p style="margin-bottom: 0cm">
+
+</p>
+<p style="margin-bottom: 0cm">Wir haben dir/euch am 15. September ein
+Mail mit dem Betreff «Wichtige Informationen zum Einzug» geschickt.
+In diesem Mail findest du/findet ihr unter anderem das «Merkblatt
+Einzug». Lies/lest es durch, wenn du/ihr mit der Planung
+deines/eures Umzugs beginnst/beginnt.</p>
+<p style="margin-bottom: 0cm">
+
+</p>
+<p style="margin-bottom: 0cm">Bei Fragen stehen wir gerne zur
+Verfügung!</p>
+<p style="margin-bottom: 0cm">
+
+</p>
+<p style="margin-bottom: 0cm">Liebe Grüsse</p>
+<p style="margin-bottom: 0cm">{{ org_info.name }}</p>
+
+    <pre class="moz-signature" cols="72">--
+{{ org_info.name }}
+{{ org_info.street }}
+{{ org_info.city }}</pre>
+  </body>
+</html>

@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.04" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:iso:std:iso:20022:tech:xsd:camt.053.001.04">
+	<BkToCstmrStmt>
+		<GrpHdr>
+			<MsgId>20201124375204229003967</MsgId>
+			<CreDtTm>2020-11-25T02:02:16</CreDtTm>
+			<MsgPgntn>
+				<PgNb>1</PgNb>
+				<LastPgInd>true</LastPgInd>
+			</MsgPgntn>
+			<AddtlInf>SPS/1.7/PROD</AddtlInf>
+		</GrpHdr>
+		<Stmt>
+			<Id>20201124375204229003973</Id>
+			<ElctrncSeqNb>118</ElctrncSeqNb>
+			<CreDtTm>2020-11-25T02:02:16</CreDtTm>
+			<FrToDt>
+				<FrDtTm>2020-06-24T00:00:00</FrDtTm>
+				<ToDtTm>2020-06-24T23:59:59</ToDtTm>
+			</FrToDt>
+			<Acct>
+				<Id>
+					<IBAN>CH2909000000250094239</IBAN>
+				</Id>
+				<Ownr>
+					<Nm>Robert Schneider SA Grands magasins Biel/Bienne</Nm>
+				</Ownr>
+			</Acct>
+			<Bal>
+				<Tp>
+					<CdOrPrtry>
+						<Cd>OPBD</Cd>
+					</CdOrPrtry>
+				</Tp>
+				<Amt Ccy="CHF">211993.19</Amt>
+				<CdtDbtInd>CRDT</CdtDbtInd>
+				<Dt>
+					<Dt>2020-11-24</Dt>
+				</Dt>
+			</Bal>
+			<Bal>
+				<Tp>
+					<CdOrPrtry>
+						<Cd>CLBD</Cd>
+					</CdOrPrtry>
+				</Tp>
+				<Amt Ccy="CHF">215112.21</Amt>
+				<CdtDbtInd>CRDT</CdtDbtInd>
+				<Dt>
+					<Dt>2020-11-24</Dt>
+				</Dt>
+			</Bal>
+			<Bal>
+				<Tp>
+					<CdOrPrtry>
+						<Cd>CLAV</Cd>
+					</CdOrPrtry>
+				</Tp>
+				<Amt Ccy="CHF">215112.21</Amt>
+				<CdtDbtInd>CRDT</CdtDbtInd>
+				<Dt>
+					<Dt>2020-11-24</Dt>
+				</Dt>
+			</Bal>
+			<Bal>
+				<Tp>
+					<CdOrPrtry>
+						<Cd>FWAV</Cd>
+					</CdOrPrtry>
+				</Tp>
+				<Amt Ccy="CHF">216649.21</Amt>
+				<CdtDbtInd>CRDT</CdtDbtInd>
+				<Dt>
+					<Dt>2020-11-25</Dt>
+				</Dt>
+			</Bal>
+{% for payment in payments %}
+			<Ntry>
+				<NtryRef>41100000000872849</NtryRef>
+				<Amt Ccy="CHF">{{ payment.amount }}</Amt>
+				<CdtDbtInd>CRDT</CdtDbtInd>
+				<RvslInd>false</RvslInd>
+				<Sts>BOOK</Sts>
+				<BookgDt>
+					<Dt>{{ payment.date }}</Dt>
+				</BookgDt>
+				<ValDt>
+					<Dt>{{ payment.date }}</Dt>
+				</ValDt>
+				<AcctSvcrRef>{{ payment.transaction_id}}</AcctSvcrRef>
+				<BkTxCd>
+					<Domn>
+						<Cd>PMNT</Cd>
+						<Fmly>
+							<Cd>IDDT</Cd>
+							<SubFmlyCd>PMDD</SubFmlyCd>
+						</Fmly>
+					</Domn>
+				</BkTxCd>
+				<NtryDtls>
+					<TxDtls>
+						<Refs>
+							<AcctSvcrRef>{{ payment.transaction_id}}</AcctSvcrRef>
+						</Refs>
+						<Amt Ccy="CHF">{{ payment.amount }}</Amt>
+						<CdtDbtInd>CRDT</CdtDbtInd>
+            <RltdPties>
+              <Dbtr>
+                <Nm>{{ payment.debtor_name }}</Nm>
+                <PstlAdr>
+                  <StrtNm>Musterweg</StrtNm>
+                  <BldgNb>1</BldgNb>
+                  <PstCd>3000</PstCd>
+                  <TwnNm>Bern</TwnNm>
+                  <Ctry>CH</Ctry>
+                </PstlAdr>
+              </Dbtr>
+              <Cdtr>
+                <Nm>Genossenschaft Musterweg</Nm>
+                <PstlAdr>
+                  <Ctry>CH</Ctry>
+                  <AdrLine>Musterweg 1 3000 Bern</AdrLine>
+                </PstlAdr>
+              </Cdtr>
+              <CdtrAcct>
+                <Id>
+                  <IBAN>{{ payment.iban }}</IBAN>
+                </Id>
+              </CdtrAcct>
+            </RltdPties>
+                                                <RmtInf>
+                                                  <Strd>
+                                                    <CdtrRefInf>
+                                                      <Tp>
+                                                        <CdOrPrtry>
+                                                          <Prtry>QRR</Prtry>
+                                                        </CdOrPrtry>
+                                                      </Tp>
+                                                      <Ref>{{ payment.refnr }}</Ref>
+                                                    </CdtrRefInf>
+                                                    <AddtlRmtInf>{{ payment.comment }}</AddtlRmtInf>
+                                                  </Strd>
+                                                </RmtInf>
+					</TxDtls>
+				</NtryDtls>
+				<AddtlNtryInf>Sammelgutschrift QRR v. 24.01.2024</AddtlNtryInf>
+			</Ntry>
+{% endfor %}
+		</Stmt>
+	</BkToCstmrStmt>
+</Document>

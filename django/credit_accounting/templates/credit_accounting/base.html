@@ -1,0 +1,84 @@
+{% load static %}
+{% load i18n %}
+<!DOCTYPE html>
+
+<html lang="de" >
+<head>
+<title>Genossenschaft Warmbächli</title>
+<link rel="stylesheet" type="text/css" href="/static/admin/css/base.css">
+<link rel="stylesheet" type="text/css" href="/static/admin/css/dashboard.css">
+
+
+    <style>
+        .select2-container {
+            min-width: 500px;
+        }
+    </style>
+
+
+    <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="/static/admin/css/responsive.css">
+{% block extrastyle %}
+{% endblock %}
+
+<meta name="robots" content="NONE,NOARCHIVE">
+
+</head>
+
+
+<body class="{#dashboard#}" data-admin-utc-offset="3600">
+
+<!-- Container -->
+<div id="container">
+
+    
+    <!-- Header -->
+    <div id="header">
+        <div id="branding">
+            <h1 id="site-name"><a href="/">Genossenschaft Warmbächli</a></h1>
+        </div>
+        
+        <div id="user-tools">
+            
+                Willkommen,
+                <strong>{{ user }}</strong>.
+                <a href="/portal/">Portal</a> /
+                <a href="/portal/logout/">Abmelden</a>
+            
+        </div>
+        
+        
+        
+    </div>
+    <!-- END Header -->
+
+    {% if is_admin %}
+    <!-- Navigation -->
+    <div class="breadcrumbs"><a href="{{base_url}}/">Kontoauszug</a> | <a href="{{base_url}}/add">Manuelle Buchung</a> | <a href="{{base_url}}/upload">Buchungen importieren</a> | <a href="{{base_url}}/accounts">Konten</a> | <a href="{{base_url}}/report">Umsatz-Report</a> | <a href="{{base_url}}/report/salesbyaccount">Verkaufs-Report</a></div>
+    <!-- END Navigation -->
+    {% endif %}
+
+    <!-- Content -->
+    <div id="content" class="flex"> {# class="colMS"> #}
+        
+        <h1>{{ title }}</h1>
+        {% block messages %}
+          {% if messages %}
+            <ul class="messagelist">{% for message in messages %}
+              <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|capfirst }}</li>
+            {% endfor %}</ul>
+          {% endif %}
+        {% endblock messages %}
+        {% block content %}
+        {% endblock %}
+        <br class="clear">
+    </div>
+    <!-- END Content -->
+
+    <div id="footer"></div>
+</div>
+<!-- END Container -->
+
+</body>
+</html>
+

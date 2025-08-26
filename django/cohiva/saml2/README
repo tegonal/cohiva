@@ -1,0 +1,10 @@
+attributes-maps are from https://github.com/IdentityPython/pysaml2/tree/master/tests/attributemaps
+
+Key/Cert generation (done by ../setup.py):
+
+   openssl req -nodes -new -x509 -newkey rsa:2048 -days 3650 -keyout private.key -out public.pem
+
+Patches needed to fix bugs (applied by ../install_dependencies.sh):
+ - djangosaml2idp_models.py.patch
+ - djangosaml2idp_views.py.patch
+

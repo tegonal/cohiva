@@ -1,0 +1,406 @@
+{% extends "portal/base.html" %}
+{% load static %}
+{% load email_obfuscator %}
+
+{% block extraheader %}
+<style>
+.c-button-open-app{color:#c91d11 !important;background:#ffe740 !important;border:3px solid #fff7c0;transition:background .3s ease}
+.c-button-open-app:hover,.c-button-open-app:focus{background:#eace0c !important}
+</style>
+{% endblock extraheader %}
+
+{% block header %}
+    <header>
+      <div class="uk-position-relative uk-light uk-visible-toggle uk-light" tabindex="-1" uk-slideshow="autoplay: true; pause-on-hover: false; ratio: false">
+
+        <div class="uk-position-center uk-position-large c-pointer-events-none">
+          <h1 class="uk-text-center uk-margin-remove">Mitglieder Portal</h1>
+        </div>
+
+
+        <div class="uk-position-top">
+          <div uk-sticky="sel-target: .uk-navbar-container; cls-active: uk-navbar-sticky; cls-inactive: uk-navbar-transparent c-light; top: .c-header-bild-height; animation: uk-animation-slide-top; show-on-up: true;">
+
+            <nav class="uk-navbar-container uk-navbar-transparent notch-save-area-horizontal" uk-navbar>
+
+              <div class="uk-navbar-left">
+                <a href="/portal/" class="uk-navbar-item uk-logo">
+                  <img src="{% static "portal/img/logo.svg" %}" class="logozusatz" alt="" title="← zurück zur Portal-Startseite">
+                </a>
+              </div>
+
+              <div class="uk-navbar-right">
+
+                <ul class="uk-navbar-nav uk-visible@m">
+                    <li>
+                      <a href="/portal/">Portal</a>
+                    </li>
+                    <li>
+                      <a href="#chat" uk-scroll>Chat</a>
+                    </li>
+                    <li>
+                      <a href="#tools" uk-scroll>Tools</a>
+                    </li>
+                    <li>
+                      <a href="/portal/hilfe/">Hilfe</a>
+                    </li>
+                </ul>
+
+                <div class="uk-navbar-item uk-visible@m">
+                  <div class="uk-inline">
+                    <a href="" class="uk-icon-button c-icon-user">
+                    <svg width="20" height="20" viewBox="0 0 20 20">
+                      <circle cx="10" cy="6.3" r="4.4" fill="none" stroke-width="3"/>
+                      <path d="M1.5,18.9c.8-4.5,4.3-7.8,8.5-7.8s7.7,3.4,8.5,8" fill="none" stroke-width="3"/>
+                    </svg>
+                    </a>
+                    <div uk-dropdown="mode: click; offset: 15;">
+                      <ul class="uk-nav uk-dropdown-nav uk-text-small">
+{% if not user.is_anonymous %}
+                        <li class="c-wrap">Du bist angemeldet als {% if user.first_name %}{{user.first_name}} {{user.last_name}} ({{ user.username }}){% else %}{{ user.username }}{% endif %}</li>
+                        <li><a href="/portal/logout/">Abmelden</a></li>
+{% endif %}
+                      </ul>
+                    </div>
+                  </div>
+
+                </div>
+
+                <!--
+                Das Attribut uk-navbar-toggle-icon fügt die Klasse 'uk-icon' und eine svg-Grfaik hinzu. Beides kann ich manuell erstellen…
+                <a href="#mobile-nav" class="uk-navbar-toggle uk-hidden@m" uk-navbar-toggle-icon uk-toggle></a>
+                -->
+                <a href="#mobile-nav" class="uk-navbar-toggle uk-hidden@m uk-icon" uk-toggle>
+                  <span class="visually-hidden">Menü öffnen</span>
+                  <svg width="33" height="20" viewBox="0 0 33 19" xmlns="http://www.w3.org/2000/svg">
+                    <rect y="8" width="33" height="3"/>
+                    <rect y="0" width="33" height="3"/>
+                    <rect y="16" width="33" height="3"/>
+                  </svg>
+                </a>
+
+              </div>
+            </nav>
+
+            <!-- mobile-nav -->
+            <div id="mobile-nav" class="uk-modal-full" uk-modal>
+              <div class="uk-modal-dialog uk-flex uk-flex-center uk-height-1-1" uk-overflow-auto>
+
+                <div class=" uk-margin-auto-vertical">
+
+                  <ul class="uk-nav uk-nav-primary uk-nav-center">
+                    <!-- to do: Achtung ist für die Startseite nicht das gleiche Menü wie für die Hilfeseite -->
+                    <li class="uk-animation-slide-bottom-medium uk-animation-with-nth-child-delay"><a href="/portal/">Portal</a></li>
+                    <li class="uk-animation-slide-bottom-medium uk-animation-with-nth-child-delay"><a href="#chat" uk-toggle="target: #mobile-nav;">Chat</a></li>
+                    <li class="uk-animation-slide-bottom-medium uk-animation-with-nth-child-delay"><a href="#tools" uk-toggle="target: #mobile-nav;">Tools</a></li>
+                    <li class="uk-animation-slide-bottom-medium uk-animation-with-nth-child-delay"><a href="/portal/hilfe/">Hilfe</a></li>
+                  </ul>
+
+                  <ul class="uk-nav uk-nav-center">
+{% if not user.is_anonymous %}
+                    <li class="uk-animation-slide-bottom-medium uk-animation-with-nth-child-delay-2 uk-margin-medium-top uk-text-small">
+                      <span class="uk-margin-small-right c-icon-user-mobile">
+                        <svg width="20" height="20" viewBox="0 0 20 20">
+                          <circle cx="10" cy="6.3" r="4.4" fill="none" stroke-width="3"/>
+                          <path d="M1.5,18.9c.8-4.5,4.3-7.8,8.5-7.8s7.7,3.4,8.5,8" fill="none" stroke-width="3"/>
+                        </svg>
+                      </span>
+                        Du bist angemeldet als {% if user.first_name %}{{user.first_name}} {{user.last_name}} ({{ user.username }}){% else %}{{ user.username }}{% endif %}</li>
+{% endif %}
+                    <li class="uk-animation-slide-bottom-medium uk-animation-with-nth-child-delay-2 uk-text-small"><a href="/portal/logout/">Abmelden</a></li>
+                    <li class="uk-animation-slide-bottom-medium uk-animation-with-nth-child-delay-2 uk-margin-top uk-text-small">
+                    Kontakt für Fragen oder bei technischen Problemen: <a class="c-mobile-nav-kontakt" href="mailto:{{'support@example.com'|obfuscate}}">{{'support@example.com'|obfuscate}}</a>
+                    </li>
+                  </ul>
+
+                </div>
+
+                <!--
+                Das Attribut uk-close fügt die Klassen 'uk-icon', 'uk-close' und eine svg-Grafik hinzu. Dies kann ich auch manuell erstellen…
+                # <a href="" class="uk-modal-close-full uk-close-large" uk-close></a>
+                -->
+                <a href="" class="uk-modal-close-full uk-close-large uk-icon uk-close c-icon-close">
+                  <span class="visually-hidden">Menü schliessen</span>
+                  <svg width="25" height="25" viewBox="0 0 25 25">
+                    <line x1="1.5" y1="1.5" x2="23.5" y2="23.5" fill="none" stroke-width="3"/>
+                    <line x1="23.5" y1="1.5" x2="1.5" y2="23.5" fill="none" stroke-width="3"/>
+                  </svg>
+                </a>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </header>
+{% endblock header %}
+
+{% block content %}
+    <main>
+
+
+      <div class="uk-section uk-section-default uk-section-large notch-save-area-horizontal">
+        <div class="uk-container uk-container-xsmall">
+          <p>Das Mitglieder-Portal ist ein Werkzeug der Genossenschaft, um das Zusammenarbeiten und Entwickeln neuer Ideen in Arbeitsgruppen transparent und einfach zu organisieren. Offener Austausch und die Möglichkeit, sich einbringen zu können, sind das Herzstück unseres Projekts. Dies soll auch in Zeiten ohne allzu viele physische Treffen möglich sein und uns gemeinsam weiterbringen.</p>
+          <p>Das Portal bietet allen Genossenschafter*innen Zugang zu einer Reihe von webbasierten Lösungen, um sich Auszutauschen und Daten gemeinsam zu organisieren. Die Palette wird sich im Laufe der Zeit erweitern – es kann aber auch sein, dass wir uns von Tools trennen, wenn sie sich nicht bewähren.</p>
+          <p>Wir freuen uns, wenn ihr das Portal mit dem genossenschaftlichen Leben füllt und uns viele Feedbacks gebt, so dass wir gemeinsam ein Werkzeug entwickeln können, das unseren Bedürfnissen möglichst gut dient. Viel Spass damit!</p>
+        </div>
+      </div>
+
+      <div id="chat" class="uk-section c-section-rocket uk-section-large uk-padding-remove-bottom notch-save-area-horizontal">
+        <div class="uk-container uk-container-small uk-text-center">
+          <h1 class="uk-margin-medium-bottom uk-margin-left uk-margin-right">Chat</h1>
+          <p>
+            <img data-src="{% static "portal/img/mockup/mockup.png" %}" alt="Screenshot Rocket.Chat" uk-img>
+          </p>
+        </div>
+      </div>
+
+      <div class="uk-section c-section-rocket uk-section-large uk-padding-remove-top notch-save-area-horizontal">
+        <div class="uk-container uk-container-xsmall uk-margin-medium-top">
+          <p>Als Mitglied hast du bereits einen Account und kannst dich mit diesem direkt im Chat einloggen. Für jede Arbeitsgruppe gibt es einen Chat-Kanal, welchen du über das
+            <span class="uk-icon c-icon-in-text" style="margin-top: -2px;">
+              <svg width="22" height="22" viewBox="0 0 4.4581165 4.6712532" fill="currentColor">
+  <g
+     transform="translate(-96.945885,-127.92943)">
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#222222;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 97.458195,128.06172 h 3.813515 v 4.40667 h -3.75406 z" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#222222;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 96.945885,129.46189 h 1.068218" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#222222;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 96.945885,131.093 h 1.068218" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#222222;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 98.493198,129.90186 1.841752,-0.0294" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#222222;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 98.493198,130.70846 1.841752,-0.0294" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#222222;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 99.783573,131.19447 -0.0294,-1.84176" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#222222;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 99.058242,131.19447 -0.0294,-1.84176" />
+  </g>
+
+</svg></span>
+          Verzeichnis-Symbol suchen und betreten kannst. Erst dann erscheint der Kanal in deiner Liste.</p>
+          <p>Du kannst über das
+            <span class="uk-icon c-icon-in-text" style="margin-top: -2px;">
+              <svg width="25" height="25" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M15.6533333,11.0020275 L16.9333333,11.0020275 L16.9333333,15.842963 C16.9333333,17.0342616 15.967595,18 14.7762963,18 L4.15703704,18 C2.96573838,18 2,17.0342616 2,15.842963 L2,5.2237037 C2,4.03240504 2.96573838,3.06666667 4.15703704,3.06666667 L9.19453663,3.06666667 L9.20692368,4.34666667 L4.15703704,4.34666667 C3.67266286,4.34666667 3.28,4.73932952 3.28,5.2237037 L3.28,15.842963 C3.28,16.3273371 3.67266286,16.72 4.15703704,16.72 L14.7762963,16.72 C15.2606705,16.72 15.6533333,16.3273371 15.6533333,15.842963 L15.6533333,11.0020275 Z M15.5435425,6.27018517 L16.4509257,5.36363291 C16.8547611,4.9589666 16.8547611,4.30086451 16.4509257,3.8961982 L16.104425,3.54969748 C15.7130537,3.15749522 15.0300235,3.15915709 14.6369903,3.55052841 L13.730438,4.4579116 L15.5435425,6.27018517 Z M8.82126233,12.9924654 L14.6627493,7.15180931 L12.8488139,5.33870481 L7.00815783,11.1801918 L6.44997186,13.0190947 C6.42543367,13.099934 6.42544628,13.1862382 6.45000809,13.2670703 C6.51851762,13.4925329 6.75682906,13.6197684 6.98229161,13.5512589 L8.82126233,12.9924654 Z M16.9860491,2.66807334 L17.3325499,3.01457406 C18.2224834,3.90533851 18.2224834,5.35366167 17.3325499,6.24525706 L9.48185723,14.0942878 L5.87570438,15.1901381 C5.71399019,15.2392804 5.54132496,15.2392932 5.37960349,15.1901749 C4.92866079,15.0532138 4.6741284,14.5766236 4.81108947,14.1256809 L5.90633539,10.5195969 L13.7561971,2.66890427 C14.1874534,2.23764798 14.7616308,2 15.3715386,2 C15.9822773,2 16.5547928,2.23764798 16.9860491,2.66807334 Z"></path>
+              </svg>
+            </span>
+            Bleistift-Symbol oben in der Leiste jederzeit weitere Kanäle einrichten. Es gibt private (nicht einsehbare) und öffentliche (für alle einsehbare) Kanäle. Standardmässig ist ein neuer Kanal auf Privat eingestellt. Wir möchten aber offen kommunizieren, darum bitten wir dich, die Kanaleinstellung auf öffentlich umzustellen. <a href="/portal/hilfe">In der Hilfe erklären wir dir, wie du das machen kannst.</a> Wichtig: Schau dich zuerst im Verzeichnis um, bevor du einen neuen Kanal erstellst. Vielleicht gibt es bereits einen zu diesem Thema.</p>
+
+          <div class="uk-flex uk-flex-center uk-margin-medium">
+            <a href="https://chat.example.com" class="uk-button uk-button-large c-button-open-chat uk-width-4-5@s">Chat im Browser öffnen</a>
+
+          </div>
+
+          <!--<p>Den Chat kannst du mit einem Internetbrowser, einem Computerprogramm oder mit Apps für Android und iOS verwenden:</p>-->
+          <p>Mit diesem Link kannst du den Chat in jedem beliebigen Browser öffnen. Es gibt aber auch Apps für dein Telefon oder für deinen Computer, damit du den Chat auf deinen Geräten fix installieren kannst.</p>
+          <h4 class="uk-text-center">Mobile Apps</h4>
+          <ul class="uk-list uk-text-center">
+            <!--<li>Google Android: <a href="https://play.google.com/store/apps/details?id=chat.rocket.android">Google Play</a></li>
+            <li>Apple iOS: <a href="https://itunes.apple.com/app/rocket-chat/id1148741252">App Store</a></li>-->
+            <li class="uk-text-center">
+              <a class="uk-margin-small-right" href="https://itunes.apple.com/app/rocket-chat/id1148741252"><img src="/static/portal/img/badges/Download_on_the_App_Store_Badge_DE_RGB_blk_092917.svg" alt="Get it on the App Store"></a>
+              <a href="https://play.google.com/store/apps/details?id=chat.rocket.android"><img alt="Get it on Google Play" src="/static/portal/img/badges/google-play-badge.svg"></a>
+            </li>
+          </ul>
+          <h4 class="uk-text-center">Desktop Apps</h4>
+          <ul class="uk-list uk-text-center uk-margin-medium-bottom">
+            <li><a href="https://releases.rocket.chat/desktop/latest/download" target="_blank" rel="nofollow">Windows</a> / <a href="https://apps.apple.com/app/rocket-chat/id1086818840">macOS</a> / <a href="https://snapcraft.io/rocketchat-desktop">Linux</a></li>
+            <!--<li>Windows: <a href="https://github.com/RocketChat/Rocket.Chat.Electron/releases/download/3.0.7/rocketchat-setup-3.0.7.exe" target="_blank" rel="nofollow">Download</a></li>
+            <li>macOS: <a href="https://apps.apple.com/app/rocket-chat/id1086818840">Mac App Store</a></li>
+            <li>Linux: <a href="https://snapcraft.io/rocketchat-desktop">snapcraft</a></li>-->
+          </ul>
+          <p>Im Computerprogramm und in den mobilen Apps musst du beim Einrichten zuerst unserem Arbeitsbereich (workspace URL: chat.example.com) beitreten und dich anschliessend mit deinem Login anmelden.</p>
+          <h3 class="uk-text-center">Hilfe (Haufig gestellte Fragen)</h3>
+          <p>Auf der Hilfe-Seite stehen dir verschiedene Hilfetexte, Anleitungsvideos und Empfehlungen zur Verfügung zu Fragen wie Login, warum es diesen Chat überhaupt, wie du die Nachrichtenflut verhindern kannst und zu weiteren Themen.</p>
+          <div class="uk-flex uk-flex-center uk-margin-medium">
+            <a href="/portal/hilfe" class="uk-button uk-button-large c-button-open-chat uk-width-3-5 uk-width-2-5@s">Chat Hilfe</a>
+          </div>
+          <!-- <p class="uk-text-center uk-margin-medium-top"><a href="/portal/hilfe">Hilfe-Seite öffnen</a></p>-->
+          {# <p class="uk-text-center c-text-underline">Vorinformation: Wir werden ein Frage & Antwort Videomeeting anbieten, wo wir deine spezifischen Fragen werden beantworten können. Den Termin schicken wir demnächst über den Bewohnenden-E-Mail-Verteiler. Bis dann wäre es gut, wenn du den Chat bereits etwas ausprobieren und Erfahrungen sammeln konntest.</p> #}
+        </div>
+      </div>
+
+
+      <div id="tools" class="uk-section uk-section-secondary c-section-tools uk-section-large uk-padding-remove-bottom notch-save-area-horizontal">
+        <div class="uk-container uk-container-small uk-text-center">
+          <h1 class="uk-margin-medium-bottom">Weitere Tools</h1>
+          <p>Hier findet ihr alle weiteren Tools, die aktuell im Portal enthalten sind. Teilweise handelt es sich um genossenschafts-eigene Anwendungen, es sind aber auch viele Links vorhanden zu praktischen und kostenlosen Hilfsmittel für die digitale Zusammenarbeit.</p>
+        </div>
+      </div>
+
+      <div class="uk-section uk-section-secondary notch-save-area-horizontal">
+        <div class="uk-container">
+
+          <div class="uk-flex-center" uk-grid="masonry: true">
+
+            <div class="uk-width-2-3@m">
+
+              <div class="uk-child-width-1-1@s">
+                <div class="uk-card uk-card-secondary uk-card-body">
+                  <h3 class="uk-card-title">Genossenschafts-App</h3>
+          
+                  <p>Mit der Genossenschafts-App kannst du Raumreservationen vornehmen, Reparaturmeldungen erfassen und weitere Dinge erledigen. Ausserdem dient die Genossenschafts-App als Einstieg zu anderen Apps/Tools, welche darin verlinkt sind (Chat, Handbuch etc.).</p>
+
+                  <div class="uk-flex uk-flex-center">
+                    <img data-src="{% static "portal/img/mockup/warmbaechli-app-mockup.jpg" %}" alt="Screenshot Genossenschafts-App" uk-img width="250px">
+                  </div>
+                
+                  <p>Die Anmeldung in der App erfolgt mit dem Genossenschafts-Konto, also mit dem gleichen Login wie hier im Portal, beim Rocket-Chat etc.</p>
+
+                  <div class="uk-flex uk-flex-center uk-margin-medium">
+                    <a href="https://app.example.com" class="uk-button uk-button-large c-button-open-app uk-width-4-5@s">Genossenschafts-App öffnen</a>
+                  </div>
+
+                  <h4 class="uk-text-small">Genossenschafts-App installieren</h4>
+                  <p>Die Genossenschafts-App findest du nicht in einem App-Store, sondern sie wird direkt über <b><a class="c-link-border-transition uk-position-relative" href="https://app.example.com">app.example.com</a></b> aufgerufen. Aber du kannst sie als sogenannte Web-App ebenfalls auf deinem Smartphone speichern und direkt öffnen. Je nach Telefonmodell erscheint beim ersten Öffnen automatisch ein Banner wo gefragt wird ob die App installiert werden soll. Klicke dort auf “Ja”. Ansonsten kannst du sie folgendermasseen hinzufügen:
+
+                    <ul>
+                        <li><b>iOS:</b> Öffne <a class="c-link-border-transition uk-position-relative" href="https://app.example.com">https://app.example.com</a> in Safari und tippe auf  die Taste „Teilen“. Scrolle in der Optionsliste nach unten und tippe auf „Zum Home-Bildschirm hinzufügen“.
+                        <li><b>Android:</b> Öffne <a class="c-link-border-transition uk-position-relative" href="https://app.example.com">https://app.example.com</a> in Chrome oder Firefox. Tippe auf die Einstellungen (die drei Punke rechts oben). Scrolle in der Optionsliste nach unten und tippe auf „Installieren“.
+                    </ul>
+                  </p>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          <div class="uk-flex-center" uk-grid="masonry: true">
+
+            <div class="uk-width-2-3@m">
+
+              <div class="uk-child-width-1-1@s">
+                <div class="uk-card uk-card-secondary uk-card-body">
+                  <h3 class="uk-card-title">Cloud (Seafile)</h3>
+                  <p>Auf Seafile können AGs auf gemeinsam geteilte Dateien zugreifen. Wie das funktioniert ist auf der <a href="/portal/hilfe/#cloud">Hilfe-Seite</a> kurz beschrieben. Falls du weitere Unterstützung brauchst, melde dich einfach unter der Adresse <a href="mailto:{{'support@example.com'|obfuscate}}">{{'support@example.com'|obfuscate}}</a>.</p>
+
+                  <h4 class="uk-text-small">Auf Seafile zugreifen</h4>
+                  <ul class="uk-text-small uk-list">
+                    <li><a class="c-link-border-transition uk-position-relative" href="https://cloud.example.com/sso">Bei Seafile anmelden (im Webbrowser)</a></li>
+                    <li><a class="c-link-border-transition uk-position-relative" href="https://www.seafile.com/en/download/">Synchronisations-Client für dein Computer</a><br>(Anmelden mit «Single Sign-On» und Servername «https://cloud.example.com»)</li>
+                    <li>App für dein Handy: <a class="c-link-border-transition uk-position-relative" href="https://play.google.com/store/apps/details?id=com.seafile.seadroid2">Android</a> / <a class="c-link-border-transition uk-position-relative" href="https://itunes.apple.com/cn/app/seafile-pro/id639202512?l=en&mt=8">Apple</a><br>(Anmelden mit «Single Sign-On» und Servername «https://cloud.example.com»)</li>
+                  </ul>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          <h4 class="uk-text-center uk-text-small uk-margin-large">Tools von Drittanbieter</h4>
+
+          <div class="uk-child-width-1-2@s uk-text-small" uk-grid="masonry: true">
+
+            <div>
+              <div class="uk-card uk-card-secondary uk-card-hover uk-card-body">
+                <h3 class="uk-card-title">Videokonferenzen mit Big Blue Button</h3>
+                <p>Big Blue Button ist eine Open Source Alternative zur Datenkrake Zoom<sup>1</sup>. BBB bietet umfangreiche Funktionen für grosse Gruppen (Break-Out Rooms), erweiterte Präsentations-Funktionen, etc.</p>
+
+                <p>CH Open stellt einen in der Schweiz gehosteten Server zur Verfügung und dieser ist für die Nutzung explizit freigegeben. Wer Meetings/Räume erstellt muss einen Account haben (kann dort leicht erstellt werden). Eingeladene erhalten dann einfach einen Link dahin. Einen grossen Vorteil zu Zoom gibt es auch: Es muss keine Software installiert werden. Alles läuft, wie bei Jitsi, im Browser.</p>
+
+                <p><sup>1</sup> <a class="c-link-border-transition uk-position-relative" href="https://www.watson.ch/digital/coronavirus/106601868-zoom-hat-s-vermasselt-die-unglaubliche-chronologie-der-zoom-fails">Zoom hats vermasselt</a></p>
+
+                <h4>BBB-Meeting starten</h4>
+                <ul class="uk-list">
+                  <li><a class="c-link-border-transition uk-position-relative" href="https://bbb.ch-open.ch">BigBlueButton-Server von CH Open</a></li>
+                </ul>
+              </div>
+            </div>
+
+            <div>
+              <div class="uk-card uk-card-secondary uk-card-hover uk-card-body">
+                <h3 class="uk-card-title">Videokonferenzen mit Jitsi</h3>
+                <p>Jitsi ist eine datenschutzfreundliche Open Source Alternative zu Zoom. Verschiedene Schweizer Anbieter bieten eine kostenlose Nutzung an. In Chrome oder Firefox ab Version 76 läuft die Software für kleinere Meetings mittlerweile zuverlässig. Es muss keine Software installiert werden und es ist kein Login erforderlich. Jitsi läuft direkt im Browser. Für iOS und Android gibt eine App.</p>
+                <h4>Anbieter/Meeting starten</h4>
+                <ul class="uk-list">
+                  <li><a class="c-link-border-transition uk-position-relative" href="https://meet.stiftung-mercator.ch">Stiftung Mercator Schweiz</a></li>
+                  <li><a class="c-link-border-transition uk-position-relative" href="https://www.switch.ch/de/meet/">Switch</a></li>
+                </ul>
+                <h4>Hilfe</h4>
+                <ul class="uk-list">
+                  <li><a class="c-link-border-transition uk-position-relative" href="https://jitsi-hilfe.ch/faqs/">Jitsi-Basiswissen für erfolgreiche Videoanrufe</a></li>
+                </ul>
+                <h4>Apps</h4>
+                <ul class="uk-list">
+                  <li><a class="c-link-border-transition uk-position-relative" href="https://apps.apple.com/us/app/jitsi-meet/id1165103905">iOS</a></li>
+                  <li><a class="c-link-border-transition uk-position-relative" href="https://play.google.com/store/apps/details?id=org.jitsi.meet">Android</a></li>
+                </ul>
+              </div>
+            </div>
+
+            <div>
+              <div class="uk-card uk-card-secondary uk-card-body">
+                <h3 class="uk-card-title">Whiteboards</h3>
+                <p>Kollaborativ Ideen zusammentragen</p>
+                <h4>Padlet</h4>
+                <p>Erstelle tolle Boards, Dokumente und Webseiten, die leicht zu lesen sind und bei denen andere Spass haben, mitzuwirken.</p>
+                <ul class="uk-list">
+                  <li><a class="c-link-border-transition uk-position-relative" href="https://padlet.com">Padlet</a></li>
+                </ul>
+                <h4>miro</h4>
+                <p>Die kollaborative Online-Whiteboard-Plattform, um Teams zusammenbringen, jederzeit und überall.</p>
+                <ul class="uk-list">
+                  <li><a class="c-link-border-transition uk-position-relative" href="https://miro.com/">miro</a></li>
+                </ul>
+              </div>
+            </div>
+
+            <div>
+              <div class="uk-card uk-card-secondary uk-card-body">
+                <h3 class="uk-card-title">Textdokumente</h3>
+                <p>Kollaborativ am gleichen Textdokument arbeiten</p>
+                <h4>EduPad</h4>
+                <p>EduPad ist ein kollaborativer Texteditor. Bearbeite mit mehreren Personen gleichzeitig ein Textdokument und seh dabei in Echtzeit, wer welchen Text bearbeitet. Das System beruht auf auf der OpenSource-Plattform EtherPad.</p>
+                <ul class="uk-list">
+                  <li><a class="c-link-border-transition uk-position-relative" href="https://edupad.ch">EduPad</a></li>
+                </ul>
+                <h4>Dropbox Paper</h4>
+                <p>Ein gemeinsam genutzter Arbeitsbereich, der eine kreative und koordinierte Zusammenarbeit möglich macht.</p>
+                <ul class="uk-list">
+                  <li><a class="c-link-border-transition uk-position-relative" href="https://www.dropbox.com/paper">Dropbox Paper</a></li>
+                </ul>
+              </div>
+            </div>
+
+            <div>
+              <div class="uk-card uk-card-secondary uk-card-body">
+                <h3 class="uk-card-title">Stimmungsbilder einholen, Umfragen, Termine finden</h3>
+                <h4>Mentimeter</h4>
+                <p>Nutze Live-Umfragen, Quiz, Wortwolken, Fragen und Antworten und vieles mehr, um Eingaben in Echtzeit zu erhalten.</p>
+                <ul class="uk-list">
+                  <li><a class="c-link-border-transition uk-position-relative" href="https://www.mentimeter.com">Mentimeter</a></li>
+                </ul>
+                <h4>nuudel</h4>
+                <p>nicht speicherndes Termintool. Hier kannst du Umfragen zur Terminfindung oder beliebige Meinungsbilder anlegen. Dieser Server betreibt keinerlei User-Tracking.</p>
+                <ul class="uk-list">
+                  <li><a class="c-link-border-transition uk-position-relative" href="https://nuudel.digitalcourage.de">nuudel</a></li>
+                </ul>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+      <div class="uk-section uk-section-secondary c-section-tools uk-section-large uk-padding-remove-top notch-save-area-horizontal">
+        <div class="uk-container uk-container-xsmall uk-text-center">
+          <p>Bitte schreibt uns, wenn ihr etwas vermisst – wir sind laufend daran, das Portal so zu gestalten, dass es den Bedürfnissen der Genossenschaft ideal entspricht. Mit einem Klick auf die Sprechblase unten rechts kannst du mit uns Kontakt aufnehmen.</p>
+        </div>
+      </div>
+
+    </main>
+{% endblock content %}

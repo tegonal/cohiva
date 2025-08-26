@@ -1,0 +1,20 @@
+{
+    "name": "Musterweg Portal",
+    "short_name": "Musterweg",
+    "icons": [
+        {
+            "src": "/img/favicons/android-chrome-192x192.png?v=1",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/img/favicons/android-chrome-512x512.png?v=1",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ],
+    "start_url": "/",
+    "theme_color": "#44b9ad",
+    "background_color": "#44b9ad",
+    "display": "browser"
+}

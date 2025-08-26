@@ -1,0 +1,70 @@
+{% load static %}
+{% load email_obfuscator %}
+{% load wagtailcore_tags %}
+{% load wagtailimages_tags %}
+
+  <a class="uk-accordion-title uk-position-relative" href="#">{{ value.frage }}</a>
+  <div class="uk-accordion-content">
+    {% for block in value.antwort %}
+
+      {% if block.block_type == 'untertitel' %}
+        {# Untertitel #}
+        <h4 class="uk-text-small">{{ block.value }}</h4>
+      {% elif block.block_type == 'video' %}
+        {# Video (mit oder ohne Legende möglich) #}
+        <figure class="c-img-hilfe c-margin-2">
+          <div class="c-video-padding-helper">
+            <div class="embed-responsive embed-responsive-16by9">
+              <iframe class="embed-responsive-item" src="{{ block.value.url }}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+          </div>
+          <figcaption class="uk-text-center uk-text-small">
+            {{ block.value.legende }}
+          </figcaption>
+        </figure>
+      {% elif block.block_type == 'aufzaehlung' %}
+        {# Liste #}
+        <ul class="uk-list uk-list-hyphen">
+        {% for item in block.value %}
+          <li>{{item}}</li>
+        {% endfor %}
+        </ul>
+      {% elif block.block_type == 'nummerierung' %}
+        {# geordnete Liste #}
+        <ul class="uk-list uk-list-decimal">
+        {% for item in block.value %}
+          <li>{{item}}</li>
+        {% endfor %}
+        </ul>
+      {% elif block.block_type == 'einzelbild' %}
+        {# Bild spaltenfüllend (mit und ohne Bildlegende möglich) #}
+        <figure class="c-img-hilfe c-margin-2">
+          {% image block.value.bild width-1800 as img %}
+          <img data-src="{{ img.url }}" data-width="900px" data-height="600px" alt="" uk-img>
+          <figcaption class="uk-text-center uk-text-small">
+            {{ block.value.legende }}
+          </figcaption>
+        </figure>
+      {% elif block.block_type == 'bilder' %}
+        {# beliebig viele Bilder neben- und untereinander (es werden immer 2 nebeneinander angezeigt) #}
+        <div class="c-margin-2">
+          <div class="uk-child-width-1-2@s uk-grid-small" uk-grid>
+            {% for item in block.value %}
+            {% image item.bild width-900 as img %}
+            <div>
+              <figure class="c-img-hilfe">
+                <img data-src="{{ img.url }}" data-width="450px" data-height="300px" alt="" uk-img>
+                <figcaption class="uk-text-center uk-text-small">
+                  {{ item.legende }}
+                </figcaption>
+              </figure>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% else %}
+        {{ block.value }}
+      {% endif %}
+
+    {% endfor %}
+  </div>

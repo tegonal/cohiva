@@ -1,0 +1,19 @@
+    {% extends "website/base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}Demo{% endblock title %}
+{% block heading %}Demo{% endblock heading %}
+
+{% block content %}
+
+<p>Dies ist eine Cohiva <b>Demo-Installation</b>.<br>Für Kontakt und weitere Infos siehe <a href="https://www.cohiva.ch">cohiva.ch</a> und <a href="https://github.com/tegonal/cohiva">github.com/tegonal/cohiva</a>.</p>
+
+<ul>
+<li><a href="/admin">Admin-Login</a></li>
+{# <li><a href="/portal">Portal</a></li> #}
+<li><a href="/cms">CMS-Login</a></li>
+</ul>
+
+{% endblock content %}
+

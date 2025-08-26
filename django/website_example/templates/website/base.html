@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de">
+    <head>
+        <meta charset="utf-8">
+        <title>{% block title %}{% endblock %} – Cohiva</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" type="text/css" href="/static/admin/css/base.css">
+        <style type="text/css">
+
+body {
+  max-width: 800px;
+  margin: auto;
+  font-size: 12pt;
+}
+
+h1 {
+  font-size: 22pt;
+  color: #f5dd5d;
+  margin: 0;
+}
+
+div.confirmation {
+  font-size: 0.9em;
+  color: #067906;
+  padding: 2px;
+}
+
+div.error {
+  font-size: 0.9em;
+  color: #af0000;
+  padding: 2px;
+}
+
+ul.errorlist {
+  color: #f05a50;
+  background: #f5dd5d94;
+  padding-left: 6px;
+  font-weight: bold;
+} 
+
+ul.confirmationlist {
+  color: #44b9ad;
+}
+
+form.bigform {
+  border: none;
+  text-align: left;
+  max-width: 100%;
+}
+form.bigform label {
+  width: 100%;
+  display: block;
+}
+form.bigform input, textarea {
+  width: 100%;
+  max-width: 400px;
+  margin: 0;
+  padding: 5px;
+  margin-bottom: 10px;
+  vertical-align: baseline;
+}
+form.bigform input[type="checkbox"] {
+  width: unset;
+}
+form.bigform input[type="radio"] {
+  width: unset;
+}
+
+form ul {
+  list-style-type: none;
+  margin: 5px;
+  padding: 0;
+}
+
+form ul li {
+  margin-left: 0px;
+  list-style-type: none;
+}
+
+        </style>
+    </head>
+    <body>
+
+<div style="background-color: #b1d0df; max-width:800px; height:100%; margin-top:20px;">
+<div style="background-color: #417690; padding:15px;">
+<h1>Cohiva – {% block heading %}{% endblock %}</h1>
+</div>
+    <div class="container" style="padding:15px;">
+        {% block content %}{% endblock %}
+    </div>
+</div>
+    </body>
+</html>
