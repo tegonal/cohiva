@@ -30,7 +30,9 @@ fi
 sourceOnce "$dir_of_tegonal_scripts/utility/log.sh"
 
 function cleanupOnPushToMain() {
-	logSuccess "nothing to cleanup yet"
+	ruff check --fix-only
+	ruff format
+	logSuccess "cleaned up python code"
 }
 
 ${__SOURCED__:+return}

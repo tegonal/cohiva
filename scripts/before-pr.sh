@@ -26,7 +26,8 @@ sourceOnce "$scriptsDir/run-shellcheck.sh"
 function beforePr() {
 	# using && because this function might be used on the left side of an ||
 	customRunShellcheck && \
-	cleanupOnPushToMain
+	cleanupOnPushToMain && \
+	ruff check
 }
 
 ${__SOURCED__:+return}
