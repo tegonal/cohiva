@@ -26,12 +26,12 @@ class Command(BaseCommand):
 
         start = time.time()
         ## Drop and recreate table to delete tables that don't exist in production DB yet.
-        self.stdout.write("Deleting and crating new TEST database '%s'" % (test_db))
+        self.stdout.write("Deleting and creating new TEST database '%s'" % (test_db))
         command = (
             'echo "set autocommit=0; set unique_checks=0; set foreign_key_checks=0; '
-            "drop database %s; create database %s; COMMIT; SET unique_checks=1; "
-            'SET foreign_key_checks=1;" | mysql -h %s -u %s -p%s %s'
-            % (test_db, test_db, db_host, db_user, db_pass, test_db)
+            "drop database if exists \\`%s\\`; create database \\`%s\\`; COMMIT; SET unique_checks=1; "
+            'SET foreign_key_checks=1;" | mysql -h %s -u %s -p%s'
+            % (test_db, test_db, db_host, db_user, db_pass)
         )
         self.run_cmd(command, shell=True)
         end = time.time()
@@ -60,10 +60,9 @@ class Command(BaseCommand):
         )
 
         self.stdout.write(
-            "Syncing media files from '%s' to '%s'...\n======================="
-            % (media_prod_dir, media_test_dir)
+            "Syncing media files from '%s' to '%s'..." % (media_prod_dir, media_test_dir)
         )
-        command = "rsync -av --delete '%s/' '%s'" % (media_prod_dir, media_test_dir)
+        command = "rsync -a --info=NAME --delete '%s/' '%s'" % (media_prod_dir, media_test_dir)
         try:
             self.run_cmd(command, shell=True)
         except CommandError:
@@ -78,10 +77,9 @@ class Command(BaseCommand):
             )
 
         self.stdout.write(
-            "Syncing smedia files from '%s' to '%s'...\n======================="
-            % (smedia_prod_dir, smedia_test_dir)
+            "Syncing smedia files from '%s' to '%s'..." % (smedia_prod_dir, smedia_test_dir)
         )
-        command = "rsync -av --delete '%s/' '%s'" % (smedia_prod_dir, smedia_test_dir)
+        command = "rsync -a --info=NAME --delete '%s/' '%s'" % (smedia_prod_dir, smedia_test_dir)
         try:
             self.run_cmd(command, shell=True)
         except CommandError:

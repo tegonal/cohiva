@@ -12,6 +12,15 @@ fi
 ## Temporary workaround because of issue in celery (invalid metadata) => not needed anymore(?)
 #pip install "pip<24.1"
 
+## Handle legacy Python versions
+REQUIREMENTS="requirements.txt"
+PYTHON_VERSION=`python -c "import sys; print(f'{sys.version_info[0]}.{sys.version_info[1]}')"`
+if [ -e ./requirements_legacy_python${PYTHON_VERSION}.txt ] ; then
+    echo "Using legacy requirements file for Python ${PYTHON_VERSION}"
+    REQUIREMENTS="requirements_legacy_python${PYTHON_VERSION}.txt"
+fi
+
+
 ## Make sure we have pip-sync
 command -v pip-sync >/dev/null 2>&1 || pip install pip-tools
 
@@ -21,10 +30,10 @@ if [ ! -e ./geno/python-sepa/.git ] ; then
     git submodule update --init geno/python-sepa
 fi
 ( cd geno/python-sepa && python3 setup.py build install )
-grep "^sepa==" requirements.txt >/dev/null || echo "sepa==0.5.3+mst1" >> requirements.txt
+grep "^sepa==" $REQUIREMENTS >/dev/null || echo "sepa==0.5.3+mst1" >> $REQUIREMENTS
 
 ## Sync virtual environment with requirements.txt
-pip-sync -a
+pip-sync -a $REQUIREMENTS
 
 ## Apply patches to site packages in virtual environment
 INSTALLPATH=`pip show djangosaml2idp | grep ^Location: | cut -c 11-`

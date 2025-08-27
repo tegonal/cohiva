@@ -591,7 +591,7 @@ ALLOW_IMPORT = True
 ## Where to load test data from
 TEST_DATA = {
     "db": cbc.DB_PREFIX + "_django",
-    "media": MEDIA_ROOT + "/../../django-production/media",
+    "media": cbc.INSTALL_DIR + "/django-production/media",
 }
 ## Session timeout etc. --> use stricter settings for more sensitive content
 ## using e.g. request.session.set_expiry(GENO_ADMIN_SESSION_AGE)

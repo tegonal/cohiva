@@ -42,6 +42,7 @@ IGNORE_CODE = (
     ".mypy_cache",
     "deployment_custom",
     "static_example",
+    "/geno/python-sepa",
 )
 CLEAR_CODE = True
 
@@ -78,12 +79,9 @@ def deploy_production():
     if CLEAR_CODE:
         rsync_opts = rsync_opts + " --delete-excluded"
     for module in MODULES:
+        print(f"- Syncing {module}...")
         os.system(
-            "rsync -av %s %s --exclude static/ --exclude OLD/ --delete %s/"
-            % (module, rsync_opts, DEPLOY_DEST_PRODUCTION)
-        )
-        print(
-            "rsync -av %s %s --exclude static/ --exclude OLD/ --delete %s/"
+            "rsync -a --info=NAME %s %s --exclude static/ --exclude OLD/ --delete %s/"
             % (module, rsync_opts, DEPLOY_DEST_PRODUCTION)
         )
 
