@@ -43,8 +43,9 @@ IGNORE_CODE = (
     "deployment_custom",
     "static_example",
     "/geno/python-sepa",
+    "__pycache__",
 )
-CLEAR_CODE = True
+CLEAR_CODE = False
 
 RELOAD_WEBSERVER = False
 RELOAD_CELERY = False
@@ -84,6 +85,13 @@ def deploy_production():
             "rsync -a --info=NAME %s %s --exclude static/ --exclude OLD/ --delete %s/"
             % (module, rsync_opts, DEPLOY_DEST_PRODUCTION)
         )
+
+    ## Other deployment files (currently only celery config)
+    print("- Syncing deployment...")
+    celery_files = "deployment/celery.conf deployment/cohiva-celery.service"
+    os.system(
+        f"rsync -a --info=NAME {celery_files} {rsync_opts} --delete --delete-missing-args {DEPLOY_DEST_PRODUCTION}/celery/"
+    )
 
     print("")
     print("2. Updating static files")

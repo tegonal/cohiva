@@ -651,7 +651,7 @@ def tenant_admin_get_rc_users(rocket, template_data):
     ret = rocket.users_list(count=0).json()
     if not ret["success"]:
         template_data["error"] = "Can't get user list: %s" % ret.get("error", "Unknown error")
-        return False
+        return None
     for user in ret["users"]:
         if "username" in user:
             rc_users[user["username"]] = user
@@ -791,7 +791,7 @@ def tenant_admin_get_actions(rocket, rc_users, template_data):
                 template_data["error"] = "Can't get team members for team: %s: Unknown error" % (
                     building.team
                 )
-            return False
+            return None
         rc_teams[building.team] = {}
         for member in ret["members"]:
             # pprint(member)
@@ -913,20 +913,20 @@ def tenant_admin_maintenance(request):
 
 
 def cron_maintenance(request):
-    template_data = {"log": [], "success": [], "warning": []}
+    template_data = {"log": [], "success": [], "warning": [], "error": None}
 
     ## Rocket Chat: Get users, get and perform pending actions.
     rc_login = settings.ROCKETCHAT_API[settings.PORTAL_SECONDARY_NAME]
     rocket = RocketChatContrib(rc_login["user"], rc_login["pass"], server_url=rc_login["url"])
 
     rc_users = tenant_admin_get_rc_users(rocket, template_data)
-    if not rc_users:
+    if rc_users is None:
         return JsonResponse(
             {"status": "ERROR", "error": template_data["error"], "log": template_data["log"]}
         )
 
     actions = tenant_admin_get_actions(rocket, rc_users, template_data)
-    if not actions:
+    if actions is None:
         return JsonResponse(
             {"status": "ERROR", "error": template_data["error"], "log": template_data["log"]}
         )

@@ -118,13 +118,17 @@ if "portal" in cbc.FEATURES:
         # set to 1 to output debugging information
         "debug": 1,
         # Signing
-        "key_file": BASE_DIR / "cohiva/saml2/private.key",  # private part
-        "cert_file": BASE_DIR / "cohiva/saml2/public.pem",  # public part
+        "key_file": str(BASE_DIR / "cohiva/saml2/private.key"),  # private part (expects str)
+        "cert_file": str(BASE_DIR / "cohiva/saml2/public.pem"),  # public part (expects str)
         # Encryption
         "encryption_keypairs": [
             {
-                "key_file": BASE_DIR / "cohiva/saml2/private.key",  # private part
-                "cert_file": BASE_DIR / "cohiva/saml2/public.pem",  # public part
+                "key_file": str(
+                    BASE_DIR / "cohiva/saml2/private.key"
+                ),  # private part (expects str)
+                "cert_file": str(
+                    BASE_DIR / "cohiva/saml2/public.pem"
+                ),  # public part (expects str)
             }
         ],
         "valid_for": 365 * 24,
