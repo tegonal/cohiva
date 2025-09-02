@@ -1,8 +1,8 @@
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
+from ..models import Address, Building, Contract, Share, ShareType
 from .base import GenoAdminTestCase
-from ..models import Share, Building, Contract, Address, ShareType
 
 
 class ShareTest(GenoAdminTestCase):
@@ -23,7 +23,14 @@ class ShareTest(GenoAdminTestCase):
         type = ShareType()
         type.save()
 
-        share = Share(name=address, date=now, share_type=type, value=200, attached_to_contract=contract, attached_to_building=building)
+        share = Share(
+            name=address,
+            date=now,
+            share_type=type,
+            value=200,
+            attached_to_contract=contract,
+            attached_to_building=building,
+        )
         try:
             share.save()
         except ValidationError:

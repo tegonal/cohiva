@@ -4,6 +4,14 @@ import math
 import uuid
 
 import select2.fields
+from cohiva.utils.settings import (
+    get_default_email,
+    get_default_formal_choice,
+    get_default_mail_footer,
+)
+from filer.fields.file import FilerFileField
+
+import geno.settings as geno_settings
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
@@ -17,14 +25,6 @@ from django.dispatch.dispatcher import receiver
 from django.template import Template
 from django.utils import timezone
 from django.utils.html import format_html, format_html_join, mark_safe
-from filer.fields.file import FilerFileField
-
-import geno.settings as geno_settings
-from cohiva.utils.settings import (
-    get_default_email,
-    get_default_formal_choice,
-    get_default_mail_footer,
-)
 from geno.model_fields import LowercaseEmailField
 from geno.utils import (
     is_member,
@@ -869,9 +869,7 @@ class Share(GenoBase):
     attached_to_building = select2.fields.ForeignKey(
         "Building",
         verbose_name="Liegenschaft",
-        help_text=(
-            "Nur ausfüllbar wenn keine Vertrag gewählt ist."
-        ),
+        help_text=("Nur ausfüllbar wenn keine Vertrag gewählt ist."),
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
@@ -917,9 +915,10 @@ class Share(GenoBase):
 
     def clean(self, *args, **kwargs):
         from django.core.exceptions import ValidationError
+
         # contract and building relations may not both be present
         if self.attached_to_building is not None and self.attached_to_contract is not None:
-            raise ValidationError('Vertrag und Liegeneschaft dürfen nicht beide ausgewählt sein.')
+            raise ValidationError("Vertrag und Liegeneschaft dürfen nicht beide ausgewählt sein.")
         super().clean(*args, **kwargs)
 
     value_total.short_description = "Total"

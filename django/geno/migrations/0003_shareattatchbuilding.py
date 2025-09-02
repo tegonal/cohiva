@@ -1,8 +1,7 @@
 import django.db.models.deletion
 import select2.fields
-from django.db import migrations, models
+from django.db import migrations
 
-from geno import settings as geno_settings
 
 class Migration(migrations.Migration):
     dependencies = [
@@ -23,4 +22,4 @@ class Migration(migrations.Migration):
                 verbose_name="Fixe Zuteilung zu Liegenschaft",
             ),
         )
-        ]
+    ]
