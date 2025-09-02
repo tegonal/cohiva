@@ -866,6 +866,17 @@ class Share(GenoBase):
         on_delete=models.SET_NULL,
         related_name="contract_attached_shares",
     )
+    attached_to_building = select2.fields.ForeignKey(
+        "Building",
+        verbose_name="Liegenschaft",
+        help_text=(
+            "Nur ausfüllbar wenn keine Vertrag gewählt ist."
+        ),
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="building_attached_shares",
+    )
     note = models.CharField("Zusatzinfo", max_length=200, blank=True)
 
     ## Reverse relation to Documents
@@ -903,6 +914,13 @@ class Share(GenoBase):
             return self.quantity * self.value
         else:
             return "-"
+
+    def clean(self, *args, **kwargs):
+        from django.core.exceptions import ValidationError
+        # contract and building relations may not both be present
+        if self.attached_to_building is not None and self.attached_to_contract is not None:
+            raise ValidationError('Vertrag und Liegeneschaft dürfen nicht beide ausgewählt sein.')
+        super().clean(*args, **kwargs)
 
     value_total.short_description = "Total"
 
