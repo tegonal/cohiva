@@ -1063,9 +1063,21 @@ def rocket_chat_process_new_user(data):
     #    "_updatedAt": "2023-09-19T14:44:00.438Z"
     #  }
     if "user_id" not in data:
-        logger.error("No user_id in JSON data: %s" % data)
-        send_error_mail("rocket.chat webhook - no user_id", "No user_id in JSON data: %s" % data)
-        return HttpResponseBadRequest("No user_id in request.")
+        ## Workaround because of https://github.com/RocketChat/Rocket.Chat/issues/36348
+        json_resp = cron_maintenance(None)
+        resp = json_resp.content.decode()
+        logger.warning(
+            f"No user_id in JSON data: {data}. "
+            f"Called cron_maintenance as workaround. Result: {resp}"
+        )
+        # logger.error("No user_id in JSON data: %s" % data)
+        send_error_mail(
+            "rocket.chat webhook - no user_id",
+            f"No user_id in JSON data: {data}\n"
+            f"Called cron_maintenance as workaround. Result: {resp}",
+        )
+        return json_resp
+        # return HttpResponseBadRequest("No user_id in request.")
 
     ## Get username or email or id
     if "user_name" in data:
