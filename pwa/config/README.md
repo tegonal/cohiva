@@ -44,7 +44,7 @@ Used for app icons, favicons, and home screen icons:
 - **Format**: SVG with clear shapes, minimal detail
 - **Usage**: Taskbar, browser tabs, app stores
 
-### 4. `logo.svg` - Brand Logo  
+### 4. `logo.svg` - Brand Logo
 Used for splash screens and larger branding:
 - **Purpose**: Full brand representation
 - **Requirements**: Minimum 1024x1024px viewport
@@ -97,22 +97,22 @@ The `make-tenant-config.js` script processes these files during build:
 ### Manual Build
 ```bash
 # Generate tenant configuration
-npm run make:tenant-config
+yarn run make:tenant-config
 
 # Build the app
-npm run build
+yarn run build
 ```
 
 ### Development with Auto-Reload
 ```bash
 # Watch config files and auto-rebuild on changes
-npm run dev:watch
+yarn run dev:watch
 ```
 
 ### Standalone Config Watcher
 ```bash
 # Just watch config files (useful for testing)
-npm run watch:config
+yarn run watch:config
 ```
 
 ## Deployment Strategies
@@ -136,13 +136,13 @@ Replace config during build:
 cp -r deployments/$TENANT/config/* ./config/
 
 # Build with tenant config
-npm run build
+yarn run build
 ```
 
 ### 3. Environment Variables
 Select configuration based on environment:
 ```bash
-TENANT=customer1 npm run build
+TENANT=customer1 yarn run build
 ```
 
 ## File Size Guidelines
@@ -189,7 +189,7 @@ This default serves as both a working example and fallback configuration.
 - Use `!important` sparingly when needed
 
 ### Build failures
-- Run `npm run make:tenant-config` manually
+- Run `yarn run make:tenant-config` manually
 - Check console for specific errors
 - Verify all required files present
 
