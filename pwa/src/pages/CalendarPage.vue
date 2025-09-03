@@ -58,97 +58,104 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import { useAuthStore } from "stores";
-import { api } from "boot/axios";
-
-import "@fullcalendar/core/vdom"; // solves problem with Vite
-import FullCalendar from "@fullcalendar/vue3";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import listPlugin from "@fullcalendar/list";
-import tippy from "tippy.js";
-import "tippy.js/dist/tippy.css";
+import dayGridPlugin from '@fullcalendar/daygrid'
+import listPlugin from '@fullcalendar/list'
+import timeGridPlugin from '@fullcalendar/timegrid'
+import '@fullcalendar/core/vdom' // solves problem with Vite
+import FullCalendar from '@fullcalendar/vue3'
+import { api } from 'boot/axios'
+import { useAuthStore } from 'stores'
+import tippy from 'tippy.js'
+import { onMounted, ref } from 'vue'
+import 'tippy.js/dist/tippy.css'
 /*import interactionPlugin from "@fullcalendar/interaction";*/
 
 function fetchData() {
-  const authStore = useAuthStore();
+  const authStore = useAuthStore()
   // Get calendar event sources
   api
-    .get("/api/v1/reservation/calendar_feeds/", {
+    .get('/api/v1/reservation/calendar_feeds/', {
       headers: {
-        Authorization: "Token " + authStore.token,
+        Authorization: 'Token ' + authStore.token,
       },
     })
     .then((response) => {
       //console.log(response);
-      if (response.data.status == "OK") {
-        apiError.value = "";
-        eventSources.value = response.data.calendars;
-        let calApi = fullCalendar.value.getApi();
+      if (response.data.status == 'OK') {
+        apiError.value = ''
+        eventSources.value = response.data.calendars
+        let calApi = fullCalendar.value.getApi()
         for (let es in eventSources.value) {
-          console.log("Adding event source " + eventSources.value[es].id);
-          calApi.addEventSource(eventSources.value[es]);
+          console.log('Adding event source ' + eventSources.value[es].id)
+          calApi.addEventSource(eventSources.value[es])
         }
       } else {
-        apiError.value = "Fehler beim Abrufen der CalendarFeeds.";
+        apiError.value = 'Fehler beim Abrufen der CalendarFeeds.'
       }
     })
     .catch((error) => {
-      apiError.value = "Es ist ein Fehler aufgetreten.";
-      if ("response" in error) {
-        console.log("ERROR: " + error.response.data.detail);
-        if (error.response.data.detail == "Anmeldedaten fehlen.") {
+      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      if ('response' in error) {
+        console.log('ERROR: ' + error.response.data.detail)
+        if (error.response.data.detail == 'Anmeldedaten fehlen.') {
           // Auth missing -> Force new login
-          console.log("DISABLED FOR DEBUGGING: Force logout");
+          console.log('DISABLED FOR DEBUGGING: Force logout')
           //authStore.logout();
         }
       } else {
-        console.log("ERROR: " + error);
+        console.log('ERROR: ' + error)
       }
-    });
+    })
 }
 
 function selectView() {
-  console.log("Switch view to " + viewSelect.value.value);
+  console.log('Switch view to ' + viewSelect.value.value)
   //let calApi = this.fullCalendar.getApi();
-  let calApi = fullCalendar.value.getApi();
+  let calApi = fullCalendar.value.getApi()
   //console.log("Got calendar API");
   //console.log(calApi);
-  calApi.changeView(viewSelect.value.value);
+  calApi.changeView(viewSelect.value.value)
   //calApi.next();
 }
 
-const apiError = ref("");
+const apiError = ref('')
 
 const calendarOptions = {
-  //plugins: [dayGridPlugin, interactionPlugin],
-  plugins: [dayGridPlugin, timeGridPlugin, listPlugin],
-  initialView: "dayGridWeek", //"dayGridMonth",
+  allDayContent: { html: '<small>Ganztags</small>' },
+  aspectRatio: 0.8,
+  //defaultDate: '2017-11-12',
+  buttonText: {
+    day: 'Tag',
+    list: 'Liste',
+    month: 'Monat',
+    today: 'Heute',
+    week: 'Woche',
+  },
+  editable: false,
+  eventDidMount: function (info) {
+    new tippy(info.el, {
+      //placement: "top",
+      //trigger: "hover",
+      //container: "body",
+      allowHTML: true,
+      content: info.event.extendedProps.description,
+    })
+  },
+  firstDay: 1,
   headerToolbar: {
     /*left: "prev,next today",
     center: "title",
     right:
       "dayGridMonth,dayGridWeek timeGridWeek,timeGridDay listMonth" */
-    left: "title",
-    right: "today prev,next",
+    left: 'title',
+    right: 'today prev,next',
   },
-  aspectRatio: 0.8,
-  //defaultDate: '2017-11-12',
-  buttonText: {
-    today: "Heute",
-    month: "Monat",
-    week: "Woche",
-    day: "Tag",
-    list: "Liste",
-  },
-  locale: "de-ch",
-  firstDay: 1,
-  allDayContent: { html: "<small>Ganztags</small>" },
-  noEventsContent: { html: "Keine Termine" },
+  initialView: 'dayGridWeek', //"dayGridMonth",
+  locale: 'de-ch',
   navLinks: true, // can click day/week names to navigate views
-  editable: false,
-  weekends: true,
+  noEventsContent: { html: 'Keine Termine' },
+  //plugins: [dayGridPlugin, interactionPlugin],
+  plugins: [dayGridPlugin, timeGridPlugin, listPlugin],
   //viewDidMount: updateView(),
   views: {
     week: {
@@ -156,85 +163,77 @@ const calendarOptions = {
       //{year: 'numeric', month: 'numeric', day: 'numeric'}
     },
   },
-  eventDidMount: function (info) {
-    new tippy(info.el, {
-      content: info.event.extendedProps.description,
-      //placement: "top",
-      //trigger: "hover",
-      //container: "body",
-      allowHTML: true,
-    });
-  },
-};
+  weekends: true,
+}
 
 const viewOptions = [
   {
-    label: "Monat",
-    value: "dayGridMonth",
-    description: "blabla Test",
-    category: "1",
+    category: '1',
+    description: 'blabla Test',
+    label: 'Monat',
+    value: 'dayGridMonth',
   },
   {
-    label: "Woche - Übersicht",
-    value: "dayGridWeek",
-    description: "blabla Test",
-    category: "1",
+    category: '1',
+    description: 'blabla Test',
+    label: 'Woche - Übersicht',
+    value: 'dayGridWeek',
   },
   {
-    label: "Woche - Zeitraster",
-    value: "timeGridWeek",
-    description: "blabla Test",
-    category: "1",
+    category: '1',
+    description: 'blabla Test',
+    label: 'Woche - Zeitraster',
+    value: 'timeGridWeek',
   },
   {
-    label: "Tag",
-    value: "timeGridDay",
-    description: "blabla Test",
-    category: "1",
+    category: '1',
+    description: 'blabla Test',
+    label: 'Tag',
+    value: 'timeGridDay',
   },
   {
-    label: "Liste",
-    value: "listMonth",
-    description: "blabla Test",
-    category: "1",
+    category: '1',
+    description: 'blabla Test',
+    label: 'Liste',
+    value: 'listMonth',
   },
-];
-const viewSelect = ref(viewOptions[1]);
+]
+const viewSelect = ref(viewOptions[1])
 /*const dense = ref(true);
 const denseOpts = ref(null);*/
-const fullCalendar = ref(null);
-const filterEnabled = ref(false);
+const fullCalendar = ref(null)
+const filterEnabled = ref(false)
 const eventSourceOptions = [
   {
-    label: "Alle",
-    value: "all",
-    class: "text-bold",
+    class: 'text-bold',
+    label: 'Alle',
+    value: 'all',
   },
   {
-    label: "Genossenschaft",
-    value: "Genossenschaft",
-    category: "top",
+    category: 'top',
+    label: 'Genossenschaft',
+    value: 'Genossenschaft',
   },
   {
-    label: "Plena, GV etc.",
-    value: "plena",
-    category: "Genossenschaft",
-    class: "q-px-xl",
+    category: 'Genossenschaft',
+    class: 'q-px-xl',
+    label: 'Plena, GV etc.',
+    value: 'plena',
   },
   {
-    label: "Reservation",
-    value: "Reservation",
-    category: "top",
+    category: 'top',
+    label: 'Reservation',
+    value: 'Reservation',
   },
   {
-    label: "Gästezimmer",
-    value: "_res-1",
-    category: "Reservation",
-    class: "q-px-xl",
+    category: 'Reservation',
+    class: 'q-px-xl',
+    label: 'Gästezimmer',
+    value: '_res-1',
   },
-];
-const eventSources = ref([]);
-const activeEventSources = ref([]);
+]
+const eventSources = ref([])
+const activeEventSources = ref([])
 
 /*{
     id: "plena",
@@ -271,8 +270,8 @@ const activeEventSources = ref([]);
 ];*/
 
 onMounted(() => {
-  fetchData();
-});
+  fetchData()
+})
 </script>
 
 <style lang="css">

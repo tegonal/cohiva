@@ -17,7 +17,7 @@
         <div>
           <img
             :alt="settings.SITE_NICKNAME + ' Logo'"
-            src="~assets/logo.svg"
+            src="/src/assets/logo.svg"
             style="width: 40px; height: 40px"
           />
         </div>
@@ -68,8 +68,8 @@
     </q-drawer>
 
     <q-footer class="bg-white">
-      <app-install-banner></app-install-banner>
-      <app-update-banner></app-update-banner>
+      <AppInstallBanner></AppInstallBanner>
+      <AppUpdateBanner></AppUpdateBanner>
     </q-footer>
 
     <q-page-container>
@@ -91,47 +91,48 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
-import EssentialLink from "components/EssentialLink.vue";
-import AppUpdateBanner from "components/AppUpdateBanner.vue";
-import AppInstallBanner from "components/AppInstallBanner.vue";
-import { useAuthStore, useMainStore } from "stores";
-import { settings } from "app/settings.js";
+import AppInstallBanner from 'components/AppInstallBanner.vue'
+import AppUpdateBanner from 'components/AppUpdateBanner.vue'
+import EssentialLink from 'components/EssentialLink.vue'
+import { useAuthStore, useMainStore } from 'stores'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 
-const leftDrawerOpen = ref(false);
-const authStore = useAuthStore();
-const mainStore = useMainStore();
+import { settings } from '../../config/settings.js'
+
+const leftDrawerOpen = ref(false)
+const authStore = useAuthStore()
+const mainStore = useMainStore()
 
 function settings_logout() {
-  toggleLeftDrawer();
-  authStore.logout();
+  toggleLeftDrawer()
+  authStore.logout()
 }
 
 function toggleLeftDrawer() {
-  leftDrawerOpen.value = !leftDrawerOpen.value;
+  leftDrawerOpen.value = !leftDrawerOpen.value
 }
 
-const essentialLinks = settings.NAVIGATION_LINKS;
+const essentialLinks = settings.NAVIGATION_LINKS
 
 /* For service worker updates */
 function updateRegistration() {
   if (mainStore.registration && !mainStore.registration.waiting) {
-    console.log("Updating service-worker...");
-    mainStore.registration.update();
+    console.log('Updating service-worker...')
+    mainStore.registration.update()
   }
 }
 
 let updateTimeout = setInterval(
   function () {
-    updateRegistration();
+    updateRegistration()
   }.bind(this),
   1000 * 60 * 30
-);
+)
 
-onMounted(() => updateRegistration());
+onMounted(() => updateRegistration())
 onBeforeUnmount(() => {
   if (updateTimeout) {
-    clearInterval(updateTimeout);
+    clearInterval(updateTimeout)
   }
-});
+})
 </script>

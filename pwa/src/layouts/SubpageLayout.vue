@@ -17,7 +17,7 @@
         <div>
           <img
             :alt="settings.SITE_NICKNAME + ' Logo'"
-            src="~/assets/logo.svg"
+            src="/src/assets/logo.svg"
             style="width: 40px; height: 40px"
           />
         </div>
@@ -31,14 +31,15 @@
 </template>
 
 <script>
-import { defineComponent, ref } from "vue";
-import { settings } from "app/settings.js";
+import { defineComponent, ref } from 'vue'
+
+import { settings } from '../../config/settings.js'
 
 export default defineComponent({
-  name: "SubpageLayout",
-});
+  name: 'SubpageLayout',
+})
 </script>
 
 <script setup>
-defineProps({ subpageTitle: String });
+defineProps({ subpageTitle: String })
 </script>

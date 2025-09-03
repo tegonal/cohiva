@@ -1,28 +1,29 @@
-import { defineStore } from "pinia";
-import { version } from "../../package.json";
+import { defineStore } from 'pinia'
 
-export const useMainStore = defineStore("main", {
-  state: () => ({
-    showAppUpdatedBanner: false,
-    registration: null,
-    appVersion: version,
-    capabilities: { depot8: false, residentHo8: false },
-  }),
+import { version } from '../../package.json'
+
+export const useMainStore = defineStore('main', {
   /*getters: {
     doubleCount: (state) => state.counter * 2,
   },*/
   actions: {
     update_version() {
-      const prev_appVersion = JSON.parse(localStorage.getItem("appVersion"));
+      const prev_appVersion = JSON.parse(localStorage.getItem('appVersion'))
       if (prev_appVersion != this.appVersion) {
-        localStorage.setItem("appVersion", JSON.stringify(this.appVersion));
+        localStorage.setItem('appVersion', JSON.stringify(this.appVersion))
         console.log(
-          "Updated appVersion " + prev_appVersion + " -> " + this.appVersion
-        );
+          'Updated appVersion ' + prev_appVersion + ' -> ' + this.appVersion
+        )
       }
     },
     /*increment() {
       this.counter++;
     },*/
   },
-});
+  state: () => ({
+    appVersion: version,
+    capabilities: { depot8: false, residentHo8: false },
+    registration: null,
+    showAppUpdatedBanner: false,
+  }),
+})

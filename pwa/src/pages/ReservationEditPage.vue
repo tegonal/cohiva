@@ -175,7 +175,7 @@
           <q-card-section>
             <div class="row no-wrap items-center">
               <div class="col text-h6 ellipsis">
-                {{ room.title }}{{ room.costs ? " &ndash; " + room.costs : "" }}
+                {{ room.title }}{{ room.costs ? ' &ndash; ' + room.costs : '' }}
               </div>
               <div
                 class="col-auto text-grey text-caption q-pt-md row no-wrap items-center"
@@ -252,7 +252,7 @@
             </li>
             <li>
               Kosten:
-              {{ selectedRoom.costs ? selectedRoom.costs : " Fr. 0.00" }}
+              {{ selectedRoom.costs ? selectedRoom.costs : ' Fr. 0.00' }}
             </li>
           </ul>
           <div class="q-px-md">
@@ -310,22 +310,23 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
-import { api } from "boot/axios";
-import { useAuthStore } from "stores";
-import { settings } from "app/settings.js";
+import { api } from 'boot/axios'
+import { useAuthStore } from 'stores'
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
-const authStore = useAuthStore();
-const router = useRouter();
+import { settings } from '../../config/settings.js'
+
+const authStore = useAuthStore()
+const router = useRouter()
 
 function str2date(date_string, time_string) {
-  const ds = date_string.split(".");
+  const ds = date_string.split('.')
   if (time_string) {
-    const ts = time_string.split(":");
-    return new Date(ds[2], ds[1] - 1, ds[0], ts[0], ts[1]);
+    const ts = time_string.split(':')
+    return new Date(ds[2], ds[1] - 1, ds[0], ts[0], ts[1])
   } else {
-    return new Date(ds[2], ds[1] - 1, ds[0]);
+    return new Date(ds[2], ds[1] - 1, ds[0])
   }
 }
 
@@ -333,81 +334,81 @@ function formUpdated(what) {
   //console.log("Form updated");
 
   const current_type = reservationTypeOptions.value.find((obj) => {
-    return obj.name == reservationType.value;
-  });
+    return obj.name == reservationType.value
+  })
   /*console.log(current_type);
   console.log(reservationType.value);*/
 
   if (current_type) {
-    summaryRequired.value = current_type.summary_required;
-    fixedTime.value = current_type.fixed_time;
+    summaryRequired.value = current_type.summary_required
+    fixedTime.value = current_type.fixed_time
     if (current_type.fixed_time) {
-      time_start.value = current_type.default_time_start.substring(0, 5);
-      time_end.value = current_type.default_time_end.substring(0, 5);
+      time_start.value = current_type.default_time_start.substring(0, 5)
+      time_end.value = current_type.default_time_end.substring(0, 5)
     } else {
-      if (what == "date_start" || (date_start.value && !date_end.value)) {
-        date_end.value = date_start.value;
+      if (what == 'date_start' || (date_start.value && !date_end.value)) {
+        date_end.value = date_start.value
       }
-      if (what == "type") {
-        time_start.value = current_type.default_time_start.substring(0, 5);
-        time_end.value = current_type.default_time_end.substring(0, 5);
+      if (what == 'type') {
+        time_start.value = current_type.default_time_start.substring(0, 5)
+        time_end.value = current_type.default_time_end.substring(0, 5)
       }
     }
   } else {
-    console.error("Current type not found: " + current_type);
+    console.error('Current type not found: ' + current_type)
   }
 
   if (fixedTime.value && date_start.value && date_start.value.from) {
-    date_end.value = date_start.value.to;
-    date_start.value = date_start.value.from;
+    date_end.value = date_start.value.to
+    date_start.value = date_start.value.from
   }
 
   // Automatically hide date pickers
   if (dateFromProxy.value) {
-    dateFromProxy.value.hide();
+    dateFromProxy.value.hide()
   }
   if (dateToProxy.value) {
-    dateToProxy.value.hide();
+    dateToProxy.value.hide()
   }
 
   // Validation
-  var d_start = null;
-  var d_end = null;
+  var d_start = null
+  var d_end = null
   if (date_start.value) {
-    date_start_error.value = false;
+    date_start_error.value = false
     if (/^[0-3]\d\.[0-1]\d\.[\d]+$/.test(date_start.value)) {
-      d_start = str2date(date_start.value, time_start.value);
+      d_start = str2date(date_start.value, time_start.value)
       //console.log(d_start);
     } else {
       //console.log("Invalid date: " + date_start.value);
-      date_start_error.value = true;
+      date_start_error.value = true
     }
     if (d_start && d_start < Date.now()) {
-      date_start_error.value = true;
+      date_start_error.value = true
     }
   }
   if (date_end.value) {
-    date_end_error.value = false;
-    time_end_error.value = false;
+    date_end_error.value = false
+    time_end_error.value = false
     if (/^[0-3]\d\.[0-1]\d\.[\d]+$/.test(date_end.value)) {
-      d_end = str2date(date_end.value, time_end.value);
+      d_end = str2date(date_end.value, time_end.value)
       //console.log(d_end);
     } else {
       //console.log("Invalid date: " + date_end.value);
-      date_end_error.value = true;
+      date_end_error.value = true
     }
     if (d_start && d_end && d_start > d_end) {
       if (date_start.value == date_end.value) {
-        time_end_error.value = true;
+        time_end_error.value = true
       } else {
-        date_end_error.value = true;
+        date_end_error.value = true
       }
     }
   }
-  console.log("start: " + d_start + "end: " + d_end);
+  console.log('start: ' + d_start + 'end: ' + d_end)
   if (date_start_error.value || date_end_error.value || time_end_error.value) {
-    searchResult.value = null;
-    return;
+    searchResult.value = null
+    return
   }
 
   if (
@@ -417,42 +418,42 @@ function formUpdated(what) {
     date_end.value &&
     time_end.value
   ) {
-    reservationSearch();
+    reservationSearch()
   }
 }
 
 function reservationSearch() {
   console.log(
-    "Reservation search: " +
+    'Reservation search: ' +
       reservationType.value +
-      " / " +
+      ' / ' +
       date_start.value +
-      " " +
+      ' ' +
       time_start.value +
-      " - " +
+      ' - ' +
       date_end.value +
-      " " +
+      ' ' +
       time_end.value
-  );
+  )
   api
-    .get("/api/v1/reservation/search/", {
-      params: {
-        reservationType: reservationType.value,
-        dateFrom: date_start.value,
-        dateTo: date_end.value,
-        timeFrom: time_start.value,
-        timeTo: time_end.value,
-      },
+    .get('/api/v1/reservation/search/', {
       headers: {
-        Authorization: "Token " + authStore.token,
+        Authorization: 'Token ' + authStore.token,
         /*"X-CSRFTOKEN":
             "NuKLxiCI2BFAnWb3cIhmGjxSz0ZP2icLsJsUnvvG7HNtnILP5TtJ4FFBFI2jk1z2",*/
+      },
+      params: {
+        dateFrom: date_start.value,
+        dateTo: date_end.value,
+        reservationType: reservationType.value,
+        timeFrom: time_start.value,
+        timeTo: time_end.value,
       },
     })
     .then((response) => {
       //console.log(response);
-      apiError.value = "";
-      searchResult.value = response.data;
+      apiError.value = ''
+      searchResult.value = response.data
       //console.log(searchResult.value);
       /*const now = Date.now();
       for (let i in response.data.results) {
@@ -468,26 +469,26 @@ function reservationSearch() {
       }*/
     })
     .catch((error) => {
-      apiError.value = "Es ist ein Fehler aufgetreten.";
-      if ("response" in error) {
-        console.log("ERROR: " + error.response.data.detail);
+      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      if ('response' in error) {
+        console.log('ERROR: ' + error.response.data.detail)
         if (
-          error.response.data.detail == "Anmeldedaten fehlen." ||
-          error.response.data.detail == "Ungültiges Token"
+          error.response.data.detail == 'Anmeldedaten fehlen.' ||
+          error.response.data.detail == 'Ungültiges Token'
         ) {
           // Auth missing -> Force new login
           //console.log("DISABLED FOR DEBUGGING: Force logout");
-          authStore.logout();
+          authStore.logout()
         }
       } else {
-        console.log("ERROR: " + error);
+        console.log('ERROR: ' + error)
       }
-    });
+    })
 }
 
 function roomSelect(room) {
-  selectedRoom.value = room;
-  confirmReservation.value = true;
+  selectedRoom.value = room
+  confirmReservation.value = true
   //console.log("Selected: " + room.id);
 }
 
@@ -495,124 +496,124 @@ function submitReservation() {
   //console.log("Submit reservation");
   api
     .post(
-      "/api/v1/reservation/edit/",
+      '/api/v1/reservation/edit/',
       {
-        action: "add",
-        reservationType: reservationType.value,
+        action: 'add',
         dateFrom: date_start.value,
         dateTo: date_end.value,
-        timeFrom: time_start.value,
-        timeTo: time_end.value,
+        reservationType: reservationType.value,
         selectedRoom: selectedRoom.value.id,
         summary: reservationSummary.value,
+        timeFrom: time_start.value,
+        timeTo: time_end.value,
       },
       {
         headers: {
-          Authorization: "Token " + authStore.token,
+          Authorization: 'Token ' + authStore.token,
         },
       }
     )
     .then((response) => {
-      apiError.value = "";
+      apiError.value = ''
       //console.log(response);
       //console.log(response.data);
-      if (response.data.status == "ERROR") {
-        submissionError.value = true;
-        submissionErrorMsg.value = response.data.msg;
-        reservationSearch();
+      if (response.data.status == 'ERROR') {
+        submissionError.value = true
+        submissionErrorMsg.value = response.data.msg
+        reservationSearch()
       } else {
         // Submission OK -> Go back to previous page
-        router.go(-1);
+        router.go(-1)
       }
     })
     .catch((error) => {
-      apiError.value = "Es ist ein Fehler aufgetreten.";
-      submissionError.value = true;
-      submissionErrorMsg.value = "Fehler beim Speichern.";
-      if ("response" in error) {
-        console.log("ERROR: " + error.response.data.detail);
+      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      submissionError.value = true
+      submissionErrorMsg.value = 'Fehler beim Speichern.'
+      if ('response' in error) {
+        console.log('ERROR: ' + error.response.data.detail)
         if (
-          error.response.data.detail == "Anmeldedaten fehlen." ||
-          error.response.data.detail == "Ungültiges Token"
+          error.response.data.detail == 'Anmeldedaten fehlen.' ||
+          error.response.data.detail == 'Ungültiges Token'
         ) {
           // Auth missing -> Force new login
           //console.log("DISABLED FOR DEBUGGING: Force logout");
-          authStore.logout();
+          authStore.logout()
         }
       } else {
-        console.log("ERROR: " + error);
+        console.log('ERROR: ' + error)
       }
-    });
+    })
 }
 
 function getReservationTypes() {
   api
-    .get("/api/v1/reservation/reservationtypes/", {
+    .get('/api/v1/reservation/reservationtypes/', {
       headers: {
-        Authorization: "Token " + authStore.token,
+        Authorization: 'Token ' + authStore.token,
       },
     })
     .then((response) => {
-      apiError.value = "";
-      reservationTypeOptions.value = response.data.results;
+      apiError.value = ''
+      reservationTypeOptions.value = response.data.results
       if (reservationTypeOptions.value.length) {
         if (!reservationType.value) {
           // Take first as default
-          reservationType.value = reservationTypeOptions.value[0].name;
+          reservationType.value = reservationTypeOptions.value[0].name
           //console.log("Set default type: " + reservationType.value);
         }
-        formUpdated();
+        formUpdated()
       }
     })
     .catch((error) => {
-      apiError.value = "Es ist ein Fehler aufgetreten.";
-      if ("response" in error) {
-        console.log("ERROR: " + error.response.data.detail);
+      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      if ('response' in error) {
+        console.log('ERROR: ' + error.response.data.detail)
         if (
-          error.response.data.detail == "Anmeldedaten fehlen." ||
-          error.response.data.detail == "Ungültiges Token"
+          error.response.data.detail == 'Anmeldedaten fehlen.' ||
+          error.response.data.detail == 'Ungültiges Token'
         ) {
           // Auth missing -> Force new login
           //console.log("DISABLED FOR DEBUGGING: Force logout");
-          authStore.logout();
+          authStore.logout()
         }
       } else {
-        console.log("ERROR: " + error);
+        console.log('ERROR: ' + error)
       }
-    });
+    })
 }
 
 onMounted(() => {
-  getReservationTypes();
-});
+  getReservationTypes()
+})
 
 // Search and select room
-const reservationType = ref(null); //ref(null);
-const fixedTime = ref(true);
-const summaryRequired = ref(false);
-const reservationTypeOptions = ref([]);
-const date_start = ref(null); // { from: "2022/10/21", to: "2022/10/25" })
-const date_start_error = ref(false);
-const date_start_errormsg = ref("Datum ungültig");
-const date_end = ref(null);
-const date_end_error = ref(false);
-const date_end_errormsg = ref("Datum ungültig");
-const time_start = ref(null);
-const time_end = ref(null);
-const time_end_error = ref(false);
-const dateFromProxy = ref(null);
-const dateToProxy = ref(null);
-const searchResult = ref(null);
-const selectedRoom = ref(null);
-const apiError = ref(false);
+const reservationType = ref(null) //ref(null);
+const fixedTime = ref(true)
+const summaryRequired = ref(false)
+const reservationTypeOptions = ref([])
+const date_start = ref(null) // { from: "2022/10/21", to: "2022/10/25" })
+const date_start_error = ref(false)
+const date_start_errormsg = ref('Datum ungültig')
+const date_end = ref(null)
+const date_end_error = ref(false)
+const date_end_errormsg = ref('Datum ungültig')
+const time_start = ref(null)
+const time_end = ref(null)
+const time_end_error = ref(false)
+const dateFromProxy = ref(null)
+const dateToProxy = ref(null)
+const searchResult = ref(null)
+const selectedRoom = ref(null)
+const apiError = ref(false)
 
-const hasLinks = settings.RESERVATION_LINKS.LINKS.length > 0;
+const hasLinks = settings.RESERVATION_LINKS.LINKS.length > 0
 
 // Dialogs
-const confirmReservation = ref(false);
-const reservationSummary = ref("");
-const submissionError = ref(false);
-const submissionErrorMsg = ref("");
+const confirmReservation = ref(false)
+const reservationSummary = ref('')
+const submissionError = ref(false)
+const submissionErrorMsg = ref('')
 
 // Mockup data
 /*const rooms = [

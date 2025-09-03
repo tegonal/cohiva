@@ -3,7 +3,7 @@
     <div class="flex flex-center">
       <img
         :alt="settings.SITE_NICKNAME + ' Logo'"
-        src="~assets/logo.svg"
+        src="/src/assets/logo.svg"
         style="width: 200px; height: 200px"
       />
     </div>
@@ -98,60 +98,61 @@ export default defineComponent({
 </script>-->
 
 <script setup>
-import { ref, onMounted } from "vue";
-import { useMainStore, useAuthStore } from "stores";
-import { api } from "boot/axios";
-import { settings } from "app/settings.js";
+import { api } from 'boot/axios'
+import { useAuthStore, useMainStore } from 'stores'
+import { onMounted, ref } from 'vue'
 
-const buttonClass = "col-xs-6 col-sm-4 col-md-3 q-my-xs";
-const test_mode = process.env.TEST_MODE;
+import { settings } from '../../config/settings.js'
 
-const apiError = ref("");
+const buttonClass = 'col-xs-6 col-sm-4 col-md-3 q-my-xs'
+const test_mode = process.env.TEST_MODE
 
-const mainStore = useMainStore();
-const authStore = useAuthStore();
+const apiError = ref('')
+
+const mainStore = useMainStore()
+const authStore = useAuthStore()
 
 function getCapabilities() {
   // Get Caps from server and update mainStore.capabilities
   api
-    .get("/api/v1/geno/capabilities/", {
-      params: { appVersion: mainStore.appVersion },
+    .get('/api/v1/geno/capabilities/', {
       headers: {
-        Authorization: "Token " + authStore.token,
+        Authorization: 'Token ' + authStore.token,
       },
+      params: { appVersion: mainStore.appVersion },
     })
     .then((response) => {
-      apiError.value = "";
+      apiError.value = ''
       //console.log(response.data);
-      if (response.data.status == "OK") {
+      if (response.data.status == 'OK') {
         if (
           response.data.capabilities.credit_accounting_vendors.includes(
-            "Depot8"
+            'Depot8'
           )
         ) {
-          mainStore.capabilities.depot8 = true;
+          mainStore.capabilities.depot8 = true
         }
         // TODO: Select other capabilities
-        mainStore.capabilities.residentHo8 = true;
+        mainStore.capabilities.residentHo8 = true
       }
     })
     .catch((error) => {
-      apiError.value = "Es ist ein Fehler aufgetreten.";
-      if ("response" in error) {
-        console.log("ERROR: " + error.response.data.detail);
+      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      if ('response' in error) {
+        console.log('ERROR: ' + error.response.data.detail)
         if (
-          error.response.data.detail == "Anmeldedaten fehlen." ||
-          error.response.data.detail == "Ungültiges Token"
+          error.response.data.detail == 'Anmeldedaten fehlen.' ||
+          error.response.data.detail == 'Ungültiges Token'
         ) {
-          authStore.logout();
+          authStore.logout()
         }
       } else {
-        console.log("ERROR: " + error);
+        console.log('ERROR: ' + error)
       }
-    });
+    })
 }
 
 onMounted(() => {
-  getCapabilities();
-});
+  getCapabilities()
+})
 </script>

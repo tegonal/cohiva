@@ -40,51 +40,52 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from "vue";
-import { settings } from "app/settings.js";
+import { onMounted, ref } from 'vue'
 
-let deferredPrompt;
-let bannerHasBeenShown = false;
+import { settings } from '../../config/settings.js'
 
-const showAppInstallBanner = ref(false);
+let deferredPrompt
+let bannerHasBeenShown = false
+
+const showAppInstallBanner = ref(false)
 
 function installApp() {
-  showAppInstallBanner.value = false;
-  deferredPrompt.prompt();
+  showAppInstallBanner.value = false
+  deferredPrompt.prompt()
   // Wait for the user to respond to the prompt
   deferredPrompt.userChoice.then((choiceResult) => {
-    if (choiceResult.outcome === "accepted") {
-      console.log("User accepted the install prompt");
-      neverShowAppInstallBanner();
+    if (choiceResult.outcome === 'accepted') {
+      console.log('User accepted the install prompt')
+      neverShowAppInstallBanner()
     } else {
-      console.log("User dismissed the install prompt");
+      console.log('User dismissed the install prompt')
     }
-  });
+  })
 }
 
 function neverShowAppInstallBanner() {
-  showAppInstallBanner.value = false;
-  localStorage.setItem("neverShowInstall", "true");
+  showAppInstallBanner.value = false
+  localStorage.setItem('neverShowInstall', 'true')
 }
 
 onMounted(() => {
-  const neverShowInstall = localStorage.getItem("neverShowInstall");
-  console.log(`Mounted app-install-banner nevershow = ${neverShowInstall}`);
-  if (neverShowInstall != "true") {
-    console.log("Added event listener");
-    window.addEventListener("beforeinstallprompt", (e) => {
-      console.log("Triggered beforeinstallprompt listener");
-      if (bannerHasBeenShown === true) return;
+  const neverShowInstall = localStorage.getItem('neverShowInstall')
+  console.log(`Mounted app-install-banner nevershow = ${neverShowInstall}`)
+  if (neverShowInstall != 'true') {
+    console.log('Added event listener')
+    window.addEventListener('beforeinstallprompt', (e) => {
+      console.log('Triggered beforeinstallprompt listener')
+      if (bannerHasBeenShown === true) return
       // Prevent the mini-infobar from appearing on mobile
-      e.preventDefault();
+      e.preventDefault()
       // Stash the event so it can be triggered later.
-      deferredPrompt = e;
-      bannerHasBeenShown = true;
+      deferredPrompt = e
+      bannerHasBeenShown = true
       // Update UI notify the user they can install the PWA
       setTimeout(() => {
-        showAppInstallBanner.value = true;
-      }, 3000);
-    });
+        showAppInstallBanner.value = true
+      }, 3000)
+    })
   }
-});
+})
 </script>

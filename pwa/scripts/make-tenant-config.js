@@ -1,0 +1,635 @@
+#!/usr/bin/env node
+
+/**
+ * Make Tenant Config Script
+ *
+ * This script generates tenant-specific configuration for the PWA by:
+ * 1. Setting up logo and icon files from config/
+ * 2. Converting SVG to PNG if needed (with resolution check)
+ * 3. Generating PWA assets using Icon Genie
+ * 4. Creating manifest.json with tenant settings
+ * 5. Setting up web fonts from config/fonts/
+ * 6. Generating app.scss with theme colors
+ * 7. Copying override.scss for tenant customizations
+ *
+ * Usage:
+ *   node scripts/make-tenant-config.js
+ *
+ * The script uses files from the config/ directory to generate
+ * all tenant-specific assets and styles.
+ */
+
+import fs from 'fs-extra'
+import path from 'path'
+import { exec } from 'child_process'
+import { promisify } from 'util'
+import { fileURLToPath } from 'url'
+import sharp from 'sharp'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const rootDir = path.resolve(__dirname, '..')
+
+const execAsync = promisify(exec)
+
+// Minimum resolution for PWA assets (Icon Genie requirement)
+const MIN_ICON_SIZE = 1024
+
+async function convertSvgToPng(svgPath, outputPath, size = MIN_ICON_SIZE) {
+  try {
+    console.log(`   Converting SVG to PNG (${size}x${size})...`)
+
+    // Read SVG file
+    const svgBuffer = await fs.readFile(svgPath)
+
+    // Convert SVG to PNG with specified size
+    await sharp(svgBuffer)
+      .resize(size, size, {
+        fit: 'contain',
+        background: { r: 0, g: 0, b: 0, alpha: 0 }, // Transparent background
+      })
+      .png()
+      .toFile(outputPath)
+
+    console.log(`   ✅ PNG created successfully`)
+    return outputPath
+  } catch (error) {
+    console.error('   ❌ SVG to PNG conversion failed:', error.message)
+    throw error
+  }
+}
+
+async function checkImageResolution(imagePath) {
+  try {
+    const metadata = await sharp(imagePath).metadata()
+    console.log(`   Image dimensions: ${metadata.width}x${metadata.height}`)
+
+    if (metadata.width < MIN_ICON_SIZE || metadata.height < MIN_ICON_SIZE) {
+      console.warn(
+        `   ⚠️  Image resolution too low! Minimum required: ${MIN_ICON_SIZE}x${MIN_ICON_SIZE}`
+      )
+      return false
+    }
+
+    return true
+  } catch (error) {
+    console.error('   Failed to check image resolution:', error.message)
+    return false
+  }
+}
+
+async function generateSocialCards(logoPath, backgroundColor) {
+  console.log('🎴 Generating social media cards...')
+  
+  try {
+    // Parse background color (remove # if present)
+    const bgColor = backgroundColor.replace('#', '')
+    const r = parseInt(bgColor.substr(0, 2), 16)
+    const g = parseInt(bgColor.substr(2, 2), 16)
+    const b = parseInt(bgColor.substr(4, 2), 16)
+    
+    // Read logo
+    const logoBuffer = await fs.readFile(logoPath)
+    
+    // Generate Open Graph image (1200x630 - Facebook, LinkedIn, etc.)
+    console.log('   Generating Open Graph image (1200x630)...')
+    const ogBackground = await sharp({
+      create: {
+        width: 1200,
+        height: 630,
+        channels: 3,
+        background: { r, g, b }
+      }
+    })
+    .png()
+    .toBuffer()
+    
+    // Resize logo to fit nicely (40% of the smaller dimension)
+    const ogLogoSize = Math.floor(Math.min(1200, 630) * 0.4)
+    const ogLogo = await sharp(logoBuffer)
+      .resize(ogLogoSize, ogLogoSize, {
+        fit: 'contain',
+        background: { r, g, b, alpha: 0 }
+      })
+      .png()
+      .toBuffer()
+    
+    // Composite logo on background
+    const ogImage = await sharp(ogBackground)
+      .composite([{
+        input: ogLogo,
+        gravity: 'center'
+      }])
+      .png()
+      .toFile(path.join(rootDir, 'public', 'og-image.png'))
+    
+    console.log('   ✅ Open Graph image created')
+    
+    // Generate Twitter card image (1200x600 - 2:1 ratio)
+    console.log('   Generating Twitter card image (1200x600)...')
+    const twitterBackground = await sharp({
+      create: {
+        width: 1200,
+        height: 600,
+        channels: 3,
+        background: { r, g, b }
+      }
+    })
+    .png()
+    .toBuffer()
+    
+    // Resize logo for Twitter card
+    const twitterLogoSize = Math.floor(Math.min(1200, 600) * 0.4)
+    const twitterLogo = await sharp(logoBuffer)
+      .resize(twitterLogoSize, twitterLogoSize, {
+        fit: 'contain',
+        background: { r, g, b, alpha: 0 }
+      })
+      .png()
+      .toBuffer()
+    
+    // Composite logo on background
+    const twitterImage = await sharp(twitterBackground)
+      .composite([{
+        input: twitterLogo,
+        gravity: 'center'
+      }])
+      .png()
+      .toFile(path.join(rootDir, 'public', 'twitter-card.png'))
+    
+    console.log('   ✅ Twitter card image created')
+    
+    return true
+  } catch (error) {
+    console.error('   ❌ Failed to generate social cards:', error.message)
+    return false
+  }
+}
+
+async function verifyIconReferences() {
+  console.log('🔍 Verifying icon and splash screen references in index.html...')
+  
+  const indexPath = path.join(rootDir, 'index.html')
+  const publicIconsDir = path.join(rootDir, 'public', 'icons')
+  
+  try {
+    // Read index.html
+    const indexContent = await fs.readFile(indexPath, 'utf-8')
+    
+    // Extract all icon and splash screen references
+    const iconPattern = /<link[^>]+rel=["'](?:icon|apple-touch-icon|mask-icon)["'][^>]*>/gi
+    const splashPattern = /<link[^>]+rel=["']apple-touch-startup-image["'][^>]*>/gi
+    const metaPattern = /<meta[^>]+name=["'](?:msapplication-TileImage|msapplication-config)["'][^>]*>/gi
+    
+    const iconMatches = indexContent.match(iconPattern) || []
+    const splashMatches = indexContent.match(splashPattern) || []
+    const metaMatches = indexContent.match(metaPattern) || []
+    
+    const allReferences = [...iconMatches, ...splashMatches, ...metaMatches]
+    
+    let missingFiles = []
+    let foundFiles = []
+    
+    // Check each reference
+    for (const tag of allReferences) {
+      // Extract href or content attribute value
+      const hrefMatch = tag.match(/(?:href|content)=["']([^"']+)["']/)
+      if (hrefMatch) {
+        const filePath = hrefMatch[1]
+        
+        // Skip data URLs and external URLs
+        if (filePath.startsWith('data:') || filePath.startsWith('http')) {
+          continue
+        }
+        
+        // Build the full path (remove leading slash if present)
+        const cleanPath = filePath.replace(/^\//, '')
+        const fullPath = path.join(rootDir, 'public', cleanPath)
+        
+        // Check if file exists
+        if (await fs.pathExists(fullPath)) {
+          foundFiles.push(cleanPath)
+        } else {
+          missingFiles.push(cleanPath)
+        }
+      }
+    }
+    
+    // Expected Icon Genie PWA files (default set)
+    const expectedIconGenieFiles = [
+      'favicon.ico', // In public root, not icons folder
+      'icons/favicon-16x16.png',
+      'icons/favicon-32x32.png',
+      'icons/favicon-96x96.png',
+      'icons/favicon-128x128.png',
+      'icons/icon-128x128.png',
+      'icons/icon-192x192.png',
+      'icons/icon-256x256.png',
+      'icons/icon-384x384.png',
+      'icons/icon-512x512.png',
+      'icons/ms-icon-144x144.png',
+      'icons/apple-icon-120x120.png',
+      'icons/apple-icon-152x152.png',
+      'icons/apple-icon-167x167.png',
+      'icons/apple-icon-180x180.png',
+      'icons/safari-pinned-tab.svg',
+      'icons/apple-launch-640x1136.png',
+      'icons/apple-launch-750x1334.png',
+      'icons/apple-launch-828x1792.png',
+      'icons/apple-launch-1125x2436.png',
+      'icons/apple-launch-1242x2208.png',
+      'icons/apple-launch-1242x2688.png',
+      'icons/apple-launch-1536x2048.png',
+      'icons/apple-launch-1668x2224.png',
+      'icons/apple-launch-1668x2388.png',
+      'icons/apple-launch-2048x2732.png',
+    ]
+    
+    // Check which Icon Genie files actually exist
+    const generatedFiles = []
+    for (const file of expectedIconGenieFiles) {
+      const fullPath = path.join(rootDir, 'public', file)
+      if (await fs.pathExists(fullPath)) {
+        generatedFiles.push(file)
+      }
+    }
+    
+    // Report results
+    if (missingFiles.length > 0) {
+      console.warn('\n   ⚠️  Missing icon/splash files referenced in index.html:')
+      missingFiles.forEach(file => console.warn(`      - ${file}`))
+      console.warn('\n   Run "npx icongenie generate -m pwa" to generate missing files\n')
+    }
+    
+    // Check if index.html is missing references to generated files
+    const referencedPaths = foundFiles.concat(missingFiles)
+    const unreferencedFiles = generatedFiles.filter(file => !referencedPaths.includes(file))
+    
+    if (unreferencedFiles.length > 0) {
+      console.warn('\n   ⚠️  Generated icon files not referenced in index.html:')
+      unreferencedFiles.forEach(file => console.warn(`      - ${file}`))
+      console.warn('\n   Consider adding these to index.html for better PWA support\n')
+    }
+    
+    if (missingFiles.length === 0 && unreferencedFiles.length === 0) {
+      console.log('   ✅ All icon and splash screen references verified successfully')
+    } else {
+      console.log(`   ℹ️  Found ${foundFiles.length} valid references, ${missingFiles.length} missing files, ${unreferencedFiles.length} unreferenced files`)
+    }
+    
+    // Return verification status
+    return {
+      success: missingFiles.length === 0,
+      missingFiles,
+      foundFiles,
+      unreferencedFiles,
+      generatedFiles
+    }
+    
+  } catch (error) {
+    console.error('   ❌ Failed to verify icon references:', error.message)
+    throw error
+  }
+}
+
+async function makeTenantConfig() {
+  console.log('🚀 Generating tenant configuration...')
+
+  try {
+    // 1. Setup logo and icon
+    console.log('🎨 Setting up logo and icon...')
+    const logoSource = path.join(rootDir, 'config', 'logo.svg')
+    const iconSource = path.join(rootDir, 'config', 'icon.svg')
+    const logoTarget = path.join(rootDir, 'src', 'assets', 'logo.svg')
+    const iconTarget = path.join(rootDir, 'src', 'assets', 'icon.svg')
+
+    // Check if both icon.svg and logo.svg exist, fallback to logo.svg for both if icon.svg doesn't exist
+    const hasIcon = await fs.pathExists(iconSource)
+    const hasLogo = await fs.pathExists(logoSource)
+    
+    if (!hasLogo) {
+      throw new Error('config/logo.svg is required')
+    }
+
+    // Copy logo.svg to assets
+    await fs.remove(logoTarget)
+    await fs.copy(logoSource, logoTarget)
+    
+    // Copy icon.svg to assets (or use logo.svg as fallback)
+    await fs.remove(iconTarget)
+    if (hasIcon) {
+      console.log('   Using separate icon.svg for app icons')
+      await fs.copy(iconSource, iconTarget)
+    } else {
+      console.log('   Using logo.svg for both logo and icon')
+      await fs.copy(logoSource, iconTarget)
+    }
+
+    // 2. Load theme and settings
+    const theme = await import(path.join(rootDir, 'config', 'theme.js'))
+    const { settings } = await import(
+      path.join(rootDir, 'config', 'settings.js')
+    )
+
+    // 3. Prepare icon and logo for Icon Genie
+    console.log('🖼️  Preparing assets for PWA generation...')
+
+    // Check if we have separate icon and logo files
+    const iconSvgPath = path.join(rootDir, 'config', 'icon.svg')
+    const iconPngPath = path.join(rootDir, 'config', 'icon.png')
+    const logoSvgPath = path.join(rootDir, 'config', 'logo.svg')
+    const logoPngPath = path.join(rootDir, 'config', 'logo.png')
+    const tempIconPngPath = path.join(rootDir, 'config', '.temp-icon.png')
+    const tempLogoPngPath = path.join(rootDir, 'config', '.temp-logo.png')
+
+    let iconSourcePath
+    let logoSourcePath
+
+    // Prepare icon source (for app icons)
+    console.log('   Preparing icon for app icons...')
+    if (await fs.pathExists(iconPngPath)) {
+      console.log('   Found icon.png, checking resolution...')
+      if (await checkImageResolution(iconPngPath)) {
+        iconSourcePath = iconPngPath
+      } else {
+        console.log('   Icon PNG resolution too low, converting from SVG...')
+        if (await fs.pathExists(iconSvgPath)) {
+          iconSourcePath = await convertSvgToPng(
+            iconSvgPath,
+            tempIconPngPath,
+            MIN_ICON_SIZE
+          )
+        } else {
+          throw new Error('Icon PNG resolution too low and no icon.svg available')
+        }
+      }
+    } else if (await fs.pathExists(iconSvgPath)) {
+      console.log('   Found icon.svg, converting to PNG...')
+      iconSourcePath = await convertSvgToPng(
+        iconSvgPath,
+        tempIconPngPath,
+        MIN_ICON_SIZE
+      )
+    } else {
+      // Fallback to logo if no icon exists
+      console.log('   No icon.svg/png found, using logo for icons...')
+      if (await fs.pathExists(logoPngPath) && await checkImageResolution(logoPngPath)) {
+        iconSourcePath = logoPngPath
+      } else if (await fs.pathExists(logoSvgPath)) {
+        iconSourcePath = await convertSvgToPng(
+          logoSvgPath,
+          tempIconPngPath,
+          MIN_ICON_SIZE
+        )
+      } else {
+        throw new Error('No icon or logo files found in config directory')
+      }
+    }
+
+    // Prepare logo source (for splash screens background)
+    console.log('   Preparing logo for splash screens...')
+    if (await fs.pathExists(logoPngPath)) {
+      console.log('   Found logo.png, checking resolution...')
+      if (await checkImageResolution(logoPngPath)) {
+        logoSourcePath = logoPngPath
+      } else {
+        console.log('   Logo PNG resolution too low, converting from SVG...')
+        if (await fs.pathExists(logoSvgPath)) {
+          logoSourcePath = await convertSvgToPng(
+            logoSvgPath,
+            tempLogoPngPath,
+            MIN_ICON_SIZE
+          )
+        } else {
+          throw new Error('Logo PNG resolution too low and no logo.svg available')
+        }
+      }
+    } else if (await fs.pathExists(logoSvgPath)) {
+      console.log('   Found logo.svg, converting to PNG...')
+      logoSourcePath = await convertSvgToPng(
+        logoSvgPath,
+        tempLogoPngPath,
+        MIN_ICON_SIZE
+      )
+    } else {
+      throw new Error('No logo.png or logo.svg found in config directory')
+    }
+
+    // 4. Generate social media cards
+    await generateSocialCards(logoSvgPath, theme.default.backgroundColor)
+    
+    // 5. Generate PWA assets with Icon Genie
+    console.log('🎨 Generating PWA assets with Icon Genie...')
+    const themeColor = theme.default.primary.replace('#', '')
+    const backgroundColor = theme.default.backgroundColor.replace('#', '')
+
+    try {
+      // Icon Genie limitation: it uses the same image for both app icons and splash screen overlays
+      // We'll use the icon for both - it's designed to work well at small sizes
+      // The icon will be used for:
+      // - App icons (at appropriate sizes)
+      // - Splash screens (centered at 40% size on background color)
+      // Padding: adds 10% padding (horizontal,vertical) to prevent icon from touching edges
+      const iconGenieCmd = `npx icongenie generate -m pwa -i "${iconSourcePath}" --theme-color ${themeColor} --png-color ${backgroundColor} --splashscreen-color ${backgroundColor} --splashscreen-icon-ratio 40 --padding 10,10 --quality 10`
+      console.log(`   Running: ${iconGenieCmd}`)
+
+      const { stdout, stderr } = await execAsync(iconGenieCmd, { cwd: rootDir })
+
+      if (stdout) console.log(stdout)
+      if (stderr && !stderr.includes('Warning')) console.error(stderr)
+
+      console.log('✅ PWA assets generated successfully')
+
+      // Note: Icon Genie generates files in public/icons/
+      // During build, Vite copies public files to dist root
+      // Files are referenced as "icons/icon-*.png" (no leading slash)
+      
+      // Optimize generated icons
+      console.log('🖼️  Optimizing generated PWA icons...')
+      const optimizeCmd = 'node scripts/optimize-images.js public/icons'
+      console.log(`   Running: ${optimizeCmd}`)
+      
+      try {
+        const { stdout: optStdout, stderr: optStderr } = await execAsync(optimizeCmd, { cwd: rootDir })
+        
+        if (optStdout) console.log(optStdout)
+        if (optStderr && !optStderr.includes('Warning')) console.error(optStderr)
+        
+        console.log('✅ Icons optimized successfully')
+      } catch (optError) {
+        console.error('⚠️  Failed to optimize icons:', optError.message)
+        // Don't throw - optimization is nice to have but not critical
+      }
+
+      // Clean up temp files if created
+      if (await fs.pathExists(tempIconPngPath)) {
+        await fs.remove(tempIconPngPath)
+      }
+      if (await fs.pathExists(tempLogoPngPath)) {
+        await fs.remove(tempLogoPngPath)
+      }
+    } catch (error) {
+      console.error('❌ Icon generation failed:', error.message)
+      console.log(
+        '   Make sure Icon Genie is installed: yarn add -D @quasar/icongenie'
+      )
+
+      // Clean up temp files even on error
+      if (await fs.pathExists(tempIconPngPath)) {
+        await fs.remove(tempIconPngPath)
+      }
+      if (await fs.pathExists(tempLogoPngPath)) {
+        await fs.remove(tempLogoPngPath)
+      }
+
+      throw error
+    }
+
+    // 6. Generate manifest.json
+    console.log('📋 Generating manifest.json...')
+    const manifest = {
+      name: settings.SITE_NAME,
+      short_name: settings.SITE_NICKNAME,
+      description:
+        settings.SITE_DESCRIPTION ||
+        `${settings.SITE_NAME} Progressive Web App`,
+      display: 'standalone',
+      orientation: 'portrait',
+      background_color: theme.default.backgroundColor,
+      theme_color: theme.default.primary,
+      id: `/${settings.APP_BASENAME}/`,
+      start_url: '/',
+      icons: [
+        {
+          src: 'icons/icon-128x128.png',
+          sizes: '128x128',
+          type: 'image/png',
+        },
+        {
+          src: 'icons/icon-192x192.png',
+          sizes: '192x192',
+          type: 'image/png',
+        },
+        {
+          src: 'icons/icon-256x256.png',
+          sizes: '256x256',
+          type: 'image/png',
+        },
+        {
+          src: 'icons/icon-384x384.png',
+          sizes: '384x384',
+          type: 'image/png',
+        },
+        {
+          src: 'icons/icon-512x512.png',
+          sizes: '512x512',
+          type: 'image/png',
+        },
+      ],
+    }
+
+    const manifestPath = path.join(rootDir, 'src-pwa', 'manifest.json')
+    await fs.ensureDir(path.dirname(manifestPath))
+    await fs.writeJson(manifestPath, manifest, { spaces: 2 })
+
+    // 7. Setup web fonts
+    console.log('🔤 Setting up web fonts...')
+    const fontsSource = path.join(rootDir, 'config', 'fonts')
+    const fontsTarget = path.join(rootDir, 'src', 'css', 'fonts')
+    const webfontsSource = path.join(rootDir, 'config', 'webfonts.scss')
+    const webfontsTarget = path.join(rootDir, 'src', 'css', 'webfonts.scss')
+    
+    // Copy fonts directory if it exists and has files
+    if (await fs.pathExists(fontsSource)) {
+      const fontFiles = await fs.readdir(fontsSource)
+      const actualFonts = fontFiles.filter(f => !f.startsWith('.')) // Exclude .gitkeep, etc
+      
+      if (actualFonts.length > 0) {
+        console.log(`   Found ${actualFonts.length} font file(s), copying to src/css/fonts...`)
+        await fs.ensureDir(fontsTarget)
+        await fs.copy(fontsSource, fontsTarget)
+      } else {
+        console.log('   No font files found in config/fonts')
+      }
+    }
+    
+    // Copy webfonts.scss if it exists
+    if (await fs.pathExists(webfontsSource)) {
+      console.log('   Found webfonts.scss, copying to src/css...')
+      await fs.copy(webfontsSource, webfontsTarget)
+    } else {
+      console.log('   No webfonts.scss found, creating default...')
+      // Create a minimal webfonts.scss that sets the default font variable
+      const defaultWebfonts = `// Default web fonts configuration
+// Place custom font definitions in config/webfonts.scss
+
+// Default Quasar font family
+$typography-font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif !default;
+`
+      await fs.writeFile(webfontsTarget, defaultWebfonts)
+    }
+
+    // 8. Generate app.scss with theme colors
+    console.log('🎨 Generating app.scss with theme colors...')
+    const scssContent = `// Generated from config/theme.js
+// Do not edit directly - modify config/theme.js instead
+
+// Import web fonts first (this sets font variables)
+@import './webfonts.scss';
+
+// Quasar Variables
+// --------------------------------------------------
+
+$primary   : ${theme.default.primary};
+$secondary : ${theme.default.secondary};
+$accent    : ${theme.default.accent};
+
+$dark      : ${theme.default.dark};
+$dark-page : ${theme.default['dark-page']};
+
+$positive  : ${theme.default.positive};
+$negative  : ${theme.default.negative};
+$info      : ${theme.default.info};
+$warning   : ${theme.default.warning};
+
+// Custom app styles
+.app-logo {
+  height: 40px;
+  width: auto;
+}
+
+// Additional custom styles can be added below
+`
+
+    const scssPath = path.join(rootDir, 'src', 'css', 'app.scss')
+    await fs.writeFile(scssPath, scssContent)
+
+    // 9. Copy override.scss if it exists
+    console.log('🎨 Setting up style overrides...')
+    const overrideSource = path.join(rootDir, 'config', 'override.scss')
+    const overrideTarget = path.join(rootDir, 'src', 'css', 'override.scss')
+    
+    if (await fs.pathExists(overrideSource)) {
+      console.log('   Found override.scss, copying to src/css...')
+      await fs.copy(overrideSource, overrideTarget)
+    } else {
+      console.log('   No override.scss found, creating empty file...')
+      // Create an empty override file so imports don't break
+      await fs.writeFile(overrideTarget, '// No tenant-specific overrides\n')
+    }
+
+    // 10. Verify index.html matches Icon Genie output
+    await verifyIconReferences()
+
+    console.log('✅ Tenant configuration complete!')
+    console.log(`   Site: ${settings.SITE_NAME}`)
+    console.log(`   Theme: ${theme.default.primary}`)
+    console.log(`   Background: ${theme.default.backgroundColor}`)
+  } catch (error) {
+    console.error('❌ Tenant configuration failed:', error)
+    process.exit(1)
+  }
+}
+
+// Run the script
+makeTenantConfig()

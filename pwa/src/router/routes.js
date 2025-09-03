@@ -1,54 +1,54 @@
 const routes = [
   {
-    path: "/",
-    component: () => import("layouts/MainLayout.vue"),
     children: [
-      { path: "", component: () => import("pages/IndexPage.vue") },
+      { component: () => import('pages/IndexPage.vue'), path: '' },
       {
-        path: "login",
-        name: "login",
-        component: () => import("pages/LoginPage.vue"),
+        component: () => import('pages/LoginPage.vue'),
+        name: 'login',
+        path: 'login',
       },
     ],
+    component: () => import('layouts/MainLayout.vue'),
+    path: '/',
   },
   {
-    path: "/reservation",
-    component: () => import("layouts/SubpageLayout.vue"),
-    props: { subpageTitle: "Reservation" },
     children: [
-      { path: "", component: () => import("pages/ReservationPage.vue") },
+      { component: () => import('pages/ReservationPage.vue'), path: '' },
       {
-        path: "add",
-        component: () => import("pages/ReservationEditPage.vue"),
+        component: () => import('pages/ReservationEditPage.vue'),
+        path: 'add',
       },
     ],
+    component: () => import('layouts/SubpageLayout.vue'),
+    path: '/reservation',
+    props: { subpageTitle: 'Reservation' },
   },
   {
-    path: "/calendar",
-    component: () => import("layouts/SubpageLayout.vue"),
-    props: { subpageTitle: "Kalender" },
-    children: [{ path: "", component: () => import("pages/CalendarPage.vue") }],
+    children: [{ component: () => import('pages/CalendarPage.vue'), path: '' }],
+    component: () => import('layouts/SubpageLayout.vue'),
+    path: '/calendar',
+    props: { subpageTitle: 'Kalender' },
   },
   {
-    path: "/repair",
-    component: () => import("layouts/SubpageLayout.vue"),
-    props: { subpageTitle: "Reparaturmeldung" },
-    children: [{ path: "", component: () => import("pages/RepairPage.vue") }],
+    children: [{ component: () => import('pages/RepairPage.vue'), path: '' }],
+    component: () => import('layouts/SubpageLayout.vue'),
+    path: '/repair',
+    props: { subpageTitle: 'Reparaturmeldung' },
   },
   {
-    path: "/credit_accounting",
-    component: () => import("layouts/SubpageLayout.vue"),
-    props: { subpageTitle: "Depot8" },
     children: [
-      { path: "", component: () => import("pages/CreditAccountingPage.vue") },
+      { component: () => import('pages/CreditAccountingPage.vue'), path: '' },
     ],
+    component: () => import('layouts/SubpageLayout.vue'),
+    path: '/credit_accounting',
+    props: { subpageTitle: 'Depot8' },
   },
   // Always leave this as last one,
   // but you can also remove it
   {
-    path: "/:catchAll(.*)*",
-    component: () => import("pages/ErrorNotFound.vue"),
+    component: () => import('pages/ErrorNotFound.vue'),
+    path: '/:catchAll(.*)*',
   },
-];
+]
 
-export default routes;
+export default routes

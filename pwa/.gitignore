@@ -3,13 +3,17 @@
 node_modules
 
 # Local config or generated files
-/settings.js
-/package.json
 /src-pwa/manifest.json
 /public/favicon.ico
 /public/icons
+/public/twitter-card.png
+/public/og-image.png
 /src/assets/logo.svg
+/src/assets/icon.svg
 /src/css/app.scss
+/src/css/override.scss
+/src/css/webfonts.scss
+/src/css/fonts
 
 # Quasar core related directories
 .quasar
@@ -37,3 +41,8 @@ yarn-error.log*
 *.njsproj
 *.sln
 *.swp
+
+/.yarn
+/.claude
+CLAUDE.md
+/.serena

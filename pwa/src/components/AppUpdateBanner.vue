@@ -47,21 +47,21 @@
 </template>
 
 <script setup>
-import { useMainStore } from "stores";
-let refreshing = false;
+import { useMainStore } from 'stores'
+let refreshing = false
 
-const mainStore = useMainStore();
-mainStore.update_version();
+const mainStore = useMainStore()
+mainStore.update_version()
 
 function updateApp(yes) {
-  mainStore.showAppUpdatedBanner = false;
+  mainStore.showAppUpdatedBanner = false
   if (!yes || refreshing) {
-    return;
+    return
   }
-  refreshing = true;
+  refreshing = true
   if (mainStore.registration && mainStore.registration.waiting) {
-    mainStore.registration.waiting.postMessage({ type: "SKIP_WAITING" });
+    mainStore.registration.waiting.postMessage({ type: 'SKIP_WAITING' })
   }
-  window.location.reload(true);
+  window.location.reload(true)
 }
 </script>

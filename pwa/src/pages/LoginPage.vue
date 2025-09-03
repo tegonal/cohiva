@@ -3,7 +3,7 @@
     <div class="flex flex-center">
       <img
         :alt="settings.SITE_NICKNAME + ' Logo'"
-        src="~assets/logo.svg"
+        src="/src/assets/logo.svg"
         style="width: 200px; height: 200px"
       />
     </div>
@@ -72,30 +72,30 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { useAuthStore } from "stores";
-import { settings } from "app/settings.js";
+import { settings } from '../../config/settings.js'
+import { useAuthStore } from 'stores'
+import { ref } from 'vue'
 
-const email = ref(JSON.parse(localStorage.getItem("user")) || "");
-const password = ref("");
-const apiError = ref("");
-const isSubmitting = ref(false);
+const email = ref(JSON.parse(localStorage.getItem('user')) || '')
+const password = ref('')
+const apiError = ref('')
+const isSubmitting = ref(false)
 
 function login() {
-  const authStore = useAuthStore();
-  apiError.value = "";
-  isSubmitting.value = true;
+  const authStore = useAuthStore()
+  apiError.value = ''
+  isSubmitting.value = true
   const response = authStore
     .login(email, password)
     .then((response) => {
       //console.log("Got result: " + response);
-      isSubmitting.value = false;
+      isSubmitting.value = false
     })
     .catch((error) => {
-      isSubmitting.value = false;
-      console.log("ERROR: " + error);
-      apiError.value = "Fehler beim Anmelden";
-    });
+      isSubmitting.value = false
+      console.log('ERROR: ' + error)
+      apiError.value = 'Fehler beim Anmelden'
+    })
   //;
   //console.log("After login request");
   /* if (response) {

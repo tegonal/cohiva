@@ -201,132 +201,132 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
-import { useAuthStore } from "stores";
-import { api } from "boot/axios";
-import { exportFile } from "quasar";
+import { api } from 'boot/axios'
+import { exportFile } from 'quasar'
+import { useAuthStore } from 'stores'
+import { computed, onMounted, ref } from 'vue'
 //import { stringify } from "csv-stringify";
 
-const authStore = useAuthStore();
+const authStore = useAuthStore()
 
 function getFilterOptions() {
   api
-    .get("/api/v1/credit_accounting/transactions/filter/", {
+    .get('/api/v1/credit_accounting/transactions/filter/', {
       headers: {
-        Authorization: "Token " + authStore.token,
+        Authorization: 'Token ' + authStore.token,
       },
     })
     .then((response) => {
-      apiError.value = "";
-      timeOptions.value = response.data.time_filter;
+      apiError.value = ''
+      timeOptions.value = response.data.time_filter
       if (!time.value) {
         // Take first as default
-        time.value = timeOptions.value[0];
+        time.value = timeOptions.value[0]
       }
-      formUpdated();
+      formUpdated()
     })
     .catch((error) => {
-      apiError.value = "Es ist ein Fehler aufgetreten.";
-      if ("response" in error) {
-        console.log("ERROR: " + error.response.data.detail);
+      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      if ('response' in error) {
+        console.log('ERROR: ' + error.response.data.detail)
         if (
-          error.response.data.detail == "Anmeldedaten fehlen." ||
-          error.response.data.detail == "Ungültiges Token"
+          error.response.data.detail == 'Anmeldedaten fehlen.' ||
+          error.response.data.detail == 'Ungültiges Token'
         ) {
-          authStore.logout();
+          authStore.logout()
         }
       } else {
-        console.log("ERROR: " + error);
+        console.log('ERROR: ' + error)
       }
-    });
+    })
 }
 
 function getAccounts() {
   api
-    .get("/api/v1/credit_accounting/accounts/", {
-      params: {
-        vendor: "Depot8",
-      },
+    .get('/api/v1/credit_accounting/accounts/', {
       headers: {
-        Authorization: "Token " + authStore.token,
+        Authorization: 'Token ' + authStore.token,
+      },
+      params: {
+        vendor: 'Depot8',
       },
     })
     .then((response) => {
-      apiError.value = "";
-      accountOptions.value = response.data.accounts;
+      apiError.value = ''
+      accountOptions.value = response.data.accounts
       if (!account.value) {
         // Take first as default
-        account.value = accountOptions.value[0];
+        account.value = accountOptions.value[0]
       }
-      formUpdated();
+      formUpdated()
     })
     .catch((error) => {
-      apiError.value = "Es ist ein Fehler aufgetreten.";
-      if ("response" in error) {
-        console.log("ERROR: " + error.response.data.detail);
+      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      if ('response' in error) {
+        console.log('ERROR: ' + error.response.data.detail)
         if (
-          error.response.data.detail == "Anmeldedaten fehlen." ||
-          error.response.data.detail == "Ungültiges Token"
+          error.response.data.detail == 'Anmeldedaten fehlen.' ||
+          error.response.data.detail == 'Ungültiges Token'
         ) {
-          authStore.logout();
+          authStore.logout()
         }
       } else {
-        console.log("ERROR: " + error);
+        console.log('ERROR: ' + error)
       }
-    });
+    })
 }
 
 function fetchData() {
-  isLoading.value = true;
+  isLoading.value = true
   api
-    .get("/api/v1/credit_accounting/transactions/", {
-      params: {
-        vendor: "Depot8",
-        filter: {
-          search: search.value,
-          account: account.value.value,
-          time: time.value.value,
-          sign: sign.value.value,
-        },
-      },
+    .get('/api/v1/credit_accounting/transactions/', {
       headers: {
-        Authorization: "Token " + authStore.token,
+        Authorization: 'Token ' + authStore.token,
+      },
+      params: {
+        filter: {
+          account: account.value.value,
+          search: search.value,
+          sign: sign.value.value,
+          time: time.value.value,
+        },
+        vendor: 'Depot8',
       },
     })
     .then((response) => {
-      isLoading.value = false;
-      if (response.data.status == "OK") {
-        apiError.value = "";
-        transactions.value = response.data.transactions;
-        maxResults.value = response.data.max_results;
+      isLoading.value = false
+      if (response.data.status == 'OK') {
+        apiError.value = ''
+        transactions.value = response.data.transactions
+        maxResults.value = response.data.max_results
       } else {
-        apiError.value = "Es ist ein Fehler aufgetreten.";
+        apiError.value = 'Es ist ein Fehler aufgetreten.'
       }
     })
     .catch((error) => {
-      isLoading.value = false;
-      apiError.value = "Es ist ein Fehler aufgetreten.";
-      if ("response" in error) {
-        console.log("ERROR: " + error.response.data.detail);
+      isLoading.value = false
+      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      if ('response' in error) {
+        console.log('ERROR: ' + error.response.data.detail)
         if (
-          error.response.data.detail == "Anmeldedaten fehlen." ||
-          error.response.data.detail == "Ungültiges Token"
+          error.response.data.detail == 'Anmeldedaten fehlen.' ||
+          error.response.data.detail == 'Ungültiges Token'
         ) {
-          authStore.logout();
+          authStore.logout()
         }
       } else {
-        console.log("ERROR: " + error);
+        console.log('ERROR: ' + error)
       }
-    });
+    })
 }
 
 function wrapCsvValue(val, formatFn, row) {
-  let formatted = formatFn !== void 0 ? formatFn(val, row) : val;
+  let formatted = formatFn !== void 0 ? formatFn(val, row) : val
 
   formatted =
-    formatted === void 0 || formatted === null ? "" : String(formatted);
+    formatted === void 0 || formatted === null ? '' : String(formatted)
 
-  formatted = formatted.split('"').join('""');
+  formatted = formatted.split('"').join('""')
   /**
    * Excel accepts \n and \r in strings, but some other CSV parsers do not
    * Uncomment the next two lines to escape new lines
@@ -334,11 +334,11 @@ function wrapCsvValue(val, formatFn, row) {
   // .split('\n').join('\\n')
   // .split('\r').join('\\r')
 
-  return `"${formatted}"`;
+  return `"${formatted}"`
 }
 
 function exportToCSV() {
-  const columns = ["Datum", "Bezeichnung", "Betrag", "Saldo", "Notiz"];
+  const columns = ['Datum', 'Bezeichnung', 'Betrag', 'Saldo', 'Notiz']
   const content = [columns.map((column) => wrapCsvValue(column))]
     .concat(
       transactions.value.map((transaction) => [
@@ -349,125 +349,125 @@ function exportToCSV() {
         wrapCsvValue(transaction.note),
       ])
     )
-    .join("\r\n");
+    .join('\r\n')
 
   // TODO: Add account name and date?
-  const status = exportFile("Depot8_Kontoauszug.csv", content, "text/csv");
+  const status = exportFile('Depot8_Kontoauszug.csv', content, 'text/csv')
 
   if (status !== true) {
-    console.log("Error: Browser didn't allow export:" + status);
+    console.log("Error: Browser didn't allow export:" + status)
   }
 }
 
 function openSettings() {
   api
-    .get("/api/v1/credit_accounting/settings/", {
-      params: { vendor: "Depot8", account: account.value.value },
-      headers: { Authorization: "Token " + authStore.token },
+    .get('/api/v1/credit_accounting/settings/', {
+      headers: { Authorization: 'Token ' + authStore.token },
+      params: { account: account.value.value, vendor: 'Depot8' },
     })
     .then((response) => {
-      if (response.data.status == "OK") {
-        settings.value = response.data.settings;
-        settingsDialog.value = true;
+      if (response.data.status == 'OK') {
+        settings.value = response.data.settings
+        settingsDialog.value = true
       } else {
         console.log(
-          "ERROR: Could not load settings. Status = " + response.data.status
-        );
+          'ERROR: Could not load settings. Status = ' + response.data.status
+        )
       }
     })
     .catch((error) => {
-      console.log("ERROR: Could not load settings: " + error);
-    });
+      console.log('ERROR: Could not load settings: ' + error)
+    })
 }
 
 function saveSettings() {
   api
     .post(
-      "/api/v1/credit_accounting/settings/",
+      '/api/v1/credit_accounting/settings/',
       {
-        vendor: "Depot8",
         account: account.value.value,
         settings: settings.value,
+        vendor: 'Depot8',
       },
-      { headers: { Authorization: "Token " + authStore.token } }
+      { headers: { Authorization: 'Token ' + authStore.token } }
     )
     .then((response) => {
       //console.log(response);
       //console.log(response.data);
-      if (response.data.status == "OK") {
-        settingsDialog.value = false;
+      if (response.data.status == 'OK') {
+        settingsDialog.value = false
       } else {
         console.log(
-          "ERROR: Could not save settings. Status = " + response.data.status
-        );
+          'ERROR: Could not save settings. Status = ' + response.data.status
+        )
       }
     })
     .catch((error) => {
-      console.log("ERROR: Could not save settings:" + error);
-    });
+      console.log('ERROR: Could not save settings:' + error)
+    })
 }
 
 function formUpdated(what) {
-  let caption = [];
+  let caption = []
   if (account.value) {
-    caption.push(account.value.label);
+    caption.push(account.value.label)
   }
-  if (sign.value != "Alle Buchungen") {
-    caption.push(sign.value.label);
+  if (sign.value != 'Alle Buchungen') {
+    caption.push(sign.value.label)
   }
-  if (time.value != "Alle Buchungen") {
-    caption.push(time.value.label);
+  if (time.value != 'Alle Buchungen') {
+    caption.push(time.value.label)
   }
   if (search.value) {
-    caption.push("Suche: " + search.value);
+    caption.push('Suche: ' + search.value)
   }
-  filterCaption.value = caption.join(" | ");
+  filterCaption.value = caption.join(' | ')
 
   if (account.value && time.value) {
-    fetchData();
+    fetchData()
   }
 }
 
 onMounted(() => {
-  getAccounts();
-  getFilterOptions();
-});
+  getAccounts()
+  getFilterOptions()
+})
 
-const apiError = ref("");
+const apiError = ref('')
 
 // Filter/search form
-const timeOptions = ref([]);
+const timeOptions = ref([])
 const signOptions = ref([
-  { value: "all", label: "Alle Buchungen" },
-  { value: "plus", label: "Gutschriften" },
-  { value: "minus", label: "Lastschriften" },
-]);
-const accountOptions = ref([]);
-const expanded = ref(false);
-const filterCaption = ref("");
-const search = ref("");
-const time = ref(null);
-const sign = ref(signOptions.value[0]);
-const account = ref(null);
+  { label: 'Alle Buchungen', value: 'all' },
+  { label: 'Gutschriften', value: 'plus' },
+  { label: 'Lastschriften', value: 'minus' },
+])
+const accountOptions = ref([])
+const expanded = ref(false)
+const filterCaption = ref('')
+const search = ref('')
+const time = ref(null)
+const sign = ref(signOptions.value[0])
+const account = ref(null)
 
-const transactions = ref([]);
-const maxResults = ref(0);
-const isLoading = ref(false);
+const transactions = ref([])
+const maxResults = ref(0)
+const isLoading = ref(false)
 
 const settings = ref({
-  pin: "",
   notification_balance_below_amount_active: false,
   notification_balance_below_amount_value: 100,
-  user_email: "test@example.com",
-});
+  pin: '',
+  user_email: 'test@example.com',
+})
 
-const paymentDialog = ref(false);
-const settingsDialog = ref(false);
+const paymentDialog = ref(false)
+const settingsDialog = ref(false)
 
 const hasMultipleAccounts = computed(() => {
-  return accountOptions.value.length > 1;
-});
+  return accountOptions.value.length > 1
+})
 const hasTransactions = computed(() => {
-  return transactions.value.length;
-});
+  return transactions.value.length
+})
 </script>

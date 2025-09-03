@@ -1,0 +1,90 @@
+// Web Fonts Configuration
+// This file is loaded BEFORE app.scss allowing you to define custom fonts
+// Roboto font family is included by default with all essential weights
+
+// Roboto Font Family - Light (300)
+@font-face {
+  font-family: 'Roboto';
+  src: url('./fonts/roboto-v30-latin-300.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Roboto';
+  src: url('./fonts/roboto-v30-latin-300italic.woff2') format('woff2');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+// Roboto Font Family - Regular (400)
+@font-face {
+  font-family: 'Roboto';
+  src: url('./fonts/roboto-v30-latin-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Roboto';
+  src: url('./fonts/roboto-v30-latin-italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+// Roboto Font Family - Medium (500)
+@font-face {
+  font-family: 'Roboto';
+  src: url('./fonts/roboto-v30-latin-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Roboto';
+  src: url('./fonts/roboto-v30-latin-500italic.woff2') format('woff2');
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+// Roboto Font Family - Bold (700)
+@font-face {
+  font-family: 'Roboto';
+  src: url('./fonts/roboto-v30-latin-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Roboto';
+  src: url('./fonts/roboto-v30-latin-700italic.woff2') format('woff2');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+// Override Quasar's default font family
+// This sets Roboto as the base font throughout the application
+$typography-font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif !default;
+
+// To use a different custom font:
+// 1. Add your @font-face definitions above
+// 2. Update this variable:
+// $typography-font-family: 'YourCustomFont', 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+// Additional typography variables you can override:
+// $font-size-base: 14px;
+// $line-height-base: 1.5;
+// $h1: (size: 6rem, line-height: 6rem, letter-spacing: -.01562em, weight: 300) !default;
+// $h2: (size: 3.75rem, line-height: 3.75rem, letter-spacing: -.00833em, weight: 300) !default;
+// $h3: (size: 3rem, line-height: 3.125rem, letter-spacing: normal, weight: 400) !default;
+// $h4: (size: 2.125rem, line-height: 2.5rem, letter-spacing: .00735em, weight: 400) !default;
+// $h5: (size: 1.5rem, line-height: 2rem, letter-spacing: normal, weight: 400) !default;
+// $h6: (size: 1.25rem, line-height: 2rem, letter-spacing: .0125em, weight: 500) !default;

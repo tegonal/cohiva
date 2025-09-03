@@ -1,0 +1,41 @@
+// Tenant-specific style overrides
+// This file is loaded last and can override any styles in the application
+// Use this for tenant-specific customizations that go beyond theme colors
+
+// Test override to verify system is working
+.app-logo {
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+  transition: transform 0.3s ease;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+// Example overrides (uncomment and modify as needed):
+
+// Override component styles
+// .q-btn {
+//   border-radius: 8px;
+// }
+
+// Override layout styles
+// .q-header {
+//   backdrop-filter: blur(10px);
+//   background-color: rgba(255, 255, 255, 0.9) !important;
+// }
+
+// Custom utility classes
+// .tenant-special {
+//   // Add tenant-specific styles
+// }
+
+// Override Quasar variables (use !important if needed)
+// body {
+//   --q-primary: #custom-color !important;
+// }
+
+// Override app-specific styles
+// .app-logo {
+//   // Custom logo sizing or effects
+// }

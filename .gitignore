@@ -20,3 +20,4 @@ build
 
 # python specific
 *.pyc
+.serena

@@ -118,136 +118,136 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import { useAuthStore } from "stores";
-import { api } from "boot/axios";
-import { useQuasar } from "quasar";
-import { useRouter } from "vue-router";
+import { api } from 'boot/axios'
+import { useQuasar } from 'quasar'
+import { useAuthStore } from 'stores'
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
-const quasar = useQuasar();
-const authStore = useAuthStore();
-const router = useRouter();
+const quasar = useQuasar()
+const authStore = useAuthStore()
+const router = useRouter()
 
 function fetchData() {
   api
-    .get("/api/v1/reservation/report/", {
+    .get('/api/v1/reservation/report/', {
       headers: {
-        Authorization: "Token " + authStore.token,
+        Authorization: 'Token ' + authStore.token,
       },
     })
     .then((response) => {
       //console.log(response);
-      apiError.value = "";
-      contact.value = response.data.contact;
-      unitOptions.value = response.data.rental_units.concat(unitOptions.value);
-      unit.value = unitOptions.value[0];
-      categoryOptions.value = response.data.categories;
-      formLoading.value = false;
+      apiError.value = ''
+      contact.value = response.data.contact
+      unitOptions.value = response.data.rental_units.concat(unitOptions.value)
+      unit.value = unitOptions.value[0]
+      categoryOptions.value = response.data.categories
+      formLoading.value = false
     })
     .catch((error) => {
-      apiError.value = "Es ist ein Fehler aufgetreten.";
-      if ("response" in error) {
-        console.log("ERROR: " + error.response.data.detail);
+      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      if ('response' in error) {
+        console.log('ERROR: ' + error.response.data.detail)
         if (
-          error.response.data.detail == "Anmeldedaten fehlen." ||
-          error.response.data.detail == "Ungültiges Token"
+          error.response.data.detail == 'Anmeldedaten fehlen.' ||
+          error.response.data.detail == 'Ungültiges Token'
         ) {
           // Auth missing -> Force new login
           //console.log("DISABLED FOR DEBUGGING: Force logout");
-          authStore.logout();
+          authStore.logout()
         }
       } else {
-        console.log("ERROR: " + error);
+        console.log('ERROR: ' + error)
       }
-    });
+    })
 }
 
 function onRejected(entries) {
-  if (entries[0].failedPropValidation == "max-files") {
-    quasar.notify("Es können max. 5 Bilder hinzugefügt werden.");
+  if (entries[0].failedPropValidation == 'max-files') {
+    quasar.notify('Es können max. 5 Bilder hinzugefügt werden.')
   } else {
-    quasar.notify("Ungültige Datei");
+    quasar.notify('Ungültige Datei')
   }
 }
 
 function submitReport() {
   //console.log("Submit reservation");
-  is_submitting.value = true;
-  let formData = new FormData();
-  formData.append("action", "add");
-  formData.append("unit", unit.value.value);
-  formData.append("category", category.value.value);
-  formData.append("subject", subject.value);
-  formData.append("contact_text", contact_text.value);
-  formData.append("text", text.value);
+  is_submitting.value = true
+  let formData = new FormData()
+  formData.append('action', 'add')
+  formData.append('unit', unit.value.value)
+  formData.append('category', category.value.value)
+  formData.append('subject', subject.value)
+  formData.append('contact_text', contact_text.value)
+  formData.append('text', text.value)
   for (let pic in pictures.value) {
-    formData.append("pictures", pictures.value[pic]);
+    formData.append('pictures', pictures.value[pic])
   }
   api
-    .post("/api/v1/reservation/report/", formData, {
+    .post('/api/v1/reservation/report/', formData, {
       headers: {
-        Authorization: "Token " + authStore.token,
+        Authorization: 'Token ' + authStore.token,
       },
     })
     .then((response) => {
-      apiError.value = "";
+      apiError.value = ''
       //console.log(response);
       //console.log(response.data);
-      if (response.data.status == "ERROR") {
-        submissionError.value = true;
-        submissionErrorMsg.value = response.data.msg;
-      } else if (response.data.status == "OK") {
-        submissionOK.value = true;
-        submissionDisabled.value = true; // Prevent re-submission
+      if (response.data.status == 'ERROR') {
+        submissionError.value = true
+        submissionErrorMsg.value = response.data.msg
+      } else if (response.data.status == 'OK') {
+        submissionOK.value = true
+        submissionDisabled.value = true // Prevent re-submission
       }
-      is_submitting.value = false;
+      is_submitting.value = false
     })
     .catch((error) => {
-      apiError.value = "Es ist ein Fehler aufgetreten.";
-      submissionError.value = true;
-      submissionErrorMsg.value = "Fehler beim Speichern.";
-      if ("response" in error) {
-        console.log("ERROR: " + error.response.data.detail);
+      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      submissionError.value = true
+      submissionErrorMsg.value = 'Fehler beim Speichern.'
+      if ('response' in error) {
+        console.log('ERROR: ' + error.response.data.detail)
         if (
-          error.response.data.detail == "Anmeldedaten fehlen." ||
-          error.response.data.detail == "Ungültiges Token"
+          error.response.data.detail == 'Anmeldedaten fehlen.' ||
+          error.response.data.detail == 'Ungültiges Token'
         ) {
           // Auth missing -> Force new login
           //console.log("DISABLED FOR DEBUGGING: Force logout");
-          authStore.logout();
+          authStore.logout()
         }
       } else {
-        console.log("ERROR: " + error);
+        console.log('ERROR: ' + error)
       }
-      is_submitting.value = false;
-    });
+      is_submitting.value = false
+    })
 }
 
 function submitConfirmed() {
-  router.go(-1);
+  router.go(-1)
 }
 
-const apiError = ref("");
-const dense = ref(false);
-const formLoading = ref(true);
+const apiError = ref('')
+const dense = ref(false)
+const formLoading = ref(true)
 
 // For axios post file upload fields
-const unit = ref(null);
-const category = ref(null);
-const subject = ref("");
-const contact_text = ref("");
-const text = ref("");
-const pictures = ref([]);
+const unit = ref(null)
+const category = ref(null)
+const subject = ref('')
+const contact_text = ref('')
+const text = ref('')
+const pictures = ref([])
 
 // Loaded on fetch
-const contact = ref("");
+const contact = ref('')
 const unitOptions = ref([
   //{ label: "Wohnung 011", value: "011" },
   {
-    label: "Etwas anderes (bitte unter Betreff angeben)",
-    value: "__OTHER__",
+    label: 'Etwas anderes (bitte unter Betreff angeben)',
+    value: '__OTHER__',
   },
-]);
+])
 const categoryOptions = ref([
   /*{
     label: "Küche",
@@ -261,15 +261,15 @@ const categoryOptions = ref([
     label: "Boden",
     value: "Boden",
   },*/
-]);
+])
 
-const is_submitting = ref(false);
-const submissionDisabled = ref(false);
-const submissionError = ref(false);
-const submissionErrorMsg = ref("");
-const submissionOK = ref(false);
+const is_submitting = ref(false)
+const submissionDisabled = ref(false)
+const submissionError = ref(false)
+const submissionErrorMsg = ref('')
+const submissionOK = ref(false)
 
 onMounted(() => {
-  fetchData();
-});
+  fetchData()
+})
 </script>

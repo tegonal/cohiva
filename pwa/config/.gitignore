@@ -1,0 +1,5 @@
+# Ignore any runtime modifications to config files
+# Build process may overwrite these with tenant-specific values
+*.tmp
+*.backup
+.DS_Store

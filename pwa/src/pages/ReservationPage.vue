@@ -151,129 +151,129 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed, onMounted } from "vue";
-import { useAuthStore } from "stores";
-import { api } from "boot/axios";
-import { date } from "quasar";
+import { api } from 'boot/axios'
+import { date } from 'quasar'
+import { useAuthStore } from 'stores'
+import { computed, onMounted, reactive, ref } from 'vue'
 
-const authStore = useAuthStore();
+const authStore = useAuthStore()
 
 function fetchData() {
   api
-    .get("/api/v1/reservation/reservations/", {
+    .get('/api/v1/reservation/reservations/', {
       headers: {
-        Authorization: "Token " + authStore.token,
+        Authorization: 'Token ' + authStore.token,
       },
     })
     .then((response) => {
       //console.log(response);
-      apiError.value = "";
-      const now = Date.now();
-      reservations.length = 0;
-      past_reservations.length = 0;
+      apiError.value = ''
+      const now = Date.now()
+      reservations.length = 0
+      past_reservations.length = 0
       for (let i in response.data.results) {
-        let r = response.data.results[i];
+        let r = response.data.results[i]
         /*console.log(r);
         console.log(r.name);*/
-        const date_start = new Date(r.date_start);
-        const date_end = new Date(r.date_end);
+        const date_start = new Date(r.date_start)
+        const date_end = new Date(r.date_end)
         const res_data = {
-          id: r.id,
-          title: r.name,
-          date:
-            date.formatDate(date_start, "DD.MM.YYYY HH:mm") +
-            " – " +
-            date.formatDate(date_end, "DD.MM.YYYY HH:mm"),
           canEdit: r.can_edit,
+          date:
+            date.formatDate(date_start, 'DD.MM.YYYY HH:mm') +
+            ' – ' +
+            date.formatDate(date_end, 'DD.MM.YYYY HH:mm'),
+          id: r.id,
           summary: r.summary,
-        };
+          title: r.name,
+        }
         if (date_end > now) {
-          reservations.push(res_data);
+          reservations.push(res_data)
         } else {
-          past_reservations.push(res_data);
+          past_reservations.push(res_data)
         }
       }
     })
     .catch((error) => {
-      apiError.value = "Es ist ein Fehler aufgetreten.";
-      if ("response" in error) {
-        console.log("ERROR: " + error.response.data.detail);
+      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      if ('response' in error) {
+        console.log('ERROR: ' + error.response.data.detail)
         if (
-          error.response.data.detail == "Anmeldedaten fehlen." ||
-          error.response.data.detail == "Ungültiges Token"
+          error.response.data.detail == 'Anmeldedaten fehlen.' ||
+          error.response.data.detail == 'Ungültiges Token'
         ) {
           // Auth missing -> Force new login
           //console.log("DISABLED FOR DEBUGGING: Force logout");
-          authStore.logout();
+          authStore.logout()
         }
       } else {
-        console.log("ERROR: " + error);
+        console.log('ERROR: ' + error)
       }
-    });
+    })
 }
 
 function editReservation(res) {
   // Show cancellation dialog
-  confirmCancelation.value = true;
-  cancelationData.value = res;
+  confirmCancelation.value = true
+  cancelationData.value = res
 }
 
 function cancelReservation(res) {
-  console.log("Cancel id " + res.id);
+  console.log('Cancel id ' + res.id)
   api
     .post(
-      "/api/v1/reservation/edit/",
+      '/api/v1/reservation/edit/',
       {
-        action: "cancel",
+        action: 'cancel',
         reservationId: res.id,
       },
       {
         headers: {
-          Authorization: "Token " + authStore.token,
+          Authorization: 'Token ' + authStore.token,
         },
       }
     )
     .then((response) => {
       //console.log(response);
-      apiError.value = "";
-      console.log(response.data);
-      if (response.data.status == "OK") {
-        res.canEdit = false;
-        res.cancelled = true;
+      apiError.value = ''
+      console.log(response.data)
+      if (response.data.status == 'OK') {
+        res.canEdit = false
+        res.cancelled = true
       } else {
-        cancelationError.value = true;
-        cancelationErrorMsg.value = response.data.msg;
+        cancelationError.value = true
+        cancelationErrorMsg.value = response.data.msg
       }
     })
     .catch((error) => {
-      apiError.value = "Es ist ein Fehler aufgetreten.";
-      cancelationError.value = true;
-      cancelationErrorMsg.value = "Fehler beim Speichern.";
-      if ("response" in error) {
-        console.log("ERROR: " + error.response.data.detail);
+      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      cancelationError.value = true
+      cancelationErrorMsg.value = 'Fehler beim Speichern.'
+      if ('response' in error) {
+        console.log('ERROR: ' + error.response.data.detail)
         if (
-          error.response.data.detail == "Anmeldedaten fehlen." ||
-          error.response.data.detail == "Ungültiges Token"
+          error.response.data.detail == 'Anmeldedaten fehlen.' ||
+          error.response.data.detail == 'Ungültiges Token'
         ) {
           // Auth missing -> Force new login
           //console.log("DISABLED FOR DEBUGGING: Force logout");
-          authStore.logout();
+          authStore.logout()
         }
       } else {
-        console.log("ERROR: " + error);
+        console.log('ERROR: ' + error)
       }
-    });
+    })
 }
 
-const apiError = ref("");
+const apiError = ref('')
 
-const confirmCancelation = ref(false);
-const cancelationData = ref({});
-const cancelationError = ref(false);
-const cancelationErrorMsg = ref("");
+const confirmCancelation = ref(false)
+const cancelationData = ref({})
+const cancelationError = ref(false)
+const cancelationErrorMsg = ref('')
 
-const past_reservations = reactive([]);
-const reservations = reactive([]); /*
+const past_reservations = reactive([])
+const reservations = reactive([]) /*
   {
     id: "1000",
     title: "Gästezimmer 003",
@@ -294,13 +294,13 @@ const reservations = reactive([]); /*
   },
 ]);*/
 onMounted(() => {
-  fetchData();
-});
+  fetchData()
+})
 
 const hasReservations = computed(() => {
-  return reservations.length;
-});
+  return reservations.length
+})
 const hasPastReservations = computed(() => {
-  return past_reservations.length;
-});
+  return past_reservations.length
+})
 </script>
