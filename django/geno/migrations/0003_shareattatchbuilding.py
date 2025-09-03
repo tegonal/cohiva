@@ -1,6 +1,7 @@
-import django.db.models.deletion
 import select2.fields
-from django.db import migrations
+
+import django.db.models.deletion
+from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
@@ -21,5 +22,12 @@ class Migration(migrations.Migration):
                 to="geno.building",
                 verbose_name="Fixe Zuteilung zu Liegenschaft",
             ),
-        )
+        ),
+        migrations.AddConstraint(
+            model_name="share",
+            constraint=models.CheckConstraint(
+                check=models.Q(attached_to_building=None) | models.Q(attached_to_contract=None),
+                name="geno_share_attached_to_building_or_contract",
+            ),
+        ),
     ]
