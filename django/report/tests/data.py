@@ -48,9 +48,7 @@ def create_templates(cls):
 
 
 def create_measurement_data(cls):
-    cls.filer_measurements_building = cls.addFilerFile(
-        "report/tests/test_data/nk_messdaten.csv"
-    )
+    cls.filer_measurements_building = cls.addFilerFile("report/tests/test_data/nk_messdaten.csv")
 
     ## Rental unit data
     fields = {
