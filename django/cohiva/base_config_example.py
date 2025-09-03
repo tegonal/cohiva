@@ -8,7 +8,7 @@
 INSTALL_DIR = "/var/www/cohiva"
 DB_PREFIX = "cohiva"
 DB_PASSWORD = "c0H1v4"
-DB_HOSTNAME = "localhost"
+DB_HOSTNAME = "127.0.0.1"
 PROD_HOSTNAME = "demo"
 DOMAIN = "cohiva.ch"
 

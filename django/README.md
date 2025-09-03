@@ -37,18 +37,21 @@ Example for project `cohiva-demo`:
     ## Install dependencies
     ./install_dependencies.sh
 
-## Setup Database and Webserver
+## Setup Development/Staging Database
 
- - Create MariaDB/MySQL user(s) (e.g. 'cohvia') and databases for production (e.g. `cohiva_django`) and staging/test (e.g. `cohiva_django_test`).
-   If you want to run tests, also grant permission to `test_<stagingdbname>`, which will be created when running automated test.
-   For example:
-     CREATE USER 'cohiva'@'localhost' IDENTIFIED BY '<SECRET>';
-     CREATE DATABASE `cohiva_django`;       -- production database
-     CREATE DATABASE `cohiva_django_test`;  -- test/staging database
-     GRANT ALL PRIVILEGES ON `cohiva_django`.* TO 'cohiva'@'localhost';
-     GRANT ALL PRIVILEGES ON `cohiva_django_test`.* TO 'cohiva'@'localhost';
-     GRANT ALL PRIVILEGES ON `test_cohiva_django_test`.* TO 'cohiva'@'localhost';   -- for automated tests
- 
+- Create a MariaDB/MySQL user (e.g. 'cohiva') and pick a database prefix (e.g. 'cohiva')
+- Create the database `<DBPREFIX>_django_test` for development/staging.
+- Grant permissions for that database and also for `test_<DBPREFIX>_django_test`, which will be automatically created when running tests. For example:
+```
+    CREATE USER 'cohiva'@'localhost' IDENTIFIED BY '<SECRET>';
+    CREATE DATABASE `cohiva_django_test`;  -- dev/staging database
+    GRANT ALL PRIVILEGES ON `cohiva_django_test`.* TO 'cohiva'@'localhost';
+    GRANT ALL PRIVILEGES ON `test_cohiva_django_test`.* TO 'cohiva'@'localhost';   -- for automated testsCode bla
+```
+
+## Production Database and Webserver
+
+ - In the production settings, the default database name is `<DBPREFIX>_django`. So you need to create that and grand permissions for a production instance.
  - Configure a webserver with a WSGI for production and (optionally) a proxy for the test/dev-server. See example in `deployment/apache2-example.conf` for Apache.
 
 ## Basic setup and configuration of Cohiva
@@ -57,16 +60,22 @@ Example for project `cohiva-demo`:
    
        ./setup.py
 
-2. Edit `cohiva/base_config.py` and adjust at least `INSTALL_DIR` (e.g. `/var/www/cohiva-demo`) . Then run `./setup.py` again to populate `INSTALL_DIR`.
-    
-3. (If required) Add custom settings to `cohiva/settings.py` or `cohiva/settings_production.py` (production-only settings, wich overwrites the basic in `settings.py` for the production environment). For config options and default values see `cohiva/settings*_defaults.py`.
-    
-4. Start using Cohiva:
+2. Edit `cohiva/base_config.py` and adjust at least `INSTALL_DIR` (e.g. `/var/www/cohiva-demo`).
 
-       ./run-tests.sh       # Run tests (optional, requires permission to create a temporary database `test_<stagingdbname>`)
+3. Run `./setup.py` again to populate `INSTALL_DIR`. It will ask for information to create a certificate for the SAML2 authentication.
+    
+4. (If required) Add custom settings to `cohiva/settings.py` or `cohiva/settings_production.py` (production-only settings, wich overwrites the basic in `settings.py` for the production environment). For config options and default values see `cohiva/settings*_defaults.py`.
+
+5. Start using Cohiva:
+
+       # Load initial demo data (optional)
+       ./scripts/demo_data_manager.py --load
+
        ./manage.py migrate  # Initial DB-creation/migration
        ./runserver.sh       # Run the test-server. The port can be configred in `.env`
        ./runcelery.sh       # Run the celery-worker for testing (if required)
+       
+       ./run-tests.sh       # Run tests (optional, requires permission to create a temporary database `test_<stagingdbname>`)
        
        ./deploy.py          # Deploy to production environment
        
@@ -82,7 +91,7 @@ Example for project `cohiva-demo`:
 
 ### Oauth2 and SAML2
 
-Create keys in:
+`setup.py` will automatically create keys in:
 
     cohiva/saml2/private.key
     cohiva/saml2/public.pem
@@ -108,6 +117,17 @@ Sync virtual environment with new requirements.txt:
 
     ./install_dependencies.sh   (which will call `pip-sync -a`)
 
+## Formatting and linting
+
+Currently, ruff is used for formatting and linting. It is included in GitHub workflows through:
+
+    ../scripts/before-pr.sh
+    ../scripts/cleanup-on-push-to-main.sh
+
+It is recommended to run `before-pr.sh` before committing code, either manually or automatically with a git pre-commit hook.
+
+There is a ruff plugin for the PyCharm IDE (see below)
+
 ## Development workflow
 
     # Create new apps
@@ -119,7 +139,7 @@ Sync virtual environment with new requirements.txt:
     ./manage.py migrate [--plan]
 
     # Format and lint
-    ./scripts/format_and_lint.sh
+    ../scripts/before-pr.sh
 
     # Run Test-Server
     ./runserver.sh
@@ -138,7 +158,7 @@ Sync virtual environment with new requirements.txt:
 
     ./manage.py showmigrations [--plan]
 
-## Useful tools
+## Tools
 
 ### PyCharm IDE
 
@@ -162,4 +182,8 @@ Save/load data to files (see https://docs.djangoproject.com/en/5.1/ref/django-ad
     ## Save all contracts from production DB to JSON file (with one space indentation).
     ./manage.py dumpdata geno.Contract --indent 1 --settings=cohiva.settings_production -o fixtures/contracts.json
     ./manage.py loaddata contracts
+
+### Demo data
+
+Demo data can be loaded or saved with `./scripts/demo_data_manager.py`.
    
