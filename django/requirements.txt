@@ -50,7 +50,7 @@ cffi==1.17.1
     #   persistent
 chardet==5.2.0
     # via reportlab
-charset-normalizer==3.4.2
+charset-normalizer==3.4.3
     # via requests
 click==8.1.8
     # via
