@@ -40,7 +40,7 @@ btrees==6.1
     # via zodb
 caldav==1.4.0
     # via -r requirements.in
-celery==5.5.2
+celery==5.5.3
     # via -r requirements.in
 certifi==2025.4.26
     # via requests
