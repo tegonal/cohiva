@@ -24,6 +24,12 @@ The core of Cohiva is built on the Python web framework <a href="https://www.dja
 
 For more information see https://www.cohiva.ch (in German).
 
+----
+❗ You are taking a *sneak peek* at the next version. It could be that some features you find on this page are not
+released yet.  
+Please have a look at the README of the corresponding release/git tag. Latest
+version: [README of v1.2.1](https://github.com/tegonal/cohiva/tree/main/README.md).
+
 ---
 
 **Table of Contents**
