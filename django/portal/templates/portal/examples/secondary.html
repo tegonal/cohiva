@@ -1,0 +1,144 @@
+{% extends template_base %}
+{% load static %}
+{% load email_obfuscator %}
+
+{% block subtitle %} – Willkommen{% endblock %}
+{% block body-class %}portal-login{% endblock %}
+
+{% block metadata %}
+   {% with meta_link_canonical="portal/login" %}
+      {{ block.super }}
+   {% endwith %}
+{% endblock %}
+
+{% block extraheader %}
+    <style>
+{% if background_image %}
+      .portal-login {
+        background-image: url({% static background_image %});
+      }
+{% endif %}
+      table.tenant-admin .even {
+        background-color: #f3f6f6;
+      } 
+      table.tenant-admin .odd {
+        background-color: white;
+      }
+      table.tenant-admin td,th {
+        padding-left: 8px;
+        padding-right: 8px;
+        font-size: 0.9em;
+      } 
+      form.tabular_form label {
+        display: inline-block;
+        min-width: 200px;
+      }
+      form.tabular_form ul {
+        list-style-type: none;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+{% endblock extraheader %}
+
+{% block header %}{% endblock %}
+
+{% block content %}
+<main>
+
+      <div class="uk-flex uk-flex-center">
+        <h1 class="uk-text-center uk-margin-medium-top uk-margin-medium-bottom c-h1-login">{{portal_name}} Portal</h1>
+      </div>
+
+{% block page_content %}
+
+      <div class="uk-section uk-section-default notch-save-area-horizontal">
+        <div class="uk-container uk-container-xsmall">
+{% if message %}
+              <p class="uk-text-small uk-text-center"><i>{{ message }}</i></p>
+{% endif %}
+          <p>Du bist jetzt beim {{portal_name}}-Portal angemeldet. Mit deinem Konto kannst du den Chat nutzen. Der Chat dient dem offenen Austausch in der Siedlung und bietet die Möglichkeit, sich einzubringen und das Zusammenarbeiten und Entwickeln neuer Ideen in Arbeitsgruppen transparent und einfach zu organisieren.</p>
+          <div class="uk-flex uk-flex-center uk-margin-medium">
+            <a href="https://go-chat.example.com" class="uk-button uk-button-large c-button-open-chat uk-width-4-5@s">Chat öffnen</a>
+          </div>
+{% if is_tenant_admin %}
+          <div class="uk-flex uk-flex-center uk-margin-medium">
+            <a href="/portal/tenant-admin" class="uk-button uk-button-large c-button-open-chat uk-width-4-5@s">Nutzer:innen-Administration</a>
+          </div>
+{% endif %}
+        </div>
+      </div>
+
+      <div class="uk-section c-section-rocket uk-padding-remove-top notch-save-area-horizontal">
+        <div class="uk-container uk-container-xsmall uk-margin-medium-top">
+          <p>Im Chat gibt es für verschiende Themen und Arbeitsgruppen Chat-Kanäle, welche du über das
+            <span class="uk-icon c-icon-in-text" style="margin-top: -2px;">
+              <svg width="22" height="22" viewBox="0 0 4.4581165 4.6712532" fill="currentColor">
+  <g
+     transform="translate(-96.945885,-127.92943)">
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#222222;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 97.458195,128.06172 h 3.813515 v 4.40667 h -3.75406 z" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#222222;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 96.945885,129.46189 h 1.068218" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#222222;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 96.945885,131.093 h 1.068218" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#222222;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 98.493198,129.90186 1.841752,-0.0294" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#222222;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 98.493198,130.70846 1.841752,-0.0294" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#222222;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 99.783573,131.19447 -0.0294,-1.84176" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#222222;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 99.058242,131.19447 -0.0294,-1.84176" />
+  </g>
+</svg></span>
+Verzeichnis-Symbol suchen und betreten kannst. Erst dann erscheint der Kanal in deiner Liste.</p>
+          <p>Du kannst über das
+            <span class="uk-icon c-icon-in-text" style="margin-top: -2px;">
+              <svg width="25" height="25" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M15.6533333,11.0020275 L16.9333333,11.0020275 L16.9333333,15.842963 C16.9333333,17.0342616 15.967595,18 14.7762963,18 L4.15703704,18 C2.96573838,18 2,17.0342616 2,15.842963 L2,5.2237037 C2,4.03240504 2.96573838,3.06666667 4.15703704,3.06666667 L9.19453663,3.06666667 L9.20692368,4.34666667 L4.15703704,4.34666667 C3.67266286,4.34666667 3.28,4.73932952 3.28,5.2237037 L3.28,15.842963 C3.28,16.3273371 3.67266286,16.72 4.15703704,16.72 L14.7762963,16.72 C15.2606705,16.72 15.6533333,16.3273371 15.6533333,15.842963 L15.6533333,11.0020275 Z M15.5435425,6.27018517 L16.4509257,5.36363291 C16.8547611,4.9589666 16.8547611,4.30086451 16.4509257,3.8961982 L16.104425,3.54969748 C15.7130537,3.15749522 15.0300235,3.15915709 14.6369903,3.55052841 L13.730438,4.4579116 L15.5435425,6.27018517 Z M8.82126233,12.9924654 L14.6627493,7.15180931 L12.8488139,5.33870481 L7.00815783,11.1801918 L6.44997186,13.0190947 C6.42543367,13.099934 6.42544628,13.1862382 6.45000809,13.2670703 C6.51851762,13.4925329 6.75682906,13.6197684 6.98229161,13.5512589 L8.82126233,12.9924654 Z M16.9860491,2.66807334 L17.3325499,3.01457406 C18.2224834,3.90533851 18.2224834,5.35366167 17.3325499,6.24525706 L9.48185723,14.0942878 L5.87570438,15.1901381 C5.71399019,15.2392804 5.54132496,15.2392932 5.37960349,15.1901749 C4.92866079,15.0532138 4.6741284,14.5766236 4.81108947,14.1256809 L5.90633539,10.5195969 L13.7561971,2.66890427 C14.1874534,2.23764798 14.7616308,2 15.3715386,2 C15.9822773,2 16.5547928,2.23764798 16.9860491,2.66807334 Z"></path>
+              </svg>
+            </span>
+            Bleistift-Symbol oben in der Leiste jederzeit weitere Kanäle einrichten. Es gibt private (nicht einsehbare) und öffentliche (für alle einsehbare) Kanäle. Standardmässig ist ein neuer Kanal auf Privat eingestellt. Wir möchten aber offen kommunizieren, darum bitten wir dich, die Kanaleinstellung auf öffentlich umzustellen. Wichtig: Schau dich zuerst im Verzeichnis um, bevor du einen neuen Kanal erstellst. Vielleicht gibt es bereits einen zu diesem Thema.</p>
+
+          <p>Den Chat kannst du in jedem beliebigen Browser öffnen. Es gibt aber auch Apps für dein Telefon oder für deinen Computer, damit du den Chat auf deinen Geräten fix installieren kannst.</p>
+          <h4 class="uk-text-center">Mobile Apps</h4>
+          <ul class="uk-list uk-text-center">
+            <!--<li>Google Android: <a href="https://play.google.com/store/apps/details?id=chat.rocket.android">Google Play</a></li>
+            <li>Apple iOS: <a href="https://itunes.apple.com/app/rocket-chat/id1148741252">App Store</a></li>-->
+            <li class="uk-text-center">
+              <a class="uk-margin-small-right" href="https://itunes.apple.com/app/rocket-chat/id1148741252"><img src="/static/portal/img/badges/Download_on_the_App_Store_Badge_DE_RGB_blk_092917.svg" alt="Get it on the App Store"></a>
+              <a href="https://play.google.com/store/apps/details?id=chat.rocket.android"><img alt="Get it on Google Play" src="/static/portal/img/badges/google-play-badge.svg"></a>
+            </li>
+          </ul>
+          <h4 class="uk-text-center">Desktop Apps</h4>
+          <ul class="uk-list uk-text-center uk-margin-medium-bottom">
+            <!-- to do: Direkt auf Github verlinken ist nicht benutzerfreundlich. So aber wird die Version nicht aktualisiert -->
+            <li><a href="https://releases.rocket.chat/desktop/latest/download" target="_blank" rel="nofollow">Windows</a> / <a href="https://apps.apple.com/app/rocket-chat/id1086818840">macOS</a> / <a href="https://snapcraft.io/rocketchat-desktop">Linux</a></li>
+            <!--<li>Windows: <a href="https://github.com/RocketChat/Rocket.Chat.Electron/releases/download/3.0.7/rocketchat-setup-3.0.7.exe" target="_blank" rel="nofollow">Download</a></li>
+            <li>macOS: <a href="https://apps.apple.com/app/rocket-chat/id1086818840">Mac App Store</a></li>
+            <li>Linux: <a href="https://snapcraft.io/rocketchat-desktop">snapcraft</a></li>-->
+          </ul>
+          <p>Im Computerprogramm und in den mobilen Apps musst du beim Einrichten zuerst unserem Arbeitsbereich (workspace URL: chat.example.com) beitreten und dich anschliessend mit deinem Login anmelden.</p>
+
+          <h3 class="uk-text-center">Hilfe (Haufig gestellte Fragen)</h3>
+          <p>Die Arbeitsgruppe Digitales der Genossenschaft Warmbächli hat für ihren hausinternen Chat eine <a href="https://www.warmbaechli.ch/portal/hilfe">Hilfe-Seite</a> mit verschiedenen Hilfetexten, Anleitungsvideos und Empfehlungen erstellt. Diese gelten grösstenteils auch für diesen Chat.</p>
+        </div>
+      </div>
+{% endblock %}
+
+      <div class="uk-flex uk-flex-center uk-margin-xlarge-bottom" uk-height-viewport="expand: true">
+        <div class="uk-text-small uk-container"><small>Du bist angemeldet als {% if user.first_name %}{{user.first_name}} {{user.last_name}} ({{ user.username }}){% else %}{{ user.username }}{% endif %} &rarr; <a href="/portal/logout">Abmelden</a></small></div>
+      </div>
+
+</main>
+{% endblock content %}
+
+{% block footer %}{% endblock %}

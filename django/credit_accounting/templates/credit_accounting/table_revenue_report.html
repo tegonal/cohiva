@@ -1,0 +1,41 @@
+{% extends "credit_accounting/table.html" %}
+
+{% block filter %}
+<div id="toolbar">
+<form action="" method="post">
+    {% csrf_token %}
+    <div> {# DIV needed for valid HTML #}
+    <p><label for="searchbar">Periode</label>
+    {{ form.period }} <input type="submit" name="show" value="Anzeigen" />
+    <div id="manual_period">
+    Von {{ form.start_date }} {{ form.start_time }} bis {{form.end_date}} {{form.end_time}}
+    </div>
+    </p>
+    </div>
+{% if form.errors %}
+    <div class="alert alert-danger">
+        {{ form.errors }}
+    </div>
+{% endif %}
+<script>
+    /* Show/hide manual date and time fields */
+    $(function() {
+        $('#id_period').change( function() {
+            if (this.value == 'manual') {
+                $('#manual_period').show(100);
+            } else {
+                $('#manual_period').hide(100);
+            }
+        });
+    });
+
+    $( document ).ready(function() {
+        // console.log($('#id_period').val());
+        if ($('#id_period').val() != 'manual') {
+            $('#manual_period').hide();
+        }
+    });
+</script>
+</form>
+</div>
+{% endblock filter %}

@@ -1,0 +1,151 @@
+{% extends "portal/base.html" %}
+{% load static %}
+{% load email_obfuscator %}
+{% load wagtailcore_tags %}
+
+{% block subtitle %} – Hilfe{% endblock %}
+{% block body-class %}portal-hilfe{% endblock %}
+
+{% block metadata %}
+   {% with meta_link_canonical="portal/hilfe" meta_description="Hilfeseite zum Mitglieder-Portal der Wohnbaugenossenschaft Warmbächli in Bern" %}
+      {{ block.super }}
+   {% endwith %}
+{% endblock %}
+
+{% block header %}
+    <!-- to do für template: navbar-sticky ist leicht anders aufgebaut -->
+    <div uk-sticky="sel-target: .uk-navbar-container; animation: uk-animation-slide-top; show-on-up: true;">
+
+      <nav class="uk-navbar-container uk-navbar-sticky notch-save-area-horizontal" uk-navbar>
+
+        <div class="uk-navbar-left">
+          <a href="/portal/" class="uk-navbar-item uk-logo">
+            <img src="{% static "portal/img/ci/logozusatz-SVG.svg" %}" class="logozusatz" alt="Genossenschaft Warmbächli" title="← zurück zur Portal-Startseite">
+          </a>
+        </div>
+
+        <div class="uk-navbar-right">
+
+          <ul class="uk-navbar-nav uk-visible@m">
+            <li>
+              <a href="/portal/">Portal</a>
+            </li>
+            <li>
+              <a href="/portal/#chat">Chat</a>
+            </li>
+            <li>
+              <a href="/portal/#tools">Tools</a>
+            </li>
+            <li>
+              <a href="/portal/hilfe/">Hilfe</a>
+            </li>
+          </ul>
+
+{% if not user.is_anonymous %}
+          <!-- user und logout -->
+          <div class="uk-navbar-item uk-visible@m">
+            <div class="uk-inline">
+              <a href="" class="uk-icon-button c-icon-user">
+              <svg width="20" height="20" viewBox="0 0 20 20">
+                <circle cx="10" cy="6.3" r="4.4" fill="none" stroke-width="3"/>
+                <path d="M1.5,18.9c.8-4.5,4.3-7.8,8.5-7.8s7.7,3.4,8.5,8" fill="none" stroke-width="3"/>
+              </svg>
+              </a>
+              <div uk-dropdown="mode: click; offset: 15;">
+                <ul class="uk-nav uk-dropdown-nav uk-text-small">
+                        <li class="c-wrap">Du bist angemeldet als {% if user.first_name %}{{user.first_name}} {{user.last_name}} ({{ user.username }}){% else %}{{ user.username }}{% endif %}</li>
+                        <li><a href="/portal/logout/">Abmelden</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+{% endif %}
+
+          <!--
+          Das Attribut uk-navbar-toggle-icon fügt die Klasse 'uk-icon' und eine svg-Grfaik hinzu. Beides kann ich manuell erstellen…
+          <a href="#mobile-nav" class="uk-navbar-toggle uk-hidden@m" uk-navbar-toggle-icon uk-toggle></a>
+          -->
+          <a href="#mobile-nav" class="uk-navbar-toggle uk-hidden@m uk-icon" uk-toggle>
+            <span class="visually-hidden">Menü öffnen</span>
+            <svg width="33" height="20" viewBox="0 0 33 19" xmlns="http://www.w3.org/2000/svg">
+              <rect y="8" width="33" height="3"/>
+              <rect y="0" width="33" height="3"/>
+              <rect y="16" width="33" height="3"/>
+            </svg>
+          </a>
+
+        </div>
+      </nav>
+
+      <!-- mobile-nav -->
+      <div id="mobile-nav" class="uk-modal-full" uk-modal>
+        <div class="uk-modal-dialog uk-flex uk-flex-center uk-height-1-1" uk-overflow-auto>
+
+          <div class=" uk-margin-auto-vertical">
+
+            <ul class="uk-nav uk-nav-primary uk-nav-center">
+              <li class="uk-animation-slide-bottom-medium uk-animation-with-nth-child-delay"><a href="/portal/">Portal</a></li>
+              <li class="uk-animation-slide-bottom-medium uk-animation-with-nth-child-delay"><a href="/portal/#chat">Chat</a></li>
+              <li class="uk-animation-slide-bottom-medium uk-animation-with-nth-child-delay"><a href="/portal/#tools">Tools</a></li>
+              <li class="uk-animation-slide-bottom-medium uk-animation-with-nth-child-delay"><a href="/portal/hilfe/">Hilfe</a></li>
+            </ul>
+
+            <ul class="uk-nav uk-nav-center">
+{% if not user.is_anonymous %}
+                    <li class="uk-animation-slide-bottom-medium uk-animation-with-nth-child-delay-2 uk-margin-medium-top uk-text-small">
+                      <span class="uk-margin-small-right c-icon-user-mobile">
+                        <svg width="20" height="20" viewBox="0 0 20 20">
+                          <circle cx="10" cy="6.3" r="4.4" fill="none" stroke-width="3"/>
+                          <path d="M1.5,18.9c.8-4.5,4.3-7.8,8.5-7.8s7.7,3.4,8.5,8" fill="none" stroke-width="3"/>
+                        </svg>
+                      </span>
+                        Du bist angemeldet als {% if user.first_name %}{{user.first_name}} {{user.last_name}} ({{ user.username }}){% else %}{{ user.username }}{% endif %}</li>
+              <li class="uk-animation-slide-bottom-medium uk-animation-with-nth-child-delay-2 uk-text-small"><a href="/portal/logout/">Abmelden</a></li>
+{% endif %}
+              <li class="uk-animation-slide-bottom-medium uk-animation-with-nth-child-delay-2 uk-margin-top uk-text-small">
+              Kontakt für Fragen oder bei technischen Problemen: <a class="c-mobile-nav-kontakt" href="mailto:{{'support@warmbaechli.ch'|obfuscate}}">{{'support@warmbaechli.ch'|obfuscate}}</a>
+              </li>
+            </ul>
+
+          </div>
+
+          <!--
+          Das Attribut uk-close fügt die Klassen 'uk-icon', 'uk-close' und eine svg-Grafik hinzu. Dies kann ich auch manuell erstellen…
+          # <a href="" class="uk-modal-close-full uk-close-large" uk-close></a>
+          -->
+          <a href="" class="uk-modal-close-full uk-close-large uk-icon uk-close c-icon-close">
+            <span class="visually-hidden">Menü schliessen</span>
+            <svg width="25" height="25" viewBox="0 0 25 25">
+              <line x1="1.5" y1="1.5" x2="23.5" y2="23.5" fill="none" stroke-width="3"/>
+              <line x1="23.5" y1="1.5" x2="1.5" y2="23.5" fill="none" stroke-width="3"/>
+            </svg>
+          </a>
+
+        </div>
+      </div>
+
+
+    </div>
+{% endblock header %}
+
+{% block content %}
+    <main>
+
+      {% for subpage in self.get_children.specific %}
+      <div id="{{ subpage.slug }}" class="uk-section uk-section-default uk-section-large  notch-save-area-horizontal">
+        <div class="uk-container uk-container-small">
+          <h1 class="uk-text-center uk-margin-medium uk-margin-left uk-margin-right">{{ subpage.title }}</h1>
+
+          <ul class="c-accordion-hilfe" uk-accordion="multiple: true;">
+            {% for part in subpage.parts %}
+                <li>{% include_block part %}</li>
+            {% endfor %}
+          </ul>
+
+        </div>
+      </div>
+      {% endfor %}
+
+    </main>
+{% endblock content %}
+

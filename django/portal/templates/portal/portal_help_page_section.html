@@ -1,0 +1,25 @@
+{% extends "portal/portal_help_page.html" %}
+{% load static %}
+{% load email_obfuscator %}
+{% load wagtailcore_tags %}
+
+{# THIS TEMPLATE IS ONLY USED IN THE CMS FOR PREVIEW OF A SINGLE SECTION #}
+{% block content %}
+    <main>
+
+      <div id="{{ page.slug }}" class="uk-section uk-section-default uk-section-large  notch-save-area-horizontal">
+        <div class="uk-container uk-container-small">
+          <h1 class="uk-text-center uk-margin-medium uk-margin-left uk-margin-right">{{ page.title }}</h1>
+
+          <ul class="c-accordion-hilfe" uk-accordion="multiple: true;">
+            {% for part in page.parts %}
+                <li>{% include_block part %}</li>
+            {% endfor %}
+          </ul>
+
+        </div>
+      </div>
+
+    </main>
+{% endblock content %}
+

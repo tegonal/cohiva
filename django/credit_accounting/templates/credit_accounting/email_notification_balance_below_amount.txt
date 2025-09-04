@@ -1,0 +1,14 @@
+Hallo {{user.address.first_name}}
+
+Dies ist eine automatische Benachrichtigung, dass die von dir festgelegte Saldolimite von CHF {{threshold}} für das Konto {{account}} unterschritten wurde.
+Der aktuelle Kontostand beträgt CHF {{account.balance|floatformat:2}}.
+
+Mit dem beiliegenden QR-Einzahlungsschein kannst du wieder Guthaben auf dein Konto laden.
+
+Die Saldolimite und ob du diese Benachrichtigungen erhältst, kannst du in der Warmbächli-App festlegen.
+
+Beste Grüsse
+{{account.vendor}}
+
+P.S. Bitte antworte nicht auf dieses automatisch generierte Email.
+

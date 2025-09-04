@@ -1,0 +1,135 @@
+{% extends template_base %}
+{% load static %}
+{% load email_obfuscator %}
+
+{% block subtitle %} – Login{% endblock %}
+{% block body-class %}portal-login{% endblock %}
+
+{% block metadata %}
+   {% with meta_link_canonical="portal/login" %}
+      {{ block.super }}
+   {% endwith %}
+{% endblock %}
+
+{% block extraheader %}
+    <style>
+{% if background_image %}
+      .portal-login {
+        background-image: url({% static background_image %});
+      }
+{% endif %}
+    </style>
+{% endblock extraheader %}
+
+{% block header %}{% endblock %}
+
+{% block content %}
+    <div class="uk-container notch-save-area-horizontal">
+
+      <div class="uk-flex uk-flex-center">
+{% if portal_name == "Holliger" %}
+        <div class="h-logo">
+              <a href="https://www.holliger-bern.ch/">
+                <img src="https://chat.holliger-bern.ch/assets/logo.svg" alt="">
+              </a>
+        </div> 
+{% else %}
+        <h1 class="uk-text-center uk-margin-medium-top uk-margin-medium-bottom c-h1-login">{{portal_name}} Portal</h1>
+{% endif %}
+      </div>
+
+      <div class="uk-flex-center uk-margin-xlarge-bottom" uk-grid>
+        <div class="uk-width-4-5@s uk-width-1-2@m">
+          <div class="uk-card uk-card-default uk-card-small c-card-login">
+            <div class="uk-card-body">
+
+              <h3 class="uk-text-center">{% block section_title %}Anmelden{% endblock section_title %}</h3>
+
+{% if login_success %}
+              <p class="uk-text-small uk-text-success uk-margin-medium-bottom">{{login_success}}</p>
+{% endif %}
+
+{% block login_text %}
+              <p class="uk-text-small uk-margin-medium-bottom">Zur Anmeldung benötigst du deine E-Mail-Adresse und dein Passwort. Falls du Probleme beim Anmelden hast, findest du zuunterst weitere Infos.<!--schreib uns an <a href="mailto:support@warmbaechli.ch">support@warmbaechli.ch</a>--></p>
+{% endblock login_text %}
+
+{% if login_error %}
+              <p class="uk-text-small uk-text-danger uk-margin-medium-bottom">{{login_error}}</p>
+{% endif %}
+
+{% block login_form %}
+              <form action="/portal/login/" method="post" class="uk-grid-small uk-form-stacked uk-grid">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{next}}">
+                <div class="uk-width-1-1">
+
+                  <div class="uk-margin">
+                    <label class="uk-form-label uk-text-small" for="form-user">E-Mail oder Benutzername</label>
+                    <input class="uk-input" id="form-user" type="text" name="username">
+                  </div>
+                  <div class="uk-margin">
+                    <label class="uk-form-label uk-text-small" for="form-password">Passwort</label>
+                    <div class="uk-form-controls">
+                      <input class="uk-input" id="form-password" type="password" name="password">
+                    </div>
+                  </div>
+
+                  <div class="uk-margin-medium-top uk-margin-bottom">
+                    <button class="uk-button uk-button-primary uk-width-1-1" name="submit">Anmelden</button>
+                  </div>
+                  <div class="uk-margin-bottom">
+                    <button class="uk-button uk-button-default uk-width-1-1" name="register">Aktivieren</button>
+                  </div>
+
+                </div>
+              </form>
+
+              <p class="uk-text-small">
+                <a href="/portal/password_reset">Passwort vergessen?</a> / <button class="uk-button uk-button-link uk-text-small" uk-toggle="target: #help">Probleme beim Anmelden?</button>
+              </p>
+
+              <div id="help" class="uk-text-small" hidden>
+                <h4>Hilfe für die Anmeldung</h4>
+{% if portal_name == "Warmbächli" %}
+                <p>Mit dem Warmbächli-Portal bekommst du Zugriff auf den Warmbächli-Chat und andere Tools. Du hast bereits ein Konto erstellt und kennst dein Passwort? Dann kannst du dich oben direkt anmelden.</p>
+                <p><span class="c-text-underline">Du hast noch kein Konto oder dein Passwort vergessen?</span> Dann gehst du folgendermassen vor:</p>
+                <ul class="uk-list uk-list-decimal">
+                  <li>Lies diese vier Punkte zuerst durch und klicke anschliessend oben auf «Aktivieren».</li>
+                  <li>Im nächsten Feld gibst du deine Mailadresse ein, mit welcher du in der Warmbächli-Mitgliederkartei bist und klickst auf «Senden». Sollte sich deine Adresse geändert haben, melde dich bitte bei der Geschäftsstelle. Wenn du unsicher bist, mit welcher Adresse du registriert bist, überprüfe in deinem Posteingang, an welche Adresse du das letzte Warmbächli-Mail erhalten hast.</li>
+                  <li>Du erhältst nun ein Mail an deine Adresse. Falls du es im Posteingang nicht findest, überprüfe auch den Spam-Ordner. Im Mail findest du dein Benutzername und ein Link, um ein neues Passwort zu setzen sowie die weiteren nötigen Schritte, um den Registriervorgang abschliessen zu können.</li>
+                  <li>Sobald du fertig bist, kannst du dein neues Login für alle Warmbächli Dienste nutzen.</li>
+                </ul>
+                <p>Falls du Probleme beim Anmelden hast, schreib uns an {{ 'support@warmbaechli.ch'|obfuscate_mailto }}.</p>
+{% else %}
+                <p>Über das {{portal_name}}-Portal bekommst du Zugriff auf den {{portal_name}}-Chat und allenfalls weitere Tools. Du hast bereits ein Konto erstellt und kennst dein Passwort? Dann kannst du dich oben direkt anmelden.</p>
+                <p><span class="c-text-underline">Du hast noch kein Konto oder dein Passwort vergessen?</span> Dann gehst du folgendermassen vor:</p>
+                <ul class="uk-list uk-list-decimal">
+                  <li>Lies diese vier Punkte zuerst durch und klicke anschliessend oben auf «Aktivieren».</li>
+                  <li>Im nächsten Feld gibst du deine Mailadresse ein, mit welcher du bei deiner Liegenschaftsverwaltung registriert bist.</li>
+                  <li>Du erhältst nun ein Mail an deine Adresse. Falls du es im Posteingang nicht findest, überprüfe auch den Spam-Ordner. Im Mail findest du dein Benutzername und ein Link, um ein neues Passwort zu setzen sowie die weiteren nötigen Schritte, um den Registriervorgang abschliessen zu können. Falls du kein solches Mail bekommst, kann es sein, dass deine Liegenschaftsverwaltung die Email-Adresse noch nicht regisrtiert hat. Wende dich in diesem Fall an deine Liegenschaftsverwaltung, damit sie die Adresse hinzufügen können.</li>
+                  <li>Sobald du fertig bist, kannst du dein neues Login nutzen.</li>
+                </ul>
+{% endif %}
+              </div>
+
+{% endblock login_form%}
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="uk-flex uk-flex-center uk-margin-xlarge-bottom" uk-height-viewport="expand: true">
+        <div class="w-logo">
+{% if portal_name == "Warmbächli" %}
+          <a href="https://www.warmbaechli.ch/">
+            <img src="{% static "portal/img/ci/logo-SVG-rot.svg" %}" alt="">
+          </a>
+{% endif %}
+        </div>
+      </div>
+
+    </div>
+{% endblock content %}
+
+{% block footer %}{% endblock %}

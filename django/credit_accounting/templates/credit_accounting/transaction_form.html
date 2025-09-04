@@ -1,0 +1,48 @@
+{% extends "credit_accounting/base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block extrastyle %}
+{# For datepicker UI #}
+<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script>
+  /* Configure datepicker */
+  $(function() {
+    $( ".datepicker" ).datepicker({
+      changeMonth: true,
+      changeYear: true,
+      yearRange: "2020:2030",
+      defaultDate: 0,
+      dateFormat: "dd.mm.yy 00:00",
+    });
+  });
+  /* Set focus to name field */
+  $(document).ready(function() {
+    window.onload = function() {
+      $("#id_name").focus();
+    };  
+  }); 
+</script>
+
+{# For Select2 #}
+<link href="/static/select2/css/select2.css" type="text/css" media="all" rel="stylesheet">
+<script type="text/javascript" src="/static/select2/js/select2.jquery_ready.js"></script>
+<script type="text/javascript" src="/static/select2/js/select2.jquery_ui_sortable.js"></script>
+<script type="text/javascript" src="/static/select2/js/select2.js"></script>
+
+{% endblock %}
+
+{% block content %}
+    <form id="transactionform" method="post">{% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="Speichern">
+    </form>
+    <script>
+        {# Prevent multiple form submission #}
+        $('form#transactionform').submit(function(){
+            $(this).find(':input[type=submit]').prop('disabled', true);
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "geno/upload_form.html" %}
+
+{% block content_text %}
+<p>
+Zahlungsdatei aus dem E-Banking herunterladen und unten auswählen. Es werden folgende Dateiformate untersützt:
+<ul>
+<li><b>camt.053</b> Datei (Endung .xml): Kontoauszug</li>
+<li><b>camt.054</b> Datei (Endung .xml): Belastungs-/Gutschriftanzeigen</li>
+</ul>
+Mehrere Dateien des gleichen Typs können in einer <b>ZIP-Datei</b> zusammengefasst hochgeladen werden.
+{% endblock %}

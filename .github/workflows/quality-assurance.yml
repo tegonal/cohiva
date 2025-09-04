@@ -18,5 +18,14 @@ jobs:
       - uses: actions/checkout@v5
       - name: install shellcheck
         run: ./lib/tegonal-scripts/src/ci/install-shellcheck.sh
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Setup environment
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff==0.12.10
+          ln -s website_example ./django/website
       - name: before-pr.sh
         run: ./scripts/before-pr.sh

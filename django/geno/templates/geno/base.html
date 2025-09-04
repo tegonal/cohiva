@@ -1,0 +1,20 @@
+{% extends "admin/base_site.html" %}
+
+{% block title %}
+{{ title }} | {{ site_title|default:_('Genossenschaft Administration') }}
+{% endblock %}
+
+{% block content_title %}
+{% if title %}
+<h1>
+{% for item in breadcrumbs %}
+<a href="{{item.href}}">{{item.name}}</a> &gt; 
+{% endfor %}
+{{ title }}
+</h1>{% endif %}
+{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_('Genossenschaft Administration') }}</a></h1>
+{% endblock %}
+

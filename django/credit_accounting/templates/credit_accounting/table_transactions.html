@@ -1,0 +1,18 @@
+{% extends "credit_accounting/table.html" %}
+
+{% block filter %}
+<div id="toolbar">
+<form action="" method="post">
+    {% csrf_token %}
+    <div> {# DIV needed for valid HTML #}
+    <p><label for="searchbar"><img src="/static/admin/img/search.svg" alt="Search" /></label>
+    {{ form.search }} Zeitraum: {{ form.time }} Typ: {{ form.sign }}</p>
+    <p>Betrag von: {{ form.amount_min }} bis {{ form.amount_max }} <small>(leer = keine Limite, Lastschriften NEGATIV!)</small></p>
+    <p>Konto: {{ form.account }}</p>
+    {# <p>Monat: {{ form.month }} Jahr: {{ form.year }}<br></p> #}
+    {#<p>Zeitraum: {{ form.time }}</p>#}
+    <p><input type="submit" name="show" value="Suchen/Anzeigen" /></p>
+    </div>
+</form>
+</div>
+{% endblock filter %}

@@ -1,0 +1,31 @@
+## Example systemd service file to start Celery
+# Install this file to /etc/systemd/system/ and enable it with:
+#  systemctl daemon-reload
+#  systemctl enable cohiva-celery
+#  systemctl start cohiva-celery
+[Unit]
+Description=Celery for Cohiva
+After=network.target redis-server.service
+Wants=redis-server.service
+#Requires=redis-server.service
+
+[Service]
+Type=forking
+User=www-data
+Group=www-data
+EnvironmentFile=/var/www/cohiva/django-production/celery/celery.conf
+PassEnvironment=DJANGO_SETTINGS_MODULE
+WorkingDirectory=/var/www/cohiva/django-production
+ExecStart=/bin/sh -c '${CELERY_BIN} -A $CELERY_APP multi start $CELERYD_NODES \
+    --pidfile=${CELERYD_PID_FILE} --logfile=${CELERYD_LOG_FILE} \
+    --loglevel="${CELERYD_LOG_LEVEL}" $CELERYD_OPTS'
+ExecStop=/bin/sh -c '${CELERY_BIN} multi stopwait $CELERYD_NODES \
+    --pidfile=${CELERYD_PID_FILE} --logfile=${CELERYD_LOG_FILE} \
+    --loglevel="${CELERYD_LOG_LEVEL}"'
+ExecReload=/bin/sh -c '${CELERY_BIN} -A $CELERY_APP multi restart $CELERYD_NODES \
+    --pidfile=${CELERYD_PID_FILE} --logfile=${CELERYD_LOG_FILE} \
+    --loglevel="${CELERYD_LOG_LEVEL}" $CELERYD_OPTS'
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

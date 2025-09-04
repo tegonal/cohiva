@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+
+{% block content %}
+
+{% if logout %}
+<div><p>Du bist jetzt abgemeldet.</p></div>
+{% endif %}
+
+<div id="content-main">
+
+{% if user.is_authenticated %}
+<div class="module">
+<table>
+<caption>Bearbeiten/Suchen</caption>
+<tr><th><a href="/admin">Daten bearbeiten (mit Django Admin)</a></th><td></td><td></td></tr>
+</table>
+</div>
+
+<div class="module">
+<table>
+<caption>Exportieren</caption>
+	<tr>
+          <th><a href="/geno/export/members">Mitgliederliste exportieren</a></th>
+	  <td>Liste aller Mitglieder für LibreOffice/Excel</td>
+	</tr>
+</table>
+</div>
+
+<div class="module">
+<table>
+<caption>Berichte</caption>
+	<tr>
+	  <th><a href="/geno/report/members">Mitgliederliste</a></th>
+	  <td></td>
+	  <td></td>
+	  <td></td>
+	</tr>
+</table>
+</div>
+
+<div class="module">
+<table>
+<caption>Tools</caption>
+{% if test_env %}
+<tr><th><a href="/geno/tool/copy_prod_to_test">Copy PRODUCTION to TEST environment (database and media files)<br> This overwrites ALL data in the TEST environment !!!</a></th><td></td><td></td></tr>
+{% endif %}
+</table>
+</div>
+{% endif %}
+
+{# Show login form if user is not authenticated #}
+{% if not user.is_authenticated %}
+<div class="module">
+<table>
+<caption>Anmeldung</caption>
+<form action="/admin/login/?next=/admin/" method="post" id="login-form">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="/" />
+  <tr><th><label for="id_username" class="required">Benutzername:</label></th><td><input id="id_username" maxlength="254" name="username" type="text" /></td><td></td></tr>
+  <tr><th><label for="id_password" class="required">Passwort:</label></th><td><input id="id_password" name="password" type="password" /></td><td></td></tr>
+  <tr><th><label>&nbsp;</label><input type="submit" value="Log in" /><td><td></td></tr>
+  </div>
+</form>
+</table>
+</div>
+<script type="text/javascript">
+document.getElementById('id_username').focus()
+</script>
+{% endif %}
+
+</div>
+{% endblock %}

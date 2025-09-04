@@ -1,0 +1,82 @@
+{% extends "portal/secondary.html" %}
+{% load render_table from django_tables2 %}
+{% load static %}
+{% load i18n %}
+
+{% block extraheader %}
+{{ block.super }}
+
+<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+<script>
+  /* All rows selector */
+  $(document).ready(function() {
+    window.onload = function() {
+        $( "#all_row_selector input" ).on("click", function() {
+            /*console.log("clicked");
+            console.log($(this).is(':checked'));*/
+            $( 'table.tenant-admin input[name="selection"]' ).prop('checked', $(this).is(':checked'));
+        });
+    };  
+  });
+</script>
+{% endblock %}
+
+{% block page_content %}
+      <div class="uk-section uk-section-default notch-save-area-horizontal">
+        <div class="uk-container">
+<h3 class="uk-text-center">{{ section_title }}</h3>
+
+{% if success_msg %}
+<div class="uk-alert-success" uk-alert>{{ success_msg|safe }}</div>
+{% endif %}
+
+{% if error_msg %}
+<div class="uk-alert-danger" uk-alert>{{ error_msg|safe }}</div>
+{% endif %}
+
+<form action="" method="post">
+{% csrf_token %}
+
+<div id="toolbar">
+<div><!-- DIV needed for valid HTML -->
+
+{% if invoice_table %}
+Filter: {{ form.category_filter }}
+von {{ form.date_from }} bis {{ form.date_to }}
+{{ form.show_consolidated }}&nbsp;{{ form.show_consolidated.label }}
+<br><br>
+<input type="submit" name="show" value="Suchen/Anzeigen" />
+<input type="submit" name="consolidate" value="Rechnungen konsolidieren" />
+<a href="?reset_filter=1">Filter zurücksetzen</a> | 
+<a href="/geno/invoice/overview">Zur Übersicht</a>
+<br>
+<br>
+{% else %}
+<label for="searchbar"><img src="/static/admin/img/search.svg" alt="Search" /></label>
+{{ form.search }}
+<input type="submit" name="submit_search" value="Suchen" /><br>
+Aktion: {{ form.action }}
+<input type="submit" name="submit_action" value="Ausführen" /><br>
+
+{% endif %}
+</div>
+</div>
+
+{% render_table table %}
+
+</form>
+
+<div>
+<a href="/portal/tenant-admin/add/" class="uk-button uk-button-default"><span>
+<svg width="23" height="23" viewBox="0 0 20 21"><circle fill="none" stroke="#000" stroke-width="1.1" cx="9.5" cy="9.5" r="9"></circle><line fill="none" stroke="#000" x1="9.5" y1="5" x2="9.5" y2="14"></line><line fill="none" stroke="#000" x1="5" y1="9.5" x2="14" y2="9.5"></line></svg>
+</span> Nutzer:in hinzufügen</a>
+
+<a href="/portal/tenant-admin/upload/" class="uk-button uk-button-default"><span>
+<svg width="25" height="25" viewBox="0 0 20 23"><polyline fill="none" stroke="#000" points="5 8 9.5 3.5 14 8"></polyline><rect x="3" y="17" width="13" height="1"></rect><line fill="none" stroke="#000" x1="9.5" y1="15" x2="9.5" y2="4"></line></svg>
+</span> Nutzer:innen importieren (CSV-Datei)</a>
+</div>
+
+<p class="uk-text-small">&larr; <a href="/portal/">Zurück</a></p>
+</div>
+</div>
+{% endblock %}

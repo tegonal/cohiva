@@ -1,0 +1,32 @@
+*.pyc
+.*.swp
+NOT_USED
+test.log
+.idea/*
+/.env
+/.coverage
+/test-failure.html
+/dump
+/website
+/cohiva/base_config.py
+/cohiva/settings_production.py
+/cohiva/settings.py
+/cohiva/saml2/private.key
+/cohiva/saml2/public.pem
+/deployment/celery.conf
+/deployment/cohiva-celery.service
+/deployment_custom
+/credit_accounting/pos-terminal/depot8/venv
+/credit_accounting/pos-terminal/depot8/settings.py
+
+## Templates that are in the example folder and can be either
+## symlinked or copied in oder to have local modifications.
+/geno/templates/geno/contract_email.html
+/geno/templates/geno/email_invoice.html
+/geno/templates/geno/email_rent_bill_first.html
+/geno/templates/geno/member_email_ausschreibung.html
+/portal/templates/portal/base.html
+/portal/templates/portal/base_secondary.html
+/portal/templates/portal/portal_page.html
+/portal/templates/portal/secondary.html
+/portal/static

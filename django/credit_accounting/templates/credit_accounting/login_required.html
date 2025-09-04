@@ -1,0 +1,13 @@
+{% extends "credit_accounting/base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block extrastyle %}
+{% endblock %}
+
+{% block content %}
+
+<p>Keine Daten für den Benutzernamen «{{ user }}» gefunden. Bist du mit dem richtigen Benutzernamen angemeldet?</p>
+<p><a href="/portal/logout/">Neu anmelden</a></p>
+
+{% endblock %}

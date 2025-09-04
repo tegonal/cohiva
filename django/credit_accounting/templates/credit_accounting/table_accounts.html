@@ -1,0 +1,14 @@
+{% extends "credit_accounting/table.html" %}
+
+{% block filter %}
+<a href="add/" class="addlink">Konto hinzufügen</a>
+<div id="toolbar">
+<form action="" method="post">
+    {% csrf_token %}
+    <div> {# DIV needed for valid HTML #}
+    <p><label for="searchbar"><img src="/static/admin/img/search.svg" alt="Search" /></label>
+    {{ form.search }} <input type="submit" name="show" value="Suchen/Anzeigen" /></p>
+    </div>
+</form>
+</div>
+{% endblock filter %}

@@ -1,0 +1,27 @@
+{% extends "geno/base.html" %}
+{% load i18n %}
+
+{% block content %}
+
+{% if form_action %}
+<form action="{{ form_action }}" method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" />
+</form>
+{% endif %}
+
+{% if tgtblank == '1' %}[<a href="javascript:close()">Close</a>]{% else %}[<a href="/admin">Zurück</a>]{% endif %} [<a href="javascript:window.scrollTo(0, document.body.scrollHeight)">Nach unten</a>]<br />
+<ul>
+{% for r in response %}
+<li>{{ r.info|safe }}
+<ul>
+{% for o in r.objects %}
+<li>{{ o|safe }}</li>
+{% endfor %}
+</ul>
+</li>
+{% endfor %}
+</ul>
+{% if tgtblank == '1' %}[<a href="javascript:close()">Close</a>]{% else %}[<a href="/admin">Zurück</a>]{% endif %} [<a href="javascript:window.scrollTo(0, 0)">Nach oben</a>]<br />
+{% endblock %}

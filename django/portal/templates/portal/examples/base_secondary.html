@@ -1,0 +1,67 @@
+{% load static %}
+{% load email_obfuscator %}
+<!DOCTYPE html>
+<html lang="de-CH">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover">
+
+    <!-- To do Check Titel -->
+    <title>{{portal_name}} Portal{% block subtitle %}{% endblock %}</title>
+
+{% block metadata %}
+    <meta name="description" content="{{ meta_description|default:"Mitglieder-Portal" }}">
+    <meta property="og:type" content="website">
+    <meta property="og:description" content="{{ meta_description|default:"Mitglieder-Portal" }}">
+    <meta property="og:url" content="{{base_url}}/portal">
+    <meta property="og:site_name" content="{{portal_name}} Portal">
+    <meta property="og:locale" content="de">
+    <meta property="og:image:alt" content="">
+    <link href="{{geno_name}}/portal" rel="home">
+    <link href="{{geno_name}}/{{ meta_link_canonical|default:"portal" }}" rel="canonical">
+    <meta property="og:title" content="{{portal_name}} Portal">
+{% endblock %}
+
+    <link rel="stylesheet" href="{% static "portal/css/portal.css" %}?v=3">
+    {% block extraheader %}{% endblock %}
+    <script src="{% static "portal//js/uikit.min.js" %}"></script>
+
+    <meta name="apple-mobile-web-app-title" content="{{portal_name}} Portal">
+    <meta name="application-name" content="{{portal_name}} Portal">
+    <meta name="msapplication-TileColor" content="#44b9ad">
+    <meta name="theme-color" content="#44b9ad">
+
+  </head>
+
+  <body class="{% block body-class %}portal-home{% endblock %}" uk-scrollspy="cls:uk-animation-fade">
+
+{% block header %}
+{% endblock %}
+
+{% block content %}
+{% endblock %}
+
+{% block footer %}
+    <footer>
+      <div class="uk-section uk-section-large c-section-footer notch-save-area-horizontal">
+
+        <div class="uk-container uk-container-xsmall uk-text-small">
+          <p class="uk-margin-medium-bottom">Kontakt für Fragen oder bei technischen Problemen: <a class="uk-link-text" href="mailto:{{support_email|obfuscate}}">{{support_email|obfuscate}}</a></p>
+        </div>
+      </div>
+
+      <div class="uk-section uk-section-medium uk-padding-remove-top c-section-footer notch-save-area-horizontal">
+        <div class="uk-container uk-container-xsmall uk-text-small uk-text-center">
+          <div class="uk-flex uk-flex-center uk-margin-large-bottom">
+            <div class="w-logo">
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </footer>
+{% endblock footer %}
+
+  </body>
+
+</html>

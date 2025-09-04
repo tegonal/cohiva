@@ -1,0 +1,13 @@
+--- models.orig.py	2021-07-05 17:40:31.471614643 +0200
++++ models.py	2021-09-01 12:14:15.444974073 +0200
+@@ -108,6 +108,9 @@
+         ''' If a remote metadata url is set, fetch new metadata if the locally cached one is expired. Returns True if new metadata was set.
+             Sets metadata fields on instance, but does not save to db. If force_refresh = True, the metadata will be refreshed regardless of the currently cached version validity timestamp.
+         '''
++        # MST: Never refresh --> Hack to fix bug!!!
++        return False
++
+         if not self._should_refresh() and not force_refresh:
+             return False
+ 
+

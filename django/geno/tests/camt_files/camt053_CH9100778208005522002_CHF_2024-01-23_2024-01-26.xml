@@ -1,0 +1,506 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.04" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <BkToCstmrStmt>
+    <GrpHdr>
+      <MsgId>M/4200741487/CAM</MsgId>
+      <CreDtTm>2024-01-29T16:51:05+01:00</CreDtTm>
+      <MsgPgntn>
+        <PgNb>1</PgNb>
+        <LastPgInd>true</LastPgInd>
+      </MsgPgntn>
+      <AddtlInf>SPS/1.7/PROD</AddtlInf>
+    </GrpHdr>
+    <Stmt>
+      <Id>M/4200741487/CAM</Id>
+      <ElctrncSeqNb>4</ElctrncSeqNb>
+      <CreDtTm>2024-01-29T16:51:05+01:00</CreDtTm>
+      <FrToDt>
+        <FrDtTm>2024-01-23T00:00:00+01:00</FrDtTm>
+        <ToDtTm>2024-01-26T23:59:59+01:00</ToDtTm>
+      </FrToDt>
+      <Acct>
+        <Id>
+          <IBAN>CH9100778208005522002</IBAN>
+        </Id>
+        <Ccy>CHF</Ccy>
+        <Ownr>
+          <Nm>Wohnbaugenossenschaft Warmbächli</Nm>
+        </Ownr>
+        <Svcr>
+          <FinInstnId>
+            <BICFI>LUKBCH2260A</BICFI>
+          </FinInstnId>
+        </Svcr>
+      </Acct>
+      <Bal>
+        <Tp>
+          <CdOrPrtry>
+            <Cd>OPBD</Cd>
+          </CdOrPrtry>
+        </Tp>
+        <Amt Ccy="CHF">440264.02</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Dt>
+          <Dt>2024-01-23</Dt>
+        </Dt>
+      </Bal>
+      <Bal>
+        <Tp>
+          <CdOrPrtry>
+            <Cd>CLBD</Cd>
+          </CdOrPrtry>
+        </Tp>
+        <Amt Ccy="CHF">496886.12</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Dt>
+          <Dt>2024-01-26</Dt>
+        </Dt>
+      </Bal>
+      <Bal>
+        <Tp>
+          <CdOrPrtry>
+            <Cd>CLAV</Cd>
+          </CdOrPrtry>
+        </Tp>
+        <Amt Ccy="CHF">496886.12</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Dt>
+          <Dt>2024-01-26</Dt>
+        </Dt>
+      </Bal>
+      <TxsSummry>
+        <TtlNtries>
+          <NbOfNtries>9</NbOfNtries>
+          <Sum>56622.1</Sum>
+        </TtlNtries>
+      </TxsSummry>
+      <Ntry>
+        <NtryRef>CH1630778208005522002/320000</NtryRef>
+        <Amt Ccy="CHF">30</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <RvslInd>false</RvslInd>
+        <Sts>BOOK</Sts>
+        <BookgDt>
+          <Dt>2024-01-23</Dt>
+        </BookgDt>
+        <ValDt>
+          <Dt>2024-01-23</Dt>
+        </ValDt>
+        <AcctSvcrRef>O/1592372702</AcctSvcrRef>
+        <BkTxCd>
+          <Domn>
+            <Cd>PMNT</Cd>
+            <Fmly>
+              <Cd>RCDT</Cd>
+              <SubFmlyCd>VCOM</SubFmlyCd>
+            </Fmly>
+          </Domn>
+          <Prtry>
+            <Cd>1061</Cd>
+          </Prtry>
+        </BkTxCd>
+        <NtryDtls>
+          <Btch>
+            <NbOfTxs>1</NbOfTxs>
+            <TtlAmt Ccy="CHF">30</TtlAmt>
+            <CdtDbtInd>CRDT</CdtDbtInd>
+          </Btch>
+          <TxDtls>
+            <Refs>
+              <MsgId>4184292041</MsgId>
+              <AcctSvcrRef>O/1592231918</AcctSvcrRef>
+              <InstrId>07842654DDF7E00E</InstrId>
+              <EndToEndId>38158f74c93c4c9facc2a6ee74896b76</EndToEndId>
+            </Refs>
+            <Amt Ccy="CHF">30</Amt>
+            <CdtDbtInd>CRDT</CdtDbtInd>
+            <AmtDtls>
+              <InstdAmt>
+                <Amt Ccy="CHF">30</Amt>
+              </InstdAmt>
+            </AmtDtls>
+            <BkTxCd>
+              <Domn>
+                <Cd>PMNT</Cd>
+                <Fmly>
+                  <Cd>RCDT</Cd>
+                  <SubFmlyCd>VCOM</SubFmlyCd>
+                </Fmly>
+              </Domn>
+            </BkTxCd>
+            <RltdPties>
+              <Dbtr>
+                <Nm>Testverein</Nm>
+                <PstlAdr>
+                  <StrtNm>Lichterweg</StrtNm>
+                  <BldgNb>3</BldgNb>
+                  <PstCd>3012</PstCd>
+                  <TwnNm>Bern</TwnNm>
+                  <Ctry>CH</Ctry>
+                </PstlAdr>
+              </Dbtr>
+              <Cdtr>
+                <Nm>Wohnbaugenossenschaft Warmbaechli</Nm>
+                <PstlAdr>
+                  <Ctry>CH</Ctry>
+                  <AdrLine>3008 Bern</AdrLine>
+                </PstlAdr>
+              </Cdtr>
+              <CdtrAcct>
+                <Id>
+                  <IBAN>CH1630778208005522002</IBAN>
+                </Id>
+              </CdtrAcct>
+            </RltdPties>
+            <RltdAgts>
+              <CdtrAgt>
+                <FinInstnId>
+                  <ClrSysMmbId>
+                    <ClrSysId>
+                      <Cd>CHBCC</Cd>
+                    </ClrSysId>
+                    <MmbId>00778</MmbId>
+                  </ClrSysMmbId>
+                  <Nm>Luzerner Kantonalbank AG</Nm>
+                  <PstlAdr>
+                    <AdrLine>Pilatusstrasse 12</AdrLine>
+                    <AdrLine>6005 Luzern</AdrLine>
+                  </PstlAdr>
+                </FinInstnId>
+              </CdtrAgt>
+            </RltdAgts>
+            <RmtInf>
+              <Strd>
+                <CdtrRefInf>
+                  <Tp>
+                    <CdOrPrtry>
+                      <Prtry>QRR</Prtry>
+                    </CdOrPrtry>
+                  </Tp>
+                  <Ref>900000000001000000000300015</Ref>
+                </CdtrRefInf>
+                <AddtlRmtInf>22.12.20238451</AddtlRmtInf>
+              </Strd>
+            </RmtInf>
+          </TxDtls>
+        </NtryDtls>
+        <AddtlNtryInf>Sammelgutschrift QRR v. 23.01.2024</AddtlNtryInf>
+      </Ntry>
+      <Ntry>
+        <NtryRef>CH1630778208005522002/350000</NtryRef>
+        <Amt Ccy="CHF">100</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <RvslInd>false</RvslInd>
+        <Sts>BOOK</Sts>
+        <BookgDt>
+          <Dt>2024-01-23</Dt>
+        </BookgDt>
+        <ValDt>
+          <Dt>2024-01-23</Dt>
+        </ValDt>
+        <AcctSvcrRef>O/1592372704</AcctSvcrRef>
+        <BkTxCd>
+          <Domn>
+            <Cd>PMNT</Cd>
+            <Fmly>
+              <Cd>RCDT</Cd>
+              <SubFmlyCd>VCOM</SubFmlyCd>
+            </Fmly>
+          </Domn>
+          <Prtry>
+            <Cd>1061</Cd>
+          </Prtry>
+        </BkTxCd>
+        <NtryDtls>
+          <Btch>
+            <NbOfTxs>1</NbOfTxs>
+            <TtlAmt Ccy="CHF">100</TtlAmt>
+            <CdtDbtInd>CRDT</CdtDbtInd>
+          </Btch>
+          <TxDtls>
+            <Refs>
+              <MsgId>4182826061</MsgId>
+              <AcctSvcrRef>O/1592080042</AcctSvcrRef>
+              <InstrId>18251446166/6XXX</InstrId>
+              <EndToEndId>NOTPROVIDED</EndToEndId>
+            </Refs>
+            <Amt Ccy="CHF">100</Amt>
+            <CdtDbtInd>CRDT</CdtDbtInd>
+            <AmtDtls>
+              <InstdAmt>
+                <Amt Ccy="CHF">100</Amt>
+              </InstdAmt>
+            </AmtDtls>
+            <BkTxCd>
+              <Domn>
+                <Cd>PMNT</Cd>
+                <Fmly>
+                  <Cd>RCDT</Cd>
+                  <SubFmlyCd>VCOM</SubFmlyCd>
+                </Fmly>
+              </Domn>
+            </BkTxCd>
+            <RltdPties>
+              <Dbtr>
+                <Nm>Marcel Muster</Nm>
+                <PstlAdr>
+                  <Ctry>CH</Ctry>
+                  <AdrLine>Musterweg 6</AdrLine>
+                  <AdrLine>3008 Bern</AdrLine>
+                </PstlAdr>
+              </Dbtr>
+              <UltmtDbtr>
+                <Nm>Marcel + Anna Muster</Nm>
+                <PstlAdr>
+                  <StrtNm>Musterweg</StrtNm>
+                  <BldgNb>6</BldgNb>
+                  <PstCd>3008</PstCd>
+                  <TwnNm>Bern</TwnNm>
+                  <Ctry>CH</Ctry>
+                </PstlAdr>
+              </UltmtDbtr>
+              <Cdtr>
+                <Nm>Genossenschaft Warmbächli</Nm>
+                <PstlAdr>
+                  <StrtNm>Holligerhof</StrtNm>
+                  <BldgNb>8</BldgNb>
+                  <PstCd>3008</PstCd>
+                  <TwnNm>Bern</TwnNm>
+                  <Ctry>CH</Ctry>
+                </PstlAdr>
+              </Cdtr>
+              <CdtrAcct>
+                <Id>
+                  <IBAN>CH1630778208005522002</IBAN>
+                </Id>
+              </CdtrAcct>
+            </RltdPties>
+            <RltdAgts>
+              <CdtrAgt>
+                <FinInstnId>
+                  <ClrSysMmbId>
+                    <ClrSysId>
+                      <Cd>CHBCC</Cd>
+                    </ClrSysId>
+                    <MmbId>00778</MmbId>
+                  </ClrSysMmbId>
+                  <Nm>Luzerner Kantonalbank AG</Nm>
+                  <PstlAdr>
+                    <AdrLine>Pilatusstrasse 12</AdrLine>
+                    <AdrLine>6005 Luzern</AdrLine>
+                  </PstlAdr>
+                </FinInstnId>
+              </CdtrAgt>
+            </RltdAgts>
+            <RmtInf>
+              <Strd>
+                <CdtrRefInf>
+                  <Tp>
+                    <CdOrPrtry>
+                      <Prtry>QRR</Prtry>
+                    </CdOrPrtry>
+                  </Tp>
+                  <Ref>900000000001000000000200016</Ref>
+                </CdtrRefInf>
+                <AddtlRmtInf>Rechnung 9100</AddtlRmtInf>
+              </Strd>
+            </RmtInf>
+          </TxDtls>
+        </NtryDtls>
+        <AddtlNtryInf>Sammelgutschrift QRR v. 23.01.2024</AddtlNtryInf>
+      </Ntry>
+      <Ntry>
+        <NtryRef>CH1630778208005522002/100000</NtryRef>
+        <Amt Ccy="CHF">2865</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <RvslInd>false</RvslInd>
+        <Sts>BOOK</Sts>
+        <BookgDt>
+          <Dt>2024-01-24</Dt>
+        </BookgDt>
+        <ValDt>
+          <Dt>2024-01-24</Dt>
+        </ValDt>
+        <AcctSvcrRef>O/1592795007</AcctSvcrRef>
+        <BkTxCd>
+          <Domn>
+            <Cd>PMNT</Cd>
+            <Fmly>
+              <Cd>RCDT</Cd>
+              <SubFmlyCd>VCOM</SubFmlyCd>
+            </Fmly>
+          </Domn>
+          <Prtry>
+            <Cd>1061</Cd>
+          </Prtry>
+        </BkTxCd>
+        <NtryDtls>
+          <Btch>
+            <NbOfTxs>2</NbOfTxs>
+            <TtlAmt Ccy="CHF">2865</TtlAmt>
+            <CdtDbtInd>CRDT</CdtDbtInd>
+          </Btch>
+          <TxDtls>
+            <Refs>
+              <MsgId>4185369134</MsgId>
+              <AcctSvcrRef>O/1592488238</AcctSvcrRef>
+              <InstrId>40124179735.0001</InstrId>
+              <EndToEndId>NOTPROVIDED</EndToEndId>
+            </Refs>
+            <Amt Ccy="CHF">1265</Amt>
+            <CdtDbtInd>CRDT</CdtDbtInd>
+            <AmtDtls>
+              <InstdAmt>
+                <Amt Ccy="CHF">1265</Amt>
+              </InstdAmt>
+            </AmtDtls>
+            <BkTxCd>
+              <Domn>
+                <Cd>PMNT</Cd>
+                <Fmly>
+                  <Cd>RCDT</Cd>
+                  <SubFmlyCd>VCOM</SubFmlyCd>
+                </Fmly>
+              </Domn>
+            </BkTxCd>
+            <RltdPties>
+              <Dbtr>
+                <Nm>Muster Vreni</Nm>
+                <PstlAdr>
+                  <StrtNm>Musterweg</StrtNm>
+                  <BldgNb>8 / 111</BldgNb>
+                  <PstCd>3008</PstCd>
+                  <TwnNm>Bern</TwnNm>
+                  <Ctry>CH</Ctry>
+                </PstlAdr>
+              </Dbtr>
+              <Cdtr>
+                <Nm>Genossenschaft Warmbachli</Nm>
+                <PstlAdr>
+                  <StrtNm>Holligerhof</StrtNm>
+                  <BldgNb>8</BldgNb>
+                  <PstCd>3008</PstCd>
+                  <TwnNm>Bern</TwnNm>
+                  <Ctry>CH</Ctry>
+                </PstlAdr>
+              </Cdtr>
+              <CdtrAcct>
+                <Id>
+                  <IBAN>CH1630778208005522002</IBAN>
+                </Id>
+              </CdtrAcct>
+            </RltdPties>
+            <RltdAgts>
+              <CdtrAgt>
+                <FinInstnId>
+                  <ClrSysMmbId>
+                    <ClrSysId>
+                      <Cd>CHBCC</Cd>
+                    </ClrSysId>
+                    <MmbId>00778</MmbId>
+                  </ClrSysMmbId>
+                  <Nm>Luzerner Kantonalbank AG</Nm>
+                  <PstlAdr>
+                    <AdrLine>Pilatusstrasse 12</AdrLine>
+                    <AdrLine>6005 Luzern</AdrLine>
+                  </PstlAdr>
+                </FinInstnId>
+              </CdtrAgt>
+            </RltdAgts>
+            <RmtInf>
+              <Strd>
+                <CdtrRefInf>
+                  <Tp>
+                    <CdOrPrtry>
+                      <Prtry>QRR</Prtry>
+                    </CdOrPrtry>
+                  </Tp>
+                  <Ref>900000000001000000000200016</Ref>
+                </CdtrRefInf>
+              </Strd>
+            </RmtInf>
+          </TxDtls>
+          <TxDtls>
+            <Refs>
+              <MsgId>4185702549</MsgId>
+              <AcctSvcrRef>O/1592519746</AcctSvcrRef>
+              <InstrId>240124CH0B9PQQQ8</InstrId>
+              <EndToEndId>NOTPROVIDED</EndToEndId>
+            </Refs>
+            <Amt Ccy="CHF">1600</Amt>
+            <CdtDbtInd>CRDT</CdtDbtInd>
+            <AmtDtls>
+              <InstdAmt>
+                <Amt Ccy="CHF">1600</Amt>
+              </InstdAmt>
+            </AmtDtls>
+            <BkTxCd>
+              <Domn>
+                <Cd>PMNT</Cd>
+                <Fmly>
+                  <Cd>RCDT</Cd>
+                  <SubFmlyCd>VCOM</SubFmlyCd>
+                </Fmly>
+              </Domn>
+            </BkTxCd>
+            <RltdPties>
+              <Dbtr>
+                <Nm>Muster B. U. und Master X.</Nm>
+                <PstlAdr>
+                  <StrtNm>Musterweg</StrtNm>
+                  <BldgNb>8</BldgNb>
+                  <PstCd>3008</PstCd>
+                  <TwnNm>Bern</TwnNm>
+                  <Ctry>CH</Ctry>
+                </PstlAdr>
+              </Dbtr>
+              <Cdtr>
+                <Nm>Genossenschaft Warmbächli Holligerh</Nm>
+                <PstlAdr>
+                  <Ctry>CH</Ctry>
+                  <AdrLine>of 8 3008 Bern</AdrLine>
+                </PstlAdr>
+              </Cdtr>
+              <CdtrAcct>
+                <Id>
+                  <IBAN>CH1630778208005522002</IBAN>
+                </Id>
+              </CdtrAcct>
+            </RltdPties>
+            <RltdAgts>
+              <CdtrAgt>
+                <FinInstnId>
+                  <ClrSysMmbId>
+                    <ClrSysId>
+                      <Cd>CHBCC</Cd>
+                    </ClrSysId>
+                    <MmbId>00778</MmbId>
+                  </ClrSysMmbId>
+                  <Nm>Luzerner Kantonalbank AG</Nm>
+                  <PstlAdr>
+                    <AdrLine>Pilatusstrasse 12</AdrLine>
+                    <AdrLine>6005 Luzern</AdrLine>
+                  </PstlAdr>
+                </FinInstnId>
+              </CdtrAgt>
+            </RltdAgts>
+            <RmtInf>
+              <Strd>
+                <CdtrRefInf>
+                  <Tp>
+                    <CdOrPrtry>
+                      <Prtry>QRR</Prtry>
+                    </CdOrPrtry>
+                  </Tp>
+                  <Ref>900000000001000000000200016</Ref>
+                </CdtrRefInf>
+                <AddtlRmtInf>Miete Musterweg</AddtlRmtInf>
+              </Strd>
+            </RmtInf>
+          </TxDtls>
+        </NtryDtls>
+        <AddtlNtryInf>Sammelgutschrift QRR v. 24.01.2024</AddtlNtryInf>
+      </Ntry>
+    </Stmt>
+  </BkToCstmrStmt>
+</Document>

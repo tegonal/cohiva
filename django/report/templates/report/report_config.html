@@ -1,0 +1,41 @@
+{% extends "geno/base.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+<link rel="stylesheet" type="text/css" href="/static/admin/css/forms.css" />
+
+{# For Select2 #}
+<link href="/static/select2/css/select2.css" type="text/css" media="all" rel="stylesheet">
+<script type="text/javascript" src="/static/admin/js/vendor/jquery/jquery.js"></script>
+<script type="text/javascript" src="/static/admin/js/jquery.init.js"></script>
+<script type="text/javascript" src="/static/admin/js/calendar.js"></script>
+<script type="text/javascript" src="/static/admin/js/admin/DateTimeShortcuts.js"></script>
+<script type="text/javascript" src="/static/admin/js/core.js"></script>
+<script type="text/javascript" src="/static/admin/js/admin/RelatedObjectLookups.js"></script>
+<script type="text/javascript" src="/static/admin/js/actions.js"></script>
+<script type="text/javascript" src="/static/admin/js/urlify.js"></script>
+<script type="text/javascript" src="/static/admin/js/prepopulate.js"></script>
+<script type="text/javascript" src="/static/admin/js/vendor/xregexp/xregexp.js"></script>
+<script type="text/javascript" src="/static/select2/js/select2.jquery_ready.js"></script>
+<script type="text/javascript" src="/static/select2/js/select2.jquery_ui_sortable.js"></script>
+<script type="text/javascript" src="/static/select2/js/select2.js"></script>
+
+<style>
+a.select2-choice {
+  width: 750px;
+}
+</style>
+
+{% endblock extrastyle %}
+
+{% block content %}
+<h1>Report-Konfiguration für {{report.name}} (Typ: {{report.report_type.name}})</h1>
+<form method="post">
+    {% csrf_token %}
+    <table>
+    {{ form.as_table }}
+    </table>
+    <input type="submit" />
+</form>
+
+{% endblock content %}
