@@ -9,7 +9,7 @@ from urllib.parse import quote
 import cohiva.base_config as cbc
 
 from .settings import *  # noqa: F403
-from .settings import DATABASES, LOGGING, SAML_IDP_CONFIG
+from .settings import DATABASES, LOGGING
 
 # Disable debugging
 DEBUG = False
@@ -44,6 +44,8 @@ CSRF_TRUSTED_ORIGINS = [
 if "portal" in cbc.FEATURES:
     # Adjust SAML2 URLs
     import saml2
+
+    from .settings import SAML_IDP_CONFIG
 
     SAML_IDP_CONFIG["entityid"] = "%s/idp/metadata/" % BASE_URL
     SAML_IDP_CONFIG["service"]["idp"]["endpoints"] = {
