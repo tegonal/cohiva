@@ -7,12 +7,14 @@ To change settings, overwrite them in settings.py or settings_production.py
 import locale
 from pathlib import Path
 from urllib.parse import quote
+import pprint
 
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 
 import cohiva.base_config as cbc
 from cohiva.version import __version__ as COHIVA_VERSION  # noqa: F401
+from cohiva.ui import generate_unfold_navigation
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -822,6 +824,7 @@ UNFOLD = {
         "show_search": True,  # Search in applications and models names
         "command_search": False,  # Replace the sidebar search with the command search
         "show_all_applications": False,  # Dropdown with all applications and models
+        #"navigation": lambda request: generate_unfold_navigation(request),
         "navigation": [
             {
                 "title": _("Stammdaten"),
@@ -850,6 +853,12 @@ UNFOLD = {
                         "title": _("Erweiterte Funktionen"),
                         "icon": "manufacturing",  # Supported icon set: https://fonts.google.com/icons
                         "link": reverse_lazy("admin:geno_genericattribute_changelist"),
+                        "is_subgroup": True,
+                        "collapsible": True,
+                        "subitems": [
+                            {"title": "Sub1",},
+                            {"title": "Sub2",},
+                        ],
                     },
                     {
                         "title": _("Erweiterte Konfiguration"),
