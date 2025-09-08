@@ -32,7 +32,7 @@ if "cms" in settings.COHIVA_FEATURES:
 
 admin.site.site_header = settings.GENO_NAME + " – Cohiva"
 admin.site.site_title = "Cohiva " + settings.COHIVA_SITE_NICKNAME
-admin.site.index_title = "Genossenschafts-Administration"
+admin.site.index_title = "Startseite"
 admin.site.site_url = None  ## To disable 'view on site' link
 
 urlpatterns = [
