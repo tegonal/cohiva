@@ -8,6 +8,9 @@ import locale
 from pathlib import Path
 from urllib.parse import quote
 
+from django.urls import reverse_lazy
+from django.utils.translation import gettext_lazy as _
+
 import cohiva.base_config as cbc
 from cohiva.version import __version__ as COHIVA_VERSION  # noqa: F401
 
@@ -182,6 +185,16 @@ if "portal" in cbc.FEATURES:
 INSTALLED_APPS = (
     ## Geno must be before admin so we can extend templates
     "geno",
+    ## Unfold
+    "unfold",  # before django.contrib.admin
+    "unfold.contrib.filters",  # optional, if special filters are needed
+    "unfold.contrib.forms",  # optional, if special form elements are needed
+    "unfold.contrib.inlines",  # optional, if special inlines are needed
+    # "unfold.contrib.import_export",  # optional, if django-import-export package is used
+    # "unfold.contrib.guardian",  # optional, if django-guardian package is used
+    # "unfold.contrib.simple_history",  # optional, if django-simple-history package is used
+    # "unfold.contrib.location_field",  # optional, if django-location-field package is used
+    # "unfold.contrib.constance",  # optional, if django-constance package is used
     ## Django and third party apps
     "django.contrib.admin",
     "django.contrib.auth",
@@ -708,3 +721,243 @@ WAGTAIL_FRONTEND_LOGIN_URL = LOGIN_URL
 SILENCED_SYSTEM_CHECKS = [
     "models.W036",
 ]
+
+## Unfold UI config
+UNFOLD = {
+    "SITE_TITLE": "Cohiva " + COHIVA_SITE_NICKNAME,
+    "SITE_SUBHEADER": GENO_NAME,
+    "SITE_HEADER": "Cohiva",
+    "SITE_DROPDOWN": [
+        {
+            "icon": "diamond",
+            "title": _("Cohiva Website"),
+            "link": "https://cohiva.ch",
+        },
+        # ...
+    ],
+    #    "SITE_URL": "/",
+    #    # "SITE_ICON": lambda request: static("icon.svg"),  # both modes, optimise for 32px height
+    #    "SITE_ICON": {
+    #        "light": lambda request: static("icon-light.svg"),  # light mode
+    #        "dark": lambda request: static("icon-dark.svg"),  # dark mode
+    #    },
+    #    # "SITE_LOGO": lambda request: static("logo.svg"),  # both modes, optimise for 32px height
+    #    "SITE_LOGO": {
+    #        "light": lambda request: static("logo-light.svg"),  # light mode
+    #        "dark": lambda request: static("logo-dark.svg"),  # dark mode
+    #    },
+    "SITE_SYMBOL": "house",  # symbol from icon set
+    #    "SITE_FAVICONS": [
+    #        {
+    #            "rel": "icon",
+    #            "sizes": "32x32",
+    #            "type": "image/svg+xml",
+    #            "href": lambda request: static("favicon.svg"),
+    #        },
+    #    ],
+    #    "SHOW_HISTORY": True, # show/hide "History" button, default: True
+    #    "SHOW_VIEW_ON_SITE": True, # show/hide "View on site" button, default: True
+    #    "SHOW_BACK_BUTTON": False, # show/hide "Back" button on changeform in header, default: False
+    #    "ENVIRONMENT": "sample_app.environment_callback", # environment name in header
+    #    "ENVIRONMENT_TITLE_PREFIX": "sample_app.environment_title_prefix_callback", # environment name prefix in title tag
+    #    "DASHBOARD_CALLBACK": "sample_app.dashboard_callback",
+    #    "THEME": "dark", # Force theme: "dark" or "light". Will disable theme switcher
+    #    "LOGIN": {
+    #        "image": lambda request: static("sample/login-bg.jpg"),
+    #        "redirect_after": lambda request: reverse_lazy("admin:APP_MODEL_changelist"),
+    #    },
+    #    "STYLES": [
+    #        lambda request: static("css/style.css"),
+    #    ],
+    #    "SCRIPTS": [
+    #        lambda request: static("js/script.js"),
+    #    ],
+    #    "BORDER_RADIUS": "6px",
+    #    "COLORS": {
+    #        "base": {
+    #            "50": "249, 250, 251",
+    #            "100": "243, 244, 246",
+    #            "200": "229, 231, 235",
+    #            "300": "209, 213, 219",
+    #            "400": "156, 163, 175",
+    #            "500": "107, 114, 128",
+    #            "600": "75, 85, 99",
+    #            "700": "55, 65, 81",
+    #            "800": "31, 41, 55",
+    #            "900": "17, 24, 39",
+    #            "950": "3, 7, 18",
+    #        },
+    #        "primary": {
+    #            "50": "250, 245, 255",
+    #            "100": "243, 232, 255",
+    #            "200": "233, 213, 255",
+    #            "300": "216, 180, 254",
+    #            "400": "192, 132, 252",
+    #            "500": "168, 85, 247",
+    #            "600": "147, 51, 234",
+    #            "700": "126, 34, 206",
+    #            "800": "107, 33, 168",
+    #            "900": "88, 28, 135",
+    #            "950": "59, 7, 100",
+    #        },
+    #        "font": {
+    #            "subtle-light": "var(--color-base-500)",  # text-base-500
+    #            "subtle-dark": "var(--color-base-400)",  # text-base-400
+    #            "default-light": "var(--color-base-600)",  # text-base-600
+    #            "default-dark": "var(--color-base-300)",  # text-base-300
+    #            "important-light": "var(--color-base-900)",  # text-base-900
+    #            "important-dark": "var(--color-base-100)",  # text-base-100
+    #        },
+    #    },
+    #    "EXTENSIONS": {
+    #        "modeltranslation": {
+    #            "flags": {
+    #                "en": "🇬🇧",
+    #                "fr": "🇫🇷",
+    #                "nl": "🇧🇪",
+    #            },
+    #        },
+    #    },
+    "SIDEBAR": {
+        "show_search": True,  # Search in applications and models names
+        "command_search": False,  # Replace the sidebar search with the command search
+        "show_all_applications": False,  # Dropdown with all applications and models
+        "navigation": [
+            {
+                "title": _("Stammdaten"),
+                "separator": True,  # Top border
+                "collapsible": True,  # Collapsible group of links
+                "items": [
+                    {
+                        "title": _("Adressen/Personen"),
+                        "icon": "contact_page",  # Supported icon set: https://fonts.google.com/icons
+                        "link": reverse_lazy("admin:geno_address_changelist"),
+                        "permission": lambda request: request.user.has_perm("geno.view_address"),
+                        # "badge": "sample_app.badge_callback",
+                        # "permission": lambda request: request.user.is_superuser,
+                    },
+                    {
+                        "title": _("Kinder"),
+                        "icon": "child_care",  # Supported icon set: https://fonts.google.com/icons
+                        "link": reverse_lazy("admin:geno_child_changelist"),
+                    },
+                    {
+                        "title": _("Externe Nutzer:innen"),
+                        "icon": "account_circle",  # Supported icon set: https://fonts.google.com/icons
+                        "link": reverse_lazy("admin:geno_tenant_changelist"),
+                    },
+                    {
+                        "title": _("Erweiterte Funktionen"),
+                        "icon": "manufacturing",  # Supported icon set: https://fonts.google.com/icons
+                        "link": reverse_lazy("admin:geno_genericattribute_changelist"),
+                    },
+                    {
+                        "title": _("Erweiterte Konfiguration"),
+                        "icon": "construction",  # Supported icon set: https://fonts.google.com/icons
+                        "link": reverse_lazy("admin:geno_building_changelist"),
+                    },
+                    #                    {
+                    #                        "title": _("Dashboard"),
+                    #                        "icon": "dashboard",  # Supported icon set: https://fonts.google.com/icons
+                    #                        "link": reverse_lazy("admin:index"),
+                    #                        "badge": "sample_app.badge_callback",
+                    #                        "permission": lambda request: request.user.is_superuser,
+                    #                    },
+                    #                    {
+                    #                        "title": _("Users"),
+                    #                        "icon": "people",
+                    #                        "link": reverse_lazy("admin:auth_user_changelist"),
+                    #                    },
+                ],
+            },
+            {
+                "title": _("Mitglieder"),
+                "separator": True,  # Top border
+                "collapsible": True,  # Collapsible group of links
+                "items": [
+                    {
+                        "title": _("Übersicht Mitglieder"),
+                        "icon": "person_check",  # Supported icon set: https://fonts.google.com/icons
+                        "link": reverse_lazy("admin:geno_address_changelist"),
+                        # "badge": "sample_app.badge_callback",
+                        # "permission": lambda request: request.user.is_superuser,
+                    },
+                    {
+                        "title": _("Mitglieder"),
+                        "icon": "person_edit",  # Supported icon set: https://fonts.google.com/icons
+                        "link": reverse_lazy("admin:geno_member_changelist"),
+                    },
+                    {
+                        "title": _("Mitglieder Attribute"),
+                        "icon": "user_attributes",  # Supported icon set: https://fonts.google.com/icons
+                        "link": reverse_lazy("admin:geno_memberattribute_changelist"),
+                    },
+                    # {
+                    #    "title": _("Erweiterte Funktionen"),
+                    #    "icon": "manufacturing",  # Supported icon set: https://fonts.google.com/icons
+                    #    "link": reverse_lazy("admin:geno_genericattribute_changelist"),
+                    # },
+                    {
+                        "title": _("Erweiterte Konfiguration"),
+                        "icon": "construction",  # Supported icon set: https://fonts.google.com/icons
+                        "link": reverse_lazy("admin:geno_memberattributetype_changelist"),
+                    },
+                ],
+            },
+        ],
+    },
+    "TABS": [
+        {
+            "models": [
+                "geno.address",
+            ],
+            "items": [
+                {
+                    "title": _("Liste"),
+                    "link": reverse_lazy("admin:geno_address_changelist"),
+                    # "permission": "sample_app.permission_callback",
+                },
+                {
+                    "title": _("Herunterladen"),
+                    "link": reverse_lazy("geno:address_export"),
+                    # "permission": "sample_app.permission_callback",
+                },
+            ],
+        },
+        {
+            "models": [
+                "geno.building",
+            ],
+            "items": [
+                {
+                    "title": _("Liegenschaften"),
+                    "link": reverse_lazy("admin:geno_building_changelist"),
+                    # "permission": "sample_app.permission_callback",
+                },
+            ],
+        },
+        {
+            "models": [
+                "geno.genericattribute",
+                "portal.tenantadmin",
+            ],
+            "items": [
+                {
+                    "title": _("Attribute"),
+                    "link": reverse_lazy("admin:geno_genericattribute_changelist"),
+                    # "permission": "sample_app.permission_callback",
+                },
+                {
+                    "title": _("Mailinglisten überprüfen"),
+                    "link": "/admin/geno/address/check_mailinglists/",  # reverse_lazy("geno:check_mailinglists"),
+                    # "permission": "sample_app.permission_callback",
+                },
+                {
+                    "title": _("Nutzer:innenadmins"),
+                    "link": reverse_lazy("admin:portal_tenantadmin_changelist"),
+                    # "permission": "sample_app.permission_callback",
+                },
+            ],
+        },
+    ],
+}

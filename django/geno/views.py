@@ -2713,20 +2713,26 @@ def create_documents(request, default_doctype, objects=None, options=None):
 
 
 ## TODO: Refactor to ClassBased view
-@login_required
-def check_mailinglists(request):
-    if not request.user.has_perm("geno.canview_member_mailinglists"):
-        return unauthorized(request)
+## Custom pages for unfold
+# class CheckMailinglistsView(UnfoldModelAdminViewMixin, TemplateView):
+#    title = "Check Mailinglisten"  # required: custom page header title
+#    permission_required = ('geno.canview_member_mailinglists') # required: tuple of permissions
+#    template_name = "geno/messages_unfold.html"
+#
+#    def get_context_data(self, **kwargs):
+#        context = super().get_context_data(**kwargs)
+#        context["response"] = check_mailinglist()
+#        return context
 
-    if not hasattr(settings, "MAILMAN_API"):
-        return render(
-            request,
-            "geno/messages.html",
-            {
-                "response": [{"info:FEHLER: Mailman-API ist nicht konfiguriert."}],
-                "title": "Check Mailinglisten",
-            },
-        )
+
+# @login_required
+def check_mailinglists():  # request):
+    # if not request.user.has_perm('geno.canview_member_mailinglists'):
+    #    return unauthorized(request)
+
+    if not hasattr(settings, "MAILMAN_API") or not settings.MAILMAN_API.get("password", None):
+        return [{"info": "FEHLER: Mailman-API ist nicht konfiguriert."}]
+        # return render(request, 'geno/messages.html', { 'response': [{'info': 'FEHLER: Mailman-API ist nicht konfiguriert.'}], 'title': 'Check Mailinglisten'})
 
     mailman_client = mailmanclient.Client(
         settings.MAILMAN_API["url"], settings.MAILMAN_API["user"], settings.MAILMAN_API["password"]
@@ -2951,7 +2957,8 @@ def check_mailinglists(request):
         }
     )
     ret.append({"info": "Mailman warnings:", "objects": ml_warnings})
-    return render(request, "geno/messages.html", {"response": ret, "title": "Check Mailinglisten"})
+    # return render(request, "geno/messages.html", {"response": ret, "title": "Check Mailinglisten"})
+    return ret
 
 
 ## TODO: Refactor to ClassBased view

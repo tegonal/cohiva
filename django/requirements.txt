@@ -110,6 +110,7 @@ django==4.2.25
     #   django-tables2
     #   django-taggit
     #   django-treebeard
+    #   django-unfold
     #   djangorestframework
     #   djangosaml2idp
     #   easy-thumbnails
@@ -142,6 +143,8 @@ django-taggit==4.0.0
     # via wagtail
 django-treebeard==4.7.1
     # via wagtail
+django-unfold==0.65.0
+    # via -r requirements.in
 djangorestframework==3.16.1
     # via
     #   -r requirements.in
