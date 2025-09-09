@@ -1,6 +1,5 @@
-import select2.fields
-
 import django.db.models.deletion
+import select2.fields
 from django.db import migrations, models
 
 
