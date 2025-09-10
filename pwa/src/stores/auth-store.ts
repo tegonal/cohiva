@@ -1,8 +1,8 @@
+import { settings } from 'app/config/settings'
 import { IdTokenClaims, User } from 'oidc-client-ts'
 import { defineStore } from 'pinia'
 import { Router } from 'vue-router'
 
-import { settings } from 'app/config/settings'
 import oauthService from 'src/services/oauth'
 
 interface AuthState {
@@ -59,16 +59,14 @@ export const useAuthStore = defineStore('auth', {
 
           // In no-cors mode, we can't read the response but if it doesn't throw, the server is reachable
           this.backendAvailable = true
-          console.log('Backend health check: OK')
           return true
-        } catch (fetchError: any) {
+        } catch {
           clearTimeout(timeoutId)
 
           this.backendAvailable = false
           return false
         }
-      } catch (error) {
-        console.error('Backend health check error:', error)
+      } catch {
         this.backendError = 'Fehler beim Prüfen der Backend-Verbindung'
         this.backendAvailable = false
         return false
@@ -79,12 +77,43 @@ export const useAuthStore = defineStore('auth', {
       await oauthService.clearStaleState()
     },
 
+    async fetchUserProfile(): Promise<any> {
+      // Option 1: Use the OIDC userinfo endpoint directly
+      const token = await this.getAccessToken()
+      if (!token) {
+        throw new Error('No access token available')
+      }
+
+      const isDevelopment = process.env.NODE_ENV === 'development'
+      const baseUrl = isDevelopment
+        ? `https://${settings.TEST_HOSTNAME}.${settings.DOMAIN}`
+        : `https://${settings.PROD_HOSTNAME}.${settings.DOMAIN}`
+
+      const response = await fetch(`${baseUrl}/o/userinfo/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch user info: ${response.status}`)
+      }
+
+      const userInfo = await response.json()
+
+      if (this.user) {
+        this.user.profile = { ...this.user.profile, ...userInfo }
+      }
+
+      return userInfo
+    },
+
     async getAccessToken(): Promise<null | string> {
       if (this.user && this.user.expired) {
         try {
           await this.refreshToken()
-        } catch (error) {
-          console.error('Failed to refresh token:', error)
+        } catch {
           return null
         }
       }
@@ -98,41 +127,7 @@ export const useAuthStore = defineStore('auth', {
       try {
         const user = await oauthService.handleCallback()
         this.user = user
-        
-        // Log the entire token contents for debugging
-        console.log('=== OAuth User Object ===')
-        console.log('Full user object:', user)
-        console.log('Access token:', user.access_token)
-        console.log('ID token:', user.id_token)
-        console.log('Profile:', user.profile)
-        console.log('Token type:', user.token_type)
-        console.log('Scope:', user.scope)
-        console.log('Expires at:', user.expires_at)
-        
-        // Decode and log ID token claims
-        if (user.id_token) {
-          try {
-            const parts = user.id_token.split('.')
-            if (parts[1]) {
-              const payload = JSON.parse(window.atob(parts[1]))
-              console.log('ID Token Claims:', payload)
-            }
-          } catch (e) {
-            console.error('Failed to decode ID token:', e)
-          }
-        }
-        console.log('=========================')
-        
-        // Optionally fetch fresh user info from the API
-        // This demonstrates getting user data from the server instead of just the token
-        try {
-          const freshUserInfo = await this.fetchUserProfile()
-          console.log('Fresh user info fetched successfully:', freshUserInfo)
-        } catch (error) {
-          console.error('Could not fetch fresh user info:', error)
-          // Not critical - we already have user info from the token
-        }
-        
+
         oauthService.startSessionMonitor()
 
         const state = user?.state as OAuthStateData | undefined
@@ -147,7 +142,6 @@ export const useAuthStore = defineStore('auth', {
 
         return user
       } catch (error) {
-        console.error('Callback handling failed:', error)
         this.error = error instanceof Error ? error.message : String(error)
         if (router) {
           router.push('/login')
@@ -161,8 +155,8 @@ export const useAuthStore = defineStore('auth', {
     async handleSilentCallback(): Promise<void> {
       try {
         await oauthService.handleSilentCallback()
-      } catch (error) {
-        console.error('Silent callback failed:', error)
+      } catch {
+        // Silent callback errors are handled in the service
       }
     },
 
@@ -172,19 +166,11 @@ export const useAuthStore = defineStore('auth', {
         const user = await oauthService.getUser()
         if (user && !user.expired) {
           this.user = user
-          
-          // Log user info when loaded from storage
-          console.log('=== User Loaded from Storage ===')
-          console.log('Profile:', user.profile)
-          console.log('Scopes:', user.scope)
-          console.log('================================')
-          
           oauthService.startSessionMonitor()
         } else if (user && user.expired) {
           await this.refreshToken()
         }
       } catch (error) {
-        console.error('Failed to initialize auth:', error)
         this.error = error instanceof Error ? error.message : String(error)
       } finally {
         this.loading = false
@@ -205,7 +191,6 @@ export const useAuthStore = defineStore('auth', {
           state: { returnUrl: returnUrl || '/' },
         })
       } catch (error) {
-        console.error('Login failed:', error)
         this.error = error instanceof Error ? error.message : String(error)
         this.loading = false
       }
@@ -220,8 +205,7 @@ export const useAuthStore = defineStore('auth', {
         this.error = null
         this.returnUrl = null
         await oauthService.logout()
-      } catch (error) {
-        console.error('Logout failed:', error)
+      } catch {
         this.user = null
         window.location.href = '/'
       } finally {
@@ -235,51 +219,8 @@ export const useAuthStore = defineStore('auth', {
         this.user = user
         return user
       } catch (error) {
-        console.error('Token refresh failed:', error)
         this.error = error instanceof Error ? error.message : String(error)
         this.user = null
-        throw error
-      }
-    },
-
-    async fetchUserProfile(): Promise<any> {
-      try {
-        // Option 1: Use the OIDC userinfo endpoint directly
-        const token = await this.getAccessToken()
-        if (!token) {
-          throw new Error('No access token available')
-        }
-
-        const isDevelopment = process.env.NODE_ENV === 'development'
-        const baseUrl = isDevelopment
-          ? `https://${settings.TEST_HOSTNAME}.${settings.DOMAIN}`
-          : `https://${settings.PROD_HOSTNAME}.${settings.DOMAIN}`
-
-        const response = await fetch(`${baseUrl}/o/userinfo/`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        })
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch user info: ${response.status}`)
-        }
-
-        const userInfo = await response.json()
-        console.log('=== Fresh User Info from API ===')
-        console.log('UserInfo endpoint response:', userInfo)
-        console.log('================================')
-        
-        // Update the user profile in the store if needed
-        if (this.user) {
-          this.user.profile = { ...this.user.profile, ...userInfo }
-          console.log('Updated user profile:', this.user.profile)
-        }
-        
-        return userInfo
-      } catch (error) {
-        console.error('Failed to fetch user profile:', error)
         throw error
       }
     },
@@ -293,26 +234,22 @@ export const useAuthStore = defineStore('auth', {
       if (!oauthService.userManager) return
 
       oauthService.userManager.events.addUserLoaded((user: User) => {
-        console.log('User loaded in store:', user.profile.sub)
         this.user = user
       })
 
       oauthService.userManager.events.addUserUnloaded(() => {
-        console.log('User unloaded in store')
         this.user = null
       })
 
       oauthService.userManager.events.addAccessTokenExpiring(() => {
-        console.log('Token expiring, attempting refresh...')
+        // Token expiring - auto-refresh will handle it
       })
 
       oauthService.userManager.events.addAccessTokenExpired(() => {
-        console.log('Token expired')
         this.user = null
       })
 
-      oauthService.userManager.events.addSilentRenewError((error: Error) => {
-        console.error('Silent renew error in store:', error)
+      oauthService.userManager.events.addSilentRenewError(() => {
         this.error = 'Session refresh failed. Please login again.'
       })
     },

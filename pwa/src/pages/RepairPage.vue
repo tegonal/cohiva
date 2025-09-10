@@ -1,7 +1,5 @@
 <template>
   <q-page padding class="">
-    <!-- <q-page class="flex flex-center">-->
-    <!--<h4 class="q-mx-xs q-my-md">Deine Reservationen</h4>-->
     Meldung von:<br />{{ contact }}
     <q-form @submit="submitReport()">
       <q-select
@@ -131,13 +129,8 @@ const router = useRouter()
 
 function fetchData() {
   api
-    .get('/api/v1/reservation/report/', {
-      headers: {
-        Authorization: 'Bearer ' + authStore.accessToken,
-      },
-    })
+    .get('/api/v1/reservation/report/')
     .then((response) => {
-      //console.log(response);
       apiError.value = ''
       contact.value = response.data.contact
       unitOptions.value = response.data.rental_units.concat(unitOptions.value)
@@ -148,17 +141,12 @@ function fetchData() {
     .catch((error) => {
       apiError.value = 'Es ist ein Fehler aufgetreten.'
       if ('response' in error) {
-        console.log('ERROR: ' + error.response.data.detail)
         if (
           error.response.data.detail == 'Anmeldedaten fehlen.' ||
           error.response.data.detail == 'Ungültiges Token'
         ) {
-          // Auth missing -> Force new login
-          //console.log("DISABLED FOR DEBUGGING: Force logout");
           authStore.logout()
         }
-      } else {
-        console.log('ERROR: ' + error)
       }
     })
 }
@@ -176,7 +164,6 @@ function submitConfirmed() {
 }
 
 function submitReport() {
-  //console.log("Submit reservation");
   is_submitting.value = true
   let formData = new FormData()
   formData.append('action', 'add')
@@ -191,15 +178,9 @@ function submitReport() {
     }
   }
   api
-    .post('/api/v1/reservation/report/', formData, {
-      headers: {
-        Authorization: 'Bearer ' + authStore.accessToken,
-      },
-    })
+    .post('/api/v1/reservation/report/', formData)
     .then((response) => {
       apiError.value = ''
-      //console.log(response);
-      //console.log(response.data);
       if (response.data.status == 'ERROR') {
         submissionError.value = true
         submissionErrorMsg.value = response.data.msg
@@ -214,17 +195,12 @@ function submitReport() {
       submissionError.value = true
       submissionErrorMsg.value = 'Fehler beim Speichern.'
       if ('response' in error) {
-        console.log('ERROR: ' + error.response.data.detail)
         if (
           error.response.data.detail == 'Anmeldedaten fehlen.' ||
           error.response.data.detail == 'Ungültiges Token'
         ) {
-          // Auth missing -> Force new login
-          //console.log("DISABLED FOR DEBUGGING: Force logout");
           authStore.logout()
         }
-      } else {
-        console.log('ERROR: ' + error)
       }
       is_submitting.value = false
     })
@@ -245,26 +221,12 @@ const pictures = ref([])
 // Loaded on fetch
 const contact = ref('')
 const unitOptions = ref([
-  //{ label: "Wohnung 011", value: "011" },
   {
     label: 'Etwas anderes (bitte unter Betreff angeben)',
     value: '__OTHER__',
   },
 ])
-const categoryOptions = ref([
-  /*{
-    label: "Küche",
-    value: "Küche",
-  },
-  {
-    label: "Fenster",
-    value: "Fenster",
-  },
-  {
-    label: "Boden",
-    value: "Boden",
-  },*/
-])
+const categoryOptions = ref([])
 
 const is_submitting = ref(false)
 const submissionDisabled = ref(false)

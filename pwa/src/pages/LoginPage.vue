@@ -12,18 +12,12 @@
         <h6>Melde dich mit deinem {{ settings.SITE_NICKNAME }}-Konto an:</h6>
 
         <!-- Backend Status Message -->
-        <div
-          v-if="checkingBackend"
-          class="full-width q-my-md text-center"
-        >
+        <div v-if="checkingBackend" class="full-width q-my-md text-center">
           <q-spinner color="primary" size="2em" />
           <div class="q-mt-sm">Verbindung zum Server wird geprüft...</div>
         </div>
 
-        <div
-          v-else-if="authStore.backendError"
-          class="full-width q-my-md"
-        >
+        <div v-else-if="authStore.backendError" class="full-width q-my-md">
           <q-banner class="bg-negative text-white text-left" rounded>
             <template v-slot:avatar>
               <q-icon name="error" color="white" />
@@ -31,10 +25,10 @@
             <div class="text-subtitle1">Backend-Server nicht erreichbar</div>
             <div class="q-mt-sm">{{ authStore.backendError }}</div>
             <template v-slot:action>
-              <q-btn 
-                flat 
-                color="white" 
-                label="Erneut versuchen" 
+              <q-btn
+                flat
+                color="white"
+                label="Erneut versuchen"
                 @click="retryBackendCheck"
               />
             </template>
@@ -103,7 +97,7 @@ onMounted(async () => {
   checkingBackend.value = true
   await authStore.checkBackendHealth()
   checkingBackend.value = false
-  
+
   // Check if user is already authenticated
   const isAuth = await authStore.checkAuth()
   if (isAuth) {

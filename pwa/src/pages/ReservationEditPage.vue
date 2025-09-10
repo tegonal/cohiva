@@ -1,6 +1,5 @@
 <template>
   <q-page padding class="">
-    <!-- <q-page class="flex flex-center">-->
     <h4 class="q-my-md">Neue Reservation</h4>
 
     <div class="row flex justify-between" v-if="reservationTypeOptions.length">
@@ -140,20 +139,6 @@
         dir die nötige Berechtigung.
       </p>
     </div>
-    <!-- <q-date
-      class="q-ma-md"
-      :class="{ hidden: !reservationType }"
-      v-model="date"
-      @range-end="reservationSearch()"
-      range
-      subtitle="Wähle Start und Enddatum"
-      today-btn
-    />-->
-    <!-- <div class="q-pb-sm">
-      Datum: {{ date_start }} {{ time_start }} - {{ date_end }}
-      {{ time_end }} Typ:
-      {{ reservationType }}
-    </div> -->
     <div
       v-if="apiError"
       class="q-mt-md text-subtitle-1 text-negative text-center full-width"
@@ -321,13 +306,9 @@ const authStore = useAuthStore()
 const router = useRouter()
 
 function formUpdated(what: string): void {
-  //console.log("Form updated");
-
   const current_type = reservationTypeOptions.value.find((obj) => {
     return obj.name == reservationType.value
   })
-  /*console.log(current_type);
-  console.log(reservationType.value);*/
 
   if (current_type) {
     summaryRequired.value = Boolean(current_type.summary_required)
@@ -345,7 +326,7 @@ function formUpdated(what: string): void {
       }
     }
   } else {
-    console.error('Current type not found: ' + current_type)
+    // Handle other reservation type cases
   }
 
   // Handle range dates for fixed time reservations
@@ -402,7 +383,6 @@ function formUpdated(what: string): void {
       }
     }
   }
-  console.log('start: ' + d_start + 'end: ' + d_end)
   if (date_start_error.value || date_end_error.value || time_end_error.value) {
     searchResult.value = null
     return
@@ -421,11 +401,7 @@ function formUpdated(what: string): void {
 
 function getReservationTypes() {
   api
-    .get('/api/v1/reservation/reservationtypes/', {
-      headers: {
-        Authorization: 'Bearer ' + authStore.accessToken,
-      },
-    })
+    .get('/api/v1/reservation/reservationtypes/')
     .then((response) => {
       apiError.value = ''
       reservationTypeOptions.value = response.data.results
@@ -433,7 +409,6 @@ function getReservationTypes() {
         if (!reservationType.value) {
           // Take first as default
           reservationType.value = reservationTypeOptions.value[0]?.name || null
-          //console.log("Set default type: " + reservationType.value);
         }
         formUpdated('type')
       }
@@ -441,7 +416,6 @@ function getReservationTypes() {
     .catch((error) => {
       apiError.value = 'Es ist ein Fehler aufgetreten.'
       if ('response' in error) {
-        console.log('ERROR: ' + error.response.data.detail)
         if (
           error.response.data.detail == 'Anmeldedaten fehlen.' ||
           error.response.data.detail == 'Ungültiges Token'
@@ -450,8 +424,6 @@ function getReservationTypes() {
           //console.log("DISABLED FOR DEBUGGING: Force logout");
           authStore.logout()
         }
-      } else {
-        console.log('ERROR: ' + error)
       }
     })
 }
@@ -471,11 +443,6 @@ function reservationSearch() {
   )
   api
     .get('/api/v1/reservation/search/', {
-      headers: {
-        Authorization: 'Bearer ' + authStore.accessToken,
-        /*"X-CSRFTOKEN":
-            "NuKLxiCI2BFAnWb3cIhmGjxSz0ZP2icLsJsUnvvG7HNtnILP5TtJ4FFBFI2jk1z2",*/
-      },
       params: {
         dateFrom: date_start.value,
         dateTo: date_end.value,
@@ -485,27 +452,12 @@ function reservationSearch() {
       },
     })
     .then((response) => {
-      //console.log(response);
       apiError.value = ''
       searchResult.value = response.data
-      //console.log(searchResult.value);
-      /*const now = Date.now();
-      for (let i in response.data.results) {
-        let r = response.data.results[i];
-        const date_start = new Date(r.date_start);
-        const date_end = new Date(r.date_end);
-        const res_data = {};
-        if (date_end > now) {
-          reservations.push(res_data);
-        } else {
-          past_reservations.push(res_data);
-        }
-      }*/
     })
     .catch((error) => {
       apiError.value = 'Es ist ein Fehler aufgetreten.'
       if ('response' in error) {
-        console.log('ERROR: ' + error.response.data.detail)
         if (
           error.response.data.detail == 'Anmeldedaten fehlen.' ||
           error.response.data.detail == 'Ungültiges Token'
@@ -514,8 +466,6 @@ function reservationSearch() {
           //console.log("DISABLED FOR DEBUGGING: Force logout");
           authStore.logout()
         }
-      } else {
-        console.log('ERROR: ' + error)
       }
     })
 }
@@ -523,7 +473,6 @@ function reservationSearch() {
 function roomSelect(room: Room): void {
   selectedRoom.value = room
   confirmReservation.value = true
-  //console.log("Selected: " + room.id);
 }
 
 function str2date(date_string: string, time_string?: string): Date {
@@ -543,30 +492,19 @@ function str2date(date_string: string, time_string?: string): Date {
 }
 
 function submitReservation() {
-  //console.log("Submit reservation");
   api
-    .post(
-      '/api/v1/reservation/edit/',
-      {
-        action: 'add',
-        dateFrom: date_start.value,
-        dateTo: date_end.value,
-        reservationType: reservationType.value,
-        selectedRoom: selectedRoom.value?.id ?? null,
-        summary: reservationSummary.value,
-        timeFrom: time_start.value,
-        timeTo: time_end.value,
-      },
-      {
-        headers: {
-          Authorization: 'Bearer ' + authStore.accessToken,
-        },
-      }
-    )
+    .post('/api/v1/reservation/edit/', {
+      action: 'add',
+      dateFrom: date_start.value,
+      dateTo: date_end.value,
+      reservationType: reservationType.value,
+      selectedRoom: selectedRoom.value?.id ?? null,
+      summary: reservationSummary.value,
+      timeFrom: time_start.value,
+      timeTo: time_end.value,
+    })
     .then((response) => {
       apiError.value = ''
-      //console.log(response);
-      //console.log(response.data);
       if (response.data.status == 'ERROR') {
         submissionError.value = true
         submissionErrorMsg.value = response.data.msg
@@ -581,7 +519,6 @@ function submitReservation() {
       submissionError.value = true
       submissionErrorMsg.value = 'Fehler beim Speichern.'
       if ('response' in error) {
-        console.log('ERROR: ' + error.response.data.detail)
         if (
           error.response.data.detail == 'Anmeldedaten fehlen.' ||
           error.response.data.detail == 'Ungültiges Token'
@@ -590,8 +527,6 @@ function submitReservation() {
           //console.log("DISABLED FOR DEBUGGING: Force logout");
           authStore.logout()
         }
-      } else {
-        console.log('ERROR: ' + error)
       }
     })
 }
@@ -650,38 +585,4 @@ const confirmReservation = ref(false)
 const reservationSummary = ref('')
 const submissionError = ref(false)
 const submissionErrorMsg = ref('')
-
-// Mockup data
-/*const rooms = [
-  {
-    nr: "003",
-    title: "Gästezimmer 003",
-    costs: "Fr. 22.00",
-    imageUrl: "https://sandammeer.ch/flink/gaestezimmer-003.jpg",
-    subtitle: "Familiengästezimmer im Erdgeschoss",
-    text: "4(6)+ Schlafplätze (1x 160 cm Bett, 1 x 160 cm Schlafsofa, 1 x Babyreisebett & Wickeltisch). Zusätzliche Matratze (1 x 140) für auf den Boden. 2 Kissen, 4 Duvets, 5 Kissen- & Duvetanzüge, 6 Fixleintücher, 4 Moltons + Baby-Sachen.  Benutzung des öffentlichen Badezimmers (Toiletten und Waschbecken) nebenan. Duschen entweder bei Gastgeber*in oder in den öffentlichen Duschen im Stockwerk -1. Wasserkocher, Kaffeepresse und Tassen. Tisch und Stühle (4).<br /> Preis: 22 CHF / Nacht ab der 4. Nacht.",
-    isAvailable: true,
-    unavailableDate: "von 12.10.2022 bis 15.10.2022",
-  },
-  {
-    nr: "410",
-    title: "Gästezimmer 410",
-    costs: "Fr. 17.00",
-    imageUrl: "https://sandammeer.ch/flink/gaestezimmer-410.jpg",
-    subtitle: "Lesegästezimmer im 4. Stock",
-    text: "2 Schlafplätze (1x 160 cm Bett). 2 Kissen, 2 Duvets, 4 Kissen- & Duvetanzüge, 2 Fixleintücher, & 1 Molton. Badezimmer (Toilette und Waschbecken) im Zimmer. Duschen entweder bei Gastgeber*in oder in den öffentlichen Duschen im Stockwerk -1. Tisch und Stühle (2 + Loungesessel).<br /> Preis: 17 CHF / Nacht ab der 4. Nacht.",
-    isAvailable: false,
-    unavailableDate: "von 12.10.2022 bis 15.10.2022",
-  },
-  {
-    nr: "509",
-    title: "Gästezimmer 509",
-    costs: "Fr. 17.00",
-    imageUrl: "https://sandammeer.ch/flink/gaestezimmer-509.jpg",
-    subtitle: "Relaxgästezimmer im 5. Stock",
-    text: "2 Schlafplätze (2x 90 cm Bett). 2 Kissen, 2 Duvets, 4 Kissen- & Duvetanzüge, 4 Fixleintücher, & 2 Moltons. Badezimmer (Toilette und Waschbecken) im Zimmer. Duschen entweder bei Gastgeber*in oder in den öffentlichen Duschen im Stockwerk -1. Tisch und Stühle (2 + Loungesessel).<br /> Preis: 17 CHF / Nacht ab der 4. Nacht.",
-    isAvailable: true,
-    unavailableDate: "von 12.10.2022 bis 15.10.2022",
-  },
-];*/
 </script>

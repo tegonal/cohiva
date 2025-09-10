@@ -64,10 +64,7 @@ function installApp(): void {
     // Wait for the user to respond to the prompt
     deferredPrompt.value.userChoice.then((choiceResult) => {
       if (choiceResult.outcome === 'accepted') {
-        console.log('User accepted the install prompt')
         neverShowAppInstallBanner()
-      } else {
-        console.log('User dismissed the install prompt')
       }
     })
   }
@@ -80,11 +77,8 @@ function neverShowAppInstallBanner(): void {
 
 onMounted(() => {
   const neverShowInstall = localStorage.getItem('neverShowInstall')
-  console.log(`Mounted app-install-banner nevershow = ${neverShowInstall}`)
   if (neverShowInstall != 'true') {
-    console.log('Added event listener')
     window.addEventListener('beforeinstallprompt', (e) => {
-      console.log('Triggered beforeinstallprompt listener')
       if (bannerHasBeenShown.value) return
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault()

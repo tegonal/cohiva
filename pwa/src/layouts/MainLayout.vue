@@ -14,11 +14,10 @@
         <q-toolbar-title> {{ settings.SITE_NICKNAME }} App </q-toolbar-title>
 
         <!-- <div>Quasar v{{ $q.version }}</div> -->
-        <div>
+        <div class="toolbar-logo">
           <img
             :alt="settings.SITE_NICKNAME + ' Logo'"
             src="/src/assets/logo.svg"
-            style="width: 40px; height: 40px"
           />
         </div>
       </q-toolbar>
@@ -51,7 +50,9 @@
 
           <q-item-section>
             <q-item-label>Angemeldet als</q-item-label>
-            <q-item-label caption>{{ authStore.username || authStore.userEmail || 'Unbekannt' }}</q-item-label>
+            <q-item-label caption>{{
+              authStore.username || authStore.userEmail || 'Unbekannt'
+            }}</q-item-label>
           </q-item-section>
         </q-item>
         <q-item clickable @click="settings_logout()" v-if="authStore.user">
@@ -75,18 +76,6 @@
     <q-page-container>
       <router-view />
     </q-page-container>
-
-    <!--
-    <q-footer>
-      <q-tabs v-model="tab">
-        <router-link to="/reservation">
-          <q-tab name="reservation" label="Reservation" icon="edit_calendar" />
-        </router-link>
-        <router-link to="/">
-          <q-tab name="videos" label="Kalender" icon="calendar_month" />
-        </router-link>
-      </q-tabs>
-    </q-footer> -->
   </q-layout>
 </template>
 
@@ -124,7 +113,6 @@ function toggleLeftDrawer(): void {
 /* For service worker updates */
 function updateRegistration(): void {
   if (mainStore.registration && !mainStore.registration.waiting) {
-    console.log('Updating service-worker...')
     mainStore.registration.update()
   }
 }
@@ -133,9 +121,12 @@ function updateRegistration(): void {
 onMounted(() => {
   updateRegistration()
   // Set up periodic service worker updates every 30 minutes
-  updateTimeout.value = setInterval(() => {
-    updateRegistration()
-  }, 1000 * 60 * 30)
+  updateTimeout.value = setInterval(
+    () => {
+      updateRegistration()
+    },
+    1000 * 60 * 30
+  )
 })
 
 onBeforeUnmount(() => {
@@ -145,3 +136,18 @@ onBeforeUnmount(() => {
   }
 })
 </script>
+
+<style lang="scss" scoped>
+.toolbar-logo {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+}
+</style>

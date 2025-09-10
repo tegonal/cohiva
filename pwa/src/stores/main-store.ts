@@ -22,9 +22,6 @@ export const useMainStore = defineStore('main', {
       )
       if (prev_appVersion !== this.appVersion) {
         localStorage.setItem('appVersion', JSON.stringify(this.appVersion))
-        console.log(
-          `Updated appVersion ${prev_appVersion} -> ${this.appVersion}`
-        )
       }
     },
   },

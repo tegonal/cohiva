@@ -1,5 +1,11 @@
 import { settings } from 'app/config/settings'
-import { OidcMetadata, User, UserManager, UserManagerSettings, WebStorageStateStore, } from 'oidc-client-ts'
+import {
+  OidcMetadata,
+  User,
+  UserManager,
+  UserManagerSettings,
+  WebStorageStateStore,
+} from 'oidc-client-ts'
 
 interface ExtraLoginParams {
   login_hint?: string
@@ -111,20 +117,20 @@ class OAuthService {
       const settings = createOAuthSettings()
       this.userManager = new UserManager(settings)
 
-      this.userManager.events.addUserLoaded((user: User) => {
-        console.log('User loaded:', user.profile.sub)
+      this.userManager.events.addUserLoaded(() => {
+        // User loaded event
       })
 
       this.userManager.events.addUserUnloaded(() => {
-        console.log('User unloaded')
+        // User unloaded event
       })
 
       this.userManager.events.addAccessTokenExpiring(() => {
-        console.log('Access token expiring...')
+        // Token expiring event
       })
 
       this.userManager.events.addAccessTokenExpired(() => {
-        console.log('Access token expired')
+        // Token expired event
       })
 
       this.userManager.events.addSilentRenewError((error: Error) => {
@@ -132,7 +138,7 @@ class OAuthService {
       })
 
       this.userManager.events.addUserSignedOut(() => {
-        console.log('User signed out')
+        // User signed out event
       })
     } catch (error) {
       console.error('Failed to initialize UserManager:', error)

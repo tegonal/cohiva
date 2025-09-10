@@ -90,13 +90,6 @@
   </q-page>
 </template>
 
-<!--<script>
-import { defineComponent } from "vue";
-export default defineComponent({
-  name: "IndexPage",
-});
-</script>-->
-
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
@@ -122,7 +115,6 @@ function getCapabilities() {
     })
     .then((response) => {
       apiError.value = ''
-      //console.log(response.data);
       if (response.data.status == 'OK') {
         if (
           response.data.capabilities.credit_accounting_vendors.includes(
@@ -138,15 +130,12 @@ function getCapabilities() {
     .catch((error) => {
       apiError.value = 'Es ist ein Fehler aufgetreten.'
       if ('response' in error) {
-        console.log('ERROR: ' + error.response.data.detail)
         if (
           error.response.data.detail == 'Anmeldedaten fehlen.' ||
           error.response.data.detail == 'Ungültiges Token'
         ) {
           authStore.logout()
         }
-      } else {
-        console.log('ERROR: ' + error)
       }
     })
 }

@@ -1,7 +1,5 @@
 <template>
   <q-page padding class="">
-    <!-- <q-page class="flex flex-center">-->
-    <!--<h4 class="q-mx-xs q-my-md">Deine Reservationen</h4>-->
     <div>
       <q-select
         outlined
@@ -67,25 +65,19 @@ import tippy from 'tippy.js'
 import { onMounted, ref } from 'vue'
 
 import { api } from 'boot/axios'
-import { useAuthStore } from 'stores/auth-store'
 import 'tippy.js/dist/tippy.css'
 
-/*import interactionPlugin from "@fullcalendar/interaction";*/
-
 function fetchData() {
-  const authStore = useAuthStore()
   // Get calendar event sources
   api
     .get('/api/v1/reservation/calendar_feeds/')
     .then((response) => {
-      //console.log(response);
       if (response.data.status == 'OK') {
         apiError.value = ''
         eventSources.value = response.data.calendars
         let calApi = fullCalendar.value?.getApi()
         if (calApi) {
           for (let es in eventSources.value) {
-            console.log('Adding event source ' + eventSources.value[es].id)
             calApi.addEventSource(eventSources.value[es])
           }
         }
@@ -96,26 +88,17 @@ function fetchData() {
     .catch((error) => {
       apiError.value = 'Es ist ein Fehler aufgetreten.'
       if ('response' in error) {
-        console.log('ERROR: ' + error.response.data.detail)
         if (error.response.data.detail == 'Anmeldedaten fehlen.') {
           // Auth missing -> Force new login
-          console.log('DISABLED FOR DEBUGGING: Force logout')
           //authStore.logout();
         }
-      } else {
-        console.log('ERROR: ' + error)
       }
     })
 }
 
 function selectView(): void {
-  console.log('Switch view to ' + viewSelect.value?.value)
-  //let calApi = this.fullCalendar.getApi();
   let calApi = fullCalendar.value?.getApi()
-  //console.log("Got calendar API");
-  //console.log(calApi);
   calApi?.changeView(viewSelect.value?.value)
-  //calApi.next();
 }
 
 function updateEventSources(): void {
@@ -163,10 +146,6 @@ const calendarOptions = {
   },
   firstDay: 1,
   headerToolbar: {
-    /*left: "prev,next today",
-    center: "title",
-    right:
-      "dayGridMonth,dayGridWeek timeGridWeek,timeGridDay listMonth" */
     left: 'title',
     right: 'today prev,next',
   },
@@ -174,14 +153,9 @@ const calendarOptions = {
   locale: 'de-ch',
   navLinks: true, // can click day/week names to navigate views
   noEventsContent: { html: 'Keine Termine' },
-  //plugins: [dayGridPlugin, interactionPlugin],
   plugins: [dayGridPlugin, timeGridPlugin, listPlugin],
-  //viewDidMount: updateView(),
   views: {
-    week: {
-      //titleFormat: { year: "2-digit", month: "numeric", day: "numeric" },
-      //{year: 'numeric', month: 'numeric', day: 'numeric'}
-    },
+    week: {},
   },
   weekends: true,
 }
@@ -219,8 +193,6 @@ const viewOptions = [
   },
 ]
 const viewSelect = ref(viewOptions[1])
-/*const dense = ref(true);
-const denseOpts = ref(null);*/
 const fullCalendar = ref<any>(null)
 const filterEnabled = ref(false)
 const eventSourceOptions = [
@@ -254,40 +226,6 @@ const eventSourceOptions = [
 ]
 const eventSources = ref<any[]>([])
 const activeEventSources = ref<any[]>([])
-
-/*{
-    id: "plena",
-    cat: "Genossenschaft",
-    name: "Plena, GV, Hausversammlung etc.",
-    url: process.env.API + "calendar/feed/plena",
-    color: "#4680CD",
-    textColor: "black",
-  },
-  {
-    id: "_res-1",
-    cat: "Reservation",
-    name: "Gästezimmer",
-    url: process.env.API + "calendar/feed/_res-1",
-    color: "#f8f65d",
-    textColor: "black",
-  },
-  {
-    id: "_res-2",
-    cat: "Reservation",
-    name: "Musikraum",
-    url: process.env.API + "calendar/feed/_res-2",
-    color: "#33f65d",
-    textColor: "black",
-  },
-  {
-    id: "_res-3",
-    cat: "Reservation",
-    name: "Werkstatt",
-    url: process.env.API + "calendar/feed/_res-3",
-    color: "#33775d",
-    textColor: "black",
-  },
-];*/
 
 onMounted(() => {
   fetchData()

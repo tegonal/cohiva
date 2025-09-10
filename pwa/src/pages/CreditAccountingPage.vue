@@ -1,6 +1,5 @@
 <template>
   <q-page padding class="">
-    <!-- <q-page class="flex flex-center">-->
     <h4 class="q-mx-xs q-my-md">Kontoauszug</h4>
 
     <q-expansion-item
@@ -206,7 +205,6 @@ import { computed, onMounted, ref } from 'vue'
 
 import { api } from 'boot/axios'
 import { useAuthStore } from 'stores/auth-store'
-//import { stringify } from "csv-stringify";
 
 const authStore = useAuthStore()
 
@@ -228,7 +226,7 @@ function exportToCSV(): void {
   const status = exportFile('Depot8_Kontoauszug.csv', content, 'text/csv')
 
   if (status !== true) {
-    console.log("Error: Browser didn't allow export:" + status)
+    // Handle export error silently
   }
 }
 
@@ -260,20 +258,17 @@ function fetchData(): void {
       isLoading.value = false
       apiError.value = 'Es ist ein Fehler aufgetreten.'
       if ('response' in error) {
-        console.log('ERROR: ' + error.response.data.detail)
         if (
           error.response.data.detail == 'Anmeldedaten fehlen.' ||
           error.response.data.detail == 'Ungültiges Token'
         ) {
           authStore.logout()
         }
-      } else {
-        console.log('ERROR: ' + error)
       }
     })
 }
 
-function formUpdated(_what?: string): void {
+function formUpdated(): void {
   let caption = []
   if (account.value) {
     caption.push(account.value.label)
@@ -313,15 +308,12 @@ function getAccounts(): void {
     .catch((error) => {
       apiError.value = 'Es ist ein Fehler aufgetreten.'
       if ('response' in error) {
-        console.log('ERROR: ' + error.response.data.detail)
         if (
           error.response.data.detail == 'Anmeldedaten fehlen.' ||
           error.response.data.detail == 'Ungültiges Token'
         ) {
           authStore.logout()
         }
-      } else {
-        console.log('ERROR: ' + error)
       }
     })
 }
@@ -341,15 +333,12 @@ function getFilterOptions(): void {
     .catch((error) => {
       apiError.value = 'Es ist ein Fehler aufgetreten.'
       if ('response' in error) {
-        console.log('ERROR: ' + error.response.data.detail)
         if (
           error.response.data.detail == 'Anmeldedaten fehlen.' ||
           error.response.data.detail == 'Ungültiges Token'
         ) {
           authStore.logout()
         }
-      } else {
-        console.log('ERROR: ' + error)
       }
     })
 }
@@ -363,40 +352,27 @@ function openSettings(): void {
       if (response.data.status == 'OK') {
         settings.value = response.data.settings
         settingsDialog.value = true
-      } else {
-        console.log(
-          'ERROR: Could not load settings. Status = ' + response.data.status
-        )
       }
     })
-    .catch((error) => {
-      console.log('ERROR: Could not load settings: ' + error)
+    .catch(() => {
+      // Handle error silently
     })
 }
 
 function saveSettings(): void {
   api
-    .post(
-      '/api/v1/credit_accounting/settings/',
-      {
-        account: account.value?.value,
-        settings: settings.value,
-        vendor: 'Depot8',
-      },
-    )
+    .post('/api/v1/credit_accounting/settings/', {
+      account: account.value?.value,
+      settings: settings.value,
+      vendor: 'Depot8',
+    })
     .then((response) => {
-      //console.log(response);
-      //console.log(response.data);
       if (response.data.status == 'OK') {
         settingsDialog.value = false
-      } else {
-        console.log(
-          'ERROR: Could not save settings. Status = ' + response.data.status
-        )
       }
     })
-    .catch((error) => {
-      console.log('ERROR: Could not save settings:' + error)
+    .catch(() => {
+      // Handle error silently
     })
 }
 

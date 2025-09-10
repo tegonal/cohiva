@@ -38,7 +38,6 @@ export default defineRouter(function () {
 
       if (!isAuthenticated) {
         authStore.setReturnUrl(to.fullPath)
-        console.log('Router: Authentication required -> redirect to /login')
         return '/login'
       }
     }

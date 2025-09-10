@@ -1,6 +1,5 @@
 <template>
   <q-page padding class="">
-    <!-- <q-page class="flex flex-center">-->
     <h4 class="q-mx-xs q-my-md">Deine Reservationen</h4>
 
     <div class="" v-if="hasReservations">
@@ -29,8 +28,6 @@
             </q-item-section>
 
             <q-item-section side top>
-              <!-- <q-item-label caption>5 min ago</q-item-label>
-            <q-icon name="star" color="yellow" /> -->
               <q-btn
                 icon="edit"
                 name="Editieren"
@@ -75,8 +72,6 @@
             </q-item-section>
 
             <q-item-section side top>
-              <!-- <q-item-label caption>5 min ago</q-item-label>
-            <q-icon name="star" color="yellow" /> -->
               <q-btn icon="edit" name="Editieren" v-if="reservation.canEdit" />
             </q-item-section>
           </q-item>
@@ -160,24 +155,13 @@ import { useAuthStore } from 'stores/auth-store'
 const authStore = useAuthStore()
 
 function cancelReservation(res: any): void {
-  console.log('Cancel id ' + res.id)
   api
-    .post(
-      '/api/v1/reservation/edit/',
-      {
-        action: 'cancel',
-        reservationId: res.id,
-      },
-      {
-        headers: {
-          Authorization: 'Bearer ' + authStore.accessToken,
-        },
-      }
-    )
+    .post('/api/v1/reservation/edit/', {
+      action: 'cancel',
+      reservationId: res.id,
+    })
     .then((response) => {
-      //console.log(response);
       apiError.value = ''
-      console.log(response.data)
       if (response.data.status == 'OK') {
         res.canEdit = false
         res.cancelled = true
@@ -191,17 +175,12 @@ function cancelReservation(res: any): void {
       cancelationError.value = true
       cancelationErrorMsg.value = 'Fehler beim Speichern.'
       if ('response' in error) {
-        console.log('ERROR: ' + error.response.data.detail)
         if (
           error.response.data.detail == 'Anmeldedaten fehlen.' ||
           error.response.data.detail == 'Ungültiges Token'
         ) {
-          // Auth missing -> Force new login
-          //console.log("DISABLED FOR DEBUGGING: Force logout");
           authStore.logout()
         }
-      } else {
-        console.log('ERROR: ' + error)
       }
     })
 }
@@ -214,21 +193,14 @@ function editReservation(res: any): void {
 
 function fetchData(): void {
   api
-    .get('/api/v1/reservation/reservations/', {
-      headers: {
-        Authorization: 'Bearer ' + authStore.accessToken,
-      },
-    })
+    .get('/api/v1/reservation/reservations/')
     .then((response) => {
-      //console.log(response);
       apiError.value = ''
       const now = Date.now()
       reservations.length = 0
       past_reservations.length = 0
       for (let i in response.data.results) {
         let r = response.data.results[i]
-        /*console.log(r);
-        console.log(r.name);*/
         const date_start = new Date(r.date_start)
         const date_end = new Date(r.date_end)
         const res_data = {
@@ -251,17 +223,12 @@ function fetchData(): void {
     .catch((error) => {
       apiError.value = 'Es ist ein Fehler aufgetreten.'
       if ('response' in error) {
-        console.log('ERROR: ' + error.response.data.detail)
         if (
           error.response.data.detail == 'Anmeldedaten fehlen.' ||
           error.response.data.detail == 'Ungültiges Token'
         ) {
-          // Auth missing -> Force new login
-          //console.log("DISABLED FOR DEBUGGING: Force logout");
           authStore.logout()
         }
-      } else {
-        console.log('ERROR: ' + error)
       }
     })
 }
@@ -274,26 +241,7 @@ const cancelationError = ref(false)
 const cancelationErrorMsg = ref('')
 
 const past_reservations = reactive<any[]>([])
-const reservations = reactive<any[]>([]) /*
-  {
-    id: "1000",
-    title: "Gästezimmer 003",
-    date: "12.10.2022 - 13.10.2022",
-    canEdit: true,
-  },
-  {
-    id: "1001",
-    title: "Gästezimmer 410",
-    date: "22.09.2022 - 05.10.2022",
-    canEdit: false,
-  },
-  {
-    id: "1002",
-    title: "Gästezimmer 509",
-    date: "22.03.2022 - 01.04.2021",
-    canEdit: false,
-  },
-]);*/
+const reservations = reactive<any[]>([])
 onMounted(() => {
   fetchData()
 })
