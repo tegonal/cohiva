@@ -75,7 +75,7 @@ def save(force=False):
             return
     cmd = (
         f"mysqldump --events --create-options --quote-names --skip-extended-insert "
-        f'-p{s.db_pass} -u{s.db_user} {s.prod_db} | grep -vE "^INSERT INTO '
+        f'-p{s.db_pass} -u{s.db_user} -h{s.db_host} {s.prod_db} | grep -vE "^INSERT INTO '
         "\\`(oauth2_provider_accesstoken|oauth2_provider_application|"
         "oauth2_provider_refreshtoken|django_session|authtoken_token|auth_user|django_admin_log"
         ')\\` VALUES \\("'
@@ -102,9 +102,7 @@ def load(force=False):
     )
     if not force and not confirm_action():
         return
-    cmd = (
-        f"mysql -p{s.db_pass} -u{s.db_user} {s.test_db} < {s.demodata_dir}/{s.demodata_prefix}.sql"
-    )
+    cmd = f"mysql -p{s.db_pass} -u{s.db_user} -h{s.db_host} {s.test_db} < {s.demodata_dir}/{s.demodata_prefix}.sql"
     run_cmd(cmd, shell=True)
     cmd = (
         f"rsync -a --info=NAME --delete --delete-missing-args {s.demodata_dir}/media/* "
@@ -130,9 +128,7 @@ def deploy_to_prod(force=False):
     )
     if not force and not confirm_action():
         return
-    cmd = (
-        f"mysql -p{s.db_pass} -u{s.db_user} {s.prod_db} < {s.demodata_dir}/{s.demodata_prefix}.sql"
-    )
+    cmd = f"mysql -p{s.db_pass} -u{s.db_user} -h{s.db_host} {s.prod_db} < {s.demodata_dir}/{s.demodata_prefix}.sql"
     run_cmd(cmd, shell=True)
     cmd = (
         f"rsync -a --info=NAME --delete --delete-missing-args {s.demodata_dir}/media/* "
