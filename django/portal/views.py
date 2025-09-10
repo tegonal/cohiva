@@ -246,48 +246,14 @@ def home(request, message=None):
 
 @protected_resource(scopes=["username", "email", "realname"])
 def oauth_identity(request):
-    # user = request.user
-    user = request.resource_owner
-    host = request.get_host()
-    if user.is_authenticated:
-        auth_info = portal_auth.authorize(user, host)
-        if not auth_info["user_id"]:
-            logger.warning(
-                "%s - %s oauth_identity(): DENIED: %s"
-                % (request.META["REMOTE_ADDR"], host, auth_info["reason"])
-            )
-            return HttpResponse("Unauthorized", status=401)
-
-        if settings.DEBUG:
-            auth_info["user_id"] = "%s_test" % (auth_info["user_id"])
-        logger.info(
-            "%s - %s oauth_identity(): send identity user_id=%s, username=%s, email=%s, name=%s"
-            % (
-                request.META["REMOTE_ADDR"],
-                host,
-                auth_info["user_id"],
-                user.username,
-                user.email,
-                auth_info["name"],
-            )
-        )
+    profile = portal_auth.get_oauth_profile(request)
+    if not profile:
+        return HttpResponse("Unauthorized", status=401)
+    else:
         return HttpResponse(
-            json.dumps(
-                {
-                    "id": auth_info["user_id"],
-                    "username": user.username,
-                    "email": user.email,
-                    "name": auth_info["name"],
-                }
-            ),
+            json.dumps(profile),
             content_type="application/json",
         )
-    else:
-        logger.error(
-            "%s - %s oauth_identity(): DENIED: not authenticated u=%s"
-            % (request.META["REMOTE_ADDR"], host, user.username)
-        )
-        return HttpResponse("Unauthorized", status=401)
 
 
 def debug_middleware(get_response):

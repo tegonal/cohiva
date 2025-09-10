@@ -55,6 +55,8 @@ USE_X_FORWARDED_HOST = True
 CORS_ALLOWED_ORIGINS = [
     "https://chat." + cbc.DOMAIN,
     "https://app." + cbc.DOMAIN,
+    "https://chat." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
+    "https://app." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
     "http://localhost:9000",
     "http://127.0.0.1:9000",
     "http://localhost:9001",
@@ -78,6 +80,18 @@ OAUTH2_PROVIDER = {
     "REQUEST_APPROVAL_PROMPT": "auto",  ## auto / force
     "PKCE_REQUIRED": False,  ## Rocket.Chat does not support PKCE
 }
+
+## Enable OIDC
+OAUTH2_PROVIDER["OIDC_ENABLED"] = True
+with open(str(BASE_DIR / "cohiva/oauth2/oidc.key")) as keyfile:
+    OAUTH2_PROVIDER["OIDC_RSA_PRIVATE_KEY"] = keyfile.read()
+OAUTH2_PROVIDER["SCOPES"].update(
+    {
+        "profile": "Profildaten wie Name, Vorname, etc.",
+        "openid": "OpenID Connect scope",
+    }
+)
+OAUTH2_PROVIDER["OAUTH2_VALIDATOR_CLASS"] = "cohiva.oauth_validators.CohivaOAuth2Validator"
 
 if "portal" in cbc.FEATURES:
     ## SAML 2.0

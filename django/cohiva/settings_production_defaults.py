@@ -35,6 +35,8 @@ ALLOWED_HOSTS = [cbc.PROD_HOSTNAME + "." + cbc.DOMAIN]
 CORS_ALLOWED_ORIGINS = [
     "https://chat." + cbc.DOMAIN,
     "https://app." + cbc.DOMAIN,
+    "https://chat." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
+    "https://app." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
 ]
 
 CSRF_TRUSTED_ORIGINS = [
