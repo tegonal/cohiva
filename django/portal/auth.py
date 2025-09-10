@@ -1,10 +1,14 @@
 import logging
 
 from django.conf import settings
+from django.http import HttpResponseForbidden
+from oauth2_provider.models import get_application_model
+from oauth2_provider.views import AuthorizationView
 
 from geno.models import Address
 from geno.utils import is_member, is_renting
 
+Application = get_application_model()
 logger = logging.getLogger("access_portal")
 
 
@@ -109,3 +113,24 @@ def authorize_address(address, uid, host=None):
         "given_name": address.first_name,
         "family_name": address.name,
     }
+
+
+class CohivaAuthorizationView(AuthorizationView):
+    def dispatch(self, request, *args, **kwargs):
+        # Fetch the OAuth2 Application
+        client_id = request.GET.get("client_id")
+        try:
+            app = Application.objects.get(client_id=client_id)
+        except Application.DoesNotExist:
+            return HttpResponseForbidden("Invalid client")
+
+        # Example: deny specific users access to a specific app
+        # denied_users = ["blocked@example.com", "user2@example.com"]
+        #
+        # if user.email in denied_users and app.name == "My PWA":
+        #    return HttpResponseForbidden("Access denied for this application.")
+
+        if not get_oauth_profile(request):
+            return HttpResponseForbidden(f"Access denied for {app.name}.")
+
+        return super().dispatch(request, *args, **kwargs)
