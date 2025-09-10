@@ -1,43 +1,6 @@
 /* Cohiva App settings - Default Configuration */
 
-interface ButtonLink {
-  link: string
-}
-
-interface NavigationLink {
-  caption: string
-  icon: string
-  link: string
-  title: string
-}
-
-interface ReservationLink {
-  caption: string
-  link: string
-  title: string
-}
-
-interface Settings {
-  APP_BASENAME: string
-  BUTTON_LINKS: {
-    CHAT: ButtonLink
-    CLOUD: ButtonLink
-    HANDBUCH: ButtonLink
-  }
-  DOMAIN: string
-  NAVIGATION_LINKS: NavigationLink[]
-  OAUTH_CLIENT_ID: string
-  PASSWORD_RESET_LINK: string
-  PROD_HOSTNAME: string
-  RESERVATION_LINKS: {
-    LINKS: ReservationLink[]
-    NOTE: string
-  }
-  SITE_DESCRIPTION: string
-  SITE_NAME: string
-  SITE_NICKNAME: string
-  TEST_HOSTNAME: string
-}
+import type { Settings } from './schemas'
 
 const settings: Settings = {
   APP_BASENAME: 'cohiva',
@@ -105,10 +68,4 @@ const settings: Settings = {
   TEST_HOSTNAME: 'demo',
 }
 
-export {
-  type ButtonLink,
-  type NavigationLink,
-  type ReservationLink,
-  settings,
-  type Settings,
-}
+export { settings, type Settings }

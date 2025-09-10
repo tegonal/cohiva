@@ -1,6 +1,6 @@
 <template>
   <q-page padding class="">
-    <h4 class="q-mx-xs q-my-md">Deine Reservationen</h4>
+    <h4 class="q-mx-xs q-my-md">{{ $t('reservationPage.title') }}</h4>
 
     <div class="" v-if="hasReservations">
       <q-list style="max-width: 400px">
@@ -23,14 +23,14 @@
                 v-if="reservation.cancelled"
                 class="text-negative"
               >
-                STORNIERT
+                {{ $t('reservationPage.status.cancelled') }}
               </q-item-label>
             </q-item-section>
 
             <q-item-section side top>
               <q-btn
                 icon="edit"
-                name="Editieren"
+                :name="$t('reservationPage.buttons.edit')"
                 v-if="reservation.canEdit"
                 @click="editReservation(reservation)"
               />
@@ -41,8 +41,7 @@
       </q-list>
     </div>
     <div class="q-ma-xs" v-else>
-      Du hast keine bevorstehenden Reservationen. Erstelle eine neue Reservation
-      mit dem Plus-Knopf unten rechts.
+      {{ $t('reservationPage.emptyState') }}
     </div>
     <div
       v-if="apiError"
@@ -56,7 +55,7 @@
 
     <div v-if="hasPastReservations">
       <h6 class="q-mx-xs q-my-md text-grey-6" v-if="hasPastReservations">
-        Vergangene Reservationen
+        {{ $t('reservationPage.pastReservations') }}
       </h6>
       <q-list style="max-width: 400px">
         <div v-for="reservation in past_reservations" :key="reservation.id">
@@ -72,7 +71,11 @@
             </q-item-section>
 
             <q-item-section side top>
-              <q-btn icon="edit" name="Editieren" v-if="reservation.canEdit" />
+              <q-btn
+                icon="edit"
+                :name="$t('reservationPage.buttons.edit')"
+                v-if="reservation.canEdit"
+              />
             </q-item-section>
           </q-item>
           <q-separator spaced inset />
@@ -84,30 +87,43 @@
       <q-card>
         <q-card-section class="row items-center">
           <q-avatar icon="question_mark" color="primary" text-color="white" />
-          <span class="q-ml-sm text-h6"> Reservation löschen?</span>
+          <span class="q-ml-sm text-h6">{{
+            $t('reservationPage.cancelDialog.title')
+          }}</span>
         </q-card-section>
         <q-card-section class="row items-center">
           <p>
-            Reservationen können momentan noch nicht geändert, sondern nur
-            storniert werden. Danach kannst du eine neue Reservation erfassen.
+            {{ $t('reservationPage.cancelDialog.explanation') }}
           </p>
           <p class="q-mb-sx">
-            <b>Möchtest du die folgende Reservation definitiv stornieren?</b>
+            <b>{{ $t('reservationPage.cancelDialog.question') }}</b>
           </p>
           <ul>
-            <li>Raum: {{ cancelationData.title }}</li>
-            <li v-if="cancelationData.summary">
-              Anlass: {{ cancelationData.summary }}
+            <li>
+              {{ $t('reservationPage.cancelDialog.room') }}
+              {{ cancelationData.title }}
             </li>
-            <li>Datum: {{ cancelationData.date }}</li>
+            <li v-if="cancelationData.summary">
+              {{ $t('reservationPage.cancelDialog.event') }}
+              {{ cancelationData.summary }}
+            </li>
+            <li>
+              {{ $t('reservationPage.cancelDialog.date') }}
+              {{ cancelationData.date }}
+            </li>
           </ul>
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="Nein, abbrechen" color="primary" v-close-popup />
           <q-btn
             flat
-            label="Ja, Stornieren!"
+            :label="$t('reservationPage.cancelDialog.cancelButton')"
+            color="primary"
+            v-close-popup
+          />
+          <q-btn
+            flat
+            :label="$t('reservationPage.cancelDialog.confirmButton')"
             color="primary"
             v-close-popup
             @click="cancelReservation(cancelationData)"
@@ -119,18 +135,21 @@
     <q-dialog v-model="cancelationError">
       <q-card>
         <q-card-section>
-          <div class="text-h6">Fehler</div>
+          <div class="text-h6">
+            {{ $t('reservationPage.errorDialog.title') }}
+          </div>
         </q-card-section>
 
         <q-card-section class="q-pt-none">
-          Die Reservation konnte nicht storniert werden.<br />
-          Grund: {{ cancelationErrorMsg }}
+          {{ $t('reservationPage.errorDialog.message') }}<br />
+          {{ $t('reservationPage.errorDialog.reason') }}
+          {{ cancelationErrorMsg }}
         </q-card-section>
 
         <q-card-actions align="right">
           <q-btn
             flat
-            label="OK"
+            :label="$t('reservationPage.errorDialog.ok')"
             color="primary"
             v-close-popup
             @click="fetchData()"
@@ -148,10 +167,12 @@
 <script setup lang="ts">
 import { date } from 'quasar'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { api } from 'boot/axios'
 import { useAuthStore } from 'stores/auth-store'
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 
 function cancelReservation(res: any): void {
@@ -171,13 +192,14 @@ function cancelReservation(res: any): void {
       }
     })
     .catch((error) => {
-      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      apiError.value = t('reservationPage.errors.general')
       cancelationError.value = true
-      cancelationErrorMsg.value = 'Fehler beim Speichern.'
+      cancelationErrorMsg.value = t('reservationPage.errors.saveFailed')
       if ('response' in error) {
         if (
-          error.response.data.detail == 'Anmeldedaten fehlen.' ||
-          error.response.data.detail == 'Ungültiges Token'
+          error.response.data.detail ==
+            t('reservationPage.errors.missingCredentials') ||
+          error.response.data.detail == t('reservationPage.errors.invalidToken')
         ) {
           authStore.logout()
         }
@@ -221,11 +243,12 @@ function fetchData(): void {
       }
     })
     .catch((error) => {
-      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      apiError.value = t('reservationPage.errors.general')
       if ('response' in error) {
         if (
-          error.response.data.detail == 'Anmeldedaten fehlen.' ||
-          error.response.data.detail == 'Ungültiges Token'
+          error.response.data.detail ==
+            t('reservationPage.errors.missingCredentials') ||
+          error.response.data.detail == t('reservationPage.errors.invalidToken')
         ) {
           authStore.logout()
         }

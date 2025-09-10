@@ -41,8 +41,8 @@ export const useAuthStore = defineStore('auth', {
         // Get the backend URL from settings
         const isDevelopment = process.env.NODE_ENV === 'development'
         const baseUrl = isDevelopment
-          ? `https://${(await import('app/config/settings')).settings.TEST_HOSTNAME}.${(await import('app/config/settings')).settings.DOMAIN}`
-          : `https://${(await import('app/config/settings')).settings.PROD_HOSTNAME}.${(await import('app/config/settings')).settings.DOMAIN}`
+          ? `https://${settings.TEST_HOSTNAME}.${settings.DOMAIN}`
+          : `https://${settings.PROD_HOSTNAME}.${settings.DOMAIN}`
 
         // Create an AbortController for timeout
         const controller = new AbortController()

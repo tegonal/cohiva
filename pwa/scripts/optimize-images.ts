@@ -9,9 +9,9 @@
 
 import fs from 'fs-extra'
 import path from 'path'
-import { fileURLToPath } from 'url'
-import { optimize } from 'svgo'
 import sharp from 'sharp'
+import { optimize } from 'svgo'
+import { fileURLToPath } from 'url'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -23,33 +23,16 @@ const svgoConfig = await import(path.join(rootDir, 'svgo.config.js')).then(
 )
 
 interface OptimizationResult {
-  originalSize: number
   optimizedSize: number
-  saved: number
+  originalSize: number
   percent: string
+  saved: number
 }
 
-async function optimizeSVG(filepath: string): Promise<OptimizationResult> {
-  const input = await fs.readFile(filepath, 'utf8')
-  const originalSize = Buffer.byteLength(input, 'utf8')
-
-  const result = optimize(input, {
-    path: filepath,
-    ...svgoConfig,
-  })
-
-  const optimizedSize = Buffer.byteLength(result.data, 'utf8')
-  const saved = originalSize - optimizedSize
-  const percent = ((saved / originalSize) * 100).toFixed(1)
-
-  await fs.writeFile(filepath, result.data)
-
-  return {
-    originalSize,
-    optimizedSize,
-    saved,
-    percent,
-  }
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes}B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`
 }
 
 async function optimizeBitmap(filepath: string): Promise<OptimizationResult> {
@@ -60,26 +43,26 @@ async function optimizeBitmap(filepath: string): Promise<OptimizationResult> {
   let pipeline = sharp(filepath)
 
   switch (ext) {
-    case '.jpg':
     case '.jpeg':
+    case '.jpg':
       pipeline = pipeline.jpeg({
-        quality: 85,
-        progressive: true,
         mozjpeg: true,
+        progressive: true,
+        quality: 85,
       })
       break
 
     case '.png':
       pipeline = pipeline.png({
-        compressionLevel: 9,
         adaptiveFiltering: true,
+        compressionLevel: 9,
       })
       break
 
     case '.webp':
       pipeline = pipeline.webp({
-        quality: 85,
         effort: 6,
+        quality: 85,
       })
       break
 
@@ -101,18 +84,18 @@ async function optimizeBitmap(filepath: string): Promise<OptimizationResult> {
     const percent = ((saved / originalSize) * 100).toFixed(1)
 
     return {
-      originalSize,
       optimizedSize,
-      saved,
+      originalSize,
       percent,
+      saved,
     }
   } else {
     await fs.remove(tempPath)
     return {
-      originalSize,
       optimizedSize: originalSize,
-      saved: 0,
+      originalSize,
       percent: '0',
+      saved: 0,
     }
   }
 }
@@ -183,10 +166,27 @@ async function optimizeImages(directory: string): Promise<void> {
   }
 }
 
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes}B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`
+async function optimizeSVG(filepath: string): Promise<OptimizationResult> {
+  const input = await fs.readFile(filepath, 'utf8')
+  const originalSize = Buffer.byteLength(input, 'utf8')
+
+  const result = optimize(input, {
+    path: filepath,
+    ...svgoConfig,
+  })
+
+  const optimizedSize = Buffer.byteLength(result.data, 'utf8')
+  const saved = originalSize - optimizedSize
+  const percent = ((saved / originalSize) * 100).toFixed(1)
+
+  await fs.writeFile(filepath, result.data)
+
+  return {
+    optimizedSize,
+    originalSize,
+    percent,
+    saved,
+  }
 }
 
 // Main

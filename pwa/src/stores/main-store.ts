@@ -10,12 +10,22 @@ interface Capabilities {
 interface MainState {
   appVersion: string
   capabilities: Capabilities
+  debugText: string
   registration: null | ServiceWorkerRegistration
   showAppUpdatedBanner: boolean
 }
 
 export const useMainStore = defineStore('main', {
   actions: {
+    setDebugText(text: string): void {
+      this.debugText = text
+      // Auto-clear after 5 seconds
+      if (text) {
+        setTimeout(() => {
+          this.debugText = ''
+        }, 5000)
+      }
+    },
     update_version(): void {
       const prev_appVersion = JSON.parse(
         localStorage.getItem('appVersion') || 'null'
@@ -29,6 +39,7 @@ export const useMainStore = defineStore('main', {
   state: (): MainState => ({
     appVersion: version,
     capabilities: { depot8: false, residentHo8: false },
+    debugText: '',
     registration: null,
     showAppUpdatedBanner: false,
   }),

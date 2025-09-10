@@ -1,82 +1,109 @@
 <template>
   <q-page>
-    <div class="flex flex-center">
+    <div class="flex flex-center q-py-xl">
       <img
         :alt="settings.SITE_NICKNAME + ' Logo'"
-        src="/src/assets/logo.svg"
+        :src="logoPath"
         style="width: 200px; height: 200px"
       />
     </div>
-    <div class="row flex-center q-ma-sm">
-      <q-btn
-        icon="calendar_month"
-        label="Kalender"
-        stack
-        to="/calendar"
-        padding="md"
-        :class="buttonClass"
-      ></q-btn>
-      <q-btn
-        icon="edit_calendar"
-        label="Reservation"
-        stack
-        to="/reservation"
-        padding="md"
-        :class="buttonClass"
-      ></q-btn>
+    <div class="row flex-center q-ma-md">
+      <q-btn stack to="/calendar" padding="lg" flat :class="buttonClass">
+        <q-icon
+          name="sym_o_calendar_month"
+          size="3.5rem"
+          style="font-variation-settings: 'wght' 300"
+        />
+        <div class="text-caption">{{ $t('indexPage.buttons.calendar') }}</div>
+      </q-btn>
+      <q-btn stack to="/reservation" padding="lg" flat :class="buttonClass">
+        <q-icon
+          name="sym_o_edit_calendar"
+          size="3.5rem"
+          style="font-variation-settings: 'wght' 300"
+        />
+        <div class="text-caption">
+          {{ $t('indexPage.buttons.reservation') }}
+        </div>
+      </q-btn>
       <q-btn
         v-if="mainStore.capabilities.residentHo8"
-        icon="chat"
-        label="Chat"
         stack
         :href="settings.BUTTON_LINKS.CHAT.link"
         target="_blank"
-        padding="md"
+        padding="lg"
+        flat
         :class="buttonClass"
-      ></q-btn>
+      >
+        <q-icon
+          name="sym_o_chat"
+          size="3.5rem"
+          style="font-variation-settings: 'wght' 300"
+        />
+        <div class="text-caption">{{ $t('indexPage.buttons.chat') }}</div>
+      </q-btn>
       <q-btn
         v-if="mainStore.capabilities.residentHo8"
-        icon="construction"
-        label="Reparaturmeldung"
         stack
         to="/repair"
-        padding="md"
+        padding="lg"
+        flat
         :class="buttonClass"
-      ></q-btn>
+      >
+        <q-icon
+          name="sym_o_construction"
+          size="3.5rem"
+          style="font-variation-settings: 'wght' 300"
+        />
+        <div class="text-caption">{{ $t('indexPage.buttons.repair') }}</div>
+      </q-btn>
       <q-btn
         v-if="mainStore.capabilities.residentHo8"
-        icon="cloud"
-        label="Cloud"
         stack
         :href="settings.BUTTON_LINKS.CLOUD.link"
         target="_blank"
-        padding="md"
+        padding="lg"
+        flat
         :class="buttonClass"
-      ></q-btn>
+      >
+        <q-icon
+          name="sym_o_cloud"
+          size="3.5rem"
+          style="font-variation-settings: 'wght' 300"
+        />
+        <div class="text-caption">{{ $t('indexPage.buttons.cloud') }}</div>
+      </q-btn>
       <q-btn
         v-if="mainStore.capabilities.residentHo8"
-        icon="menu_book"
-        label="Handbuch"
         stack
         :href="settings.BUTTON_LINKS.HANDBUCH.link"
         target="_blank"
-        padding="md"
+        padding="lg"
+        flat
         :class="buttonClass"
-      ></q-btn>
+      >
+        <q-icon
+          name="sym_o_menu_book"
+          size="3.5rem"
+          style="font-variation-settings: 'wght' 300"
+        />
+        <div class="text-caption">{{ $t('indexPage.buttons.manual') }}</div>
+      </q-btn>
       <q-btn
         v-if="mainStore.capabilities.depot8"
-        icon="storefront"
-        label="Depot8"
         stack
         to="/credit_accounting"
-        padding="md"
+        padding="lg"
+        flat
         :class="buttonClass"
-      ></q-btn>
-    </div>
-    <div v-if="isDevelopment">
-      <p class="text-red text-center">
-        TESTMODUS - Änderungen werden lediglich an einen Testserver übermittelt.
-      </p>
+      >
+        <q-icon
+          name="sym_o_storefront"
+          size="3.5rem"
+          style="font-variation-settings: 'wght' 300"
+        />
+        <div class="text-caption">{{ $t('indexPage.buttons.depot8') }}</div>
+      </q-btn>
     </div>
     <div
       v-if="apiError"
@@ -92,20 +119,25 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { api } from 'boot/axios'
+import { useThemedLogo } from 'src/composables/use-themed-logo'
 import { useAuthStore } from 'stores/auth-store'
 import { useMainStore } from 'stores/main-store'
 
 import { settings } from '../../config/settings'
 
-const buttonClass = 'col-xs-6 col-sm-4 col-md-3 q-my-xs'
-const isDevelopment = process.env.NODE_ENV === 'development'
+const buttonClass = 'col-xs-6 col-sm-4 col-md-3 q-pa-md'
 
 const apiError = ref('')
 
+const { t } = useI18n()
 const mainStore = useMainStore()
 const authStore = useAuthStore()
+
+// Theme-aware logo
+const { logoPath } = useThemedLogo()
 
 function getCapabilities() {
   // Get Caps from server and update mainStore.capabilities
@@ -128,11 +160,12 @@ function getCapabilities() {
       }
     })
     .catch((error) => {
-      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      apiError.value = t('indexPage.errors.general')
       if ('response' in error) {
         if (
-          error.response.data.detail == 'Anmeldedaten fehlen.' ||
-          error.response.data.detail == 'Ungültiges Token'
+          error.response.data.detail ==
+            t('indexPage.errors.missingCredentials') ||
+          error.response.data.detail == t('indexPage.errors.invalidToken')
         ) {
           authStore.logout()
         }

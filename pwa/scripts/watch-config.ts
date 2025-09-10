@@ -7,12 +7,12 @@
  * the make-tenant-config script to regenerate assets and styles.
  */
 
+import { exec } from 'child_process'
+import chokidar from 'chokidar'
 import fs from 'fs-extra'
 import path from 'path'
-import { exec } from 'child_process'
-import { promisify } from 'util'
 import { fileURLToPath } from 'url'
-import chokidar from 'chokidar'
+import { promisify } from 'util'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -29,6 +29,7 @@ let isBuilding = false
 // Files and directories to watch
 const watchPaths = [
   path.join(rootDir, 'config', '*.js'),
+  path.join(rootDir, 'config', '*.ts'), // Include TypeScript config files
   path.join(rootDir, 'config', '*.scss'),
   path.join(rootDir, 'config', '*.svg'),
   path.join(rootDir, 'config', '*.png'),
@@ -50,6 +51,48 @@ const ignorePaths = [
   '**/.temp-*',
 ]
 
+// Check if chokidar is installed
+async function checkDependencies(): Promise<boolean> {
+  try {
+    await import('chokidar')
+    return true
+  } catch (error) {
+    console.error('❌ Missing dependency: chokidar')
+    console.log('\n   Please install it with:')
+    console.log('   yarn add -D chokidar')
+    console.log('\n   or')
+    console.log('   npm install --save-dev chokidar\n')
+    return false
+  }
+}
+
+function handleChange(path: string): void {
+  const relativePath = path.replace(rootDir + '/', '')
+  console.log(`📝 Changed: ${relativePath}`)
+
+  // Clear existing timer
+  if (debounceTimer) {
+    clearTimeout(debounceTimer)
+  }
+
+  // Set new timer
+  debounceTimer = setTimeout(() => {
+    runMakeTenantConfig()
+  }, DEBOUNCE_DELAY)
+}
+
+// Main
+async function main(): Promise<void> {
+  if (!(await checkDependencies())) {
+    process.exit(1)
+  }
+
+  startWatcher().catch((error) => {
+    console.error('❌ Failed to start watcher:', error)
+    process.exit(1)
+  })
+}
+
 async function runMakeTenantConfig(): Promise<void> {
   if (isBuilding) {
     console.log('⏳ Build already in progress, queueing next build...')
@@ -59,10 +102,27 @@ async function runMakeTenantConfig(): Promise<void> {
   isBuilding = true
 
   try {
-    console.log('\n🔄 Config change detected, rebuilding...')
+    console.log('\n🔄 Config change detected, validating and rebuilding...')
     const startTime = Date.now()
 
-    const { stdout, stderr } = await execAsync(
+    // First validate the configuration
+    console.log('🔍 Validating configuration...')
+    try {
+      const { stdout: validateOut } = await execAsync('yarn validate:config', {
+        cwd: rootDir,
+      })
+      console.log('✅ Configuration valid')
+    } catch (validationError) {
+      console.error('❌ Configuration validation failed!')
+      if (validationError instanceof Error) {
+        console.error(validationError.message)
+      }
+      console.log('⚠️  Fix the configuration errors before continuing')
+      return
+    }
+
+    // Then run make-tenant-config
+    const { stderr, stdout } = await execAsync(
       'node scripts/make-tenant-config.js',
       {
         cwd: rootDir,
@@ -99,25 +159,10 @@ async function runMakeTenantConfig(): Promise<void> {
   }
 }
 
-function handleChange(path: string): void {
-  const relativePath = path.replace(rootDir + '/', '')
-  console.log(`📝 Changed: ${relativePath}`)
-
-  // Clear existing timer
-  if (debounceTimer) {
-    clearTimeout(debounceTimer)
-  }
-
-  // Set new timer
-  debounceTimer = setTimeout(() => {
-    runMakeTenantConfig()
-  }, DEBOUNCE_DELAY)
-}
-
 async function startWatcher(): Promise<void> {
   console.log('👀 Config Watcher Started')
   console.log('   Watching for changes in:')
-  console.log('   - config/*.js (settings, theme)')
+  console.log('   - config/*.ts, *.js (settings, theme, schemas)')
   console.log('   - config/*.scss (webfonts, override)')
   console.log('   - config/*.svg, *.png (logo, icon)')
   console.log('   - config/fonts/* (font files)')
@@ -129,13 +174,13 @@ async function startWatcher(): Promise<void> {
 
   // Create watcher
   const watcher = chokidar.watch(watchPaths, {
-    ignored: ignorePaths,
-    persistent: true,
-    ignoreInitial: true,
     awaitWriteFinish: {
-      stabilityThreshold: 300,
       pollInterval: 100,
+      stabilityThreshold: 300,
     },
+    ignored: ignorePaths,
+    ignoreInitial: true,
+    persistent: true,
   })
 
   // Watch for changes
@@ -156,33 +201,6 @@ async function startWatcher(): Promise<void> {
     console.log('\n\n👋 Stopping config watcher...')
     watcher.close()
     process.exit(0)
-  })
-}
-
-// Check if chokidar is installed
-async function checkDependencies(): Promise<boolean> {
-  try {
-    await import('chokidar')
-    return true
-  } catch (error) {
-    console.error('❌ Missing dependency: chokidar')
-    console.log('\n   Please install it with:')
-    console.log('   yarn add -D chokidar')
-    console.log('\n   or')
-    console.log('   npm install --save-dev chokidar\n')
-    return false
-  }
-}
-
-// Main
-async function main(): Promise<void> {
-  if (!(await checkDependencies())) {
-    process.exit(1)
-  }
-
-  startWatcher().catch((error) => {
-    console.error('❌ Failed to start watcher:', error)
-    process.exit(1)
   })
 }
 

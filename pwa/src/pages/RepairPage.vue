@@ -1,50 +1,50 @@
 <template>
   <q-page padding class="">
-    Meldung von:<br />{{ contact }}
+    {{ $t('repairPage.reportFrom') }}<br />{{ contact }}
     <q-form @submit="submitReport()">
       <q-select
         v-model="unit"
-        label="Betroffene Wohnung/Raum"
+        :label="$t('repairPage.form.affectedUnit.label')"
         :options="unitOptions"
         :dense="dense"
         :loading="formLoading"
-        :rules="[(val) => !!val || 'Pflichtfeld']"
+        :rules="[(val) => !!val || $t('repairPage.form.requiredField')]"
       ></q-select>
       <q-select
         v-model="category"
-        label="Betroffener Bereich/Bauteil"
+        :label="$t('repairPage.form.affectedArea.label')"
         :options="categoryOptions"
         :dense="dense"
         :loading="formLoading"
-        :rules="[(val) => !!val || 'Pflichtfeld']"
+        :rules="[(val) => !!val || $t('repairPage.form.requiredField')]"
       ></q-select>
       <q-input
         v-model="subject"
-        label="Betreff"
-        placeholder="Ein paar Stichworte um was es geht"
+        :label="$t('repairPage.form.subject.label')"
+        :placeholder="$t('repairPage.form.subject.placeholder')"
         :dense="dense"
-        :rules="[(val) => !!val || 'Pflichtfeld']"
+        :rules="[(val) => !!val || $t('repairPage.form.requiredField')]"
         maxlength="60"
       />
       <q-input
         v-model="text"
-        label="Beschreibung des Schadens"
-        placeholder="Möglichst genaue Beschreibung des Schadens/Problems"
+        :label="$t('repairPage.form.description.label')"
+        :placeholder="$t('repairPage.form.description.placeholder')"
         :dense="dense"
         type="textarea"
-        :rules="[(val) => !!val || 'Pflichtfeld']"
+        :rules="[(val) => !!val || $t('repairPage.form.requiredField')]"
       />
       <q-input
         v-model="contact_text"
-        label="Erreichbarkeit"
-        placeholder="Wann und wie bist du am besten erreichbar?"
+        :label="$t('repairPage.form.availability.label')"
+        :placeholder="$t('repairPage.form.availability.placeholder')"
         :dense="dense"
-        :rules="[(val) => !!val || 'Pflichtfeld']"
+        :rules="[(val) => !!val || $t('repairPage.form.requiredField')]"
         maxlength="300"
       />
       <q-file
         v-model="pictures"
-        label="Bilder hinzufügen"
+        :label="$t('repairPage.form.images.label')"
         counter
         max-files="5"
         multiple
@@ -61,7 +61,7 @@
       <q-btn
         :loading="is_submitting"
         :disabled="submissionDisabled"
-        label="Absenden"
+        :label="$t('repairPage.form.submitButton')"
         color="primary"
         type="submit"
       />
@@ -78,33 +78,38 @@
     <q-dialog v-model="submissionError">
       <q-card>
         <q-card-section>
-          <div class="text-h6">Fehler</div>
+          <div class="text-h6">{{ $t('repairPage.errorDialog.title') }}</div>
         </q-card-section>
 
         <q-card-section class="q-pt-none">
-          Die Meldung konnte nicht übermittelt werden.<br />
-          Grund: {{ submissionErrorMsg }}
+          {{ $t('repairPage.errorDialog.message') }}<br />
+          {{ $t('repairPage.errorDialog.reason') }} {{ submissionErrorMsg }}
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="OK" color="primary" v-close-popup />
+          <q-btn
+            flat
+            :label="$t('repairPage.errorDialog.ok')"
+            color="primary"
+            v-close-popup
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
     <q-dialog v-model="submissionOK">
       <q-card>
         <q-card-section>
-          <div class="text-h6">Vielen Dank!</div>
+          <div class="text-h6">{{ $t('repairPage.successDialog.title') }}</div>
         </q-card-section>
 
         <q-card-section class="q-pt-none">
-          Die Meldung wurde erfolgreich übermittelt.
+          {{ $t('repairPage.successDialog.message') }}
         </q-card-section>
 
         <q-card-actions align="right">
           <q-btn
             flat
-            label="OK"
+            :label="$t('repairPage.successDialog.ok')"
             color="primary"
             v-close-popup
             @click="submitConfirmed()"
@@ -118,11 +123,13 @@
 <script setup lang="ts">
 import { useQuasar } from 'quasar'
 import { onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { api } from 'boot/axios'
 import { useAuthStore } from 'stores/auth-store'
 
+const { t } = useI18n()
 const quasar = useQuasar()
 const authStore = useAuthStore()
 const router = useRouter()
@@ -139,11 +146,11 @@ function fetchData() {
       formLoading.value = false
     })
     .catch((error) => {
-      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      apiError.value = t('repairPage.errors.general')
       if ('response' in error) {
         if (
-          error.response.data.detail == 'Anmeldedaten fehlen.' ||
-          error.response.data.detail == 'Ungültiges Token'
+          error.response.data.detail == t('repairPage.errors.general') ||
+          error.response.data.detail == t('repairPage.errors.general')
         ) {
           authStore.logout()
         }
@@ -153,9 +160,9 @@ function fetchData() {
 
 function onRejected(entries: any): void {
   if (entries[0].failedPropValidation == 'max-files') {
-    quasar.notify('Es können max. 5 Bilder hinzugefügt werden.')
+    quasar.notify(t('repairPage.notifications.maxImages'))
   } else {
-    quasar.notify('Ungültige Datei')
+    quasar.notify(t('repairPage.notifications.invalidFile'))
   }
 }
 
@@ -191,13 +198,13 @@ function submitReport() {
       is_submitting.value = false
     })
     .catch((error) => {
-      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      apiError.value = t('repairPage.errors.general')
       submissionError.value = true
-      submissionErrorMsg.value = 'Fehler beim Speichern.'
+      submissionErrorMsg.value = t('repairPage.errors.saveFailed')
       if ('response' in error) {
         if (
-          error.response.data.detail == 'Anmeldedaten fehlen.' ||
-          error.response.data.detail == 'Ungültiges Token'
+          error.response.data.detail == t('repairPage.errors.general') ||
+          error.response.data.detail == t('repairPage.errors.general')
         ) {
           authStore.logout()
         }
@@ -222,7 +229,7 @@ const pictures = ref([])
 const contact = ref('')
 const unitOptions = ref([
   {
-    label: 'Etwas anderes (bitte unter Betreff angeben)',
+    label: t('repairPage.form.affectedUnit.otherOption'),
     value: '__OTHER__',
   },
 ])

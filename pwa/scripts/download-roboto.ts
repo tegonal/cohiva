@@ -14,64 +14,64 @@ const __dirname = path.dirname(__filename)
 const rootDir = path.resolve(__dirname, '..')
 
 interface FontDefinition {
-  weight: string
-  style: 'normal' | 'italic'
   filename: string
+  style: 'italic' | 'normal'
   url: string
+  weight: string
 }
 
 // Roboto font URLs for essential weights (Latin subset)
 const fonts: FontDefinition[] = [
   // Regular weights
   {
-    weight: '300',
-    style: 'normal',
     filename: 'roboto-v30-latin-300.woff2',
+    style: 'normal',
     url: 'https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmSU5fBBc4.woff2',
+    weight: '300',
   },
   {
-    weight: '400',
-    style: 'normal',
     filename: 'roboto-v30-latin-regular.woff2',
+    style: 'normal',
     url: 'https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxK.woff2',
+    weight: '400',
   },
   {
-    weight: '500',
-    style: 'normal',
     filename: 'roboto-v30-latin-500.woff2',
+    style: 'normal',
     url: 'https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmEU9fBBc4.woff2',
+    weight: '500',
   },
   {
-    weight: '700',
-    style: 'normal',
     filename: 'roboto-v30-latin-700.woff2',
+    style: 'normal',
     url: 'https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlfBBc4.woff2',
+    weight: '700',
   },
 
   // Italic weights
   {
-    weight: '300',
-    style: 'italic',
     filename: 'roboto-v30-latin-300italic.woff2',
+    style: 'italic',
     url: 'https://fonts.gstatic.com/s/roboto/v30/KFOjCnqEu92Fr1Mu51TjASc6CsQ.woff2',
+    weight: '300',
   },
   {
-    weight: '400',
-    style: 'italic',
     filename: 'roboto-v30-latin-italic.woff2',
+    style: 'italic',
     url: 'https://fonts.gstatic.com/s/roboto/v30/KFOkCnqEu92Fr1Mu51xIIzI.woff2',
+    weight: '400',
   },
   {
-    weight: '500',
-    style: 'italic',
     filename: 'roboto-v30-latin-500italic.woff2',
+    style: 'italic',
     url: 'https://fonts.gstatic.com/s/roboto/v30/KFOjCnqEu92Fr1Mu51S7ACc6CsQ.woff2',
+    weight: '500',
   },
   {
-    weight: '700',
-    style: 'italic',
     filename: 'roboto-v30-latin-700italic.woff2',
+    style: 'italic',
     url: 'https://fonts.gstatic.com/s/roboto/v30/KFOjCnqEu92Fr1Mu51TzBic6CsQ.woff2',
+    weight: '700',
   },
 ]
 

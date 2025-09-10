@@ -3,3 +3,4 @@
 *.tmp
 *.backup
 .DS_Store
+*,js

@@ -1,6 +1,6 @@
 <template>
   <q-page padding class="">
-    <h4 class="q-my-md">Neue Reservation</h4>
+    <h4 class="q-my-md">{{ $t('reservationEditPage.title') }}</h4>
 
     <div class="row flex justify-between" v-if="reservationTypeOptions.length">
       <q-select
@@ -8,7 +8,7 @@
         v-model="reservationType"
         @update:model-value="formUpdated('type')"
         :options="reservationTypeOptions.map((x) => x.name)"
-        label="Was möchtest du reservieren?"
+        :label="$t('reservationEditPage.whatToReserve')"
       />
 
       <q-input
@@ -16,7 +16,7 @@
         @update:model-value="formUpdated('date_start')"
         class="col-xs-6 q-col-gutter-xs col-md-3"
         :class="{ hidden: !reservationType }"
-        label="Von"
+        :label="$t('reservationEditPage.from')"
         mask="##.##.####"
         :error="date_start_error"
       >
@@ -36,7 +36,12 @@
             :range="fixedTime"
           >
             <div class="row items-center justify-end">
-              <q-btn v-close-popup label="Schliessen" color="primary" flat />
+              <q-btn
+                v-close-popup
+                :label="$t('reservationEditPage.close')"
+                color="primary"
+                flat
+              />
             </div>
           </q-date>
         </q-popup-proxy>
@@ -66,7 +71,12 @@
             mask="HH:mm"
           >
             <div class="row items-center justify-end">
-              <q-btn v-close-popup label="Schliessen" color="primary" flat />
+              <q-btn
+                v-close-popup
+                :label="$t('reservationEditPage.close')"
+                color="primary"
+                flat
+              />
             </div>
           </q-time>
         </q-popup-proxy>
@@ -76,7 +86,7 @@
         v-model="date_end"
         @update:model-value="formUpdated('date_end')"
         class="col-xs-6 q-col-gutter-xs col-md-3"
-        label="Bis"
+        :label="$t('reservationEditPage.until')"
         mask="##.##.####"
         :error="date_end_error"
         :error_message="date_end_errormsg"
@@ -96,7 +106,12 @@
             @update:model-value="formUpdated('date_end')"
           >
             <div class="row items-center justify-end">
-              <q-btn v-close-popup label="Schliessen" color="primary" flat />
+              <q-btn
+                v-close-popup
+                :label="$t('reservationEditPage.close')"
+                color="primary"
+                flat
+              />
             </div>
           </q-date>
         </q-popup-proxy>
@@ -127,7 +142,12 @@
             mask="HH:mm"
           >
             <div class="row items-center justify-end">
-              <q-btn v-close-popup label="Schliessen" color="primary" flat />
+              <q-btn
+                v-close-popup
+                :label="$t('reservationEditPage.close')"
+                color="primary"
+                flat
+              />
             </div>
           </q-time>
         </q-popup-proxy>
@@ -135,8 +155,7 @@
     </div>
     <div class="row flex justify-between" v-else>
       <p>
-        Es gibt nichts, was du hier reservieren könntest. Möglicherweise fehlt
-        dir die nötige Berechtigung.
+        {{ $t('reservationEditPage.noPermission') }}
       </p>
     </div>
     <div
@@ -193,18 +212,23 @@
               v-if="room.isAvailable"
               @click="roomSelect(room)"
             >
-              Reservieren
+              {{ $t('reservationEditPage.reserve') }}
             </q-btn>
-            <div v-else>Nicht verfügbar<br />{{ room.unavailableDate }}</div>
+            <div v-else>
+              {{ $t('reservationEditPage.notAvailable') }}<br />{{
+                room.unavailableDate
+              }}
+            </div>
           </q-card-actions>
         </q-card>
       </div>
     </div>
     <div v-if="hasLinks">
       <p v-if="settings.RESERVATION_LINKS.NOTE">
-        <b>Hinweis:</b> {{ settings.RESERVATION_LINKS.NOTE }}
+        <b>{{ $t('reservationEditPage.note') }}</b>
+        {{ settings.RESERVATION_LINKS.NOTE }}
       </p>
-      <h6 class="q-my-xs">Links</h6>
+      <h6 class="q-my-xs">{{ $t('reservationEditPage.links') }}</h6>
       <q-list bordered separator>
         <q-item
           v-for="item in settings.RESERVATION_LINKS.LINKS"
@@ -226,18 +250,29 @@
       <q-card>
         <q-card-section class="row items-center">
           <q-avatar icon="question_mark" color="primary" text-color="white" />
-          <span class="q-ml-sm text-h6"
-            >Bitte bestätige deine Reservation:</span
-          >
+          <span class="q-ml-sm text-h6">{{
+            $t('reservationEditPage.confirmDialog.title')
+          }}</span>
           <ul>
-            <li>Raum: {{ selectedRoom?.title }}</li>
             <li>
-              Datum: Von {{ date_start }} {{ time_start }} bis {{ date_end }}
+              {{ $t('reservationEditPage.confirmDialog.room') }}
+              {{ selectedRoom?.title }}
+            </li>
+            <li>
+              {{ $t('reservationEditPage.confirmDialog.date') }}
+              {{ $t('reservationEditPage.confirmDialog.dateFrom') }}
+              {{ date_start }} {{ time_start }}
+              {{ $t('reservationEditPage.confirmDialog.dateTo') }}
+              {{ date_end }}
               {{ time_end }}
             </li>
             <li>
-              Kosten:
-              {{ selectedRoom?.costs ? selectedRoom.costs : ' Fr. 0.00' }}
+              {{ $t('reservationEditPage.confirmDialog.costs') }}:
+              {{
+                selectedRoom?.costs
+                  ? selectedRoom.costs
+                  : $t('reservationEditPage.confirmDialog.defaultCost')
+              }}
             </li>
           </ul>
           <div class="q-px-md">
@@ -245,11 +280,17 @@
               <q-input
                 v-if="summaryRequired"
                 v-model="reservationSummary"
-                label="Anlass/Grund der Reservation"
-                placeholder="Kurze Beschreibung"
+                :label="$t('reservationEditPage.confirmDialog.reason.label')"
+                :placeholder="
+                  $t('reservationEditPage.confirmDialog.reason.placeholder')
+                "
                 required
                 counter
-                :rules="[(val) => !!val || 'Bitte Feld ausfüllen']"
+                :rules="[
+                  (val) =>
+                    !!val ||
+                    $t('reservationEditPage.confirmDialog.reason.validation'),
+                ]"
                 minlength="1"
                 maxlength="120"
                 size="120"
@@ -262,10 +303,15 @@
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="Abbrechen" color="primary" v-close-popup />
           <q-btn
             flat
-            label="Reservieren"
+            :label="$t('reservationEditPage.confirmDialog.cancelButton')"
+            color="primary"
+            v-close-popup
+          />
+          <q-btn
+            flat
+            :label="$t('reservationEditPage.confirmDialog.reserveButton')"
             color="primary"
             v-close-popup
             :disabled="summaryRequired && !reservationSummary"
@@ -278,16 +324,24 @@
     <q-dialog v-model="submissionError">
       <q-card>
         <q-card-section>
-          <div class="text-h6">Fehler</div>
+          <div class="text-h6">
+            {{ $t('reservationEditPage.errorDialog.title') }}
+          </div>
         </q-card-section>
 
         <q-card-section class="q-pt-none">
-          Die Reservation konnte nicht abgeschlossen werden.<br />
-          Grund: {{ submissionErrorMsg }}
+          {{ $t('reservationEditPage.errorDialog.message') }}<br />
+          {{ $t('reservationEditPage.errorDialog.reason') }}
+          {{ submissionErrorMsg }}
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="OK" color="primary" v-close-popup />
+          <q-btn
+            flat
+            :label="$t('reservationEditPage.errorDialog.ok')"
+            color="primary"
+            v-close-popup
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -297,11 +351,13 @@
 <script setup lang="ts">
 import { settings } from 'app/config/settings'
 import { onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { api } from 'boot/axios'
 import { useAuthStore } from 'stores/auth-store'
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 const router = useRouter()
 
@@ -414,11 +470,13 @@ function getReservationTypes() {
       }
     })
     .catch((error) => {
-      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      apiError.value = t('reservationEditPage.errors.general')
       if ('response' in error) {
         if (
-          error.response.data.detail == 'Anmeldedaten fehlen.' ||
-          error.response.data.detail == 'Ungültiges Token'
+          error.response.data.detail ==
+            t('reservationEditPage.errors.missingCredentials') ||
+          error.response.data.detail ==
+            t('reservationEditPage.errors.invalidToken')
         ) {
           // Auth missing -> Force new login
           //console.log("DISABLED FOR DEBUGGING: Force logout");
@@ -456,11 +514,13 @@ function reservationSearch() {
       searchResult.value = response.data
     })
     .catch((error) => {
-      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      apiError.value = t('reservationEditPage.errors.general')
       if ('response' in error) {
         if (
-          error.response.data.detail == 'Anmeldedaten fehlen.' ||
-          error.response.data.detail == 'Ungültiges Token'
+          error.response.data.detail ==
+            t('reservationEditPage.errors.missingCredentials') ||
+          error.response.data.detail ==
+            t('reservationEditPage.errors.invalidToken')
         ) {
           // Auth missing -> Force new login
           //console.log("DISABLED FOR DEBUGGING: Force logout");
@@ -515,13 +575,15 @@ function submitReservation() {
       }
     })
     .catch((error) => {
-      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      apiError.value = t('reservationEditPage.errors.general')
       submissionError.value = true
-      submissionErrorMsg.value = 'Fehler beim Speichern.'
+      submissionErrorMsg.value = t('reservationEditPage.errors.saveFailed')
       if ('response' in error) {
         if (
-          error.response.data.detail == 'Anmeldedaten fehlen.' ||
-          error.response.data.detail == 'Ungültiges Token'
+          error.response.data.detail ==
+            t('reservationEditPage.errors.missingCredentials') ||
+          error.response.data.detail ==
+            t('reservationEditPage.errors.invalidToken')
         ) {
           // Auth missing -> Force new login
           //console.log("DISABLED FOR DEBUGGING: Force logout");

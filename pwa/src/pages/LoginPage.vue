@@ -1,20 +1,18 @@
 <template>
   <q-page>
-    <div class="flex flex-center">
+    <div class="flex flex-center q-py-xl">
       <img
         :alt="settings.SITE_NICKNAME + ' Logo'"
-        src="/src/assets/logo.svg"
+        :src="logoPath"
         style="width: 200px; height: 200px"
       />
     </div>
     <div class="row flex-center q-px-md">
       <div class="col-xs-12 col-sm-8 col-md-6 col-lg-4 text-center">
-        <h6>Melde dich mit deinem {{ settings.SITE_NICKNAME }}-Konto an:</h6>
-
         <!-- Backend Status Message -->
         <div v-if="checkingBackend" class="full-width q-my-md text-center">
           <q-spinner color="primary" size="2em" />
-          <div class="q-mt-sm">Verbindung zum Server wird geprüft...</div>
+          <div class="q-mt-sm">{{ $t('loginPage.checkingServer') }}</div>
         </div>
 
         <div v-else-if="authStore.backendError" class="full-width q-my-md">
@@ -22,13 +20,15 @@
             <template v-slot:avatar>
               <q-icon name="error" color="white" />
             </template>
-            <div class="text-subtitle1">Backend-Server nicht erreichbar</div>
+            <div class="text-subtitle1">
+              {{ $t('loginPage.backendError.title') }}
+            </div>
             <div class="q-mt-sm">{{ authStore.backendError }}</div>
             <template v-slot:action>
               <q-btn
                 flat
                 color="white"
-                label="Erneut versuchen"
+                :label="$t('loginPage.backendError.retry')"
                 @click="retryBackendCheck"
               />
             </template>
@@ -40,7 +40,6 @@
           <q-btn
             color="primary"
             class="full-width q-my-md"
-            size="lg"
             @click="loginWithOAuth()"
             :disabled="isLoading || checkingBackend || !!authStore.backendError"
           >
@@ -51,7 +50,7 @@
               class="q-mr-sm"
             />
             <q-icon v-else name="login" class="q-mr-sm" />
-            Mit {{ settings.SITE_NICKNAME }} anmelden
+            {{ $t('loginPage.loginButton', { site: settings.SITE_NICKNAME }) }}
           </q-btn>
 
           <div
@@ -65,11 +64,13 @@
           </div>
 
           <p class="q-mt-lg text-center full-width text-grey-6 text-body2">
-            Du wirst zur sicheren Anmeldeseite weitergeleitet.
+            {{ $t('loginPage.redirectNotice') }}
           </p>
 
           <p class="q-mt-md text-center full-width text-grey-6 text-subtitle-1">
-            <a :href="settings.PASSWORD_RESET_LINK">Passwort vergessen?</a>
+            <a :href="settings.PASSWORD_RESET_LINK">{{
+              $t('loginPage.forgotPassword')
+            }}</a>
           </p>
         </div>
       </div>
@@ -79,12 +80,18 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { useThemedLogo } from 'src/composables/use-themed-logo'
 import { useAuthStore } from 'stores/auth-store'
 
 import { settings } from '../../config/settings'
 
+// Theme-aware logo
+const { logoPath } = useThemedLogo()
+
+const { t } = useI18n()
 const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
@@ -118,9 +125,8 @@ async function loginWithOAuth() {
     // Start OAuth login flow
     await authStore.login(returnUrl as string)
     // Note: This will redirect to the OAuth provider, so the promise won't resolve
-  } catch (err) {
-    console.error('OAuth login error:', err)
-    error.value = 'Anmeldung fehlgeschlagen. Bitte versuche es erneut.'
+  } catch {
+    error.value = t('loginPage.loginError')
     isLoading.value = false
   }
 }

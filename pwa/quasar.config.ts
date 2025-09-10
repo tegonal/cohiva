@@ -29,7 +29,7 @@ export default defineConfig((ctx) => ({
   // app boot file (/src/boot)
   // --> boot files are part of "main.js"
   // https://v2.quasar.dev/quasar-cli/boot-files
-  boot: ['i18n', 'axios', 'auth'],
+  boot: ['i18n', 'axios', 'auth', 'dark-mode'],
 
   // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#build
   build: {
@@ -63,7 +63,9 @@ export default defineConfig((ctx) => ({
     // rebuildCache: true, // rebuilds Vite/linter/etc cache on startup
 
     target: {
-      browser: ['es2019', 'edge88', 'firefox78', 'chrome87', 'safari13.1'],
+      // Modern browser targets - automatically uses browserslist if .browserslistrc exists
+      // Otherwise falls back to these sensible defaults
+      browser: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
       node: 'node24',
     },
     // TypeScript support
@@ -82,9 +84,6 @@ export default defineConfig((ctx) => ({
     // minify: false,
     // polyfillModulePreload: true,
     // distDir
-
-    // extendViteConf (viteConf) {},
-    // viteVuePluginOptions: {},
 
     vitePlugins: (() => {
       const plugins: any[] = [
@@ -244,6 +243,7 @@ export default defineConfig((ctx) => ({
 
     // 'roboto-font', // Disabled - using local fonts from config/fonts
     'material-icons', // optional, you are not bound to it
+    'material-symbols-outlined', // Variable font with adjustable weight
   ],
 
   // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#framework
@@ -261,7 +261,7 @@ export default defineConfig((ctx) => ({
     // directives: [],
 
     // Quasar plugins
-    plugins: ['Notify'],
+    plugins: ['Notify', 'Dark'],
   },
 
   // Add HTML template variables that can be used in index.html
