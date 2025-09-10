@@ -1,0 +1,27 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  
+  # Handle Authorization Header for OAuth
+  RewriteCond %{HTTP:Authorization} .
+  RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+  
+  # Don't rewrite files or directories
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  
+  # Rewrite everything else to index.html
+  RewriteRule ^.*$ /index.html [L]
+</IfModule>
+
+# Optional: Security headers
+<IfModule mod_headers.c>
+  # Prevent clickjacking
+  Header set X-Frame-Options "SAMEORIGIN"
+  
+  # Prevent MIME type sniffing
+  Header set X-Content-Type-Options "nosniff"
+  
+  # Enable XSS protection
+  Header set X-XSS-Protection "1; mode=block"
+</IfModule>
