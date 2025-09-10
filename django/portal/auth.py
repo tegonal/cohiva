@@ -1,7 +1,11 @@
+import logging
+
 from django.conf import settings
 
 from geno.models import Address
 from geno.utils import is_member, is_renting
+
+logger = logging.getLogger("access_portal")
 
 
 def check_address_user_auth():
@@ -16,6 +20,55 @@ def check_address_user_auth():
                     "Address with unauthorized user: %s [%s]" % (adr, adr.user.username)
                 )
     return unauth_addr
+
+
+def get_oauth_profile(request):
+    try:
+        # django.http.Request
+        user = request.resource_owner
+        host = request.get_host()
+        remote_addr = request.META["REMOTE_ADDR"]
+    except AttributeError:
+        # OCID request is oauthlib.common.Request
+        user = request.user
+        host = request.headers.get("HOST", "")
+        remote_addr = request.headers.get("REMOTE_ADDR", "")
+    if user.is_authenticated:
+        auth_info = authorize(user, host)
+        if not auth_info["user_id"]:
+            logger.warning(
+                "%s - %s get_oauth_profile(): DENIED: %s"
+                % (remote_addr, host, auth_info["reason"])
+            )
+            return None
+
+        if settings.DEBUG:
+            auth_info["user_id"] = "%s_test" % (auth_info["user_id"])
+        logger.info(
+            "%s - %s get_oauth_profile(): send identity user_id=%s, username=%s, email=%s, name=%s"
+            % (
+                remote_addr,
+                host,
+                auth_info["user_id"],
+                user.username,
+                user.email,
+                auth_info["name"],
+            )
+        )
+        return {
+            "id": auth_info["user_id"],
+            "username": user.username,
+            "email": user.email,
+            "name": auth_info["name"],
+            "given_name": auth_info["given_name"],
+            "family_name": auth_info["family_name"],
+        }
+    else:
+        logger.error(
+            "%s - %s get_oauth_profile(): DENIED: not authenticated u=%s"
+            % (remote_addr, host, user.username)
+        )
+        return None
 
 
 def authorize(user, host=None):
@@ -50,4 +103,9 @@ def authorize_address(address, uid, host=None):
         if not address.login_permission and not is_member(address) and not is_renting(address):
             return {"user_id": None, "reason": "non-member/non-renter %s" % address}
     ## Grant access
-    return {"user_id": user_id, "name": name}
+    return {
+        "user_id": user_id,
+        "name": name,
+        "given_name": address.first_name,
+        "family_name": address.name,
+    }
