@@ -1,9 +1,12 @@
 /* eslint-env serviceworker */
 
+declare const self: ServiceWorkerGlobalScope &
+  typeof globalThis & { skipWaiting: () => void }
+
 /*
  * This file (which will be your service worker)
  * is picked up by the build system ONLY if
- * quasar.config.js > pwa > workboxMode is set to "injectManifest"
+ * quasar.config.ts > pwa > workboxMode is set to "injectManifest"
  */
 
 import { clientsClaim } from 'workbox-core'

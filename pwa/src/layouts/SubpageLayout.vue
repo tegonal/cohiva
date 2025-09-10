@@ -30,16 +30,15 @@
   </q-layout>
 </template>
 
-<script>
-import { defineComponent, ref } from 'vue'
-
-import { settings } from '../../config/settings.js'
+<script lang="ts">
+import { settings } from 'app/config/settings'
+import { defineComponent } from 'vue'
 
 export default defineComponent({
   name: 'SubpageLayout',
 })
 </script>
 
-<script setup>
+<script setup lang="ts">
 defineProps({ subpageTitle: String })
 </script>

@@ -1,0 +1,6 @@
+{
+  "extends": "./.quasar/tsconfig.json",
+  "compilerOptions": {
+    "lib": ["esnext", "dom", "dom.iterable", "webworker"]
+  }
+}

@@ -117,12 +117,13 @@
   </q-page>
 </template>
 
-<script setup>
-import { api } from 'boot/axios'
+<script setup lang="ts">
 import { useQuasar } from 'quasar'
-import { useAuthStore } from 'stores'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+
+import { api } from 'boot/axios'
+import { useAuthStore } from 'stores/auth-store'
 
 const quasar = useQuasar()
 const authStore = useAuthStore()
@@ -132,7 +133,7 @@ function fetchData() {
   api
     .get('/api/v1/reservation/report/', {
       headers: {
-        Authorization: 'Token ' + authStore.token,
+        Authorization: 'Bearer ' + authStore.accessToken,
       },
     })
     .then((response) => {
@@ -140,7 +141,7 @@ function fetchData() {
       apiError.value = ''
       contact.value = response.data.contact
       unitOptions.value = response.data.rental_units.concat(unitOptions.value)
-      unit.value = unitOptions.value[0]
+      unit.value = unitOptions.value[0] || null
       categoryOptions.value = response.data.categories
       formLoading.value = false
     })
@@ -162,7 +163,7 @@ function fetchData() {
     })
 }
 
-function onRejected(entries) {
+function onRejected(entries: any): void {
   if (entries[0].failedPropValidation == 'max-files') {
     quasar.notify('Es können max. 5 Bilder hinzugefügt werden.')
   } else {
@@ -170,23 +171,29 @@ function onRejected(entries) {
   }
 }
 
+function submitConfirmed() {
+  router.go(-1)
+}
+
 function submitReport() {
   //console.log("Submit reservation");
   is_submitting.value = true
   let formData = new FormData()
   formData.append('action', 'add')
-  formData.append('unit', unit.value.value)
-  formData.append('category', category.value.value)
+  formData.append('unit', unit.value?.value || '')
+  formData.append('category', category.value?.value || '')
   formData.append('subject', subject.value)
   formData.append('contact_text', contact_text.value)
   formData.append('text', text.value)
   for (let pic in pictures.value) {
-    formData.append('pictures', pictures.value[pic])
+    if (pictures.value[pic]) {
+      formData.append('pictures', pictures.value[pic])
+    }
   }
   api
     .post('/api/v1/reservation/report/', formData, {
       headers: {
-        Authorization: 'Token ' + authStore.token,
+        Authorization: 'Bearer ' + authStore.accessToken,
       },
     })
     .then((response) => {
@@ -223,17 +230,13 @@ function submitReport() {
     })
 }
 
-function submitConfirmed() {
-  router.go(-1)
-}
-
 const apiError = ref('')
 const dense = ref(false)
 const formLoading = ref(true)
 
 // For axios post file upload fields
-const unit = ref(null)
-const category = ref(null)
+const unit = ref<any>(null)
+const category = ref<any>(null)
 const subject = ref('')
 const contact_text = ref('')
 const text = ref('')

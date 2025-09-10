@@ -1,5 +1,5 @@
-import { defineStore as defineStoreWrapper } from '#q-app/wrappers'
 import { createPinia } from 'pinia'
+import { store } from 'quasar/wrappers'
 
 /*
  * If not building with SSR mode, you can
@@ -10,7 +10,7 @@ import { createPinia } from 'pinia'
  * with the Store instance.
  */
 
-export default defineStoreWrapper((/* { ssrContext } */) => {
+export default store(() => {
   const pinia = createPinia()
 
   // You can add Pinia plugins here
@@ -19,5 +19,5 @@ export default defineStoreWrapper((/* { ssrContext } */) => {
   return pinia
 })
 
-export * from './auth-store.js'
-export * from './main-store.js'
+export * from './auth-store'
+export * from './main-store'

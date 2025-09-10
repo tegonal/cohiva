@@ -51,7 +51,7 @@
 
           <q-item-section>
             <q-item-label>Angemeldet als</q-item-label>
-            <q-item-label caption>{{ authStore.user }}</q-item-label>
+            <q-item-label caption>{{ authStore.username || authStore.userEmail || 'Unbekannt' }}</q-item-label>
           </q-item-section>
         </q-item>
         <q-item clickable @click="settings_logout()" v-if="authStore.user">
@@ -90,49 +90,58 @@
   </q-layout>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import { settings } from 'app/config/settings'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+
 import AppInstallBanner from 'components/AppInstallBanner.vue'
 import AppUpdateBanner from 'components/AppUpdateBanner.vue'
 import EssentialLink from 'components/EssentialLink.vue'
-import { useAuthStore, useMainStore } from 'stores'
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { useAuthStore } from 'stores/auth-store'
+import { useMainStore } from 'stores/main-store'
 
-import { settings } from '../../config/settings.js'
-
-const leftDrawerOpen = ref(false)
+// Store instances
 const authStore = useAuthStore()
 const mainStore = useMainStore()
 
-function settings_logout() {
+// Reactive state
+const leftDrawerOpen = ref(false)
+const updateTimeout = ref<null | ReturnType<typeof setInterval>>(null)
+
+// Static data
+const essentialLinks = settings.NAVIGATION_LINKS
+
+// Functions
+function settings_logout(): void {
   toggleLeftDrawer()
   authStore.logout()
 }
 
-function toggleLeftDrawer() {
+function toggleLeftDrawer(): void {
   leftDrawerOpen.value = !leftDrawerOpen.value
 }
 
-const essentialLinks = settings.NAVIGATION_LINKS
-
 /* For service worker updates */
-function updateRegistration() {
+function updateRegistration(): void {
   if (mainStore.registration && !mainStore.registration.waiting) {
     console.log('Updating service-worker...')
     mainStore.registration.update()
   }
 }
 
-let updateTimeout = setInterval(
-  function () {
+// Lifecycle hooks
+onMounted(() => {
+  updateRegistration()
+  // Set up periodic service worker updates every 30 minutes
+  updateTimeout.value = setInterval(() => {
     updateRegistration()
-  }.bind(this),
-  1000 * 60 * 30
-)
+  }, 1000 * 60 * 30)
+})
 
-onMounted(() => updateRegistration())
 onBeforeUnmount(() => {
-  if (updateTimeout) {
-    clearInterval(updateTimeout)
+  if (updateTimeout.value) {
+    clearInterval(updateTimeout.value)
+    updateTimeout.value = null
   }
 })
 </script>

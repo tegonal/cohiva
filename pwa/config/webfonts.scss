@@ -72,7 +72,8 @@
 
 // Override Quasar's default font family
 // This sets Roboto as the base font throughout the application
-$typography-font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif !default;
+$typography-font-family:
+  'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif !default;
 
 // To use a different custom font:
 // 1. Add your @font-face definitions above

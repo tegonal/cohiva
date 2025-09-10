@@ -46,22 +46,26 @@
   </transition>
 </template>
 
-<script setup>
-import { useMainStore } from 'stores'
-let refreshing = false
+<script setup lang="ts">
+import { ref } from 'vue'
+
+import { useMainStore } from 'stores/main-store'
 
 const mainStore = useMainStore()
+const refreshing = ref(false)
+
+// Initialize version check
 mainStore.update_version()
 
-function updateApp(yes) {
+function updateApp(yes: boolean): void {
   mainStore.showAppUpdatedBanner = false
-  if (!yes || refreshing) {
+  if (!yes || refreshing.value) {
     return
   }
-  refreshing = true
+  refreshing.value = true
   if (mainStore.registration && mainStore.registration.waiting) {
     mainStore.registration.waiting.postMessage({ type: 'SKIP_WAITING' })
   }
-  window.location.reload(true)
+  window.location.reload()
 }
 </script>

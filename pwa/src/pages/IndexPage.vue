@@ -73,7 +73,7 @@
         :class="buttonClass"
       ></q-btn>
     </div>
-    <div v-if="test_mode">
+    <div v-if="isDevelopment">
       <p class="text-red text-center">
         TESTMODUS - Änderungen werden lediglich an einen Testserver übermittelt.
       </p>
@@ -97,15 +97,17 @@ export default defineComponent({
 });
 </script>-->
 
-<script setup>
-import { api } from 'boot/axios'
-import { useAuthStore, useMainStore } from 'stores'
+<script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
-import { settings } from '../../config/settings.js'
+import { api } from 'boot/axios'
+import { useAuthStore } from 'stores/auth-store'
+import { useMainStore } from 'stores/main-store'
+
+import { settings } from '../../config/settings'
 
 const buttonClass = 'col-xs-6 col-sm-4 col-md-3 q-my-xs'
-const test_mode = process.env.TEST_MODE
+const isDevelopment = process.env.NODE_ENV === 'development'
 
 const apiError = ref('')
 
@@ -116,9 +118,6 @@ function getCapabilities() {
   // Get Caps from server and update mainStore.capabilities
   api
     .get('/api/v1/geno/capabilities/', {
-      headers: {
-        Authorization: 'Token ' + authStore.token,
-      },
       params: { appVersion: mainStore.appVersion },
     })
     .then((response) => {

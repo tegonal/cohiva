@@ -9,7 +9,7 @@
         label="Kalender-Ansicht"
         :options="viewOptions"
         :dense="true"
-        options-dense=""
+        :options-dense="true"
         @update:model-value="selectView()"
       >
         <template v-slot:prepend>
@@ -24,7 +24,7 @@
         :options="eventSourceOptions"
         label="Filter"
         :dense="true"
-        options-dense=""
+        :options-dense="true"
         multiple
         emit-value
         map-options
@@ -57,37 +57,37 @@
   </q-page>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import dayGridPlugin from '@fullcalendar/daygrid'
 import listPlugin from '@fullcalendar/list'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import '@fullcalendar/core/vdom' // solves problem with Vite
 import FullCalendar from '@fullcalendar/vue3'
-import { api } from 'boot/axios'
-import { useAuthStore } from 'stores'
 import tippy from 'tippy.js'
 import { onMounted, ref } from 'vue'
+
+import { api } from 'boot/axios'
+import { useAuthStore } from 'stores/auth-store'
 import 'tippy.js/dist/tippy.css'
+
 /*import interactionPlugin from "@fullcalendar/interaction";*/
 
 function fetchData() {
   const authStore = useAuthStore()
   // Get calendar event sources
   api
-    .get('/api/v1/reservation/calendar_feeds/', {
-      headers: {
-        Authorization: 'Token ' + authStore.token,
-      },
-    })
+    .get('/api/v1/reservation/calendar_feeds/')
     .then((response) => {
       //console.log(response);
       if (response.data.status == 'OK') {
         apiError.value = ''
         eventSources.value = response.data.calendars
-        let calApi = fullCalendar.value.getApi()
-        for (let es in eventSources.value) {
-          console.log('Adding event source ' + eventSources.value[es].id)
-          calApi.addEventSource(eventSources.value[es])
+        let calApi = fullCalendar.value?.getApi()
+        if (calApi) {
+          for (let es in eventSources.value) {
+            console.log('Adding event source ' + eventSources.value[es].id)
+            calApi.addEventSource(eventSources.value[es])
+          }
         }
       } else {
         apiError.value = 'Fehler beim Abrufen der CalendarFeeds.'
@@ -108,14 +108,34 @@ function fetchData() {
     })
 }
 
-function selectView() {
-  console.log('Switch view to ' + viewSelect.value.value)
+function selectView(): void {
+  console.log('Switch view to ' + viewSelect.value?.value)
   //let calApi = this.fullCalendar.getApi();
-  let calApi = fullCalendar.value.getApi()
+  let calApi = fullCalendar.value?.getApi()
   //console.log("Got calendar API");
   //console.log(calApi);
-  calApi.changeView(viewSelect.value.value)
+  calApi?.changeView(viewSelect.value?.value)
   //calApi.next();
+}
+
+function updateEventSources(): void {
+  // Update event sources when filter changes
+  const calApi = fullCalendar.value?.getApi()
+  if (calApi) {
+    // Remove existing event sources
+    const currentSources = calApi.getEventSources()
+    currentSources.forEach((source) => source.remove())
+
+    // Add filtered event sources
+    eventSources.value.forEach((source) => {
+      if (
+        activeEventSources.value.includes(source.id) ||
+        activeEventSources.value.includes('all')
+      ) {
+        calApi.addEventSource(source)
+      }
+    })
+  }
 }
 
 const apiError = ref('')
@@ -132,8 +152,8 @@ const calendarOptions = {
     week: 'Woche',
   },
   editable: false,
-  eventDidMount: function (info) {
-    new tippy(info.el, {
+  eventDidMount: function (info: any) {
+    tippy(info.el, {
       //placement: "top",
       //trigger: "hover",
       //container: "body",
@@ -201,7 +221,7 @@ const viewOptions = [
 const viewSelect = ref(viewOptions[1])
 /*const dense = ref(true);
 const denseOpts = ref(null);*/
-const fullCalendar = ref(null)
+const fullCalendar = ref<any>(null)
 const filterEnabled = ref(false)
 const eventSourceOptions = [
   {
@@ -232,8 +252,8 @@ const eventSourceOptions = [
     value: '_res-1',
   },
 ]
-const eventSources = ref([])
-const activeEventSources = ref([])
+const eventSources = ref<any[]>([])
+const activeEventSources = ref<any[]>([])
 
 /*{
     id: "plena",

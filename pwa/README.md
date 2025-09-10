@@ -28,6 +28,7 @@ yarn dev:watch
 ## Development Commands
 
 ### Core Development
+
 ```bash
 # Standard development server (http://localhost:9000)
 yarn dev
@@ -40,6 +41,7 @@ yarn watch:config
 ```
 
 ### Code Quality
+
 ```bash
 # Run ESLint
 yarn lint
@@ -54,6 +56,7 @@ yarn check
 ```
 
 ### Testing
+
 ```bash
 # Run tests (not yet implemented)
 yarn test
@@ -62,6 +65,7 @@ yarn test
 ## Build & Deployment
 
 ### Production Build
+
 ```bash
 # Build PWA (includes tenant config generation)
 yarn build
@@ -71,11 +75,12 @@ yarn build:pwa
 # Test production build locally (http://localhost:4000)
 yarn serve
 
-# NOTE: For API access during local testing, add localhost:4000 
+# NOTE: For API access during local testing, add localhost:4000
 # to CORS_ALLOWED_ORIGINS in Django backend
 ```
 
 ### Tenant Configuration
+
 ```bash
 # Generate all tenant-specific assets and styles
 yarn make:tenant-config
@@ -145,6 +150,7 @@ The app uses a **tenant configuration system** that allows complete customizatio
 ## Maintenance Commands
 
 ### Package Management
+
 ```bash
 # Check for outdated packages
 yarn outdated
@@ -161,6 +167,7 @@ yarn prepare
 ```
 
 ### Icon Generation
+
 ```bash
 # Generate PWA icons from config/icon.svg and config/logo.svg
 yarn icon:generate
@@ -206,6 +213,7 @@ The app determines API endpoints based on development/production mode:
 ## Deployment
 
 ### CI/CD Pipeline
+
 ```bash
 # 1. Copy tenant-specific config
 cp -r tenant-configs/${TENANT}/config/* ./config/
@@ -217,21 +225,25 @@ yarn build
 ```
 
 ### Docker Support
+
 Dockerfile available for containerized deployments (see project root).
 
 ## Troubleshooting
 
 ### Build Issues
+
 - Run `yarn make:tenant-config` manually to see errors
 - Check all required files exist in `config/`
 - Verify Icon Genie is installed: `yarn add -D @quasar/icongenie`
 
 ### Development Server
+
 - Default port: 9000
 - If port is busy, Quasar will auto-increment
 - API proxy configured for development to avoid CORS
 
 ### Production Testing
+
 - Serve locally with `yarn serve`
 - Add `localhost:4000` to Django's CORS_ALLOWED_ORIGINS
 - Check browser console for API connection issues

@@ -1,8 +1,8 @@
-#!/usr/bin/env node
+#!/usr/bin/env tsx
 
 /**
  * Config Watcher for Development
- * 
+ *
  * Watches the config directory for changes and automatically runs
  * the make-tenant-config script to regenerate assets and styles.
  */
@@ -20,7 +20,7 @@ const rootDir = path.resolve(__dirname, '..')
 const execAsync = promisify(exec)
 
 // Debounce timer to avoid multiple rapid rebuilds
-let debounceTimer = null
+let debounceTimer: NodeJS.Timeout | null = null
 const DEBOUNCE_DELAY = 500 // ms
 
 // Track if a build is currently running
@@ -50,65 +50,71 @@ const ignorePaths = [
   '**/.temp-*',
 ]
 
-async function runMakeTenantConfig() {
+async function runMakeTenantConfig(): Promise<void> {
   if (isBuilding) {
     console.log('⏳ Build already in progress, queueing next build...')
     return
   }
 
   isBuilding = true
-  
+
   try {
     console.log('\n🔄 Config change detected, rebuilding...')
     const startTime = Date.now()
-    
-    const { stdout, stderr } = await execAsync('node scripts/make-tenant-config.js', { 
-      cwd: rootDir 
-    })
-    
+
+    const { stdout, stderr } = await execAsync(
+      'node scripts/make-tenant-config.js',
+      {
+        cwd: rootDir,
+      }
+    )
+
     if (stderr && !stderr.includes('Warning')) {
       console.error('⚠️  Build warnings:', stderr)
     }
-    
+
     const elapsed = Date.now() - startTime
     console.log(`✅ Rebuild complete (${elapsed}ms)`)
-    
+
     // Show key outputs
     const lines = stdout.split('\n')
-    const importantLines = lines.filter(line => 
-      line.includes('✅') || 
-      line.includes('⚠️') || 
-      line.includes('Site:') || 
-      line.includes('Theme:')
+    const importantLines = lines.filter(
+      (line) =>
+        line.includes('✅') ||
+        line.includes('⚠️') ||
+        line.includes('Site:') ||
+        line.includes('Theme:')
     )
-    
+
     if (importantLines.length > 0) {
       console.log('\n' + importantLines.slice(-3).join('\n'))
     }
-    
   } catch (error) {
-    console.error('❌ Build failed:', error.message)
+    console.error(
+      '❌ Build failed:',
+      error instanceof Error ? error.message : String(error)
+    )
   } finally {
     isBuilding = false
   }
 }
 
-function handleChange(path) {
+function handleChange(path: string): void {
   const relativePath = path.replace(rootDir + '/', '')
   console.log(`📝 Changed: ${relativePath}`)
-  
+
   // Clear existing timer
   if (debounceTimer) {
     clearTimeout(debounceTimer)
   }
-  
+
   // Set new timer
   debounceTimer = setTimeout(() => {
     runMakeTenantConfig()
   }, DEBOUNCE_DELAY)
 }
 
-async function startWatcher() {
+async function startWatcher(): Promise<void> {
   console.log('👀 Config Watcher Started')
   console.log('   Watching for changes in:')
   console.log('   - config/*.js (settings, theme)')
@@ -117,10 +123,10 @@ async function startWatcher() {
   console.log('   - config/fonts/* (font files)')
   console.log('\n   Press Ctrl+C to stop')
   console.log('   ────────────────────────────────────')
-  
+
   // Run initial build
   await runMakeTenantConfig()
-  
+
   // Create watcher
   const watcher = chokidar.watch(watchPaths, {
     ignored: ignorePaths,
@@ -128,23 +134,23 @@ async function startWatcher() {
     ignoreInitial: true,
     awaitWriteFinish: {
       stabilityThreshold: 300,
-      pollInterval: 100
-    }
+      pollInterval: 100,
+    },
   })
-  
+
   // Watch for changes
   watcher
-    .on('add', path => {
+    .on('add', (path) => {
       console.log(`➕ Added: ${path.replace(rootDir + '/', '')}`)
       handleChange(path)
     })
     .on('change', handleChange)
-    .on('unlink', path => {
+    .on('unlink', (path) => {
       console.log(`➖ Removed: ${path.replace(rootDir + '/', '')}`)
       handleChange(path)
     })
-    .on('error', error => console.error('❌ Watcher error:', error))
-  
+    .on('error', (error) => console.error('❌ Watcher error:', error))
+
   // Handle graceful shutdown
   process.on('SIGINT', () => {
     console.log('\n\n👋 Stopping config watcher...')
@@ -154,7 +160,7 @@ async function startWatcher() {
 }
 
 // Check if chokidar is installed
-async function checkDependencies() {
+async function checkDependencies(): Promise<boolean> {
   try {
     await import('chokidar')
     return true
@@ -169,12 +175,12 @@ async function checkDependencies() {
 }
 
 // Main
-async function main() {
-  if (!await checkDependencies()) {
+async function main(): Promise<void> {
+  if (!(await checkDependencies())) {
     process.exit(1)
   }
-  
-  startWatcher().catch(error => {
+
+  startWatcher().catch((error) => {
     console.error('❌ Failed to start watcher:', error)
     process.exit(1)
   })

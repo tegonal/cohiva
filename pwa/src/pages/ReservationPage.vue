@@ -150,75 +150,16 @@
   </q-page>
 </template>
 
-<script setup>
-import { api } from 'boot/axios'
+<script setup lang="ts">
 import { date } from 'quasar'
-import { useAuthStore } from 'stores'
 import { computed, onMounted, reactive, ref } from 'vue'
+
+import { api } from 'boot/axios'
+import { useAuthStore } from 'stores/auth-store'
 
 const authStore = useAuthStore()
 
-function fetchData() {
-  api
-    .get('/api/v1/reservation/reservations/', {
-      headers: {
-        Authorization: 'Token ' + authStore.token,
-      },
-    })
-    .then((response) => {
-      //console.log(response);
-      apiError.value = ''
-      const now = Date.now()
-      reservations.length = 0
-      past_reservations.length = 0
-      for (let i in response.data.results) {
-        let r = response.data.results[i]
-        /*console.log(r);
-        console.log(r.name);*/
-        const date_start = new Date(r.date_start)
-        const date_end = new Date(r.date_end)
-        const res_data = {
-          canEdit: r.can_edit,
-          date:
-            date.formatDate(date_start, 'DD.MM.YYYY HH:mm') +
-            ' – ' +
-            date.formatDate(date_end, 'DD.MM.YYYY HH:mm'),
-          id: r.id,
-          summary: r.summary,
-          title: r.name,
-        }
-        if (date_end > now) {
-          reservations.push(res_data)
-        } else {
-          past_reservations.push(res_data)
-        }
-      }
-    })
-    .catch((error) => {
-      apiError.value = 'Es ist ein Fehler aufgetreten.'
-      if ('response' in error) {
-        console.log('ERROR: ' + error.response.data.detail)
-        if (
-          error.response.data.detail == 'Anmeldedaten fehlen.' ||
-          error.response.data.detail == 'Ungültiges Token'
-        ) {
-          // Auth missing -> Force new login
-          //console.log("DISABLED FOR DEBUGGING: Force logout");
-          authStore.logout()
-        }
-      } else {
-        console.log('ERROR: ' + error)
-      }
-    })
-}
-
-function editReservation(res) {
-  // Show cancellation dialog
-  confirmCancelation.value = true
-  cancelationData.value = res
-}
-
-function cancelReservation(res) {
+function cancelReservation(res: any): void {
   console.log('Cancel id ' + res.id)
   api
     .post(
@@ -229,7 +170,7 @@ function cancelReservation(res) {
       },
       {
         headers: {
-          Authorization: 'Token ' + authStore.token,
+          Authorization: 'Bearer ' + authStore.accessToken,
         },
       }
     )
@@ -265,15 +206,75 @@ function cancelReservation(res) {
     })
 }
 
+function editReservation(res: any): void {
+  // Show cancellation dialog
+  confirmCancelation.value = true
+  cancelationData.value = res
+}
+
+function fetchData(): void {
+  api
+    .get('/api/v1/reservation/reservations/', {
+      headers: {
+        Authorization: 'Bearer ' + authStore.accessToken,
+      },
+    })
+    .then((response) => {
+      //console.log(response);
+      apiError.value = ''
+      const now = Date.now()
+      reservations.length = 0
+      past_reservations.length = 0
+      for (let i in response.data.results) {
+        let r = response.data.results[i]
+        /*console.log(r);
+        console.log(r.name);*/
+        const date_start = new Date(r.date_start)
+        const date_end = new Date(r.date_end)
+        const res_data = {
+          canEdit: r.can_edit,
+          date:
+            date.formatDate(date_start, 'DD.MM.YYYY HH:mm') +
+            ' – ' +
+            date.formatDate(date_end, 'DD.MM.YYYY HH:mm'),
+          id: r.id,
+          summary: r.summary,
+          title: r.name,
+        }
+        if (date_end.getTime() > now) {
+          reservations.push(res_data)
+        } else {
+          past_reservations.push(res_data)
+        }
+      }
+    })
+    .catch((error) => {
+      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      if ('response' in error) {
+        console.log('ERROR: ' + error.response.data.detail)
+        if (
+          error.response.data.detail == 'Anmeldedaten fehlen.' ||
+          error.response.data.detail == 'Ungültiges Token'
+        ) {
+          // Auth missing -> Force new login
+          //console.log("DISABLED FOR DEBUGGING: Force logout");
+          authStore.logout()
+        }
+      } else {
+        console.log('ERROR: ' + error)
+      }
+    })
+}
+
 const apiError = ref('')
 
 const confirmCancelation = ref(false)
-const cancelationData = ref({})
+const cancelationData = ref<any>({})
 const cancelationError = ref(false)
 const cancelationErrorMsg = ref('')
 
-const past_reservations = reactive([])
-const reservations = reactive([]) /*
+const past_reservations = reactive<any[]>([])
+const reservations = reactive<any[]>([]) /*
   {
     id: "1000",
     title: "Gästezimmer 003",

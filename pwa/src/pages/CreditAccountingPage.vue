@@ -200,95 +200,48 @@
   </q-page>
 </template>
 
-<script setup>
-import { api } from 'boot/axios'
+<script setup lang="ts">
 import { exportFile } from 'quasar'
-import { useAuthStore } from 'stores'
 import { computed, onMounted, ref } from 'vue'
+
+import { api } from 'boot/axios'
+import { useAuthStore } from 'stores/auth-store'
 //import { stringify } from "csv-stringify";
 
 const authStore = useAuthStore()
 
-function getFilterOptions() {
-  api
-    .get('/api/v1/credit_accounting/transactions/filter/', {
-      headers: {
-        Authorization: 'Token ' + authStore.token,
-      },
-    })
-    .then((response) => {
-      apiError.value = ''
-      timeOptions.value = response.data.time_filter
-      if (!time.value) {
-        // Take first as default
-        time.value = timeOptions.value[0]
-      }
-      formUpdated()
-    })
-    .catch((error) => {
-      apiError.value = 'Es ist ein Fehler aufgetreten.'
-      if ('response' in error) {
-        console.log('ERROR: ' + error.response.data.detail)
-        if (
-          error.response.data.detail == 'Anmeldedaten fehlen.' ||
-          error.response.data.detail == 'Ungültiges Token'
-        ) {
-          authStore.logout()
-        }
-      } else {
-        console.log('ERROR: ' + error)
-      }
-    })
+function exportToCSV(): void {
+  const columns = ['Datum', 'Bezeichnung', 'Betrag', 'Saldo', 'Notiz']
+  const content = [columns.map((column) => wrapCsvValue(column))]
+    .concat(
+      transactions.value.map((transaction) => [
+        wrapCsvValue(transaction.date),
+        wrapCsvValue(transaction.name),
+        wrapCsvValue(transaction.amount.toFixed(2)),
+        wrapCsvValue(transaction.balance.toFixed(2)),
+        wrapCsvValue(transaction.note),
+      ])
+    )
+    .join('\r\n')
+
+  // TODO: Add account name and date?
+  const status = exportFile('Depot8_Kontoauszug.csv', content, 'text/csv')
+
+  if (status !== true) {
+    console.log("Error: Browser didn't allow export:" + status)
+  }
 }
 
-function getAccounts() {
-  api
-    .get('/api/v1/credit_accounting/accounts/', {
-      headers: {
-        Authorization: 'Token ' + authStore.token,
-      },
-      params: {
-        vendor: 'Depot8',
-      },
-    })
-    .then((response) => {
-      apiError.value = ''
-      accountOptions.value = response.data.accounts
-      if (!account.value) {
-        // Take first as default
-        account.value = accountOptions.value[0]
-      }
-      formUpdated()
-    })
-    .catch((error) => {
-      apiError.value = 'Es ist ein Fehler aufgetreten.'
-      if ('response' in error) {
-        console.log('ERROR: ' + error.response.data.detail)
-        if (
-          error.response.data.detail == 'Anmeldedaten fehlen.' ||
-          error.response.data.detail == 'Ungültiges Token'
-        ) {
-          authStore.logout()
-        }
-      } else {
-        console.log('ERROR: ' + error)
-      }
-    })
-}
-
-function fetchData() {
+function fetchData(): void {
   isLoading.value = true
   api
     .get('/api/v1/credit_accounting/transactions/', {
-      headers: {
-        Authorization: 'Token ' + authStore.token,
-      },
       params: {
         filter: {
-          account: account.value.value,
+          account: account.value?.value,
           search: search.value,
-          sign: sign.value.value,
-          time: time.value.value,
+          sign: sign.value?.value,
+          time: time.value?.value,
         },
         vendor: 'Depot8',
       },
@@ -320,50 +273,91 @@ function fetchData() {
     })
 }
 
-function wrapCsvValue(val, formatFn, row) {
-  let formatted = formatFn !== void 0 ? formatFn(val, row) : val
+function formUpdated(_what?: string): void {
+  let caption = []
+  if (account.value) {
+    caption.push(account.value.label)
+  }
+  if (sign.value && sign.value.label != 'Alle Buchungen') {
+    caption.push(sign.value.label)
+  }
+  if (time.value && time.value.label != 'Alle Buchungen') {
+    caption.push(time.value.label)
+  }
+  if (search.value) {
+    caption.push('Suche: ' + search.value)
+  }
+  filterCaption.value = caption.join(' | ')
 
-  formatted =
-    formatted === void 0 || formatted === null ? '' : String(formatted)
-
-  formatted = formatted.split('"').join('""')
-  /**
-   * Excel accepts \n and \r in strings, but some other CSV parsers do not
-   * Uncomment the next two lines to escape new lines
-   */
-  // .split('\n').join('\\n')
-  // .split('\r').join('\\r')
-
-  return `"${formatted}"`
-}
-
-function exportToCSV() {
-  const columns = ['Datum', 'Bezeichnung', 'Betrag', 'Saldo', 'Notiz']
-  const content = [columns.map((column) => wrapCsvValue(column))]
-    .concat(
-      transactions.value.map((transaction) => [
-        wrapCsvValue(transaction.date),
-        wrapCsvValue(transaction.name),
-        wrapCsvValue(transaction.amount.toFixed(2)),
-        wrapCsvValue(transaction.balance.toFixed(2)),
-        wrapCsvValue(transaction.note),
-      ])
-    )
-    .join('\r\n')
-
-  // TODO: Add account name and date?
-  const status = exportFile('Depot8_Kontoauszug.csv', content, 'text/csv')
-
-  if (status !== true) {
-    console.log("Error: Browser didn't allow export:" + status)
+  if (account.value && time.value) {
+    fetchData()
   }
 }
 
-function openSettings() {
+function getAccounts(): void {
+  api
+    .get('/api/v1/credit_accounting/accounts/', {
+      params: {
+        vendor: 'Depot8',
+      },
+    })
+    .then((response) => {
+      apiError.value = ''
+      accountOptions.value = response.data.accounts
+      if (!account.value) {
+        // Take first as default
+        account.value = accountOptions.value[0]
+      }
+      formUpdated()
+    })
+    .catch((error) => {
+      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      if ('response' in error) {
+        console.log('ERROR: ' + error.response.data.detail)
+        if (
+          error.response.data.detail == 'Anmeldedaten fehlen.' ||
+          error.response.data.detail == 'Ungültiges Token'
+        ) {
+          authStore.logout()
+        }
+      } else {
+        console.log('ERROR: ' + error)
+      }
+    })
+}
+
+function getFilterOptions(): void {
+  api
+    .get('/api/v1/credit_accounting/transactions/filter/')
+    .then((response) => {
+      apiError.value = ''
+      timeOptions.value = response.data.time_filter
+      if (!time.value) {
+        // Take first as default
+        time.value = timeOptions.value[0]
+      }
+      formUpdated()
+    })
+    .catch((error) => {
+      apiError.value = 'Es ist ein Fehler aufgetreten.'
+      if ('response' in error) {
+        console.log('ERROR: ' + error.response.data.detail)
+        if (
+          error.response.data.detail == 'Anmeldedaten fehlen.' ||
+          error.response.data.detail == 'Ungültiges Token'
+        ) {
+          authStore.logout()
+        }
+      } else {
+        console.log('ERROR: ' + error)
+      }
+    })
+}
+
+function openSettings(): void {
   api
     .get('/api/v1/credit_accounting/settings/', {
-      headers: { Authorization: 'Token ' + authStore.token },
-      params: { account: account.value.value, vendor: 'Depot8' },
+      params: { account: account.value?.value, vendor: 'Depot8' },
     })
     .then((response) => {
       if (response.data.status == 'OK') {
@@ -380,16 +374,15 @@ function openSettings() {
     })
 }
 
-function saveSettings() {
+function saveSettings(): void {
   api
     .post(
       '/api/v1/credit_accounting/settings/',
       {
-        account: account.value.value,
+        account: account.value?.value,
         settings: settings.value,
         vendor: 'Depot8',
       },
-      { headers: { Authorization: 'Token ' + authStore.token } }
     )
     .then((response) => {
       //console.log(response);
@@ -407,25 +400,21 @@ function saveSettings() {
     })
 }
 
-function formUpdated(what) {
-  let caption = []
-  if (account.value) {
-    caption.push(account.value.label)
-  }
-  if (sign.value != 'Alle Buchungen') {
-    caption.push(sign.value.label)
-  }
-  if (time.value != 'Alle Buchungen') {
-    caption.push(time.value.label)
-  }
-  if (search.value) {
-    caption.push('Suche: ' + search.value)
-  }
-  filterCaption.value = caption.join(' | ')
+function wrapCsvValue(val: any, formatFn?: any, _row?: any): string {
+  let formatted = formatFn !== void 0 ? formatFn(val, _row) : val
 
-  if (account.value && time.value) {
-    fetchData()
-  }
+  formatted =
+    formatted === void 0 || formatted === null ? '' : String(formatted)
+
+  formatted = formatted.split('"').join('""')
+  /**
+   * Excel accepts \n and \r in strings, but some other CSV parsers do not
+   * Uncomment the next two lines to escape new lines
+   */
+  // .split('\n').join('\\n')
+  // .split('\r').join('\\r')
+
+  return `"${formatted}"`
 }
 
 onMounted(() => {
@@ -436,21 +425,21 @@ onMounted(() => {
 const apiError = ref('')
 
 // Filter/search form
-const timeOptions = ref([])
+const timeOptions = ref<any[]>([])
 const signOptions = ref([
   { label: 'Alle Buchungen', value: 'all' },
   { label: 'Gutschriften', value: 'plus' },
   { label: 'Lastschriften', value: 'minus' },
 ])
-const accountOptions = ref([])
+const accountOptions = ref<any[]>([])
 const expanded = ref(false)
 const filterCaption = ref('')
 const search = ref('')
-const time = ref(null)
+const time = ref<any>(null)
 const sign = ref(signOptions.value[0])
-const account = ref(null)
+const account = ref<any>(null)
 
-const transactions = ref([])
+const transactions = ref<any[]>([])
 const maxResults = ref(0)
 const isLoading = ref(false)
 
