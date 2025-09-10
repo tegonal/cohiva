@@ -14,7 +14,7 @@ aiostream==0.4.5
     # via vdirsyncer
 amqp==5.3.1
     # via kombu
-anyascii==0.3.2
+anyascii==0.3.3
     # via wagtail
 appy==1.0.19
     # via -r requirements.in
