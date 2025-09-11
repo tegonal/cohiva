@@ -171,7 +171,7 @@ html2text==2025.4.15
     # via -r requirements.in
 html5lib==1.1
     # via wagtail
-icalendar==6.3.0
+icalendar==6.3.1
     # via
     #   caldav
     #   recurring-ical-events
