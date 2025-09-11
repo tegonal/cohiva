@@ -192,7 +192,7 @@ kaleido==0.2.1
     # via -r requirements.in
 kiwisolver==1.4.7
     # via matplotlib
-kombu==5.5.3
+kombu==5.5.4
     # via celery
 l18n==2021.3
     # via wagtail
