@@ -188,7 +188,7 @@ json-with-comments==1.2.10
     # via -r requirements.in
 jwcrypto==1.5.6
     # via django-oauth-toolkit
-kaleido==0.2.1
+kaleido==0.2.1.post1
     # via -r requirements.in
 kiwisolver==1.4.7
     # via matplotlib
