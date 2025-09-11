@@ -151,7 +151,7 @@ djangosaml2idp==0.7.2
     # via -r requirements.in
 draftjs-exporter==2.1.7
     # via wagtail
-easy-thumbnails==2.10
+easy-thumbnails==2.10.1
     # via django-filer
 elementpath==4.8.0
     # via xmlschema
