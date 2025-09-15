@@ -20,3 +20,6 @@ build
 
 # python specific
 *.pyc
+
+# vim specific
+.*.swp
