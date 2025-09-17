@@ -39,6 +39,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://app." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
 ]
 
+CSRF_COOKIE_SECURE = True
 CSRF_TRUSTED_ORIGINS = [
     "https://" + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
 ]

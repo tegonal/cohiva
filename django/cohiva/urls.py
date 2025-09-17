@@ -16,6 +16,7 @@ Including another URLconf
 """
 
 from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from django.views.generic.base import RedirectView
@@ -43,9 +44,12 @@ urlpatterns = [
 ]
 
 if "reservation" in settings.COHIVA_FEATURES:
+    from reservation import views as reservation_views
+
     urlpatterns += [
         path("reservation/", include("reservation.urls")),
         path("api/v1/reservation/", include("reservation.api_urls")),
+        path("calendar/feed/<calendar_id>/", reservation_views.calendar_feed),
     ]
 
 if "credit_accounting" in settings.COHIVA_FEATURES:
@@ -104,6 +108,10 @@ if "cms" in settings.COHIVA_FEATURES:
         urlpatterns += [
             path("portal/", include(wagtail_urls)),
         ]
+
+## Serve media files through the test server (don't do that for production!)
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 ## Must be last to be able to handle root/wildcard URLs.
 if "website" in settings.COHIVA_FEATURES:

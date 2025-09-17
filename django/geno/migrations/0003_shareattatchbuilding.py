@@ -14,12 +14,12 @@ class Migration(migrations.Migration):
             name="attached_to_building",
             field=select2.fields.ForeignKey(
                 blank=True,
-                help_text="Nur ausfüllbar wenn keine Vertrag gewählt ist.",
+                help_text="Nur ausfüllbar wenn kein Vertrag gewählt ist.",
                 null=True,
                 on_delete=django.db.models.deletion.SET_NULL,
                 related_name="building_attached_shares",
                 to="geno.building",
-                verbose_name="Fixe Zuteilung zu Liegenschaft",
+                verbose_name="Liegenschaft",
             ),
         ),
         migrations.AddConstraint(

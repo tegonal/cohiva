@@ -869,7 +869,7 @@ class Share(GenoBase):
     attached_to_building = select2.fields.ForeignKey(
         "Building",
         verbose_name="Liegenschaft",
-        help_text=("Nur ausfüllbar wenn keine Vertrag gewählt ist."),
+        help_text=("Nur ausfüllbar wenn kein Vertrag gewählt ist."),
         null=True,
         blank=True,
         on_delete=models.SET_NULL,

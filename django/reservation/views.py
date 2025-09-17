@@ -13,7 +13,7 @@ from icalendar import Calendar  # , vDatetime, Event
 
 from geno.models import Address
 
-from .models import Reservation, ReservationObject
+from .models import Reservation, ReservationObject, ReservationType
 
 logger = logging.getLogger("reservation")
 
@@ -224,3 +224,40 @@ def cron_maintenance(request):
         info.append("Updating reservation blockers for %s. (debug=%s)" % (ro, settings.DEBUG))
         ro.update_reservation_blockers()
     return JsonResponse({"status": "OK", "info": info})
+
+
+def calendar_feed(request, calendar_id):
+    ## Example request: "GET /calendar/feed/?start=2017-10-30&end=2017-12-11&_=1511889435427 HTTP/1.1"
+    ## Example response:
+    # events = [{
+    #   title: 'Meeting',
+    #   start: '2017-11-12T10:30:00',
+    #   end: '2017-11-12T12:30:00',
+    #   description 'Meeting description',
+    #   url: 'Link'
+    # }]
+
+    if request.GET.get("start") and request.GET.get("end"):
+        start_iso = request.GET.get("start")
+        end_iso = request.GET.get("end")
+        start = datetime.datetime.strptime(
+            start_iso[: len(start_iso) - 3] + start_iso[len(start_iso) - 2 :],
+            "%Y-%m-%dT%H:%M:%S%z",
+        )
+        end = datetime.datetime.strptime(
+            end_iso[: len(end_iso) - 3] + end_iso[len(end_iso) - 2 :], "%Y-%m-%dT%H:%M:%S%z"
+        )
+    else:
+        return JsonResponse([], safe=False)
+
+    events = []
+    if calendar_id[0:5] == "_res-":
+        reservation_type = ReservationType.objects.filter(id=calendar_id[5:]).first()
+        if reservation_type:
+            events = reservation_type.get_calendar_events(start, end)
+    elif "website" in settings.COHIVA_FEATURES:
+        from website.views import get_calendar_events
+
+        events = get_calendar_events(calendar_id, start, end)
+
+    return JsonResponse(events, safe=False)

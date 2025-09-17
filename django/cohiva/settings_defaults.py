@@ -55,8 +55,10 @@ USE_X_FORWARDED_HOST = True
 CORS_ALLOWED_ORIGINS = [
     "https://chat." + cbc.DOMAIN,
     "https://app." + cbc.DOMAIN,
+    "https://app-test." + cbc.DOMAIN,
     "https://chat." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
     "https://app." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
+    "https://app-test." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
     "http://localhost:9000",
     "http://127.0.0.1:9000",
     "http://localhost:9001",
@@ -494,9 +496,7 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.DjangoModelPermissions",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        #  'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
-        #  'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
-        #  'rest_framework.authentication.BasicAuthentication',
+        "oauth2_provider.contrib.rest_framework.OAuth2Authentication",
         "rest_framework.authentication.TokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
@@ -624,10 +624,10 @@ CSRF_TRUSTED_ORIGINS = [
     "https://" + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
     "https://test." + cbc.DOMAIN,
     "https://test." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
-    #    "http://localhost:9000",
-    #    "http://127.0.0.1:9000",
-    #    "localhost:9000",
-    #    "127.0.0.1:9000",
+    "http://localhost:9000",
+    "http://127.0.0.1:9000",
+    "http://localhost:9001",
+    "http://127.0.0.1:9001",
 ]
 
 ## GnuCash interface

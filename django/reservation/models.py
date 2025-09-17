@@ -1,4 +1,5 @@
 import logging
+import zoneinfo
 from datetime import timedelta
 from decimal import Decimal
 
@@ -63,6 +64,54 @@ class ReservationType(GenoBase):
         "Kalender-Farbe", max_length=7, default="#7d7d78", help_text='Format: "#rrggbb"'
     )
     active = models.BooleanField("Aktiv", default=True)
+
+    def get_calendar_events(self, start, end):
+        to_zone = zoneinfo.ZoneInfo(settings.TIME_ZONE)
+        start = start.astimezone(to_zone)
+        end = end.astimezone(to_zone)
+        # print("Getting reservations: %s, %s, %s" % (reservation_type_id, start, end))
+        events = []
+        for res in (
+            Reservation.objects.filter(date_start__lte=end)
+            .filter(date_end__gte=start)
+            .filter(name__reservation_type=self)
+            .exclude(Q(state="cancelled") | Q(state="deleted"))
+        ):
+            summary = res.name.name
+            start_localtime = res.date_start.astimezone(to_zone)
+            end_localtime = res.date_end.astimezone(to_zone)
+
+            time = "<br>Zeit: %s bis %s Uhr" % (
+                start_localtime.strftime("%a %d.%m %H:%M"),
+                end_localtime.strftime("%a %d.%m %H:%M"),
+            )
+
+            extra_info = []
+            if res.contact:
+                if res.contact.organization:
+                    contact_txt = res.contact.organization
+                    if res.contact.name:
+                        contact_txt += " %s %s" % (res.contact.first_name, res.contact.name)
+                else:
+                    contact_txt = "%s %s" % (res.contact.first_name, res.contact.name)
+                extra_info.append(contact_txt)
+            if res.summary:
+                extra_info.append(res.summary)
+
+            if extra_info:
+                descr = "<b>%s</b>%s<hr />%s" % (summary, time, ", ".join(extra_info))
+            else:
+                descr = "<b>%s</b>%s" % (summary, time)
+
+            events.append(
+                {
+                    "title": summary,
+                    "start": start_localtime.strftime("%Y-%m-%dT%H:%M:%S"),
+                    "end": end_localtime.strftime("%Y-%m-%dT%H:%M:%S"),
+                    "description": descr,
+                }
+            )
+        return events
 
     class Meta:
         verbose_name = "Reservationstyp"
