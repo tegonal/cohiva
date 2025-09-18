@@ -49,7 +49,7 @@ set -x
 command -v pip-sync >/dev/null 2>&1 || pip install pip-tools
 
 ## Install patched version of python-sepa and make sure it is in requirements.txt to prevent uninstallation when running pip-sync
-if [ ! -e ./geno/python-sepa/.git ] ; then
+if [ "$ENVIRONMENT" != "docker" && ! -e ./geno/python-sepa/.git ] ; then
     echo "Initializing git submodule python-sepa"
     git submodule update --init geno/python-sepa
 fi
