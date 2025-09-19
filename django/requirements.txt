@@ -214,7 +214,7 @@ mysqlclient==2.2.7
     # via -r requirements.in
 narwhals==1.39.1
     # via plotly
-numpy==2.3.2
+numpy==2.3.3
     # via
     #   contourpy
     #   matplotlib
