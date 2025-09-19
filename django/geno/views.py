@@ -14,7 +14,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.core.mail import EmailMultiAlternatives
 from django.db.models import Q
 from django.forms import formset_factory
@@ -4286,6 +4286,7 @@ def webstamp_form(request):
     }
     initial = {"stamp_type": "A-STANDARD-ENV"}
     cmd_out = subprocess.run(["/usr/local/bin/webstamp"], stdout=subprocess.PIPE)
+    tmpdir = "/tmp/webstamp"
     type_list = False
     stamps = {}
     pattern = re.compile(r"^\s+- (?P<type>\S+)\s+\((?P<num>\d+) available")
@@ -4304,16 +4305,20 @@ def webstamp_form(request):
         download_redirect = "/geno/webstamp/?download=%s" % request.GET.get("get_download")
     elif request.method == "GET" and request.GET.get("download"):
         tmp_file_name = request.GET.get("download")
-        pdf_file_name = "PDF_frankiert"
-        resp = FileResponse(open(tmp_file_name, "rb"), content_type="application/pdf")
-        resp["Content-Disposition"] = "attachment; filename=%s.pdf" % pdf_file_name
-        if os.path.isfile(tmp_file_name):
-            os.remove(tmp_file_name)
-        return resp
+        tmp_file_path = os.path.normpath(os.path.join(tmpdir, tmp_file_name))
+        if not tmp_file_path.startswith(tmpdir):
+            raise PermissionDenied()
+        if os.path.isfile(tmp_file_path):
+            pdf_file_name = "PDF_frankiert"
+            resp = FileResponse(open(tmp_file_path, "rb"), content_type="application/pdf")
+            resp["Content-Disposition"] = "attachment; filename=%s.pdf" % pdf_file_name
+            os.remove(tmp_file_path)
+            return resp
+        else:
+            raise Http404(f"File {tmp_file_name} not found.")
     if request.method == "POST":
         form = WebstampForm(request.POST, request.FILES, initial=initial, stamps_available=stamps)
         if form.is_valid():
-            tmpdir = "/tmp/webstamp"
             if not os.path.isdir(tmpdir):
                 os.mkdir(tmpdir)
             tmp_files = []
@@ -4365,7 +4370,9 @@ def webstamp_form(request):
                 for f in tmp_files:
                     os.remove(f)
                 if os.path.isfile(tmp_file.name):
-                    return redirect("/geno/webstamp/?get_download=%s" % tmp_file.name)
+                    return redirect(
+                        "/geno/webstamp/?get_download=%s" % os.path.basename(tmp_file.name)
+                    )
     else:
         form = WebstampForm(initial=initial, stamps_available=stamps)
     return render(
