@@ -136,8 +136,9 @@ class InvoiceCreator:
                     % (mail_recipient, self.ref_number)
                 )
 
-    def create_and_send(self, adr, comment="", check_unique=False,
-                        check_unique_unconsolidated=False):
+    def create_and_send(
+        self, adr, comment="", check_unique=False, check_unique_unconsolidated=False
+    ):
         self.address = adr
         if check_unique or check_unique_unconsolidated:
             invoices = Invoice.objects.filter(

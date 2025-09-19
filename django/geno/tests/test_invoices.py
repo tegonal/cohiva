@@ -138,7 +138,6 @@ class InvoicesTest(GenoAdminTestCase):
 
         self.assertEqual(len(mail.outbox), 3)
 
-
     def test_invoice_creator_unique_unconsolidated(self):
         ic = InvoiceCreator("Member Invoice", dry_run=False)
         ic.add_line("Line One", 10.00)
@@ -148,22 +147,32 @@ class InvoicesTest(GenoAdminTestCase):
         ic2 = InvoiceCreator("Member Invoice", dry_run=False)
         ic2.add_line("Line One", 10.00)
         with self.assertRaises(InvoiceNotUnique):
-            ic2.create_and_send(self.addresses[0], comment="InvoiceCreator Test",
-                                check_unique_unconsolidated=True)
+            ic2.create_and_send(
+                self.addresses[0], comment="InvoiceCreator Test", check_unique_unconsolidated=True
+            )
         Invoice.objects.update(consolidated=True)
-        ic2.create_and_send(self.addresses[0], comment="InvoiceCreator Test",
-                            check_unique_unconsolidated=True)
-        self.assert_invoices(2, 2*10.00)
+        ic2.create_and_send(
+            self.addresses[0], comment="InvoiceCreator Test", check_unique_unconsolidated=True
+        )
+        self.assert_invoices(2, 2 * 10.00)
 
         ic3 = InvoiceCreator("Member Invoice", dry_run=False)
         ic3.add_line("Another Line One", 10.00)
         with self.assertRaises(InvoiceNotUnique):
-            ic3.create_and_send(self.addresses[0], comment="InvoiceCreator Test",
-                                check_unique_unconsolidated=True, check_unique=True)
+            ic3.create_and_send(
+                self.addresses[0],
+                comment="InvoiceCreator Test",
+                check_unique_unconsolidated=True,
+                check_unique=True,
+            )
         Invoice.objects.update(consolidated=True)
-        ic3.create_and_send(self.addresses[0], comment="InvoiceCreator Test",
-                            check_unique_unconsolidated=True, check_unique=True)
-        self.assert_invoices(3, 3*10.00)
+        ic3.create_and_send(
+            self.addresses[0],
+            comment="InvoiceCreator Test",
+            check_unique_unconsolidated=True,
+            check_unique=True,
+        )
+        self.assert_invoices(3, 3 * 10.00)
 
     def test_invoice_manual_payment(self):
         invoice = Invoice.objects.create(
