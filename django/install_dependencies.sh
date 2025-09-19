@@ -30,7 +30,7 @@ if [ ! -e ./geno/python-sepa/.git ] ; then
     git submodule update --init geno/python-sepa
 fi
 ( cd geno/python-sepa && python3 setup.py build install )
-grep "^sepa==" $REQUIREMENTS >/dev/null || echo "sepa==0.5.3+mst1" >> $REQUIREMENTS
+grep "^sepa==" $REQUIREMENTS >/dev/null || printf "\n# Packages added/managed by install_dependencies.sh:\nsepa==0.5.3+mst1\n" >> $REQUIREMENTS
 
 ## Sync virtual environment with requirements.txt
 pip-sync -a $REQUIREMENTS
