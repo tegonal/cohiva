@@ -360,7 +360,7 @@ class Address(GenoBase):
         return roles
 
     def get_mail_recipient(self):
-        if settings.DEBUG or self.email.endswith("example.com"):
+        if settings.DEBUG or self.email.split("@")[-1] == "example.com":
             email_address = settings.TEST_MAIL_RECIPIENT
         else:
             email_address = self.email
