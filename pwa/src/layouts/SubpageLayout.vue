@@ -1,6 +1,6 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
+    <q-header class="app-header">
       <q-toolbar>
         <q-btn
           flat
@@ -13,12 +13,14 @@
 
         <q-toolbar-title> {{ subpageTitle }} </q-toolbar-title>
 
+        <!-- Language Switcher -->
+        <LanguageSwitcher />
+
         <!-- <div>Quasar v{{ $q.version }}</div> -->
-        <div>
+        <div class="toolbar-logo">
           <img
             :alt="settings.SITE_NICKNAME + ' Logo'"
-            src="~/assets/logo.svg"
-            style="width: 40px; height: 40px"
+            :src="logoPath"
           />
         </div>
       </q-toolbar>
@@ -27,18 +29,43 @@
     <q-page-container>
       <router-view />
     </q-page-container>
+
+    <!-- Development Overlay -->
+    <DevOverlay />
   </q-layout>
 </template>
 
-<script>
-import { defineComponent, ref } from "vue";
-import { settings } from "app/settings.js";
+<script lang="ts">
+import { settings } from 'app/config/settings'
+import { defineComponent } from 'vue'
 
 export default defineComponent({
-  name: "SubpageLayout",
-});
+  name: 'SubpageLayout',
+})
 </script>
 
-<script setup>
-defineProps({ subpageTitle: String });
+<script setup lang="ts">
+import DevOverlay from 'components/DevOverlay.vue'
+import LanguageSwitcher from 'components/LanguageSwitcher.vue'
+import { useThemedLogo } from 'src/composables/use-themed-logo'
+
+// Theme-aware logo
+const { logoPath } = useThemedLogo()
+
+defineProps({ subpageTitle: String })
 </script>
+
+<style lang="scss" scoped>
+.toolbar-logo {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+}
+</style>

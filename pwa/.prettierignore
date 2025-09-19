@@ -1,0 +1,44 @@
+# Dependencies
+node_modules
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Quasar core
+.quasar
+dist
+*.temporary.compiled*
+
+# IDE
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build outputs
+/src-capacitor
+/src-cordova
+/src-electron
+/src-bex
+
+# Generated files
+/public/icons
+/public/favicon.ico
+
+# Vendor files
+vendor/
+*.min.js
+*.min.css
+
+# Coverage
+coverage/
+.nyc_output/
