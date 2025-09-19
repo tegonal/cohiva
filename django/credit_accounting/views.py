@@ -352,7 +352,7 @@ class QRBillView(View):
             return resp
         except Exception as e:
             logger.error(f"Could not create QR-bill for account {account.pk}/{account}: {e}")
-            return HttpResponse(f"Fehler: Konnte QR-Rechnung nicht erzeugen: {e}")
+            return HttpResponse("Fehler: Konnte QR-Rechnung nicht erzeugen.")
 
 
 class RevenueReportView(AccountInformationMixin, SingleTableMixin, FormView):

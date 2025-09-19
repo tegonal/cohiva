@@ -124,7 +124,7 @@ class ReservationEdit(APIView):
             raise ValidationError("Reservation not found.")
         except Exception as e:
             logger.error("Can't cancel. Reservation not found: %s / %s." % (str(e), request.data))
-            raise ValidationError("Could not find reservation: %s" % str(e))
+            raise ValidationError("Could not find reservation.")
 
         if res.contact != address:
             logger.error(
@@ -146,7 +146,7 @@ class ReservationEdit(APIView):
             res.save()
         except Exception as e:
             logger.error("Saving cancelled reservation %s failed: %s" % (res.id, str(e)))
-            raise ValidationError("Could not save reservation: %s" % str(e))
+            raise ValidationError("Could not save reservation")
 
         logger.info("Cancelled reservation %s (id=%s)" % (res, res.id))
         return Response({"status": "OK"})
@@ -316,7 +316,7 @@ def check_reservation_request(request, request_data, get_blocking_res=False):
                 e,
             )
         )
-        raise ValidationError("Wrong date/time parameter: %s" % e)
+        raise ValidationError("Invalid date/time parameters")
     ret["date_start"] = search_date_start
     ret["date_end"] = search_date_end
 
@@ -605,7 +605,7 @@ class ReportSubmission(APIView):
             report.save()
         except Exception as e:
             logger.error("Could not save report: %s / %s" % (str(e), request.data))
-            return Response({"status": "ERROR", "msg": str(e)})
+            return Response({"status": "ERROR", "msg": "Konnte Meldung nicht speichern"})
 
         pic_count = 1
         for pic in request.data.getlist("pictures"):
@@ -626,8 +626,7 @@ class ReportSubmission(APIView):
                 return Response(
                     {
                         "status": "ERROR",
-                        "msg": "Meldung übermittelt, aber konnte Bild(er) nicht speichern: %s"
-                        % str(e),
+                        "msg": "Meldung übermittelt, aber konnte Bild(er) nicht speichern.",
                     }
                 )
             pic_count += 1

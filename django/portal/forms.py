@@ -66,7 +66,11 @@ class PortalPasswordResetForm(auth_forms.PasswordResetForm):
                 send_error_mail("Unauthorized account activation - %s" % (self.host), warning_txt)
                 continue
             ## Address is allowed
-            if not a.user:
+            try:
+                existing_user = a.user
+            except UserModel.DoesNotExist:
+                existing_user = None
+            if not existing_user:
                 ## Create new user
                 username = make_username(a)
                 if UserModel._default_manager.filter(
@@ -111,8 +115,12 @@ class PortalPasswordResetForm(auth_forms.PasswordResetForm):
                         "PortalPasswordResetForm - Creating user %s failed: %s %s"
                         % (username, e, self.host)
                     )
-            if a.user and a.user.is_active:
-                active_users.append(a.user)
+            try:
+                existing_user = a.user
+            except UserModel.DoesNotExist:
+                existing_user = None
+            if existing_user and existing_user.is_active:
+                active_users.append(existing_user)
 
         # if not active_users:
         #    ## Try Django-only users if no users have been found in Address

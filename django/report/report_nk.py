@@ -2489,7 +2489,6 @@ def create_bills(regenerate_invoice_id=None):
             qr_pdf_akonto = get_qrbill(context)
             if not qr_pdf_akonto:
                 nk.log.append("ERROR: Could not get akonto-qrbill!")
-                print("\n".join(nk.log))
                 raise RuntimeError("Could not get akonto-qrbill")
             qr_pdf_filename2 = "%s/bills/parts/%s_QR-Zusatzzahlung.pdf" % (
                 nk.output_dir,

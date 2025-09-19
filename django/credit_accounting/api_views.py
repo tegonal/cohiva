@@ -196,7 +196,7 @@ class PosView(APIView):
             logger.info(f"Invalid vendor: {vendor_name}.")
             raise ValidationError("Invalid vendor.")
         if not secret or len(secret) < 10 or secret != self.vendor.api_secret:
-            logger.warning(f"Vendor authentication failed: {self.vendor} {secret}")
+            logger.warning(f"Vendor authentication failed: {self.vendor}")
             raise AuthenticationFailed()
 
 
