@@ -4459,7 +4459,6 @@ def oauth_client_test(request, action="start"):
             # for item in response.json():
             #    ret.append({'info': '%s' % (item)})
         else:
-            print(response)
             ret.append(
                 {
                     "info": "HTTP response status_code ist not 200!",

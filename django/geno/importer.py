@@ -920,7 +920,6 @@ def import_emonitor_children_from_file(empty_tables_first=False):
                         if val:
                             # new_adr.date_birth = datetime.datetime.strptime(val, '%Y-%m-%d').date()
                             new_adr.date_birth = datetime.datetime.strptime(val, "%d.%m.%y").date()
-                            print(new_adr.date_birth)
                     elif header[i] == "Anwesenheit Kinder":
                         new_child.presence = float(val)
                     elif header[i] == "Eltern(teil) des Kindes":

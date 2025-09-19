@@ -24,6 +24,8 @@ class PortalAuthTest(PortalTestCase):
         response = self.client.post("/portal/login/", {"register": ""})
         self.assertInHTMLResponse("E-Mail Adresse", response)
 
+        self.assertEqual(self.addresses[0].user, None)
+
         response = self.client.post("/portal/password_reset/", {"email": self.addresses[0].email})
         self.assertInHTMLResponse(
             "Falls die angegebene Email-Adresse bei uns registriert ist", response, raw=True
@@ -148,6 +150,47 @@ class PortalAuthTest(PortalTestCase):
     def test_portal_auth(self):
         self.signup_user()
         self.portal_oauth()
+
+    def test_password_reset_for_existing_user(self):
+        oldpass = "oldp12345678+"
+        newpass = "newp12345678+"
+        user = self.UserModel(
+            email=self.addresses[0].email,
+            last_name=self.addresses[0].name,
+            first_name=self.addresses[0].first_name,
+        )
+        user.set_password(oldpass)
+        user.save()
+        self.addresses[0].user = user
+        self.addresses[0].save()
+
+        adr = Address.objects.get(email=self.addresses[0].email)
+        self.assertTrue(adr.user.check_password(oldpass))
+
+        response = self.client.post("/portal/password_reset/", {"email": self.addresses[0].email})
+        self.assertIn(
+            f"{settings.COHIVA_SITE_NICKNAME}-Konto aktivieren / Passwort zurücksetzen",
+            mail.outbox[0].subject,
+        )
+        match = re.search(
+            r"neues Passwort für dein Konto zu setzen: https://\S+(/portal/reset/\S+/)\s",
+            mail.outbox[0].body,
+        )
+        self.assertTrue(bool(match))
+        reset_url = match.group(1)
+        response = self.client.get(reset_url)
+        (response, content, last_redirect) = self.assertInHTMLResponse(
+            "Bitte wähle ein neues Passwort", response, raw=True
+        )
+
+        response = self.client.post(
+            last_redirect, {"new_password1": newpass, "new_password2": newpass}
+        )
+        self.assertInHTMLResponse("Dein neues Passwort wurde aktiviert.", response, raw=True)
+
+        adr = Address.objects.get(email=self.addresses[0].email)
+        self.assertFalse(adr.user.check_password(oldpass))
+        self.assertTrue(adr.user.check_password(newpass))
 
     def test_login_with_next(self):
         response = self.client.post(
