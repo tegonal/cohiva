@@ -348,7 +348,7 @@ tomlkit==0.13.3
     # via pylint
 transaction==5.0
     # via zodb
-types-python-dateutil==2.9.0.20250516
+types-python-dateutil==2.9.0.20250822
     # via arrow
 typing-extensions==4.13.2
     # via jwcrypto
