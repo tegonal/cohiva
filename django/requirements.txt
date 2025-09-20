@@ -411,4 +411,4 @@ zope-proxy==6.1
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
-sepa==0.5.3+mst1
+sepa==0.5.4
