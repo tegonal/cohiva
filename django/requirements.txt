@@ -34,7 +34,7 @@ attrs==25.3.0
     # via aiohttp
 beautifulsoup4==4.11.2
     # via wagtail
-billiard==4.2.1
+billiard==4.2.2
     # via celery
 btrees==6.1
     # via zodb
