@@ -414,4 +414,4 @@ zope-proxy==6.1
 # setuptools
 
 # Packages added/managed by install_dependencies.sh:
-sepa==0.5.3+mst1
+sepa==0.5.4+mst1
