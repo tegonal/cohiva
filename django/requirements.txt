@@ -264,7 +264,7 @@ pylint==3.3.8
     # via -r requirements.in
 pyopenssl==24.2.1
     # via pysaml2
-pyparsing==3.2.3
+pyparsing==3.2.5
     # via matplotlib
 pypdf==5.5.0
     # via -r requirements.in
