@@ -13,16 +13,10 @@
     },
     {
       "matchManagers": ["pip_requirements", "pip_setup"],
-      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "minimumReleaseAge": "30 days",
       "groupName": "Python Packages Updates (minor/patch)",
       "schedule": ["* * 1 * *"]
-    },
-    {
-      "matchManagers": ["pip_requirements", "pip_setup"],
-      "matchUpdateTypes": ["security", "pin"],
-      "minimumReleaseAge": "0 days",
-      "groupName": "Python Packages SECURITY Updates"
     }
   ]
 }
