@@ -13,7 +13,6 @@ on:
   push:
     branches:
       - main
-      - develop
 
 jobs:
   build:
@@ -23,16 +22,7 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@v5
-      - name: Install Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Setup environment
-        run: |
-          python -m pip install --upgrade pip
-          pip install ruff==0.12.10
-          ln -s website_example ./django/website
-      - name: Cleanup code
+      - name: Cleanup Sources
         run: ./scripts/cleanup-on-push-to-main.sh
       - name: Create Pull Request if necessary
         uses: peter-evans/create-pull-request@v7
