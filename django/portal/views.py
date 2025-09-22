@@ -17,6 +17,7 @@ from django.http import (
     JsonResponse,
 )
 from django.shortcuts import redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.debug import sensitive_post_parameters
 from django_tables2 import RequestConfig
@@ -113,7 +114,9 @@ def login(request):
                             request.POST["next"],
                         )
                     )
-                    if request.POST["next"]:
+                    if request.POST["next"] and url_has_allowed_host_and_scheme(
+                        request.POST["next"], allowed_hosts=None
+                    ):
                         return redirect(request.POST["next"])
                     else:
                         return redirect("/portal/")

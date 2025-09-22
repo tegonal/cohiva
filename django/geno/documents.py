@@ -185,47 +185,50 @@ class DocumentTemplate:
         c["bill_text"] = self.context_options.get("bill_text_default", None)
         c["bill_amount"] = self.context_options.get("bill_amount_default", None)
         if recipient.member:
-            if recipient.member.flag_01 and self.context_options.get(
-                "bill_text_memberflag_01", None
+            ## Overwrite bill text/amount based on member flag. Flags with higher numbers take
+            ## precedence. This NEEDS TO BE IMPROVED, since multiple member flags can be set and
+            ## then the outcome is unclear.
+            if recipient.member.flag_05 and self.context_options.get(
+                "bill_text_memberflag_05", None
             ):
-                c["bill_text"] = self.context_options["bill_text_memberflag_01"]
-            elif recipient.member.flag_02 and self.context_options.get(
-                "bill_text_memberflag_02", None
-            ):
-                c["bill_text"] = self.context_options["bill_text_memberflag_02"]
-            elif recipient.member.flag_03 and self.context_options.get(
-                "bill_text_memberflag_03", None
-            ):
-                c["bill_text"] = self.context_options["bill_text_memberflag_03"]
+                c["bill_text"] = self.context_options["bill_text_memberflag_05"]
             elif recipient.member.flag_04 and self.context_options.get(
                 "bill_text_memberflag_04", None
             ):
                 c["bill_text"] = self.context_options["bill_text_memberflag_04"]
-            elif recipient.member.flag_05 and self.context_options.get(
-                "bill_text_memberflag_05", None
-            ):
-                c["bill_text"] = self.context_options["bill_text_memberflag_05"]
-
-            if recipient.member.flag_01 and self.context_options.get(
-                "bill_amount_memberflag_01", None
-            ):
-                c["bill_amount"] = self.context_options["bill_amount_memberflag_01"]
-            elif recipient.member.flag_02 and self.context_options.get(
-                "bill_amount_memberflag_02", None
-            ):
-                c["bill_amount"] = self.context_options["bill_amount_memberflag_02"]
             elif recipient.member.flag_03 and self.context_options.get(
-                "bill_amount_memberflag_03", None
+                "bill_text_memberflag_03", None
             ):
-                c["bill_amount"] = self.context_options["bill_amount_memberflag_03"]
+                c["bill_text"] = self.context_options["bill_text_memberflag_03"]
+            elif recipient.member.flag_02 and self.context_options.get(
+                "bill_text_memberflag_02", None
+            ):
+                c["bill_text"] = self.context_options["bill_text_memberflag_02"]
+            elif recipient.member.flag_01 and self.context_options.get(
+                "bill_text_memberflag_01", None
+            ):
+                c["bill_text"] = self.context_options["bill_text_memberflag_01"]
+
+            if recipient.member.flag_05 and self.context_options.get(
+                "bill_amount_memberflag_05", None
+            ):
+                c["bill_amount"] = self.context_options["bill_amount_memberflag_05"]
             elif recipient.member.flag_04 and self.context_options.get(
                 "bill_amount_memberflag_04", None
             ):
                 c["bill_amount"] = self.context_options["bill_amount_memberflag_04"]
-            elif recipient.member.flag_05 and self.context_options.get(
-                "bill_amount_memberflag_05", None
+            elif recipient.member.flag_03 and self.context_options.get(
+                "bill_amount_memberflag_03", None
             ):
-                c["bill_amount"] = self.context_options["bill_amount_memberflag_05"]
+                c["bill_amount"] = self.context_options["bill_amount_memberflag_03"]
+            elif recipient.member.flag_02 and self.context_options.get(
+                "bill_amount_memberflag_02", None
+            ):
+                c["bill_amount"] = self.context_options["bill_amount_memberflag_02"]
+            elif recipient.member.flag_01 and self.context_options.get(
+                "bill_amount_memberflag_01", None
+            ):
+                c["bill_amount"] = self.context_options["bill_amount_memberflag_01"]
 
         if c["bill_text"] and c["bill_amount"]:
             ## Add bill line to totall bill

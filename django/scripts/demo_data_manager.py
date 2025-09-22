@@ -4,6 +4,7 @@ import argparse
 import os
 import subprocess
 import sys
+from shlex import quote
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import cohiva.settings as settings
@@ -11,11 +12,11 @@ import cohiva.settings as settings
 
 class Settings:
     ## Source is the PRODUCTION DB and PRODUCTION MEDIA_ROOT
-    prod_db = settings.TEST_DATA["db"]
-    test_db = settings.DATABASES["default"]["NAME"]
-    db_host = settings.DATABASES["default"]["HOST"]
-    db_user = settings.DATABASES["default"]["USER"]
-    db_pass = settings.DATABASES["default"]["PASSWORD"]
+    prod_db = quote(settings.TEST_DATA["db"])
+    test_db = quote(settings.DATABASES["default"]["NAME"])
+    db_host = quote(settings.DATABASES["default"]["HOST"])
+    db_user = quote(settings.DATABASES["default"]["USER"])
+    db_pass = quote(settings.DATABASES["default"]["PASSWORD"])
     media_test_dir = settings.MEDIA_ROOT
     media_prod_dir = settings.TEST_DATA["media"]
     smedia_test_dir = settings.MEDIA_ROOT + "/../smedia"
@@ -74,7 +75,7 @@ def save(force=False):
             return
     cmd = (
         f"mysqldump --events --create-options --quote-names --skip-extended-insert "
-        f'-p{s.db_pass} -u{s.db_user} {s.prod_db} | grep -vE "^INSERT INTO '
+        f'-p{s.db_pass} -u{s.db_user} -h{s.db_host} {s.prod_db} | grep -vE "^INSERT INTO '
         "\\`(oauth2_provider_accesstoken|oauth2_provider_application|"
         "oauth2_provider_refreshtoken|django_session|authtoken_token|auth_user|django_admin_log"
         ')\\` VALUES \\("'
@@ -101,9 +102,7 @@ def load(force=False):
     )
     if not force and not confirm_action():
         return
-    cmd = (
-        f"mysql -p{s.db_pass} -u{s.db_user} {s.test_db} < {s.demodata_dir}/{s.demodata_prefix}.sql"
-    )
+    cmd = f"mysql -p{s.db_pass} -u{s.db_user} -h{s.db_host} {s.test_db} < {s.demodata_dir}/{s.demodata_prefix}.sql"
     run_cmd(cmd, shell=True)
     cmd = (
         f"rsync -a --info=NAME --delete --delete-missing-args {s.demodata_dir}/media/* "
@@ -129,9 +128,7 @@ def deploy_to_prod(force=False):
     )
     if not force and not confirm_action():
         return
-    cmd = (
-        f"mysql -p{s.db_pass} -u{s.db_user} {s.prod_db} < {s.demodata_dir}/{s.demodata_prefix}.sql"
-    )
+    cmd = f"mysql -p{s.db_pass} -u{s.db_user} -h{s.db_host} {s.prod_db} < {s.demodata_dir}/{s.demodata_prefix}.sql"
     run_cmd(cmd, shell=True)
     cmd = (
         f"rsync -a --info=NAME --delete --delete-missing-args {s.demodata_dir}/media/* "

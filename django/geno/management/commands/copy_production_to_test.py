@@ -1,5 +1,6 @@
 import subprocess
 import time
+from shlex import quote
 
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
@@ -14,11 +15,11 @@ class Command(BaseCommand):
             raise CommandError("Not running in the TEST environment. Not doing anything!")
 
         ## Source is the PRODUCTION DB and PRODUCTION MEDIA_ROOT
-        prod_db = settings.TEST_DATA["db"]
-        test_db = settings.DATABASES["default"]["NAME"]
-        db_host = settings.DATABASES["default"]["HOST"]
-        db_user = settings.DATABASES["default"]["USER"]
-        db_pass = settings.DATABASES["default"]["PASSWORD"]
+        prod_db = quote(settings.TEST_DATA["db"])
+        test_db = quote(settings.DATABASES["default"]["NAME"])
+        db_host = quote(settings.DATABASES["default"]["HOST"])
+        db_user = quote(settings.DATABASES["default"]["USER"])
+        db_pass = quote(settings.DATABASES["default"]["PASSWORD"])
         media_test_dir = settings.MEDIA_ROOT
         media_prod_dir = settings.TEST_DATA["media"]
         smedia_test_dir = settings.MEDIA_ROOT + "/../smedia"
