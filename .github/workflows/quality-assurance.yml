@@ -22,7 +22,7 @@ jobs:
       - name: install shellcheck
         run: ./lib/tegonal-scripts/src/ci/install-shellcheck.sh
       - name: Install Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
       - name: Setup environment
