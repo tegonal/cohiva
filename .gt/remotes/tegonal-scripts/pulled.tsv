@@ -34,4 +34,3 @@ v4.9.1	src/utility/recursive-declare-p.sh	../lib/tegonal-scripts/src/utility/rec
 v4.9.1	src/setup.sh	../lib/tegonal-scripts/src/setup.sh	.*	6f7cad9aece7603290c29d5d250d87c63a1678918c99ef75172cd86d090fc58aa92a68e3210cc8679cb8c4df2a9983ec72c61511a92ba17733e26814da8196eb
 v4.9.1	src/ci/install-shellcheck.sh	../lib/tegonal-scripts/src/ci/install-shellcheck.sh	.*	7c5664257429b40033912dc7727544f37fbc55b4319641e3ea9755c0e2873adfa8791eb55219837957825c2efb1ca606c95bcfbfc6edd71b068dea3765af3b75
 v4.9.1	src/qa/run-shellcheck.sh	../lib/tegonal-scripts/src/qa/run-shellcheck.sh	.*	8d93e0874e1c254176704a8fd5197e1f7ad64250dbfebea376529af1292870e5c3771f7bf3580b128f8083f277138348fd9268a5f472ee10bdc532a202e0dad7
-v4.9.1	src/utility/string-utils.sh	../lib/tegonal-scripts/src/utility/string-utils.sh	.*	95a08f247ece8c9409bdaee43a55a741d665c44c0429b0283d45cc77bc5f3c2e65ddaf44cc5de143071de5566662e558450e73d2662346c8aef74859ce0fefd2
