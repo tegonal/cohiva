@@ -32,7 +32,7 @@ atomicwrites==1.4.1
     # via vdirsyncer
 attrs==25.3.0
     # via aiohttp
-beautifulsoup4==4.11.2
+beautifulsoup4==4.13.5
     # via wagtail
 billiard==4.2.1
     # via celery
