@@ -42,7 +42,7 @@ caldav==1.4.0
     # via -r requirements.in
 celery==5.5.2
     # via -r requirements.in
-certifi==2025.4.26
+certifi==2025.8.3
     # via requests
 cffi==1.17.1
     # via
