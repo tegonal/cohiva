@@ -3,6 +3,7 @@ from urllib.parse import quote
 
 from django.conf import settings
 from django.core import mail
+from django.urls import reverse
 from oauth2_provider.models import get_application_model
 from requests_oauthlib import OAuth2Session
 
@@ -98,7 +99,7 @@ class PortalAuthTest(PortalTestCase):
         ## Finish Authorization
         response = self.client.get(auth_url)
         self.assertInHTMLResponse("Berechtigung für Test?", response)
-        scope = " ".join(settings.OAUTH2_PROVIDER["SCOPES"].keys())
+        scope = "read write chat username email realname"
         post_data = {
             "allow": "Zustimmen",
             "client_id": provider_app.client_id,
@@ -147,9 +148,137 @@ class PortalAuthTest(PortalTestCase):
         )
         self.assertEqual(profile["id"], f"{settings.GENO_ID}_{self.user.id}")
 
+    def portal_oauth_oidc(self):
+        ## Setup OAuth provider
+        dummy_redirect_uri = "https://localhost/oauth2/callback"
+        application = get_application_model()
+        provider_app = application(
+            name="Test OIDC",
+            authorization_grant_type=application.GRANT_AUTHORIZATION_CODE,
+            client_type=application.CLIENT_PUBLIC,
+            redirect_uris=dummy_redirect_uri,
+            user=self.user,
+            client_secret="",
+            hash_client_secret=False,
+            skip_authorization=True,
+            algorithm=application.RS256_ALGORITHM,
+        )
+        provider_app.save()
+
+        ## Start Authorization
+        oauth = OAuth2Session(provider_app.client_id, redirect_uri=dummy_redirect_uri)
+        authorization_url, state = oauth.authorization_url("https://localhost/o/authorize/")
+        self.assertIn(
+            f"https://localhost/o/authorize/?response_type=code&client_id={provider_app.client_id}",
+            authorization_url,
+        )
+        auth_url = authorization_url[len("https://localhost") :]
+        response = self.client.get(auth_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual("/portal/login/?next=" + quote(auth_url), response.url)
+
+        ## Do login
+        response = self.client.get(response.url)
+        self.assertInHTMLResponse("E-Mail oder Benutzername", response)
+        logged_in = self.client.login(username=self.user.username, password=self.userpass)
+        self.assertTrue(logged_in)
+
+        ## Finish Authorization
+        response = self.client.get(auth_url)
+        scope = "profile openid"
+        self.assertEqual(response.status_code, 302)
+        match = re.search(f"{dummy_redirect_uri}\\?code=(\\S+)&state={state}", response.url)
+        self.assertTrue(bool(match))
+        auth_code = match.group(1)
+
+        ## Logout and get access token
+        self.client.logout()
+        post_data = {
+            "client_id": provider_app.client_id,
+            "state": state,
+            "redirect_uri": dummy_redirect_uri,
+            "scope": scope,
+            "grant_type": "authorization_code",
+            "code": auth_code,
+        }
+        response = self.client.post("/o/token/", post_data)
+        self.assertEqual(response.status_code, 200)
+        token = response.json()
+        self.assertEqual(token["token_type"], "Bearer")
+        self.assertTrue("refresh_token" in token)
+
+        ## Untauthorized without token
+        response = self.client.get(reverse("oauth2_provider:user-info"))
+        self.assertEqual(response.status_code, 401)
+
+        ## Use token and check profile information
+        response = self.client.get(
+            reverse("oauth2_provider:user-info"),
+            HTTP_AUTHORIZATION=f"Bearer {token['access_token']}",
+        )
+        self.assertEqual(response.status_code, 200)
+        profile = response.json()
+        self.assertEqual(profile["email"], self.addresses[0].email)
+        self.assertEqual(profile["preferred_username"], self.user.username)
+        self.assertEqual(
+            profile["name"], f"{self.addresses[0].first_name} {self.addresses[0].name}"
+        )
+        self.assertEqual(profile["given_name"], self.addresses[0].first_name)
+        self.assertEqual(profile["family_name"], self.addresses[0].name)
+        self.assertEqual(profile["sub"], f"{settings.GENO_ID}_{self.user.id}")
+
     def test_portal_auth(self):
         self.signup_user()
         self.portal_oauth()
+
+    def test_portal_auth_oidc(self):
+        self.signup_user()
+        self.portal_oauth_oidc()
+
+    def test_portal_oauth_unauthorized_user_oidc(self):
+        unauthorized_user = self.UserModel.objects.create_user(
+            username="unauth", password="secret", email="unauth@example.com"
+        )
+        Address.objects.create(name="Unauth", user=unauthorized_user, email="unauth@example.com")
+
+        ## Setup OAuth provider
+        dummy_redirect_uri = "https://localhost/oauth2/callback"
+        application = get_application_model()
+        provider_app = application(
+            name="Test OIDC",
+            authorization_grant_type=application.GRANT_AUTHORIZATION_CODE,
+            client_type=application.CLIENT_PUBLIC,
+            redirect_uris=dummy_redirect_uri,
+            user=unauthorized_user,
+            client_secret="",
+            hash_client_secret=False,
+            skip_authorization=True,
+            algorithm=application.RS256_ALGORITHM,
+        )
+        provider_app.save()
+
+        ## Start Authorization
+        oauth = OAuth2Session(provider_app.client_id, redirect_uri=dummy_redirect_uri)
+        authorization_url, state = oauth.authorization_url("https://localhost/o/authorize/")
+        self.assertIn(
+            f"https://localhost/o/authorize/?response_type=code&client_id={provider_app.client_id}",
+            authorization_url,
+        )
+        auth_url = authorization_url[len("https://localhost") :]
+        response = self.client.get(auth_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual("/portal/login/?next=" + quote(auth_url), response.url)
+
+        ## Do login
+        response = self.client.get(response.url)
+        self.assertInHTMLResponse("E-Mail oder Benutzername", response)
+        logged_in = self.client.login(username=unauthorized_user.username, password="secret")
+        self.assertTrue(logged_in)
+
+        ## Access should be denied immediately
+        response = self.client.get(auth_url)
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.content.decode(), "Access denied for Test OIDC.")
 
     def test_password_reset_for_existing_user(self):
         oldpass = "oldp12345678+"

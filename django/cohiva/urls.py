@@ -65,6 +65,8 @@ if "report" in settings.COHIVA_FEATURES:
     ]
 
 if "portal" in settings.COHIVA_FEATURES:
+    from portal.auth import CohivaAuthorizationView
+
     urlpatterns += [
         path(
             "login/sendpass/", RedirectView.as_view(url="/portal/", permanent=False), name="portal"
@@ -75,6 +77,7 @@ if "portal" in settings.COHIVA_FEATURES:
         ),
         path("portal/", include("portal.urls")),
         ## Auth
+        path("o/authorize/", CohivaAuthorizationView.as_view(), name="authorize"),
         path("o/", include("oauth2_provider.urls", namespace="oauth2_provider")),
         path("idp/", include("djangosaml2idp.urls")),
     ]

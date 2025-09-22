@@ -1,14 +1,11 @@
 from django.contrib.auth import views as auth_views
 from django.urls import path
 
-from portal.auth import CohivaAuthorizationView
-
 # from wagtail import urls as wagtail_urls
 from . import views as portal_views
 
 app_name = "portal"
 urlpatterns = [
-    path("o/authorize/", CohivaAuthorizationView.as_view(), name="authorize"),
     path("login/", portal_views.login),
     path("logout/", portal_views.logout),
     path("password_change/", auth_views.PasswordChangeView.as_view(), name="password_change"),
