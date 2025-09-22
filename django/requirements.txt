@@ -38,7 +38,7 @@ billiard==4.2.1
     # via celery
 btrees==6.1
     # via zodb
-caldav==1.4.0
+caldav==1.6.0
     # via -r requirements.in
 celery==5.5.2
     # via -r requirements.in
