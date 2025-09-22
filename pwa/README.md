@@ -169,11 +169,14 @@ yarn prepare
 ### Icon Generation
 
 ```bash
-# Generate PWA icons from config/icon.svg and config/logo.svg
-yarn icon:generate
+# Icon generation is handled automatically by:
+yarn make:tenant-config
 
-# Verify generated icons
-yarn icon:verify
+# This script:
+# - Processes icon.svg and logo.svg from config/
+# - Generates all PWA icons using Icon Genie
+# - Creates manifest.json with proper icon references
+# - Optimizes generated icons
 ```
 
 ## Technology Stack

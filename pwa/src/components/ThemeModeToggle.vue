@@ -13,7 +13,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useThemeMode, type ThemeMode } from 'src/composables/use-theme-mode'
+
+import { type ThemeMode, useThemeMode } from 'src/composables/use-theme-mode'
 
 const { currentMode, setThemeMode } = useThemeMode()
 
@@ -24,22 +25,22 @@ const themeMode = computed({
 
 const options = [
   {
-    label: 'System',
-    value: 'system' as ThemeMode,
     icon: 'settings_brightness',
+    label: 'System',
     slot: 'system',
+    value: 'system' as ThemeMode,
   },
   {
-    label: 'Hell',
-    value: 'light' as ThemeMode,
     icon: 'light_mode',
+    label: 'Hell',
     slot: 'light',
+    value: 'light' as ThemeMode,
   },
   {
-    label: 'Dunkel',
-    value: 'dark' as ThemeMode,
     icon: 'dark_mode',
+    label: 'Dunkel',
     slot: 'dark',
+    value: 'dark' as ThemeMode,
   },
 ]
 </script>
@@ -48,11 +49,11 @@ const options = [
 .theme-mode-toggle {
   width: 100%;
   border-radius: $button-border-radius;
-  
+
   :deep(.q-btn) {
     font-size: 0.75rem;
     padding: 4px 8px;
-    
+
     .q-icon {
       font-size: 1.2rem;
     }

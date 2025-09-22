@@ -283,12 +283,12 @@ function fetchData(): void {
   api
     .get('/api/v1/credit_accounting/transactions/', {
       params: {
-        filter: {
+        filter: JSON.stringify({
           account: account.value?.value,
           search: search.value,
           sign: sign.value?.value,
           time: time.value?.value,
-        },
+        }),
         vendor: 'Depot8',
       },
     })

@@ -224,14 +224,14 @@
       </div>
     </div>
     <div v-if="hasLinks">
-      <p v-if="settings.RESERVATION_LINKS.NOTE">
+      <p v-if="settings.reservationLinks.note">
         <b>{{ $t('reservationEditPage.note') }}</b>
-        {{ settings.RESERVATION_LINKS.NOTE }}
+        {{ settings.reservationLinks.note }}
       </p>
       <h6 class="q-my-xs">{{ $t('reservationEditPage.links') }}</h6>
       <q-list bordered separator>
         <q-item
-          v-for="item in settings.RESERVATION_LINKS.LINKS"
+          v-for="item in settings.reservationLinks.links"
           :key="item.title"
           clickable
           v-ripple
@@ -386,15 +386,22 @@ function formUpdated(what: string): void {
   }
 
   // Handle range dates for fixed time reservations
-  // Note: This logic may need adjustment based on how q-date range works
+  // When range mode is active, q-date returns an object { from: "DD.MM.YYYY", to: "DD.MM.YYYY" }
   if (
     fixedTime.value &&
     date_start.value &&
-    typeof date_start.value === 'string' &&
-    date_start.value.includes('/')
+    typeof date_start.value === 'object' &&
+    'from' in date_start.value &&
+    'to' in date_start.value
   ) {
-    // If using range format, split it - this needs to be adjusted based on actual format
-    // Currently keeping as string type for simplicity
+    // Extract the actual dates from the range object
+    const rangeStart = date_start.value.from
+    const rangeEnd = date_start.value.to
+
+    // Update date_start to be just the 'from' date string
+    date_start.value = rangeStart
+    // Update date_end to be the 'to' date string
+    date_end.value = rangeEnd
   }
 
   // Automatically hide date pickers
@@ -487,23 +494,37 @@ function getReservationTypes() {
 }
 
 function reservationSearch() {
+  // Ensure we're using string values, not range objects
+  let dateFromValue = date_start.value
+  let dateToValue = date_end.value
+
+  // Handle case where date_start might still be a range object
+  if (
+    dateFromValue &&
+    typeof dateFromValue === 'object' &&
+    'from' in dateFromValue
+  ) {
+    dateFromValue = dateFromValue.from
+    dateToValue = dateFromValue.to
+  }
+
   console.log(
     'Reservation search: ' +
       reservationType.value +
       ' / ' +
-      date_start.value +
+      dateFromValue +
       ' ' +
       time_start.value +
       ' - ' +
-      date_end.value +
+      dateToValue +
       ' ' +
       time_end.value
   )
   api
     .get('/api/v1/reservation/search/', {
       params: {
-        dateFrom: date_start.value,
-        dateTo: date_end.value,
+        dateFrom: dateFromValue,
+        dateTo: dateToValue,
         reservationType: reservationType.value,
         timeFrom: time_start.value,
         timeTo: time_end.value,
@@ -552,11 +573,25 @@ function str2date(date_string: string, time_string?: string): Date {
 }
 
 function submitReservation() {
+  // Ensure we're using string values, not range objects
+  let dateFromValue = date_start.value
+  let dateToValue = date_end.value
+
+  // Handle case where date_start might still be a range object
+  if (
+    dateFromValue &&
+    typeof dateFromValue === 'object' &&
+    'from' in dateFromValue
+  ) {
+    dateFromValue = dateFromValue.from
+    dateToValue = dateFromValue.to
+  }
+
   api
     .post('/api/v1/reservation/edit/', {
       action: 'add',
-      dateFrom: date_start.value,
-      dateTo: date_end.value,
+      dateFrom: dateFromValue,
+      dateTo: dateToValue,
       reservationType: reservationType.value,
       selectedRoom: selectedRoom.value?.id ?? null,
       summary: reservationSummary.value,
@@ -597,6 +632,12 @@ onMounted(() => {
   getReservationTypes()
 })
 
+// Type for date range when using range mode
+interface DateRange {
+  from: string
+  to: string
+}
+
 interface PopupProxy {
   hide(): void
 }
@@ -626,7 +667,7 @@ const reservationType = ref<null | string>(null)
 const fixedTime = ref(true)
 const summaryRequired = ref(false)
 const reservationTypeOptions = ref<ReservationType[]>([])
-const date_start = ref<null | string>(null) // { from: "2022/10/21", to: "2022/10/25" })
+const date_start = ref<DateRange | null | string>(null) // Can be string or range object
 const date_start_error = ref(false)
 const date_end = ref<null | string>(null)
 const date_end_error = ref(false)
@@ -640,7 +681,7 @@ const searchResult = ref<null | Room[]>(null)
 const selectedRoom = ref<null | Room>(null)
 const apiError = ref('')
 
-const hasLinks = settings.RESERVATION_LINKS.LINKS.length > 0
+const hasLinks = settings.reservationLinks.links.length > 0
 
 // Dialogs
 const confirmReservation = ref(false)

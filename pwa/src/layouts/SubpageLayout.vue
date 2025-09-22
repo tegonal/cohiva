@@ -11,17 +11,14 @@
           @click="$router.back()"
         />
 
-        <q-toolbar-title> {{ subpageTitle }} </q-toolbar-title>
+        <q-toolbar-title> {{ $t(subpageTitleKey) }} </q-toolbar-title>
 
         <!-- Language Switcher -->
         <LanguageSwitcher />
 
         <!-- <div>Quasar v{{ $q.version }}</div> -->
         <div class="toolbar-logo">
-          <img
-            :alt="settings.SITE_NICKNAME + ' Logo'"
-            :src="logoPath"
-          />
+          <img :alt="settings.siteNickname + ' Logo'" :src="logoPath" />
         </div>
       </q-toolbar>
     </q-header>
@@ -52,7 +49,7 @@ import { useThemedLogo } from 'src/composables/use-themed-logo'
 // Theme-aware logo
 const { logoPath } = useThemedLogo()
 
-defineProps({ subpageTitle: String })
+defineProps({ subpageTitleKey: String })
 </script>
 
 <style lang="scss" scoped>

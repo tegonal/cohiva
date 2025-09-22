@@ -54,7 +54,9 @@ p a {
 // App logo with dynamic shadow
 .app-logo {
   box-shadow: var(--q-shadow-1);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
 
   &:hover {
     transform: scale(1.05);
@@ -63,11 +65,21 @@ p a {
 }
 
 // Utility classes that use the CSS variables
-.shadow-xs { box-shadow: var(--q-shadow-1); }
-.shadow-sm { box-shadow: var(--q-shadow-2); }
-.shadow-md { box-shadow: var(--q-shadow-3); }
-.shadow-lg { box-shadow: var(--q-shadow-4); }
-.shadow-xl { box-shadow: var(--q-shadow-5); }
+.shadow-xs {
+  box-shadow: var(--q-shadow-1);
+}
+.shadow-sm {
+  box-shadow: var(--q-shadow-2);
+}
+.shadow-md {
+  box-shadow: var(--q-shadow-3);
+}
+.shadow-lg {
+  box-shadow: var(--q-shadow-4);
+}
+.shadow-xl {
+  box-shadow: var(--q-shadow-5);
+}
 
 // Example overrides (uncomment and modify as needed):
 

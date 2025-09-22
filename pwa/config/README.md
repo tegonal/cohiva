@@ -10,20 +10,23 @@ The configuration system allows complete customization of the PWA without modify
 
 ```
 config/
-├── settings.js         # Deployment settings (required)
-├── theme.js           # Color theme (required)
-├── icon.svg           # App icon for small displays (required)
-├── logo.svg           # Logo for branding/splash screens (required)
-├── webfonts.scss      # Font definitions (optional)
-├── override.scss      # Custom style overrides (optional)
-└── fonts/             # Web font files (optional)
+├── settings.ts         # Deployment settings (required)
+├── theme.ts            # Color theme (required)
+├── schemas.ts          # Configuration validation schemas
+├── icon.svg            # App icon for small displays (required)
+├── icon-dark.svg       # App icon for dark mode (required)
+├── logo.svg            # Logo for branding/splash screens (required)
+├── logo-dark.svg       # Logo for dark mode (required)
+├── webfonts.scss       # Font definitions (optional)
+├── override.scss       # Custom style overrides (optional)
+└── fonts/              # Web font files (optional)
     ├── *.woff2
     └── *.woff
 ```
 
 ## Required Files
 
-### 1. `settings.js` - Deployment Configuration
+### 1. `settings.ts` - Deployment Configuration
 
 Defines environment-specific settings:
 
@@ -31,8 +34,9 @@ Defines environment-specific settings:
 - **Branding**: Site name, nickname, description
 - **Features**: App-specific configuration
 - **Links**: External URLs, contact information
+- **Icon Generation**: Optional `skipIconTrim` flag to preserve logo aspect ratio
 
-### 2. `theme.js` - Visual Theme
+### 2. `theme.ts` - Visual Theme
 
 Quasar theme colors that define the app's appearance:
 
@@ -59,9 +63,31 @@ Used for splash screens and larger branding:
 - **Format**: Can be more detailed than icon
 - **Usage**: Splash screens, login pages, about sections
 
+### 5. `icon-dark.svg` - Dark Mode App Icon
+
+Required dark mode variant of the app icon:
+
+- **Purpose**: Icon for dark mode/theme
+- **Requirements**: Same dimensions as icon.svg
+- **Format**: SVG optimized for dark backgrounds
+- **Usage**: Automatically switches based on theme
+
+### 6. `logo-dark.svg` - Dark Mode Brand Logo
+
+Required dark mode variant of the brand logo:
+
+- **Purpose**: Logo for dark mode/theme
+- **Requirements**: Same dimensions as logo.svg
+- **Format**: SVG optimized for dark backgrounds
+- **Usage**: Splash screens and branding in dark mode
+
+### Additional Files
+
+- **`schemas.ts`**: TypeScript schemas for validating configuration
+
 ## Optional Files
 
-### 5. `webfonts.scss` - Typography
+### 7. `webfonts.scss` - Typography
 
 Defines custom fonts for the application:
 
@@ -69,7 +95,7 @@ Defines custom fonts for the application:
 - **Font variables**: Overrides Quasar's typography
 - **Default**: Roboto font family included
 
-### 6. `override.scss` - Style Customizations
+### 8. `override.scss` - Style Customizations
 
 Tenant-specific style overrides:
 
@@ -78,7 +104,7 @@ Tenant-specific style overrides:
 - **Additional CSS**: Any custom styles
 - **Loaded last**: Ensures overrides take precedence
 
-### 7. `fonts/` Directory - Font Files
+### 9. `fonts/` Directory - Font Files
 
 Contains actual font files:
 
@@ -88,7 +114,7 @@ Contains actual font files:
 
 ## Build Process
 
-The `make-tenant-config.js` script processes these files during build:
+The `make-tenant-config.ts` script processes these files during build:
 
 1. **Asset Generation**
    - Converts icon/logo SVG to PNG if needed
@@ -178,7 +204,7 @@ TENANT=customer1 yarn run build
 
 Before deployment, ensure:
 
-- [ ] All required files present (settings, theme, icon, logo)
+- [ ] All required files present (settings, theme, icon, icon-dark, logo, logo-dark)
 - [ ] SVG files valid and proper dimensions
 - [ ] Theme colors in correct hex format
 - [ ] Settings URLs match deployment environment
@@ -203,6 +229,15 @@ This default serves as both a working example and fallback configuration.
 - Check SVG files are valid
 - Ensure Icon Genie is installed: `yarn add -D @quasar/icongenie`
 - Verify minimum resolution (1024x1024)
+
+### Icons appear cut off or distorted
+
+If your logo appears trimmed or doesn't look good after icon generation:
+
+- Set `skipIconTrim: true` in `config/settings.ts`
+- This disables Icon Genie's automatic trimming/cropping
+- Useful for logos that need to preserve their original aspect ratio
+- Example: Logos with specific padding or whitespace requirements
 
 ### Fonts not loading
 

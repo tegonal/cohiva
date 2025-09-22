@@ -146,6 +146,14 @@ export default {
     },
   },
 
+  // Page titles for SubpageLayout
+  pageTitles: {
+    calendar: 'Kalender',
+    creditAccounting: 'Kontoauszug',
+    repair: 'Reparaturmeldung',
+    reservation: 'Reservation',
+  },
+
   // RepairPage component translations
   repairPage: {
     errorDialog: {

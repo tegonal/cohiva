@@ -66,21 +66,21 @@ async function main() {
     }
 
     // Check that hostnames are valid
-    if (settings.TEST_HOSTNAME === settings.PROD_HOSTNAME) {
-      log('⚠️  Warning: TEST_HOSTNAME and PROD_HOSTNAME are the same', 'yellow')
+    if (settings.testHostname === settings.prodHostname) {
+      log('⚠️  Warning: testHostname and prodHostname are the same', 'yellow')
     }
 
     // Check OAuth client ID format
-    if (settings.OAUTH_CLIENT_ID.length < 20) {
-      log('⚠️  Warning: OAUTH_CLIENT_ID seems unusually short', 'yellow')
+    if (settings.oauthClientId.length < 20) {
+      log('⚠️  Warning: oauthClientId seems unusually short', 'yellow')
     }
 
     log('='.repeat(50), 'green')
     logSuccess('All configuration files are valid!')
     log('')
     log('Configuration summary:', 'cyan')
-    log(`  Site: ${settings.SITE_NAME}`, 'cyan')
-    log(`  Domain: ${settings.DOMAIN}`, 'cyan')
+    log(`  Site: ${settings.siteName}`, 'cyan')
+    log(`  Domain: ${settings.domain}`, 'cyan')
     log(
       `  Theme: Primary=${theme.primary}, Secondary=${theme.secondary}`,
       'cyan'

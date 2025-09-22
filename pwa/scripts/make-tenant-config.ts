@@ -227,6 +227,35 @@ async function makeTenantConfig(): Promise<void> {
       await fs.copy(logoSource, iconTarget)
     }
 
+    // Setup dark mode variants
+    console.log('🌙 Setting up dark mode icons...')
+    const logoDarkSource = path.join(rootDir, 'config', 'logo-dark.svg')
+    const iconDarkSource = path.join(rootDir, 'config', 'icon-dark.svg')
+    const logoDarkTarget = path.join(rootDir, 'src', 'assets', 'logo-dark.svg')
+    const iconDarkTarget = path.join(rootDir, 'src', 'assets', 'icon-dark.svg')
+
+    // Check if dark mode variants exist
+    const hasLogoDark = await fs.pathExists(logoDarkSource)
+    const hasIconDark = await fs.pathExists(iconDarkSource)
+
+    if (!hasLogoDark) {
+      throw new Error('config/logo-dark.svg is required for dark mode support')
+    }
+
+    if (!hasIconDark) {
+      throw new Error('config/icon-dark.svg is required for dark mode support')
+    }
+
+    // Copy logo-dark.svg to assets
+    await fs.remove(logoDarkTarget)
+    await fs.copy(logoDarkSource, logoDarkTarget)
+    console.log('   ✅ Copied logo-dark.svg')
+
+    // Copy icon-dark.svg to assets
+    await fs.remove(iconDarkTarget)
+    await fs.copy(iconDarkSource, iconDarkTarget)
+    console.log('   ✅ Copied icon-dark.svg')
+
     // 2. Load theme and settings
     // Try TypeScript theme first, fall back to JavaScript
     let themePath = path.join(rootDir, 'config', 'theme.ts')
@@ -237,9 +266,11 @@ async function makeTenantConfig(): Promise<void> {
     const { settings } = await import(
       path.join(rootDir, 'config', 'settings.js')
     )
-    
+
     // Validate theme configuration
-    const { validateTheme } = await import(path.join(rootDir, 'config', 'schemas.js'))
+    const { validateTheme } = await import(
+      path.join(rootDir, 'config', 'schemas.js')
+    )
     try {
       validateTheme(theme.default)
       console.log('✅ Theme configuration validated')
@@ -354,7 +385,10 @@ async function makeTenantConfig(): Promise<void> {
       // - App icons (at appropriate sizes)
       // - Splash screens (centered at 40% size on background color)
       // Padding: adds 10% padding (horizontal,vertical) to prevent icon from touching edges
-      const iconGenieCmd = `npx icongenie generate -m pwa -i "${iconSourcePath}" --theme-color ${themeColor} --png-color ${backgroundColor} --splashscreen-color ${backgroundColor} --splashscreen-icon-ratio 40 --padding 10,10 --quality 10`
+      // Skip trim: optionally disable icon trimming for logos that need to preserve their aspect ratio
+      const skipTrim = settings.skipIconTrim ? '--skip-trim' : ''
+      const iconGenieCmd =
+        `npx icongenie generate -m pwa -i "${iconSourcePath}" --theme-color ${themeColor} --png-color ${backgroundColor} --splashscreen-color ${backgroundColor} --splashscreen-icon-ratio 40 --padding 10,10 --quality 10 ${skipTrim}`.trim()
       console.log(`   Running: ${iconGenieCmd}`)
 
       const { stderr, stdout } = await execAsync(iconGenieCmd, { cwd: rootDir })
@@ -424,8 +458,7 @@ async function makeTenantConfig(): Promise<void> {
     const manifest = {
       background_color: theme.default.backgroundColor,
       description:
-        settings.SITE_DESCRIPTION ||
-        `${settings.SITE_NAME} Progressive Web App`,
+        settings.siteDescription || `${settings.siteName} Progressive Web App`,
       display: 'standalone',
       icons: [
         {
@@ -454,10 +487,10 @@ async function makeTenantConfig(): Promise<void> {
           type: 'image/png',
         },
       ],
-      id: `/${settings.APP_BASENAME}/`,
-      name: settings.SITE_NAME,
+      id: `/${settings.appBasename}/`,
+      name: settings.siteName,
       orientation: 'portrait',
-      short_name: settings.SITE_NICKNAME,
+      short_name: settings.siteNickname,
       start_url: '/',
       theme_color: theme.default.primary,
     }
@@ -507,10 +540,15 @@ $typography-font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-seri
 
     // 8. Generate quasar.variables.scss from theme.js
     console.log('🎨 Generating quasar.variables.scss from theme colors...')
-    
+
     // Skip these variables (they're for app config, not SCSS)
-    const skipVars = ['backgroundColor', 'themeColor', 'splashBackgroundColor', 'splashIconColor']
-    
+    const skipVars = [
+      'backgroundColor',
+      'themeColor',
+      'splashBackgroundColor',
+      'splashIconColor',
+    ]
+
     // Simply output all theme variables as SCSS
     let scssVariables = ''
     for (const [key, value] of Object.entries(theme.default)) {
@@ -518,7 +556,7 @@ $typography-font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-seri
         scssVariables += `$${key}: ${value};\n`
       }
     }
-    
+
     const quasarVariablesContent = `// Generated from config/theme.ts
 // Do not edit directly - modify config/theme.ts instead
 
@@ -581,7 +619,7 @@ ${scssVariables}
     await verifyIconReferences()
 
     console.log('✅ Tenant configuration complete!')
-    console.log(`   Site: ${settings.SITE_NAME}`)
+    console.log(`   Site: ${settings.siteName}`)
     console.log(`   Theme: ${theme.default.primary}`)
     console.log(`   Background: ${theme.default.backgroundColor}`)
   } catch (error) {

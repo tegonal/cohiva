@@ -27,35 +27,34 @@ const ReservationLinkSchema = z.object({
 
 // Main settings schema
 export const SettingsSchema = z.object({
-  APP_BASENAME: z.string().min(1, 'APP_BASENAME cannot be empty'),
-  BUTTON_LINKS: z.object({
-    CHAT: ButtonLinkSchema,
-    CLOUD: ButtonLinkSchema,
-    HANDBUCH: ButtonLinkSchema,
+  appBasename: z.string().min(1, 'appBasename cannot be empty'),
+  buttonLinks: z.object({
+    chat: ButtonLinkSchema,
+    cloud: ButtonLinkSchema,
+    handbuch: ButtonLinkSchema,
   }),
-  DOMAIN: z
+  domain: z
     .string()
-    .min(1, 'DOMAIN cannot be empty')
+    .min(1, 'domain cannot be empty')
     .regex(
       /^[a-z0-9]+([-.]{1}[a-z0-9]+)*\.[a-z]{2,}$/i,
-      'DOMAIN must be a valid domain name'
+      'domain must be a valid domain name'
     ),
-  NAVIGATION_LINKS: z
+  navigationLinks: z
     .array(NavigationLinkSchema)
     .min(1, 'At least one navigation link is required'),
-  OAUTH_CLIENT_ID: z.string().min(1, 'OAUTH_CLIENT_ID cannot be empty'),
-  PASSWORD_RESET_LINK: z
-    .string()
-    .url('PASSWORD_RESET_LINK must be a valid URL'),
-  PROD_HOSTNAME: z.string().min(1, 'PROD_HOSTNAME cannot be empty'),
-  RESERVATION_LINKS: z.object({
-    LINKS: z.array(ReservationLinkSchema),
-    NOTE: z.string(), // Can be empty
+  oauthClientId: z.string().min(1, 'oauthClientId cannot be empty'),
+  passwordResetLink: z.string().url('passwordResetLink must be a valid URL'),
+  prodHostname: z.string().min(1, 'prodHostname cannot be empty'),
+  reservationLinks: z.object({
+    links: z.array(ReservationLinkSchema),
+    note: z.string(), // Can be empty
   }),
-  SITE_DESCRIPTION: z.string().min(1, 'SITE_DESCRIPTION cannot be empty'),
-  SITE_NAME: z.string().min(1, 'SITE_NAME cannot be empty'),
-  SITE_NICKNAME: z.string().min(1, 'SITE_NICKNAME cannot be empty'),
-  TEST_HOSTNAME: z.string().min(1, 'TEST_HOSTNAME cannot be empty'),
+  siteDescription: z.string().min(1, 'siteDescription cannot be empty'),
+  siteName: z.string().min(1, 'siteName cannot be empty'),
+  siteNickname: z.string().min(1, 'siteNickname cannot be empty'),
+  skipIconTrim: z.boolean().optional().default(false),
+  testHostname: z.string().min(1, 'testHostname cannot be empty'),
 })
 
 // Color validation regex (hex color)
@@ -77,28 +76,30 @@ const CSSTransitionSchema = z
   .regex(/^[^;]+$/, 'Must be a valid CSS transition value')
 
 // Theme configuration schema with strict required fields and flexible additional properties
-export const ThemeSchema = z.object({
-  // Required Quasar brand colors
-  primary: HexColorSchema,
-  secondary: HexColorSchema,
-  accent: HexColorSchema,
+export const ThemeSchema = z
+  .object({
+    accent: HexColorSchema,
+    // Required app configuration colors (not exported to SCSS)
+    backgroundColor: HexColorSchema,
+    // Required dark mode colors
+    dark: HexColorSchema,
 
-  // Required dark mode colors
-  dark: HexColorSchema,
-  'dark-page': HexColorSchema,
+    'dark-page': HexColorSchema,
+    info: HexColorSchema,
 
-  // Required semantic colors
-  positive: HexColorSchema,
-  negative: HexColorSchema,
-  info: HexColorSchema,
-  warning: HexColorSchema,
+    negative: HexColorSchema,
+    // Required semantic colors
+    positive: HexColorSchema,
+    // Required Quasar brand colors
+    primary: HexColorSchema,
+    secondary: HexColorSchema,
 
-  // Required app configuration colors (not exported to SCSS)
-  backgroundColor: HexColorSchema,
-  themeColor: HexColorSchema,
-  splashBackgroundColor: HexColorSchema,
-  splashIconColor: HexColorSchema,
-}).catchall(z.string()) // Allow any additional string properties for custom SCSS variables
+    splashBackgroundColor: HexColorSchema,
+    splashIconColor: HexColorSchema,
+    themeColor: HexColorSchema,
+    warning: HexColorSchema,
+  })
+  .catchall(z.string()) // Allow any additional string properties for custom SCSS variables
 
 // Type exports for TypeScript
 export type ButtonLink = z.infer<typeof ButtonLinkSchema>

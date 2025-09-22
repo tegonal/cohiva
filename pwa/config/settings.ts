@@ -3,20 +3,20 @@
 import type { Settings } from './schemas'
 
 const settings: Settings = {
-  APP_BASENAME: 'cohiva',
-  BUTTON_LINKS: {
-    CHAT: {
+  appBasename: 'cohiva',
+  buttonLinks: {
+    chat: {
       link: 'https://chat.demo.cohiva.ch/',
     },
-    CLOUD: {
+    cloud: {
       link: 'https://cloud.demo.cohiva.ch/',
     },
-    HANDBUCH: {
+    handbuch: {
       link: 'https://doku.demo.cohiva.ch/',
     },
   },
-  DOMAIN: 'cohiva.ch',
-  NAVIGATION_LINKS: [
+  domain: 'cohiva.ch',
+  navigationLinks: [
     {
       caption:
         'Strom und Energieverbrauch anzeigen (ein Login pro Mieteinheit)',
@@ -38,14 +38,14 @@ const settings: Settings = {
     },
   ],
   // OAuth2 Public Client Configuration (PKCE flow - no secret needed)
-  OAUTH_CLIENT_ID: 'rVMu5eTlkLDkXFtbzuQ7bhhi5QgPlPXHb0bKkQf1',
+  oauthClientId: 'rVMu5eTlkLDkXFtbzuQ7bhhi5QgPlPXHb0bKkQf1',
   /* Additional settings */
-  PASSWORD_RESET_LINK: 'https://demo.cohiva.ch/portal/password_reset/',
+  passwordResetLink: 'https://demo.cohiva.ch/portal/password_reset/',
   /* Settings similar to cohiva/base_config.py */
-  PROD_HOSTNAME: 'demo',
+  prodHostname: 'demo',
 
-  RESERVATION_LINKS: {
-    LINKS: [
+  reservationLinks: {
+    links: [
       {
         caption: 'Infos zur Nutzung der Gästezimmer',
         link: 'https://demo.cohiva.ch/gaestezimmer/',
@@ -57,15 +57,18 @@ const settings: Settings = {
         title: 'Kalender Bewegungsraum',
       },
     ],
-    NOTE: '',
+    note: '',
   },
   // Note: Client must be configured as 'public' in Django OAuth Toolkit
   // with PKCE enabled for security
 
-  SITE_DESCRIPTION: 'Cohiva Demo - Verwaltung für Wohngenossenschaften',
-  SITE_NAME: 'Cohiva Demo',
-  SITE_NICKNAME: 'Cohiva',
-  TEST_HOSTNAME: 'demo',
+  siteDescription: 'Cohiva Demo - Verwaltung für Wohngenossenschaften',
+  siteName: 'Cohiva Demo',
+  siteNickname: 'Cohiva',
+  // Skip icon trimming during icon generation (useful for logos that need to preserve aspect ratio)
+  // Set to true if your logo appears cut off or doesn't look good after Icon Genie processing
+  skipIconTrim: false,
+  testHostname: 'demo',
 }
 
 export { settings, type Settings }

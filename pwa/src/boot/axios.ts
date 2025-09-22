@@ -13,8 +13,8 @@ interface ExtendedAxiosRequestConfig extends InternalAxiosRequestConfig {
 const isDevelopment = process.env.NODE_ENV === 'development'
 
 const apiBaseURL = isDevelopment
-  ? `https://${settings.TEST_HOSTNAME}.${settings.DOMAIN}/`
-  : `https://${settings.PROD_HOSTNAME}.${settings.DOMAIN}/`
+  ? `https://${settings.testHostname}.${settings.domain}/`
+  : `https://${settings.prodHostname}.${settings.domain}/`
 
 const api = axios.create({
   baseURL: apiBaseURL,

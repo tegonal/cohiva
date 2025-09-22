@@ -33,19 +33,19 @@ const routes: RouteRecordRaw[] = [
     ],
     component: () => import('layouts/SubpageLayout.vue'),
     path: '/reservation',
-    props: { subpageTitle: 'Reservation' },
+    props: { subpageTitleKey: 'pageTitles.reservation' },
   },
   {
     children: [{ component: () => import('pages/CalendarPage.vue'), path: '' }],
     component: () => import('layouts/SubpageLayout.vue'),
     path: '/calendar',
-    props: { subpageTitle: 'Kalender' },
+    props: { subpageTitleKey: 'pageTitles.calendar' },
   },
   {
     children: [{ component: () => import('pages/RepairPage.vue'), path: '' }],
     component: () => import('layouts/SubpageLayout.vue'),
     path: '/repair',
-    props: { subpageTitle: 'Reparaturmeldung' },
+    props: { subpageTitleKey: 'pageTitles.repair' },
   },
   {
     children: [
@@ -53,7 +53,7 @@ const routes: RouteRecordRaw[] = [
     ],
     component: () => import('layouts/SubpageLayout.vue'),
     path: '/credit_accounting',
-    props: { subpageTitle: 'Depot8' },
+    props: { subpageTitleKey: 'pageTitles.creditAccounting' },
   },
   {
     component: () => import('pages/ErrorNotFound.vue'),

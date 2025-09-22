@@ -15,7 +15,7 @@
               font-size="22px"
             />
           </template>
-          <b>Möchtest du die {{ settings.SITE_NICKNAME }}-App installieren?</b>
+          <b>Möchtest du die {{ settings.siteNickname }}-App installieren?</b>
           <template v-slot:action>
             <q-btn dense flat label="Ja" class="q-px-sm" @click="installApp" />
             <q-btn

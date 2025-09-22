@@ -21,20 +21,20 @@ const createOAuthSettings = (): UserManagerSettings => {
   // Determine API URL based on environment
   const isDevelopment = process.env.NODE_ENV === 'development'
   const baseUrl = isDevelopment
-    ? `https://${settings.TEST_HOSTNAME}.${settings.DOMAIN}`
-    : `https://${settings.PROD_HOSTNAME}.${settings.DOMAIN}`
+    ? `https://${settings.testHostname}.${settings.domain}`
+    : `https://${settings.prodHostname}.${settings.domain}`
 
   const appUrl = window.location.origin
 
-  if (!settings.OAUTH_CLIENT_ID) {
-    throw new Error('OAUTH_CLIENT_ID is required in settings')
+  if (!settings.oauthClientId) {
+    throw new Error('oauthClientId is required in settings')
   }
 
   return {
     authority: baseUrl,
     automaticSilentRenew: true,
     checkSessionIntervalInSeconds: 30,
-    client_id: settings.OAUTH_CLIENT_ID,
+    client_id: settings.oauthClientId,
     filterProtocolClaims: true,
     loadUserInfo: true,
     metadata: {

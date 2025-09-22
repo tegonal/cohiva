@@ -11,17 +11,14 @@
           @click="toggleLeftDrawer"
         />
 
-        <q-toolbar-title> {{ settings.SITE_NICKNAME }} App </q-toolbar-title>
+        <q-toolbar-title> {{ settings.siteNickname }} App </q-toolbar-title>
 
         <!-- Language Switcher -->
         <LanguageSwitcher />
 
         <!-- <div>Quasar v{{ $q.version }}</div> -->
         <div class="toolbar-logo">
-          <img
-            :alt="settings.SITE_NICKNAME + ' Logo'"
-            :src="logoPath"
-          />
+          <img :alt="settings.siteNickname + ' Logo'" :src="logoPath" />
         </div>
       </q-toolbar>
     </q-header>
@@ -47,7 +44,9 @@
             </q-item-section>
 
             <q-item-section>
-              <q-item-label>{{ $t('mainLayout.appVersion.label') }}</q-item-label>
+              <q-item-label>{{
+                $t('mainLayout.appVersion.label')
+              }}</q-item-label>
               <q-item-label caption>{{ mainStore.appVersion }}</q-item-label>
             </q-item-section>
           </q-item>
@@ -57,7 +56,9 @@
             </q-item-section>
 
             <q-item-section>
-              <q-item-label>{{ $t('mainLayout.user.loggedInAs') }}</q-item-label>
+              <q-item-label>{{
+                $t('mainLayout.user.loggedInAs')
+              }}</q-item-label>
               <q-item-label caption>{{
                 authStore.username ||
                 authStore.userEmail ||
@@ -76,10 +77,12 @@
             </q-item-section>
           </q-item>
         </q-list>
-        
+
         <!-- Theme Toggle at the bottom -->
         <div class="absolute-bottom q-pa-md">
-          <q-item-label header class="q-pb-sm">{{ $t('mainLayout.theme.label', 'Design') }}</q-item-label>
+          <q-item-label header class="q-pb-sm">{{
+            $t('mainLayout.theme.label', 'Design')
+          }}</q-item-label>
           <ThemeModeToggle />
         </div>
       </q-scroll-area>
@@ -125,7 +128,7 @@ const leftDrawerOpen = ref(false)
 const updateTimeout = ref<null | ReturnType<typeof setInterval>>(null)
 
 // Static data
-const essentialLinks = settings.NAVIGATION_LINKS
+const essentialLinks = settings.navigationLinks
 
 // Functions
 function settings_logout(): void {

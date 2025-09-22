@@ -2,7 +2,7 @@
   <q-page>
     <div class="flex flex-center q-py-xl">
       <img
-        :alt="settings.SITE_NICKNAME + ' Logo'"
+        :alt="settings.siteNickname + ' Logo'"
         :src="logoPath"
         style="width: 200px; height: 200px"
       />
@@ -29,7 +29,7 @@
       <q-btn
         v-if="mainStore.capabilities.residentHo8"
         stack
-        :href="settings.BUTTON_LINKS.CHAT.link"
+        :href="settings.buttonLinks.chat.link"
         target="_blank"
         padding="lg"
         flat
@@ -60,7 +60,7 @@
       <q-btn
         v-if="mainStore.capabilities.residentHo8"
         stack
-        :href="settings.BUTTON_LINKS.CLOUD.link"
+        :href="settings.buttonLinks.cloud.link"
         target="_blank"
         padding="lg"
         flat
@@ -76,7 +76,7 @@
       <q-btn
         v-if="mainStore.capabilities.residentHo8"
         stack
-        :href="settings.BUTTON_LINKS.HANDBUCH.link"
+        :href="settings.buttonLinks.handbuch.link"
         target="_blank"
         padding="lg"
         flat

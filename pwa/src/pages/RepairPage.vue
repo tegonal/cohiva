@@ -185,7 +185,17 @@ function submitReport() {
     }
   }
   api
-    .post('/api/v1/reservation/report/', formData)
+    .post('/api/v1/reservation/report/', formData, {
+      transformRequest: [
+        (data, headers) => {
+          // Remove Content-Type header to let browser set it with boundary for FormData
+          if (data instanceof FormData) {
+            delete headers['Content-Type']
+          }
+          return data
+        },
+      ],
+    })
     .then((response) => {
       apiError.value = ''
       if (response.data.status == 'ERROR') {

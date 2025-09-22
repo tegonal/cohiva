@@ -35,12 +35,12 @@ export default defineConfig((ctx) => ({
   build: {
     env: {
       API: ctx.dev
-        ? 'https://' + settings.TEST_HOSTNAME + '.' + settings.DOMAIN + '/'
-        : 'https://' + settings.PROD_HOSTNAME + '.' + settings.DOMAIN + '/',
+        ? 'https://' + settings.testHostname + '.' + settings.domain + '/'
+        : 'https://' + settings.prodHostname + '.' + settings.domain + '/',
       API_DIRECT: ctx.dev
-        ? 'https://' + settings.TEST_HOSTNAME + '.' + settings.DOMAIN + '/'
-        : 'https://' + settings.PROD_HOSTNAME + '.' + settings.DOMAIN + '/',
-      OAUTH_CLIENT_ID: settings.OAUTH_CLIENT_ID,
+        ? 'https://' + settings.testHostname + '.' + settings.domain + '/'
+        : 'https://' + settings.prodHostname + '.' + settings.domain + '/',
+      OAUTH_CLIENT_ID: settings.oauthClientId,
       TEST_MODE: ctx.dev,
     },
 
@@ -191,7 +191,7 @@ export default defineConfig((ctx) => ({
     builder: {
       // https://www.electron.build/configuration/configuration
 
-      appId: settings.APP_BASENAME + '-app',
+      appId: settings.appBasename + '-app',
     },
 
     bundler: 'packager', // 'packager' or 'builder'
@@ -266,14 +266,14 @@ export default defineConfig((ctx) => ({
 
   // Add HTML template variables that can be used in index.html
   htmlVariables: {
-    appBasename: settings.APP_BASENAME,
+    appBasename: settings.appBasename,
     backgroundColor: theme.backgroundColor,
     productDescription:
-      settings.SITE_DESCRIPTION || `${settings.SITE_NAME} Progressive Web App`,
-    productName: settings.SITE_NAME,
-    siteDescription: settings.SITE_DESCRIPTION,
-    siteName: settings.SITE_NAME,
-    siteNickname: settings.SITE_NICKNAME,
+      settings.siteDescription || `${settings.siteName} Progressive Web App`,
+    productName: settings.siteName,
+    siteDescription: settings.siteDescription,
+    siteName: settings.siteName,
+    siteNickname: settings.siteNickname,
     themeColor: theme.primary,
   },
 

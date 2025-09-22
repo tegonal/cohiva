@@ -2,7 +2,7 @@
   <q-page>
     <div class="flex flex-center q-py-xl">
       <img
-        :alt="settings.SITE_NICKNAME + ' Logo'"
+        :alt="settings.siteNickname + ' Logo'"
         :src="logoPath"
         style="width: 200px; height: 200px"
       />
@@ -50,7 +50,7 @@
               class="q-mr-sm"
             />
             <q-icon v-else name="login" class="q-mr-sm" />
-            {{ $t('loginPage.loginButton', { site: settings.SITE_NICKNAME }) }}
+            {{ $t('loginPage.loginButton', { site: settings.siteNickname }) }}
           </q-btn>
 
           <div
@@ -68,7 +68,7 @@
           </p>
 
           <p class="q-mt-md text-center full-width text-grey-6 text-subtitle-1">
-            <a :href="settings.PASSWORD_RESET_LINK">{{
+            <a :href="settings.passwordResetLink">{{
               $t('loginPage.forgotPassword')
             }}</a>
           </p>
