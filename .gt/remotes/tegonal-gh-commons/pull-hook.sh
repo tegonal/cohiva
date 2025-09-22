@@ -6,12 +6,12 @@
 #  \__/\__/\_, /\___/_//_/\_,_/_/         It is licensed under GNU Affero General Public License v3
 #         /___/                           Please report bugs and contribute back your improvements
 #
-#                                         Version: v0.1.0-SNAPSHOT
+#                                         Version: v1.2.2
 ###################################
 set -euo pipefail
 shopt -s inherit_errexit
 unset CDPATH
-COHIVA_LATEST_VERSION="main"
+COHIVA_LATEST_VERSION="v1.2.2"
 
 if ! [[ -v dir_of_tegonal_scripts ]]; then
 	dir_of_tegonal_scripts="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-$0}")" >/dev/null && pwd 2>/dev/null)/../../../lib/tegonal-scripts/src"
