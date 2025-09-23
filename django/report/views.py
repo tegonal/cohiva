@@ -194,7 +194,7 @@ def generate_report(request, report_id=None, dry_run=True):
         report = Report.objects.get(pk=report_id)
     except Report.DoesNotExist:
         messages.error(request, f"Fehler: Report mit ID {report_id} nicht gefunden.")
-        return HttpResponseRedirect(f"/admin/report/report/{report.id}/change/")
+        return HttpResponseRedirect("/admin/report/report/")
     if not settings.DEBUG and report.state != "new":
         messages.error(
             request,

@@ -116,7 +116,7 @@ def authorize_address(address, uid, host=None):
 
 
 class CohivaAuthorizationView(AuthorizationView):
-    def dispatch(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         # Fetch the OAuth2 Application
         client_id = request.GET.get("client_id")
         try:
@@ -130,7 +130,8 @@ class CohivaAuthorizationView(AuthorizationView):
         # if user.email in denied_users and app.name == "My PWA":
         #    return HttpResponseForbidden("Access denied for this application.")
 
-        if not get_oauth_profile(request):
+        prompt = request.GET.get("prompt")
+        if prompt != "login" and not get_oauth_profile(request):
             return HttpResponseForbidden(f"Access denied for {app.name}.")
 
-        return super().dispatch(request, *args, **kwargs)
+        return super().get(request, *args, **kwargs)

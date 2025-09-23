@@ -212,7 +212,7 @@ class QRBill(APIView):
                 "Could not create QR-bill for NK-Akonto ausserordentlich for contract %s (id=%s): %s"
                 % (self.contract, request.data["contract_id"], e)
             )
-            raise ValidationError("Could not create qr slip: %s." % (e))
+            raise ValidationError("Could not create qr slip.")
         if os.path.isfile("/tmp/%s" % output_filename):
             pdf_file = open("/tmp/%s" % output_filename, "rb")
             resp = FileResponse(

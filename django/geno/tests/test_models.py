@@ -6,6 +6,7 @@ if django.VERSION < (3, 0):
     from django.db import OperationalError as IntegrityError
 else:
     from django.db.utils import IntegrityError
+from django.test import override_settings
 
 from geno.models import Address, InvoiceCategory
 
@@ -91,3 +92,21 @@ class AddressTest(TestCase):
         adr.save()
         adr_saved = Address.objects.get(id=adr.id)
         self.assertEqual(adr_saved.email2, "hans@muster.ch")
+
+    def test_debug_mode_uses_test_recipient(self):
+        addr = Address(first_name="Lisa", name="Meier", email="lisa@realmail.com")
+        with override_settings(DEBUG=True, TEST_MAIL_RECIPIENT="test@domain.com"):
+            result = addr.get_mail_recipient()
+            self.assertEqual(result, '"Lisa Meier" <test@domain.com>')
+
+    def test_example_com_uses_test_recipient(self):
+        addr = Address(first_name="Anna", name="Musterfrau", email="anna@example.com")
+        with override_settings(DEBUG=False, TEST_MAIL_RECIPIENT="test@domain.com"):
+            result = addr.get_mail_recipient()
+            self.assertEqual(result, '"Anna Musterfrau" <test@domain.com>')
+
+    def test_normal_email_returns_real_address(self):
+        addr = Address(first_name="Lisa", name="Meier", email="lisa@realmail.com")
+        with override_settings(DEBUG=False, TEST_MAIL_RECIPIENT="test@domain.com"):
+            result = addr.get_mail_recipient()
+            self.assertEqual(result, '"Lisa Meier" <lisa@realmail.com>')

@@ -95,6 +95,7 @@ Example for project `cohiva-demo`:
 
     cohiva/saml2/private.key
     cohiva/saml2/public.pem
+    cohiva/oauth2/oidc.key
 
 ### Custom website
 
@@ -103,6 +104,8 @@ Add `website` to `FEATURES` in `cohiva/base_config.py` and copy `website_example
 # Development
 
 ## Manage dependencies
+
+Currently pip-tools is used for dependency management.
 
 Generate/update `requirements.txt` from `requirements.in`:
 
