@@ -60,11 +60,13 @@ if [ "$SITE_PACKAGES" ] ; then
 fi
 
 ## Install patched version of python-sepa and make sure it is in requirements.txt to prevent uninstallation when running pip-sync
-if [ "$ENVIRONMENT" != "docker" && ! -e ./geno/python-sepa/.git ] ; then
-    echo "Initializing git submodule python-sepa"
-    git submodule update --init geno/python-sepa
-else
-    git submodule update geno/python-sepa
+if [ "$ENVIRONMENT" != "docker" ] ; then
+    if [ ! -e ./geno/python-sepa/.git ] ; then
+        echo "Initializing git submodule python-sepa"
+        git submodule update --init geno/python-sepa
+    else
+        git submodule update geno/python-sepa
+    fi
 fi
 echo "Installing python-sepa from submodule"
 ( cd geno/python-sepa && python3 setup.py build install )
