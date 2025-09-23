@@ -38,6 +38,7 @@ EMAIL_SUBJECT_PREFIX = f"[Cohiva {cbc.SITE_NICKNAME}] "
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
+    cbc.DOCKER_IP,
     "[::1]",
     "test." + cbc.DOMAIN,
     "test." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
