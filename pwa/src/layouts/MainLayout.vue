@@ -15,11 +15,6 @@
 
         <!-- Language Switcher -->
         <LanguageSwitcher />
-
-        <!-- <div>Quasar v{{ $q.version }}</div> -->
-        <div class="toolbar-logo">
-          <img :alt="settings.siteNickname + ' Logo'" :src="logoPath" />
-        </div>
       </q-toolbar>
     </q-header>
 
@@ -89,7 +84,6 @@
     </q-drawer>
 
     <q-footer class="bg-white">
-      <AppInstallBanner></AppInstallBanner>
       <AppUpdateBanner></AppUpdateBanner>
     </q-footer>
 
@@ -100,28 +94,24 @@
     <!-- Development Overlay -->
     <DevOverlay />
   </q-layout>
+  <pwa-install></pwa-install>
 </template>
 
 <script setup lang="ts">
 import { settings } from 'app/config/settings'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
-import AppInstallBanner from 'components/AppInstallBanner.vue'
 import AppUpdateBanner from 'components/AppUpdateBanner.vue'
 import DevOverlay from 'components/DevOverlay.vue'
 import EssentialLink from 'components/EssentialLink.vue'
 import LanguageSwitcher from 'components/LanguageSwitcher.vue'
 import ThemeModeToggle from 'components/ThemeModeToggle.vue'
-import { useThemedLogo } from 'src/composables/use-themed-logo'
 import { useAuthStore } from 'stores/auth-store'
 import { useMainStore } from 'stores/main-store'
 
 // Store instances
 const authStore = useAuthStore()
 const mainStore = useMainStore()
-
-// Theme-aware logo
-const { logoPath } = useThemedLogo()
 
 // Reactive state
 const leftDrawerOpen = ref(false)
@@ -167,17 +157,4 @@ onBeforeUnmount(() => {
 })
 </script>
 
-<style lang="scss" scoped>
-.toolbar-logo {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-}
-</style>
+<style lang="scss" scoped></style>

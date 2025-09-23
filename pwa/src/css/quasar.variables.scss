@@ -11,56 +11,80 @@
 // Your own variables (that are declared here) and Quasar's own
 // ones will be available out of the box in your .vue/.scss/.sass files
 
-$primary: #2563EB;
-$secondary: #10B981;
-$accent: #8B5CF6;
-$dark: #1F2937;
+$primary: #2563eb;
+$secondary: #10b981;
+$accent: #8b5cf6;
+$dark: #1f2937;
 $dark-page: #111827;
-$positive: #22C55E;
-$negative: #EF4444;
-$info: #06B6D4;
-$warning: #F59E0B;
-$link-color: #2563EB;
+$positive: #22c55e;
+$negative: #ef4444;
+$info: #06b6d4;
+$warning: #f59e0b;
+$link-color: #2563eb;
 $link-hover-color: #1d4ed8;
-$link-visited-color: #2563EB;
+$link-visited-color: #2563eb;
 $link-active-color: #1e40af;
-$typography-font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+$typography-font-family:
+  'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 $generic-border-radius: 4px;
 $button-border-radius: 4px;
-$shadow-1: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
-$shadow-2: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
-$shadow-3: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
-$shadow-4: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
-$shadow-5: 0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22);
+$shadow-1:
+  0 1px 3px rgba(0, 0, 0, 0.12),
+  0 1px 2px rgba(0, 0, 0, 0.24);
+$shadow-2:
+  0 3px 6px rgba(0, 0, 0, 0.16),
+  0 3px 6px rgba(0, 0, 0, 0.23);
+$shadow-3:
+  0 10px 20px rgba(0, 0, 0, 0.19),
+  0 6px 6px rgba(0, 0, 0, 0.23);
+$shadow-4:
+  0 14px 28px rgba(0, 0, 0, 0.25),
+  0 10px 10px rgba(0, 0, 0, 0.22);
+$shadow-5:
+  0 19px 38px rgba(0, 0, 0, 0.3),
+  0 15px 12px rgba(0, 0, 0, 0.22);
 $custom-space-xs: 4px;
 $custom-space-sm: 8px;
 $custom-space-md: 16px;
 $custom-space-lg: 24px;
 $custom-space-xl: 32px;
 $header-bg: #f5f5f9;
-$header-text: #1F2937;
-$header-shadow: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+$header-text: #1f2937;
+$header-shadow:
+  0 3px 6px rgba(0, 0, 0, 0.16),
+  0 3px 6px rgba(0, 0, 0, 0.23);
 $toolbar-bg: transparent;
 $toolbar-text: inherit;
-$dark-primary: #2563EB;
-$dark-secondary: #34D399;
-$dark-accent: #A78BFA;
-$dark-positive: #4ADE80;
-$dark-negative: #F87171;
-$dark-info: #22D3EE;
-$dark-warning: #FBBF24;
-$dark-link-color: #60A5FA;
-$dark-link-hover-color: #93BBFC;
-$dark-link-visited-color: #60A5FA;
-$dark-link-active-color: #3B82F6;
-$dark-shadow-1: 0 1px 3px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.6);
-$dark-shadow-2: 0 3px 6px rgba(0,0,0,0.6), 0 3px 6px rgba(0,0,0,0.7);
-$dark-shadow-3: 0 10px 20px rgba(0,0,0,0.7), 0 6px 6px rgba(0,0,0,0.8);
-$dark-shadow-4: 0 14px 28px rgba(0,0,0,0.8), 0 10px 10px rgba(0,0,0,0.85);
-$dark-shadow-5: 0 19px 38px rgba(0,0,0,0.9), 0 15px 12px rgba(0,0,0,0.85);
-$dark-header-bg: #1F2937;
-$dark-header-text: #F3F4F6;
-$dark-header-shadow: 0 3px 6px rgba(0,0,0,0.6), 0 3px 6px rgba(0,0,0,0.7);
+$dark-primary: #2563eb;
+$dark-secondary: #34d399;
+$dark-accent: #a78bfa;
+$dark-positive: #4ade80;
+$dark-negative: #f87171;
+$dark-info: #22d3ee;
+$dark-warning: #fbbf24;
+$dark-link-color: #60a5fa;
+$dark-link-hover-color: #93bbfc;
+$dark-link-visited-color: #60a5fa;
+$dark-link-active-color: #3b82f6;
+$dark-shadow-1:
+  0 1px 3px rgba(0, 0, 0, 0.5),
+  0 1px 2px rgba(0, 0, 0, 0.6);
+$dark-shadow-2:
+  0 3px 6px rgba(0, 0, 0, 0.6),
+  0 3px 6px rgba(0, 0, 0, 0.7);
+$dark-shadow-3:
+  0 10px 20px rgba(0, 0, 0, 0.7),
+  0 6px 6px rgba(0, 0, 0, 0.8);
+$dark-shadow-4:
+  0 14px 28px rgba(0, 0, 0, 0.8),
+  0 10px 10px rgba(0, 0, 0, 0.85);
+$dark-shadow-5:
+  0 19px 38px rgba(0, 0, 0, 0.9),
+  0 15px 12px rgba(0, 0, 0, 0.85);
+$dark-header-bg: #1f2937;
+$dark-header-text: #f3f4f6;
+$dark-header-shadow:
+  0 3px 6px rgba(0, 0, 0, 0.6),
+  0 3px 6px rgba(0, 0, 0, 0.7);
 $dark-toolbar-bg: transparent;
 $dark-toolbar-text: inherit;
-

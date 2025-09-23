@@ -5,7 +5,7 @@
  * This ensures all required settings are present and valid
  */
 
-import { existsSync, readFileSync } from 'fs'
+import { existsSync } from 'fs'
 import { resolve } from 'path'
 
 import { validateSettings, validateTheme } from '../config/schemas'
@@ -89,7 +89,7 @@ async function main() {
     log('')
 
     process.exit(0)
-  } catch (error) {
+  } catch {
     log('='.repeat(50), 'red')
     logError('Configuration validation failed!')
     log('')

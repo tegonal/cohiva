@@ -136,7 +136,7 @@ async function generateSocialCards(
       .toBuffer()
 
     // Composite logo on background
-    const ogImage = await sharp(ogBackground)
+    await sharp(ogBackground)
       .composite([
         {
           gravity: 'center',
@@ -172,7 +172,7 @@ async function generateSocialCards(
       .toBuffer()
 
     // Composite logo on background
-    const twitterImage = await sharp(twitterBackground)
+    await sharp(twitterBackground)
       .composite([
         {
           gravity: 'center',
@@ -198,15 +198,12 @@ async function makeTenantConfig(): Promise<void> {
   console.log('🚀 Generating tenant configuration...')
 
   try {
-    // 1. Setup logo and icon
-    console.log('🎨 Setting up logo and icon...')
+    // 1. Setup logo
+    console.log('🎨 Setting up logo...')
     const logoSource = path.join(rootDir, 'config', 'logo.svg')
-    const iconSource = path.join(rootDir, 'config', 'icon.svg')
     const logoTarget = path.join(rootDir, 'src', 'assets', 'logo.svg')
-    const iconTarget = path.join(rootDir, 'src', 'assets', 'icon.svg')
 
-    // Check if both icon.svg and logo.svg exist, fallback to logo.svg for both if icon.svg doesn't exist
-    const hasIcon = await fs.pathExists(iconSource)
+    // Check if logo.svg exists
     const hasLogo = await fs.pathExists(logoSource)
 
     if (!hasLogo) {
@@ -217,44 +214,22 @@ async function makeTenantConfig(): Promise<void> {
     await fs.remove(logoTarget)
     await fs.copy(logoSource, logoTarget)
 
-    // Copy icon.svg to assets (or use logo.svg as fallback)
-    await fs.remove(iconTarget)
-    if (hasIcon) {
-      console.log('   Using separate icon.svg for app icons')
-      await fs.copy(iconSource, iconTarget)
-    } else {
-      console.log('   Using logo.svg for both logo and icon')
-      await fs.copy(logoSource, iconTarget)
-    }
-
-    // Setup dark mode variants
-    console.log('🌙 Setting up dark mode icons...')
+    // Setup dark mode variant for logo
+    console.log('🌙 Setting up dark mode logo...')
     const logoDarkSource = path.join(rootDir, 'config', 'logo-dark.svg')
-    const iconDarkSource = path.join(rootDir, 'config', 'icon-dark.svg')
     const logoDarkTarget = path.join(rootDir, 'src', 'assets', 'logo-dark.svg')
-    const iconDarkTarget = path.join(rootDir, 'src', 'assets', 'icon-dark.svg')
 
-    // Check if dark mode variants exist
+    // Check if dark mode logo exists
     const hasLogoDark = await fs.pathExists(logoDarkSource)
-    const hasIconDark = await fs.pathExists(iconDarkSource)
 
     if (!hasLogoDark) {
       throw new Error('config/logo-dark.svg is required for dark mode support')
-    }
-
-    if (!hasIconDark) {
-      throw new Error('config/icon-dark.svg is required for dark mode support')
     }
 
     // Copy logo-dark.svg to assets
     await fs.remove(logoDarkTarget)
     await fs.copy(logoDarkSource, logoDarkTarget)
     console.log('   ✅ Copied logo-dark.svg')
-
-    // Copy icon-dark.svg to assets
-    await fs.remove(iconDarkTarget)
-    await fs.copy(iconDarkSource, iconDarkTarget)
-    console.log('   ✅ Copied icon-dark.svg')
 
     // 2. Load theme and settings
     // Try TypeScript theme first, fall back to JavaScript
@@ -283,20 +258,19 @@ async function makeTenantConfig(): Promise<void> {
     console.log('🖼️  Preparing assets for PWA generation...')
 
     // Check if we have separate icon and logo files
-    const iconSvgPath = path.join(rootDir, 'config', 'icon.svg')
-    const iconPngPath = path.join(rootDir, 'config', 'icon.png')
+    const iconSvgPath = path.join(rootDir, 'config', 'app-icon.svg')
+    const iconPngPath = path.join(rootDir, 'config', 'app-icon.png')
     const logoSvgPath = path.join(rootDir, 'config', 'logo.svg')
     const logoPngPath = path.join(rootDir, 'config', 'logo.png')
     const tempIconPngPath = path.join(rootDir, 'config', '.temp-icon.png')
     const tempLogoPngPath = path.join(rootDir, 'config', '.temp-logo.png')
 
     let iconSourcePath
-    let logoSourcePath
 
     // Prepare icon source (for app icons)
     console.log('   Preparing icon for app icons...')
     if (await fs.pathExists(iconPngPath)) {
-      console.log('   Found icon.png, checking resolution...')
+      console.log('   Found app-icon.png, checking resolution...')
       if (await checkImageResolution(iconPngPath)) {
         iconSourcePath = iconPngPath
       } else {
@@ -309,12 +283,12 @@ async function makeTenantConfig(): Promise<void> {
           )
         } else {
           throw new Error(
-            'Icon PNG resolution too low and no icon.svg available'
+            'Icon PNG resolution too low and no app-icon.svg available'
           )
         }
       }
     } else if (await fs.pathExists(iconSvgPath)) {
-      console.log('   Found icon.svg, converting to PNG...')
+      console.log('   Found app-icon.svg, converting to PNG...')
       iconSourcePath = await convertSvgToPng(
         iconSvgPath,
         tempIconPngPath,
@@ -322,7 +296,7 @@ async function makeTenantConfig(): Promise<void> {
       )
     } else {
       // Fallback to logo if no icon exists
-      console.log('   No icon.svg/png found, using logo for icons...')
+      console.log('   No app-icon.svg/png found, using logo for icons...')
       if (
         (await fs.pathExists(logoPngPath)) &&
         (await checkImageResolution(logoPngPath))
@@ -339,35 +313,9 @@ async function makeTenantConfig(): Promise<void> {
       }
     }
 
-    // Prepare logo source (for splash screens background)
-    console.log('   Preparing logo for splash screens...')
-    if (await fs.pathExists(logoPngPath)) {
-      console.log('   Found logo.png, checking resolution...')
-      if (await checkImageResolution(logoPngPath)) {
-        logoSourcePath = logoPngPath
-      } else {
-        console.log('   Logo PNG resolution too low, converting from SVG...')
-        if (await fs.pathExists(logoSvgPath)) {
-          logoSourcePath = await convertSvgToPng(
-            logoSvgPath,
-            tempLogoPngPath,
-            MIN_ICON_SIZE
-          )
-        } else {
-          throw new Error(
-            'Logo PNG resolution too low and no logo.svg available'
-          )
-        }
-      }
-    } else if (await fs.pathExists(logoSvgPath)) {
-      console.log('   Found logo.svg, converting to PNG...')
-      logoSourcePath = await convertSvgToPng(
-        logoSvgPath,
-        tempLogoPngPath,
-        MIN_ICON_SIZE
-      )
-    } else {
-      throw new Error('No logo.png or logo.svg found in config directory')
+    // Verify logo exists (needed for social media cards)
+    if (!(await fs.pathExists(logoSvgPath))) {
+      throw new Error('No logo.svg found in config directory')
     }
 
     // 4. Generate social media cards
@@ -384,11 +332,10 @@ async function makeTenantConfig(): Promise<void> {
       // The icon will be used for:
       // - App icons (at appropriate sizes)
       // - Splash screens (centered at 40% size on background color)
-      // Padding: adds 10% padding (horizontal,vertical) to prevent icon from touching edges
-      // Skip trim: optionally disable icon trimming for logos that need to preserve their aspect ratio
-      const skipTrim = settings.skipIconTrim ? '--skip-trim' : ''
+      // No padding: icon should use full available space as designed
+      // Always skip trim to preserve icon aspect ratio and prevent unwanted cropping
       const iconGenieCmd =
-        `npx icongenie generate -m pwa -i "${iconSourcePath}" --theme-color ${themeColor} --png-color ${backgroundColor} --splashscreen-color ${backgroundColor} --splashscreen-icon-ratio 40 --padding 10,10 --quality 10 ${skipTrim}`.trim()
+        `npx icongenie generate -m pwa -i "${iconSourcePath}" --theme-color ${themeColor} --png-color ${backgroundColor} --splashscreen-color ${backgroundColor} --splashscreen-icon-ratio 40 --quality 10 --skip-trim`.trim()
       console.log(`   Running: ${iconGenieCmd}`)
 
       const { stderr, stdout } = await execAsync(iconGenieCmd, { cwd: rootDir })
@@ -632,7 +579,6 @@ async function verifyIconReferences(): Promise<VerificationResult> {
   console.log('🔍 Verifying icon and splash screen references in index.html...')
 
   const indexPath = path.join(rootDir, 'index.html')
-  const publicIconsDir = path.join(rootDir, 'public', 'icons')
 
   try {
     // Read index.html

@@ -9,7 +9,6 @@
 
 import { exec } from 'child_process'
 import chokidar from 'chokidar'
-import fs from 'fs-extra'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { promisify } from 'util'
@@ -56,7 +55,7 @@ async function checkDependencies(): Promise<boolean> {
   try {
     await import('chokidar')
     return true
-  } catch (error) {
+  } catch {
     console.error('❌ Missing dependency: chokidar')
     console.log('\n   Please install it with:')
     console.log('   yarn add -D chokidar')
@@ -108,7 +107,7 @@ async function runMakeTenantConfig(): Promise<void> {
     // First validate the configuration
     console.log('🔍 Validating configuration...')
     try {
-      const { stdout: validateOut } = await execAsync('yarn validate:config', {
+      await execAsync('yarn validate:config', {
         cwd: rootDir,
       })
       console.log('✅ Configuration valid')

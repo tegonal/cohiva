@@ -2435,6 +2435,34 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@khmyznikov/pwa-install@npm:^0.5.8":
+  version: 0.5.8
+  resolution: "@khmyznikov/pwa-install@npm:0.5.8"
+  peerDependencies:
+    "@lit/react": ^1.0.7
+    "@types/dom-chromium-installation-events": ^101.0.4
+    "@types/web-app-manifest": ^1.0.9
+    lit: ^3.3.0
+  checksum: 10c0/472b1069c164743e536425b3619d2f917237f0e79a7b1d1b6271f3456f18b721698ece368de623224a17e966aa94376799c4679f792f9f3d702d6afbe1233503
+  languageName: node
+  linkType: hard
+
+"@lit-labs/ssr-dom-shim@npm:^1.4.0":
+  version: 1.4.0
+  resolution: "@lit-labs/ssr-dom-shim@npm:1.4.0"
+  checksum: 10c0/eb8b4c6ed83db48e2f2c8c038f88e0ac302214918e5c1209458cb82a35ce27ce586100c5692885b2c5520f6941b2c3512f26c4d7b7dd48f13f17f1668553395a
+  languageName: node
+  linkType: hard
+
+"@lit/reactive-element@npm:^2.1.0":
+  version: 2.1.1
+  resolution: "@lit/reactive-element@npm:2.1.1"
+  dependencies:
+    "@lit-labs/ssr-dom-shim": "npm:^1.4.0"
+  checksum: 10c0/200d72c3d1bb8babc88123f3684e52cf490ec20cc7974002d666b092afa18e4a7c1ca15883c84c0b8671361a9875905eb18c1f03d20ecbbbaefdaec6e0c7c4eb
+  languageName: node
+  linkType: hard
+
 "@nicolo-ribaudo/eslint-scope-5-internals@npm:5.1.1-v1":
   version: 5.1.1-v1
   resolution: "@nicolo-ribaudo/eslint-scope-5-internals@npm:5.1.1-v1"
@@ -9415,6 +9443,37 @@ __metadata:
   languageName: node
   linkType: hard
 
+"lit-element@npm:^4.2.0":
+  version: 4.2.1
+  resolution: "lit-element@npm:4.2.1"
+  dependencies:
+    "@lit-labs/ssr-dom-shim": "npm:^1.4.0"
+    "@lit/reactive-element": "npm:^2.1.0"
+    lit-html: "npm:^3.3.0"
+  checksum: 10c0/2cb30cc7c5a006cd7995f882c5e9ed201638dc3513fdee989dd7b78d8ceb201cf6930abe5ebc5185d7fc3648933a6b6187742d5534269961cd20b9a78617068d
+  languageName: node
+  linkType: hard
+
+"lit-html@npm:^3.3.0":
+  version: 3.3.1
+  resolution: "lit-html@npm:3.3.1"
+  dependencies:
+    "@types/trusted-types": "npm:^2.0.2"
+  checksum: 10c0/0dfb645f35c2ae129a40c09550b4d0e60617b715af7f2e0b825cdfd0624118fc4bf16e9cfaabdfbe43469522e145057d3cc46c64ca1019681480e4b9ae8f52cd
+  languageName: node
+  linkType: hard
+
+"lit@npm:^3.3.1":
+  version: 3.3.1
+  resolution: "lit@npm:3.3.1"
+  dependencies:
+    "@lit/reactive-element": "npm:^2.1.0"
+    lit-element: "npm:^4.2.0"
+    lit-html: "npm:^3.3.0"
+  checksum: 10c0/9f3e171e211be7cd3e01693eac4ba4752fc7bafebc8298fc5b9cb70ff279dd4dc292f1cb425ca42f61c3767a75b7557295c2f6b16335719bc8cf1ca6f3622fb7
+  languageName: node
+  linkType: hard
+
 "load-bmfont@npm:^1.3.1, load-bmfont@npm:^1.4.0":
   version: 1.4.2
   resolution: "load-bmfont@npm:1.4.2"
@@ -10028,6 +10087,7 @@ __metadata:
     "@fullcalendar/timegrid": "npm:^6.1.19"
     "@fullcalendar/vue3": "npm:^6.1.19"
     "@intlify/unplugin-vue-i18n": "npm:^11.0.1"
+    "@khmyznikov/pwa-install": "npm:^0.5.8"
     "@quasar/app-vite": "npm:^2.4.0"
     "@quasar/cli": "npm:^2.5.0"
     "@quasar/extras": "npm:^1.17.0"
@@ -10045,6 +10105,7 @@ __metadata:
     eslint-plugin-perfectionist: "npm:^4.15.0"
     eslint-plugin-vue: "npm:^10.5.0"
     globals: "npm:^15.15.0"
+    lit: "npm:^3.3.1"
     oidc-client-ts: "npm:^3.3.0"
     pinia: "npm:^2.3.1"
     postcss: "npm:^8.5.6"

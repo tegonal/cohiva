@@ -11,17 +11,12 @@ export function useThemedLogo() {
     return Dark.isActive ? '/src/assets/logo-dark.svg' : '/src/assets/logo.svg'
   })
 
-  const iconPath = computed(() => {
-    return Dark.isActive ? '/src/assets/icon-dark.svg' : '/src/assets/icon.svg'
-  })
-
   // For CSS background images, we can use CSS classes instead
   const logoClass = computed(() => {
     return Dark.isActive ? 'logo-dark' : 'logo-light'
   })
 
   return {
-    iconPath,
     logoClass,
     logoPath,
   }

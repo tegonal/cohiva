@@ -53,7 +53,6 @@ export const SettingsSchema = z.object({
   siteDescription: z.string().min(1, 'siteDescription cannot be empty'),
   siteName: z.string().min(1, 'siteName cannot be empty'),
   siteNickname: z.string().min(1, 'siteNickname cannot be empty'),
-  skipIconTrim: z.boolean().optional().default(false),
   testHostname: z.string().min(1, 'testHostname cannot be empty'),
 })
 
@@ -61,19 +60,6 @@ export const SettingsSchema = z.object({
 const HexColorSchema = z
   .string()
   .regex(/^#[0-9A-Fa-f]{6}$/, 'Must be a valid hex color (e.g., #1976D2)')
-
-// CSS value schemas for different types
-const CSSLengthSchema = z
-  .string()
-  .regex(/^\d+(\.\d+)?(px|em|rem|%|vh|vw)$/, 'Must be a valid CSS length value')
-
-const CSSShadowSchema = z
-  .string()
-  .regex(/^[^;]+$/, 'Must be a valid CSS shadow value')
-
-const CSSTransitionSchema = z
-  .string()
-  .regex(/^[^;]+$/, 'Must be a valid CSS transition value')
 
 // Theme configuration schema with strict required fields and flexible additional properties
 export const ThemeSchema = z

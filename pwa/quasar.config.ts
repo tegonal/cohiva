@@ -29,7 +29,7 @@ export default defineConfig((ctx) => ({
   // app boot file (/src/boot)
   // --> boot files are part of "main.js"
   // https://v2.quasar.dev/quasar-cli/boot-files
-  boot: ['i18n', 'axios', 'auth', 'dark-mode'],
+  boot: ['i18n', 'axios', 'auth', 'dark-mode', 'pwa-install'],
 
   // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#build
   build: {

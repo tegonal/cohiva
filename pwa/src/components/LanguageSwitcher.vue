@@ -4,7 +4,7 @@
     dense
     icon="language"
     size="sm"
-    class="q-ml-md language-switcher"
+    class="language-switcher"
   >
     <q-list>
       <q-item
@@ -48,8 +48,6 @@ function changeLanguage(newLocale: string) {
 
 <style lang="scss" scoped>
 .language-switcher {
-  margin-right: 2rem; // 2rem gap before the logo
-
   :deep(.q-btn-dropdown__arrow) {
     margin-left: 2px;
   }

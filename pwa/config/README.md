@@ -13,8 +13,7 @@ config/
 ├── settings.ts         # Deployment settings (required)
 ├── theme.ts            # Color theme (required)
 ├── schemas.ts          # Configuration validation schemas
-├── icon.svg            # App icon for small displays (required)
-├── icon-dark.svg       # App icon for dark mode (required)
+├── app-icon.svg        # App icon for all displays and modes (required)
 ├── logo.svg            # Logo for branding/splash screens (required)
 ├── logo-dark.svg       # Logo for dark mode (required)
 ├── webfonts.scss       # Font definitions (optional)
@@ -34,7 +33,6 @@ Defines environment-specific settings:
 - **Branding**: Site name, nickname, description
 - **Features**: App-specific configuration
 - **Links**: External URLs, contact information
-- **Icon Generation**: Optional `skipIconTrim` flag to preserve logo aspect ratio
 
 ### 2. `theme.ts` - Visual Theme
 
@@ -45,14 +43,15 @@ Quasar theme colors that define the app's appearance:
 - **Background colors**: Page and component backgrounds
 - All colors should be hex values (e.g., `#1976D2`)
 
-### 3. `icon.svg` - App Icon
+### 3. `app-icon.svg` - App Icon
 
 Used for app icons, favicons, and home screen icons:
 
-- **Purpose**: Small, recognizable icon
+- **Purpose**: Small, recognizable icon for all display modes
 - **Requirements**: Works well at 16x16px up to 512x512px
 - **Format**: SVG with clear shapes, minimal detail
-- **Usage**: Taskbar, browser tabs, app stores
+- **Usage**: Taskbar, browser tabs, app stores, PWA icons
+- **Note**: Single icon used for both light and dark modes
 
 ### 4. `logo.svg` - Brand Logo
 
@@ -63,16 +62,7 @@ Used for splash screens and larger branding:
 - **Format**: Can be more detailed than icon
 - **Usage**: Splash screens, login pages, about sections
 
-### 5. `icon-dark.svg` - Dark Mode App Icon
-
-Required dark mode variant of the app icon:
-
-- **Purpose**: Icon for dark mode/theme
-- **Requirements**: Same dimensions as icon.svg
-- **Format**: SVG optimized for dark backgrounds
-- **Usage**: Automatically switches based on theme
-
-### 6. `logo-dark.svg` - Dark Mode Brand Logo
+### 5. `logo-dark.svg` - Dark Mode Brand Logo
 
 Required dark mode variant of the brand logo:
 
@@ -87,7 +77,7 @@ Required dark mode variant of the brand logo:
 
 ## Optional Files
 
-### 7. `webfonts.scss` - Typography
+### 6. `webfonts.scss` - Typography
 
 Defines custom fonts for the application:
 
@@ -95,7 +85,7 @@ Defines custom fonts for the application:
 - **Font variables**: Overrides Quasar's typography
 - **Default**: Roboto font family included
 
-### 8. `override.scss` - Style Customizations
+### 7. `override.scss` - Style Customizations
 
 Tenant-specific style overrides:
 
@@ -104,7 +94,7 @@ Tenant-specific style overrides:
 - **Additional CSS**: Any custom styles
 - **Loaded last**: Ensures overrides take precedence
 
-### 9. `fonts/` Directory - Font Files
+### 8. `fonts/` Directory - Font Files
 
 Contains actual font files:
 
@@ -204,7 +194,7 @@ TENANT=customer1 yarn run build
 
 Before deployment, ensure:
 
-- [ ] All required files present (settings, theme, icon, icon-dark, logo, logo-dark)
+- [ ] All required files present (settings, theme, app-icon, logo, logo-dark)
 - [ ] SVG files valid and proper dimensions
 - [ ] Theme colors in correct hex format
 - [ ] Settings URLs match deployment environment
@@ -234,10 +224,10 @@ This default serves as both a working example and fallback configuration.
 
 If your logo appears trimmed or doesn't look good after icon generation:
 
-- Set `skipIconTrim: true` in `config/settings.ts`
-- This disables Icon Genie's automatic trimming/cropping
-- Useful for logos that need to preserve their original aspect ratio
-- Example: Logos with specific padding or whitespace requirements
+- Ensure your SVG has proper viewBox settings
+- Consider using a square aspect ratio for app-icon.svg
+- The app icon should be designed to work well at small sizes (16x16 to 512x512)
+- Keep the design simple with minimal detail for better rendering at small sizes
 
 ### Fonts not loading
 

@@ -65,9 +65,6 @@ const settings: Settings = {
   siteDescription: 'Cohiva Demo - Verwaltung für Wohngenossenschaften',
   siteName: 'Cohiva Demo',
   siteNickname: 'Cohiva',
-  // Skip icon trimming during icon generation (useful for logos that need to preserve aspect ratio)
-  // Set to true if your logo appears cut off or doesn't look good after Icon Genie processing
-  skipIconTrim: false,
   testHostname: 'demo',
 }
 
