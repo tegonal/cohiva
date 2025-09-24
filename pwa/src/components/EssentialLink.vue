@@ -11,31 +11,31 @@
   </q-item>
 </template>
 
-<script>
-import { defineComponent } from "vue";
+<script lang="ts">
+import { defineComponent } from 'vue'
 
 export default defineComponent({
-  name: "EssentialLink",
+  name: 'EssentialLink',
   props: {
-    title: {
-      type: String,
-      required: true,
-    },
-
     caption: {
+      default: '',
       type: String,
-      default: "",
-    },
-
-    link: {
-      type: String,
-      default: "#",
     },
 
     icon: {
+      default: '',
       type: String,
-      default: "",
+    },
+
+    link: {
+      default: '#',
+      type: String,
+    },
+
+    title: {
+      required: true,
+      type: String,
     },
   },
-});
+})
 </script>

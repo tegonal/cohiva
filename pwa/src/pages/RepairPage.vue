@@ -1,52 +1,50 @@
 <template>
   <q-page padding class="">
-    <!-- <q-page class="flex flex-center">-->
-    <!--<h4 class="q-mx-xs q-my-md">Deine Reservationen</h4>-->
-    Meldung von:<br />{{ contact }}
+    {{ $t('repairPage.reportFrom') }}<br />{{ contact }}
     <q-form @submit="submitReport()">
       <q-select
         v-model="unit"
-        label="Betroffene Wohnung/Raum"
+        :label="$t('repairPage.form.affectedUnit.label')"
         :options="unitOptions"
         :dense="dense"
         :loading="formLoading"
-        :rules="[(val) => !!val || 'Pflichtfeld']"
+        :rules="[(val) => !!val || $t('repairPage.form.requiredField')]"
       ></q-select>
       <q-select
         v-model="category"
-        label="Betroffener Bereich/Bauteil"
+        :label="$t('repairPage.form.affectedArea.label')"
         :options="categoryOptions"
         :dense="dense"
         :loading="formLoading"
-        :rules="[(val) => !!val || 'Pflichtfeld']"
+        :rules="[(val) => !!val || $t('repairPage.form.requiredField')]"
       ></q-select>
       <q-input
         v-model="subject"
-        label="Betreff"
-        placeholder="Ein paar Stichworte um was es geht"
+        :label="$t('repairPage.form.subject.label')"
+        :placeholder="$t('repairPage.form.subject.placeholder')"
         :dense="dense"
-        :rules="[(val) => !!val || 'Pflichtfeld']"
+        :rules="[(val) => !!val || $t('repairPage.form.requiredField')]"
         maxlength="60"
       />
       <q-input
         v-model="text"
-        label="Beschreibung des Schadens"
-        placeholder="Möglichst genaue Beschreibung des Schadens/Problems"
+        :label="$t('repairPage.form.description.label')"
+        :placeholder="$t('repairPage.form.description.placeholder')"
         :dense="dense"
         type="textarea"
-        :rules="[(val) => !!val || 'Pflichtfeld']"
+        :rules="[(val) => !!val || $t('repairPage.form.requiredField')]"
       />
       <q-input
         v-model="contact_text"
-        label="Erreichbarkeit"
-        placeholder="Wann und wie bist du am besten erreichbar?"
+        :label="$t('repairPage.form.availability.label')"
+        :placeholder="$t('repairPage.form.availability.placeholder')"
         :dense="dense"
-        :rules="[(val) => !!val || 'Pflichtfeld']"
+        :rules="[(val) => !!val || $t('repairPage.form.requiredField')]"
         maxlength="300"
       />
       <q-file
         v-model="pictures"
-        label="Bilder hinzufügen"
+        :label="$t('repairPage.form.images.label')"
         counter
         max-files="5"
         multiple
@@ -63,7 +61,7 @@
       <q-btn
         :loading="is_submitting"
         :disabled="submissionDisabled"
-        label="Absenden"
+        :label="$t('repairPage.form.submitButton')"
         color="primary"
         type="submit"
       />
@@ -80,33 +78,38 @@
     <q-dialog v-model="submissionError">
       <q-card>
         <q-card-section>
-          <div class="text-h6">Fehler</div>
+          <div class="text-h6">{{ $t('repairPage.errorDialog.title') }}</div>
         </q-card-section>
 
         <q-card-section class="q-pt-none">
-          Die Meldung konnte nicht übermittelt werden.<br />
-          Grund: {{ submissionErrorMsg }}
+          {{ $t('repairPage.errorDialog.message') }}<br />
+          {{ $t('repairPage.errorDialog.reason') }} {{ submissionErrorMsg }}
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="OK" color="primary" v-close-popup />
+          <q-btn
+            flat
+            :label="$t('repairPage.errorDialog.ok')"
+            color="primary"
+            v-close-popup
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
     <q-dialog v-model="submissionOK">
       <q-card>
         <q-card-section>
-          <div class="text-h6">Vielen Dank!</div>
+          <div class="text-h6">{{ $t('repairPage.successDialog.title') }}</div>
         </q-card-section>
 
         <q-card-section class="q-pt-none">
-          Die Meldung wurde erfolgreich übermittelt.
+          {{ $t('repairPage.successDialog.message') }}
         </q-card-section>
 
         <q-card-actions align="right">
           <q-btn
             flat
-            label="OK"
+            :label="$t('repairPage.successDialog.ok')"
             color="primary"
             v-close-popup
             @click="submitConfirmed()"
@@ -117,159 +120,138 @@
   </q-page>
 </template>
 
-<script setup>
-import { ref, onMounted } from "vue";
-import { useAuthStore } from "stores";
-import { api } from "boot/axios";
-import { useQuasar } from "quasar";
-import { useRouter } from "vue-router";
+<script setup lang="ts">
+import { useQuasar } from 'quasar'
+import { onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
-const quasar = useQuasar();
-const authStore = useAuthStore();
-const router = useRouter();
+import { api } from 'boot/axios'
+import { useAuthStore } from 'stores/auth-store'
+
+const { t } = useI18n()
+const quasar = useQuasar()
+const authStore = useAuthStore()
+const router = useRouter()
 
 function fetchData() {
   api
-    .get("/api/v1/reservation/report/", {
-      headers: {
-        Authorization: "Token " + authStore.token,
-      },
-    })
+    .get('/api/v1/reservation/report/')
     .then((response) => {
-      //console.log(response);
-      apiError.value = "";
-      contact.value = response.data.contact;
-      unitOptions.value = response.data.rental_units.concat(unitOptions.value);
-      unit.value = unitOptions.value[0];
-      categoryOptions.value = response.data.categories;
-      formLoading.value = false;
+      apiError.value = ''
+      contact.value = response.data.contact
+      unitOptions.value = response.data.rental_units.concat(unitOptions.value)
+      unit.value = unitOptions.value[0] || null
+      categoryOptions.value = response.data.categories
+      formLoading.value = false
     })
     .catch((error) => {
-      apiError.value = "Es ist ein Fehler aufgetreten.";
-      if ("response" in error) {
-        console.log("ERROR: " + error.response.data.detail);
+      apiError.value = t('repairPage.errors.general')
+      if ('response' in error) {
         if (
-          error.response.data.detail == "Anmeldedaten fehlen." ||
-          error.response.data.detail == "Ungültiges Token"
+          error.response.data.detail == t('repairPage.errors.general') ||
+          error.response.data.detail == t('repairPage.errors.general')
         ) {
-          // Auth missing -> Force new login
-          //console.log("DISABLED FOR DEBUGGING: Force logout");
-          authStore.logout();
+          authStore.logout()
         }
-      } else {
-        console.log("ERROR: " + error);
       }
-    });
+    })
 }
 
-function onRejected(entries) {
-  if (entries[0].failedPropValidation == "max-files") {
-    quasar.notify("Es können max. 5 Bilder hinzugefügt werden.");
+function onRejected(entries: any): void {
+  if (entries[0].failedPropValidation == 'max-files') {
+    quasar.notify(t('repairPage.notifications.maxImages'))
   } else {
-    quasar.notify("Ungültige Datei");
+    quasar.notify(t('repairPage.notifications.invalidFile'))
   }
-}
-
-function submitReport() {
-  //console.log("Submit reservation");
-  is_submitting.value = true;
-  let formData = new FormData();
-  formData.append("action", "add");
-  formData.append("unit", unit.value.value);
-  formData.append("category", category.value.value);
-  formData.append("subject", subject.value);
-  formData.append("contact_text", contact_text.value);
-  formData.append("text", text.value);
-  for (let pic in pictures.value) {
-    formData.append("pictures", pictures.value[pic]);
-  }
-  api
-    .post("/api/v1/reservation/report/", formData, {
-      headers: {
-        Authorization: "Token " + authStore.token,
-      },
-    })
-    .then((response) => {
-      apiError.value = "";
-      //console.log(response);
-      //console.log(response.data);
-      if (response.data.status == "ERROR") {
-        submissionError.value = true;
-        submissionErrorMsg.value = response.data.msg;
-      } else if (response.data.status == "OK") {
-        submissionOK.value = true;
-        submissionDisabled.value = true; // Prevent re-submission
-      }
-      is_submitting.value = false;
-    })
-    .catch((error) => {
-      apiError.value = "Es ist ein Fehler aufgetreten.";
-      submissionError.value = true;
-      submissionErrorMsg.value = "Fehler beim Speichern.";
-      if ("response" in error) {
-        console.log("ERROR: " + error.response.data.detail);
-        if (
-          error.response.data.detail == "Anmeldedaten fehlen." ||
-          error.response.data.detail == "Ungültiges Token"
-        ) {
-          // Auth missing -> Force new login
-          //console.log("DISABLED FOR DEBUGGING: Force logout");
-          authStore.logout();
-        }
-      } else {
-        console.log("ERROR: " + error);
-      }
-      is_submitting.value = false;
-    });
 }
 
 function submitConfirmed() {
-  router.go(-1);
+  router.go(-1)
 }
 
-const apiError = ref("");
-const dense = ref(false);
-const formLoading = ref(true);
+function submitReport() {
+  is_submitting.value = true
+  let formData = new FormData()
+  formData.append('action', 'add')
+  formData.append('unit', unit.value?.value || '')
+  formData.append('category', category.value?.value || '')
+  formData.append('subject', subject.value)
+  formData.append('contact_text', contact_text.value)
+  formData.append('text', text.value)
+  for (let pic in pictures.value) {
+    if (pictures.value[pic]) {
+      formData.append('pictures', pictures.value[pic])
+    }
+  }
+  api
+    .post('/api/v1/reservation/report/', formData, {
+      transformRequest: [
+        (data, headers) => {
+          // Remove Content-Type header to let browser set it with boundary for FormData
+          if (data instanceof FormData) {
+            delete headers['Content-Type']
+          }
+          return data
+        },
+      ],
+    })
+    .then((response) => {
+      apiError.value = ''
+      if (response.data.status == 'ERROR') {
+        submissionError.value = true
+        submissionErrorMsg.value = response.data.msg
+      } else if (response.data.status == 'OK') {
+        submissionOK.value = true
+        submissionDisabled.value = true // Prevent re-submission
+      }
+      is_submitting.value = false
+    })
+    .catch((error) => {
+      apiError.value = t('repairPage.errors.general')
+      submissionError.value = true
+      submissionErrorMsg.value = t('repairPage.errors.saveFailed')
+      if ('response' in error) {
+        if (
+          error.response.data.detail == t('repairPage.errors.general') ||
+          error.response.data.detail == t('repairPage.errors.general')
+        ) {
+          authStore.logout()
+        }
+      }
+      is_submitting.value = false
+    })
+}
+
+const apiError = ref('')
+const dense = ref(false)
+const formLoading = ref(true)
 
 // For axios post file upload fields
-const unit = ref(null);
-const category = ref(null);
-const subject = ref("");
-const contact_text = ref("");
-const text = ref("");
-const pictures = ref([]);
+const unit = ref<any>(null)
+const category = ref<any>(null)
+const subject = ref('')
+const contact_text = ref('')
+const text = ref('')
+const pictures = ref([])
 
 // Loaded on fetch
-const contact = ref("");
+const contact = ref('')
 const unitOptions = ref([
-  //{ label: "Wohnung 011", value: "011" },
   {
-    label: "Etwas anderes (bitte unter Betreff angeben)",
-    value: "__OTHER__",
+    label: t('repairPage.form.affectedUnit.otherOption'),
+    value: '__OTHER__',
   },
-]);
-const categoryOptions = ref([
-  /*{
-    label: "Küche",
-    value: "Küche",
-  },
-  {
-    label: "Fenster",
-    value: "Fenster",
-  },
-  {
-    label: "Boden",
-    value: "Boden",
-  },*/
-]);
+])
+const categoryOptions = ref([])
 
-const is_submitting = ref(false);
-const submissionDisabled = ref(false);
-const submissionError = ref(false);
-const submissionErrorMsg = ref("");
-const submissionOK = ref(false);
+const is_submitting = ref(false)
+const submissionDisabled = ref(false)
+const submissionError = ref(false)
+const submissionErrorMsg = ref('')
+const submissionOK = ref(false)
 
 onMounted(() => {
-  fetchData();
-});
+  fetchData()
+})
 </script>
