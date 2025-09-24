@@ -86,8 +86,8 @@ yarn serve
 yarn make:tenant-config
 
 # This processes files from config/ directory:
-# - settings.js (deployment config)
-# - theme.js (colors)
+# - settings.ts (deployment config)
+# - theme.ts (colors)
 # - icon.svg & logo.svg (branding)
 # - webfonts.scss & fonts/ (typography)
 # - override.scss (custom styles)
@@ -100,8 +100,8 @@ See [config/README.md](config/README.md) for detailed configuration guide.
 ```
 pwa/
 ├── config/             # Tenant configuration (customize per deployment)
-│   ├── settings.js     # App settings
-│   ├── theme.js        # Color theme
+│   ├── settings.ts     # App settings
+│   ├── theme.ts        # Color theme
 │   ├── icon.svg        # App icon
 │   ├── logo.svg        # Brand logo
 │   ├── webfonts.scss   # Font definitions
@@ -120,9 +120,9 @@ pwa/
 ├── public/            # Static files
 │   └── icons/         # Generated PWA icons (git-ignored)
 └── scripts/           # Build scripts
-    ├── make-tenant-config.js   # Config processor
-    ├── watch-config.js         # Config watcher
-    └── download-roboto.js      # Font downloader
+    ├── make-tenant-config.ts   # Config processor
+    ├── watch-config.ts         # Config watcher
+    └── download-roboto.ts      # Font downloader
 ```
 
 ## Configuration System
@@ -130,8 +130,8 @@ pwa/
 The app uses a **tenant configuration system** that allows complete customization without code changes:
 
 1. **Required Files** in `config/`:
-   - `settings.js` - Deployment settings
-   - `theme.js` - Visual theme
+   - `settings.ts` - Deployment settings
+   - `theme.ts` - Visual theme
    - `icon.svg` - App icon (16x16 to 512x512)
    - `logo.svg` - Brand logo (splash screens)
 
@@ -196,8 +196,8 @@ yarn make:tenant-config
 
 The app determines API endpoints based on development/production mode:
 
-- **Development**: Uses proxy `/api-proxy/` (configured in quasar.config.js)
-- **Production**: Uses settings from `config/settings.js`
+- **Development**: Uses proxy `/api-proxy/` (configured in quasar.config.ts)
+- **Production**: Uses settings from `config/settings.ts`
 
 ## Important Notes
 
