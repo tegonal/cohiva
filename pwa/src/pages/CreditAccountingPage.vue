@@ -103,9 +103,11 @@
           </tr>
         </tbody>
         <tbody v-else>
-          <td colspan="5">
-            {{ $t('creditAccountingPage.messages.noTransactions') }}
-          </td>
+          <tr>
+            <td colspan="5">
+              {{ $t('creditAccountingPage.messages.noTransactions') }}
+            </td>
+          </tr>
         </tbody>
       </q-markup-table>
     </div>

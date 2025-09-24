@@ -13,7 +13,7 @@
  * 7. Copying override.scss for tenant customizations
  *
  * Usage:
- *   node scripts/make-tenant-config.js
+ *   tsx scripts/make-tenant-config.ts
  *
  * The script uses files from the config/ directory to generate
  * all tenant-specific assets and styles.
@@ -485,7 +485,7 @@ $typography-font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-seri
       await fs.writeFile(webfontsTarget, defaultWebfonts)
     }
 
-    // 8. Generate quasar.variables.scss from theme.js
+    // 8. Generate quasar.variables.scss from theme.ts
     console.log('🎨 Generating quasar.variables.scss from theme colors...')
 
     // Skip these variables (they're for app config, not SCSS)
@@ -530,8 +530,8 @@ ${scssVariables}
 
     // 9. Generate app.scss with custom styles
     console.log('🎨 Generating app.scss with custom styles...')
-    const appScssContent = `// Generated from config/theme.js
-// Do not edit directly - modify config/theme.js instead
+    const appScssContent = `// Generated from config/theme.ts
+// Do not edit directly - modify config/theme.ts instead
 
 // Import web fonts first (this sets font variables)
 @import './webfonts.scss';

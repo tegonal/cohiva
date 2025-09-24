@@ -95,8 +95,8 @@ async function main() {
     log('')
     log('Please fix the errors above before building.', 'yellow')
     log('Check the example files for reference:', 'yellow')
-    log('  - settings_example.js', 'yellow')
-    log('  - theme_example.js', 'yellow')
+    log('  - settings.ts', 'yellow')
+    log('  - theme.ts', 'yellow')
     log('')
     process.exit(1)
   }
