@@ -360,7 +360,7 @@ class Address(GenoBase):
         return roles
 
     def get_mail_recipient(self):
-        if settings.DEBUG or self.email.endswith("example.com"):
+        if settings.DEBUG or self.email.split("@")[-1] == "example.com":
             email_address = settings.TEST_MAIL_RECIPIENT
         else:
             email_address = self.email
@@ -866,6 +866,15 @@ class Share(GenoBase):
         on_delete=models.SET_NULL,
         related_name="contract_attached_shares",
     )
+    attached_to_building = select2.fields.ForeignKey(
+        "Building",
+        verbose_name="Liegenschaft",
+        help_text=("Nur ausfüllbar wenn kein Vertrag gewählt ist."),
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="building_attached_shares",
+    )
     note = models.CharField("Zusatzinfo", max_length=200, blank=True)
 
     ## Reverse relation to Documents
@@ -904,11 +913,25 @@ class Share(GenoBase):
         else:
             return "-"
 
+    def clean(self, *args, **kwargs):
+        from django.core.exceptions import ValidationError
+
+        # contract and building relations may not both be present
+        if self.attached_to_building is not None and self.attached_to_contract is not None:
+            raise ValidationError("Vertrag und Liegeneschaft dürfen nicht beide ausgewählt sein.")
+        super().clean(*args, **kwargs)
+
     value_total.short_description = "Total"
 
     class Meta:
         verbose_name = "Beteiligung"
         verbose_name_plural = "Beteiligungen"
+        constraints = [
+            models.CheckConstraint(
+                check=Q(attached_to_building=None) | Q(attached_to_contract=None),
+                name="geno_share_attached_to_building_or_contract",
+            )
+        ]
         permissions = (
             ("canview_share", "Can view shares"),
             ("canview_share_overview", "Can see share overview"),

@@ -6,7 +6,7 @@
 #  \__/\__/\_, /\___/_//_/\_,_/_/         It is licensed under GNU Affero General Public License v3
 #         /___/                           Please report bugs and contribute back your improvements
 #
-#                                         Version: v0.1.0-SNAPSHOT
+#                                         Version: v1.3.0-SNAPSHOT
 ###################################
 set -euo pipefail
 shopt -s inherit_errexit
@@ -30,7 +30,9 @@ fi
 sourceOnce "$dir_of_tegonal_scripts/utility/log.sh"
 
 function cleanupOnPushToMain() {
-	logSuccess "nothing to cleanup yet"
+	ruff check --fix-only
+	ruff format
+	logSuccess "cleaned up python code"
 }
 
 ${__SOURCED__:+return}

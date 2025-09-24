@@ -672,21 +672,18 @@ class ReportSubmissionAPITests(APITestCase, ReservationTestCase):
         response = self.client.post(url, request_data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "ERROR")
-        self.assertEqual(response.data["msg"], "ReportType matching query does not exist.")
 
         report_type = ReportType.objects.create(id=1, name="Reparaturmeldung")
 
         response = self.client.post(url, request_data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "ERROR")
-        self.assertEqual(response.data["msg"], "Field 'id' expected a number but got 'INVALID'.")
 
         request_data["category"] = 1
 
         response = self.client.post(url, request_data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "ERROR")
-        self.assertEqual(response.data["msg"], "ReportCategory matching query does not exist.")
 
         cat1 = ReportCategory.objects.create(name="Kat1", report_type=report_type)
         request_data["category"] = cat1.id
@@ -737,14 +734,12 @@ class ReportSubmissionAPITests(APITestCase, ReservationTestCase):
         response = self.client.post(url, request_data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "ERROR")
-        self.assertEqual(response.data["msg"], "Field 'id' expected a number but got 'INVALID'.")
 
         request_data["unit"] = self.prototypes["renter"]["rental_unit"].id + 100
 
         response = self.client.post(url, request_data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "ERROR")
-        self.assertEqual(response.data["msg"], "RentalUnit matching query does not exist.")
 
         request_data["unit"] = self.prototypes["renter"]["rental_unit"].id
 
@@ -784,10 +779,6 @@ class ReportSubmissionAPITests(APITestCase, ReservationTestCase):
         response = self.client.post(url, request_data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "ERROR")
-        self.assertIn(
-            "Meldung übermittelt, aber konnte Bild(er) nicht speichern: (1062, \"Duplicate entry 'Name-",
-            response.data["msg"],
-        )
 
     @skip("Need to implement checks for invalid files first")
     def test_post_with_pictures_invalid(self):

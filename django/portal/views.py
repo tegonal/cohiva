@@ -17,6 +17,7 @@ from django.http import (
     JsonResponse,
 )
 from django.shortcuts import redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.debug import sensitive_post_parameters
 from django_tables2 import RequestConfig
@@ -113,7 +114,9 @@ def login(request):
                             request.POST["next"],
                         )
                     )
-                    if request.POST["next"]:
+                    if request.POST["next"] and url_has_allowed_host_and_scheme(
+                        request.POST["next"], allowed_hosts=None
+                    ):
                         return redirect(request.POST["next"])
                     else:
                         return redirect("/portal/")
@@ -246,48 +249,14 @@ def home(request, message=None):
 
 @protected_resource(scopes=["username", "email", "realname"])
 def oauth_identity(request):
-    # user = request.user
-    user = request.resource_owner
-    host = request.get_host()
-    if user.is_authenticated:
-        auth_info = portal_auth.authorize(user, host)
-        if not auth_info["user_id"]:
-            logger.warning(
-                "%s - %s oauth_identity(): DENIED: %s"
-                % (request.META["REMOTE_ADDR"], host, auth_info["reason"])
-            )
-            return HttpResponse("Unauthorized", status=401)
-
-        if settings.DEBUG:
-            auth_info["user_id"] = "%s_test" % (auth_info["user_id"])
-        logger.info(
-            "%s - %s oauth_identity(): send identity user_id=%s, username=%s, email=%s, name=%s"
-            % (
-                request.META["REMOTE_ADDR"],
-                host,
-                auth_info["user_id"],
-                user.username,
-                user.email,
-                auth_info["name"],
-            )
-        )
+    profile = portal_auth.get_oauth_profile(request)
+    if not profile:
+        return HttpResponse("Unauthorized", status=401)
+    else:
         return HttpResponse(
-            json.dumps(
-                {
-                    "id": auth_info["user_id"],
-                    "username": user.username,
-                    "email": user.email,
-                    "name": auth_info["name"],
-                }
-            ),
+            json.dumps(profile),
             content_type="application/json",
         )
-    else:
-        logger.error(
-            "%s - %s oauth_identity(): DENIED: not authenticated u=%s"
-            % (request.META["REMOTE_ADDR"], host, user.username)
-        )
-        return HttpResponse("Unauthorized", status=401)
 
 
 def debug_middleware(get_response):
@@ -651,7 +620,7 @@ def tenant_admin_get_rc_users(rocket, template_data):
     ret = rocket.users_list(count=0).json()
     if not ret["success"]:
         template_data["error"] = "Can't get user list: %s" % ret.get("error", "Unknown error")
-        return False
+        return None
     for user in ret["users"]:
         if "username" in user:
             rc_users[user["username"]] = user
@@ -791,7 +760,7 @@ def tenant_admin_get_actions(rocket, rc_users, template_data):
                 template_data["error"] = "Can't get team members for team: %s: Unknown error" % (
                     building.team
                 )
-            return False
+            return None
         rc_teams[building.team] = {}
         for member in ret["members"]:
             # pprint(member)
@@ -913,20 +882,20 @@ def tenant_admin_maintenance(request):
 
 
 def cron_maintenance(request):
-    template_data = {"log": [], "success": [], "warning": []}
+    template_data = {"log": [], "success": [], "warning": [], "error": None}
 
     ## Rocket Chat: Get users, get and perform pending actions.
     rc_login = settings.ROCKETCHAT_API[settings.PORTAL_SECONDARY_NAME]
     rocket = RocketChatContrib(rc_login["user"], rc_login["pass"], server_url=rc_login["url"])
 
     rc_users = tenant_admin_get_rc_users(rocket, template_data)
-    if not rc_users:
+    if rc_users is None:
         return JsonResponse(
             {"status": "ERROR", "error": template_data["error"], "log": template_data["log"]}
         )
 
     actions = tenant_admin_get_actions(rocket, rc_users, template_data)
-    if not actions:
+    if actions is None:
         return JsonResponse(
             {"status": "ERROR", "error": template_data["error"], "log": template_data["log"]}
         )
@@ -1063,9 +1032,21 @@ def rocket_chat_process_new_user(data):
     #    "_updatedAt": "2023-09-19T14:44:00.438Z"
     #  }
     if "user_id" not in data:
-        logger.error("No user_id in JSON data: %s" % data)
-        send_error_mail("rocket.chat webhook - no user_id", "No user_id in JSON data: %s" % data)
-        return HttpResponseBadRequest("No user_id in request.")
+        ## Workaround because of https://github.com/RocketChat/Rocket.Chat/issues/36348
+        json_resp = cron_maintenance(None)
+        resp = json_resp.content.decode()
+        logger.warning(
+            f"No user_id in JSON data: {data}. "
+            f"Called cron_maintenance as workaround. Result: {resp}"
+        )
+        # logger.error("No user_id in JSON data: %s" % data)
+        send_error_mail(
+            "rocket.chat webhook - no user_id",
+            f"No user_id in JSON data: {data}\n"
+            f"Called cron_maintenance as workaround. Result: {resp}",
+        )
+        return json_resp
+        # return HttpResponseBadRequest("No user_id in request.")
 
     ## Get username or email or id
     if "user_name" in data:

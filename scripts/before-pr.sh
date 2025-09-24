@@ -6,7 +6,7 @@
 #  \__/\__/\_, /\___/_//_/\_,_/_/         It is licensed under GNU Affero General Public License v3
 #         /___/                           Please report bugs and contribute back your improvements
 #
-#                                         Version: v0.1.0-SNAPSHOT
+#                                         Version: v1.3.0-SNAPSHOT
 ###################################
 set -euo pipefail
 shopt -s inherit_errexit
@@ -26,7 +26,8 @@ sourceOnce "$scriptsDir/run-shellcheck.sh"
 function beforePr() {
 	# using && because this function might be used on the left side of an ||
 	customRunShellcheck && \
-	cleanupOnPushToMain
+	cleanupOnPushToMain && \
+	ruff check
 }
 
 ${__SOURCED__:+return}

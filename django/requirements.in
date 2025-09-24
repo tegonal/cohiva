@@ -34,7 +34,10 @@ django-filer
 ## Authentication providers
 django-oauth-toolkit
 requests-oauthlib
-djangosaml2idp
+djangosaml2idp  # currently requires cryptography<44 through pysaml2 and pyopenssl. As soon as that is fixed,
+                # cryptography should be upgraded!
+                # https://github.com/IdentityPython/pysaml2/pull/977
+                # https://github.com/pyca/cryptography/security/advisories/GHSA-79v4-65xg-pq4g
 
 ## REST API / middleware stuff
 djangorestframework
@@ -55,7 +58,7 @@ kaleido          # for nk-report
 
 ## Import/export
 openpyxl
-#sepa == 0.5.3+mst1  ## Currently we use patched version in geno/python-sepa installed by install_dependencies.sh!
+#sepa             # Currently we use patched version in geno/python-sepa installed by install_dependencies.sh!
 caldav
 vdirsyncer
 

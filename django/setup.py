@@ -19,6 +19,7 @@ def setup():
     generate_missing_base_config()
     create_missing_dirs()
     generate_saml2_keys()
+    generate_oidc_keys()
 
 
 def generate_missing_base_config():
@@ -107,6 +108,13 @@ def generate_saml2_keys():
             "./cohiva/saml2/public.pem",
         ]
     )
+
+
+def generate_oidc_keys():
+    if os.path.exists("./cohiva/oauth2/oidc.key"):
+        return
+    print("Generating OIDC key in ./cohiva/oauth2/.")
+    subprocess.run(["openssl", "genrsa", "-out", "./cohiva/oauth2/oidc.key", "4096"])
 
 
 if __name__ == "__main__":

@@ -593,6 +593,7 @@ class ShareAdmin(GenoBaseAdmin):
         "quantity",
         ("value", "value_total", "is_interest_credit", "is_pension_fund", "is_business"),
         "attached_to_contract",
+        "attached_to_building",
         "note",
         ("interest", "interest_mode", "manual_interest"),
         "comment",

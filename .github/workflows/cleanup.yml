@@ -13,13 +13,26 @@ on:
   push:
     branches:
       - main
+      - develop
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v5
-      - name: Cleanup Sources
+      - name: Install Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Setup environment
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff==0.12.10
+          ln -s website_example ./django/website
+      - name: Cleanup code
         run: ./scripts/cleanup-on-push-to-main.sh
       - name: Create Pull Request if necessary
         uses: peter-evans/create-pull-request@v7

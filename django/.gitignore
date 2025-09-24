@@ -1,7 +1,8 @@
 *.pyc
 .*.swp
 NOT_USED
-test.log
+*.log
+.idea/*
 /.env
 /.coverage
 /test-failure.html
@@ -12,6 +13,7 @@ test.log
 /cohiva/settings.py
 /cohiva/saml2/private.key
 /cohiva/saml2/public.pem
+/cohiva/oauth2/oidc.key
 /deployment/celery.conf
 /deployment/cohiva-celery.service
 /deployment_custom

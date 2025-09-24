@@ -19,19 +19,19 @@ apps = [
             # {'name': 'MemberAttribute' },
             # {'name': 'ShareType' },
             # {'name': 'Share' },
-            {"name": "DocumentType"},
+            # {'name': 'DocumentType' },
             # {'name': 'Document' },
             # {'name': 'RegistrationEvent' },
             # {'name': 'RegistrationSlot' },
             # {'name': 'Registration' },
             # {'name': 'RentalUnit' },
             # {'name': 'Contract' },
-            {"name": "InvoiceCategory"},
+            # {'name': 'InvoiceCategory' },
             # {'name': 'Invoice' },
             # {'name': 'LookupTable' },
             # {'name': 'GenericAttribute' },
-            {"name": "ContentTemplateOption"},
-            {"name": "ContentTemplate"},
+            # {'name': 'ContentTemplateOption' },
+            # {'name': 'ContentTemplate' },
         ],
     },
     {
@@ -41,6 +41,13 @@ apps = [
             # {'name': 'ReportType' },
             # {'name': 'ReportInputField' },
             # {'name': 'ReportInputData' },
+        ],
+    },
+    {
+        "name": "reservation",
+        "models": [
+            # {"name": "ReportType"},
+            # {"name": "ReportCategory"}
         ],
     },
 ]

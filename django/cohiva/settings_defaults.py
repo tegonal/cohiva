@@ -38,6 +38,7 @@ EMAIL_SUBJECT_PREFIX = f"[Cohiva {cbc.SITE_NICKNAME}] "
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
+    cbc.DOCKER_IP,
     "[::1]",
     "test." + cbc.DOMAIN,
     "test." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
@@ -55,6 +56,10 @@ USE_X_FORWARDED_HOST = True
 CORS_ALLOWED_ORIGINS = [
     "https://chat." + cbc.DOMAIN,
     "https://app." + cbc.DOMAIN,
+    "https://app-test." + cbc.DOMAIN,
+    "https://chat." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
+    "https://app." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
+    "https://app-test." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
     "http://localhost:9000",
     "http://127.0.0.1:9000",
     "http://localhost:9001",
@@ -78,6 +83,18 @@ OAUTH2_PROVIDER = {
     "REQUEST_APPROVAL_PROMPT": "auto",  ## auto / force
     "PKCE_REQUIRED": False,  ## Rocket.Chat does not support PKCE
 }
+
+## Enable OIDC
+OAUTH2_PROVIDER["OIDC_ENABLED"] = True
+with open(str(BASE_DIR / "cohiva/oauth2/oidc.key")) as keyfile:
+    OAUTH2_PROVIDER["OIDC_RSA_PRIVATE_KEY"] = keyfile.read()
+OAUTH2_PROVIDER["SCOPES"].update(
+    {
+        "profile": "Profildaten wie Name, Vorname, etc.",
+        "openid": "OpenID Connect scope",
+    }
+)
+OAUTH2_PROVIDER["OAUTH2_VALIDATOR_CLASS"] = "cohiva.oauth_validators.CohivaOAuth2Validator"
 
 if "portal" in cbc.FEATURES:
     ## SAML 2.0
@@ -118,13 +135,17 @@ if "portal" in cbc.FEATURES:
         # set to 1 to output debugging information
         "debug": 1,
         # Signing
-        "key_file": BASE_DIR / "cohiva/saml2/private.key",  # private part
-        "cert_file": BASE_DIR / "cohiva/saml2/public.pem",  # public part
+        "key_file": str(BASE_DIR / "cohiva/saml2/private.key"),  # private part (expects str)
+        "cert_file": str(BASE_DIR / "cohiva/saml2/public.pem"),  # public part (expects str)
         # Encryption
         "encryption_keypairs": [
             {
-                "key_file": BASE_DIR / "cohiva/saml2/private.key",  # private part
-                "cert_file": BASE_DIR / "cohiva/saml2/public.pem",  # public part
+                "key_file": str(
+                    BASE_DIR / "cohiva/saml2/private.key"
+                ),  # private part (expects str)
+                "cert_file": str(
+                    BASE_DIR / "cohiva/saml2/public.pem"
+                ),  # public part (expects str)
             }
         ],
         "valid_for": 365 * 24,
@@ -476,9 +497,7 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.DjangoModelPermissions",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        #  'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
-        #  'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
-        #  'rest_framework.authentication.BasicAuthentication',
+        "oauth2_provider.contrib.rest_framework.OAuth2Authentication",
         "rest_framework.authentication.TokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
@@ -606,10 +625,10 @@ CSRF_TRUSTED_ORIGINS = [
     "https://" + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
     "https://test." + cbc.DOMAIN,
     "https://test." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
-    #    "http://localhost:9000",
-    #    "http://127.0.0.1:9000",
-    #    "localhost:9000",
-    #    "127.0.0.1:9000",
+    "http://localhost:9000",
+    "http://127.0.0.1:9000",
+    "http://localhost:9001",
+    "http://127.0.0.1:9001",
 ]
 
 ## GnuCash interface

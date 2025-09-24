@@ -9,7 +9,7 @@ from urllib.parse import quote
 import cohiva.base_config as cbc
 
 from .settings import *  # noqa: F403
-from .settings import DATABASES, LOGGING, SAML_IDP_CONFIG
+from .settings import DATABASES, LOGGING
 
 # Disable debugging
 DEBUG = False
@@ -35,8 +35,11 @@ ALLOWED_HOSTS = [cbc.PROD_HOSTNAME + "." + cbc.DOMAIN]
 CORS_ALLOWED_ORIGINS = [
     "https://chat." + cbc.DOMAIN,
     "https://app." + cbc.DOMAIN,
+    "https://chat." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
+    "https://app." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
 ]
 
+CSRF_COOKIE_SECURE = True
 CSRF_TRUSTED_ORIGINS = [
     "https://" + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
 ]
@@ -44,6 +47,8 @@ CSRF_TRUSTED_ORIGINS = [
 if "portal" in cbc.FEATURES:
     # Adjust SAML2 URLs
     import saml2
+
+    from .settings import SAML_IDP_CONFIG
 
     SAML_IDP_CONFIG["entityid"] = "%s/idp/metadata/" % BASE_URL
     SAML_IDP_CONFIG["service"]["idp"]["endpoints"] = {
