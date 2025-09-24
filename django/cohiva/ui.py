@@ -14,7 +14,7 @@ class Navigation:
         g.add_item("geno.Address", title=_("Adressen/Personen"))
         g.add_item("geno.Child", title=_("Kinder"))
         sg = g.add_subgroup(_("Erweiterte Konfiguration"))
-        sg.add_item("geno.Sub")
+        sg.add_item("geno.Attribute")
 
     def add_nav_group(self, name):
         group = NavGroup(name)
@@ -22,7 +22,8 @@ class Navigation:
         return group
 
     def generate_unfold_navigation(self, request):
-        return [g.generate_unfold_navigation(request) for g in self._nav_groups]
+        print("Generate navigation")
+        return [] #g.generate_unfold_navigation(request) for g in self._nav_groups]
 
 
 class NavGroup:
@@ -78,7 +79,7 @@ class MenuItem:
         return self._title
 
     def get_link(self, request):
-        print("get link")
+        print(f"get link ({self._title})")
         if not self._link:
             cls = apps.get_model(self._obj)
             self._link = reverse_lazy(

@@ -11,7 +11,7 @@ from smtplib import SMTPException
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.contrib import messages
+from django.contrib import admin, messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
@@ -24,8 +24,10 @@ from django.http import FileResponse, Http404, HttpResponse, HttpResponseRedirec
 from django.shortcuts import redirect, render
 from django.template import Context, loader
 from django.utils import timezone
+from django.utils.decorators import classonlymethod
 from django.utils.encoding import smart_str
 from django.utils.html import escape
+from django.views.generic import TemplateView
 from django_tables2 import RequestConfig
 from oauthlib.oauth2 import TokenExpiredError
 
@@ -437,11 +439,33 @@ def documents(request, doctype, obj_id, action):
     return render(request, "geno/messages.html", {"response": ret, "title": "Document error"})
 
 
-@login_required
-def share_overview(request):
-    if not request.user.has_perm("geno.canview_share_overview"):
-        return unauthorized(request)
+class CustomAdminViewMixin:
+    title = "Cohiva Administration"
+    template_name = "geno/messages_unfold.html"
 
+    def get_context_data(self, **kwargs):
+        self.request.current_app = "geno"
+        return super().get_context_data(
+            **kwargs, **admin.site.each_context(self.request), title=self.title, model_admon=None
+        )
+
+    @classonlymethod
+    def as_view(cls, **initkwargs):
+        return login_required(admin.site.admin_view(super().as_view(**initkwargs)))
+
+
+class ShareOverviewView(CustomAdminViewMixin, TemplateView):
+    title = "Übersicht Beteiligungen"  # required: custom page header title
+    permission_required = "geno.canview_share_overview"  # required: tuple of permissions
+
+    def get_context_data(self, **kwargs):
+        return super().get_context_data(
+            **kwargs,
+            response=share_overview(self.request),
+        )
+
+
+def share_overview(request):
     ret = []
 
     try:
@@ -499,9 +523,7 @@ def share_overview(request):
     if not reference_date and hasattr(settings, "SHARE_PLOT") and settings.SHARE_PLOT:
         ret.append({"info": '<img src="/geno/share/overview/plot/" alt="Statistik">'})
 
-    return render(
-        request, "geno/messages.html", {"response": ret, "title": "Übersicht Beteiligungen"}
-    )
+    return ret
 
 
 @login_required
