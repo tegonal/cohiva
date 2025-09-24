@@ -1,6 +1,6 @@
 <template>
   <q-layout view="hHh Lpr lFf">
-    <q-header elevated>
+    <q-header class="app-header">
       <q-toolbar>
         <q-btn
           flat
@@ -11,127 +11,150 @@
           @click="toggleLeftDrawer"
         />
 
-        <q-toolbar-title> {{ settings.SITE_NICKNAME }} App </q-toolbar-title>
+        <q-toolbar-title> {{ settings.siteNickname }} App </q-toolbar-title>
 
-        <!-- <div>Quasar v{{ $q.version }}</div> -->
-        <div>
-          <img
-            :alt="settings.SITE_NICKNAME + ' Logo'"
-            src="~assets/logo.svg"
-            style="width: 40px; height: 40px"
-          />
-        </div>
+        <!-- Language Switcher -->
+        <LanguageSwitcher />
       </q-toolbar>
     </q-header>
 
     <q-drawer v-model="leftDrawerOpen" show-if-above bordered>
-      <q-list>
-        <q-item-label header> Links </q-item-label>
+      <q-scroll-area class="fit">
+        <q-list>
+          <q-item-label header>{{
+            $t('mainLayout.navigation.links')
+          }}</q-item-label>
 
-        <EssentialLink
-          v-for="link in essentialLinks"
-          :key="link.title"
-          v-bind="link"
-        />
-        <q-item-label header> Einstellungen </q-item-label>
-        <q-item>
-          <q-item-section avatar>
-            <q-icon name="info" />
-          </q-item-section>
+          <EssentialLink
+            v-for="link in essentialLinks"
+            :key="link.title"
+            v-bind="link"
+          />
+          <q-item-label header>{{
+            $t('mainLayout.navigation.settings')
+          }}</q-item-label>
+          <q-item>
+            <q-item-section avatar>
+              <q-icon name="info" />
+            </q-item-section>
 
-          <q-item-section>
-            <q-item-label>App-Version</q-item-label>
-            <q-item-label caption>{{ mainStore.appVersion }}</q-item-label>
-          </q-item-section>
-        </q-item>
-        <q-item v-if="authStore.user">
-          <q-item-section avatar>
-            <q-icon name="person" />
-          </q-item-section>
+            <q-item-section>
+              <q-item-label>{{
+                $t('mainLayout.appVersion.label')
+              }}</q-item-label>
+              <q-item-label caption>{{ mainStore.appVersion }}</q-item-label>
+            </q-item-section>
+          </q-item>
+          <q-item v-if="authStore.user">
+            <q-item-section avatar>
+              <q-icon name="person" />
+            </q-item-section>
 
-          <q-item-section>
-            <q-item-label>Angemeldet als</q-item-label>
-            <q-item-label caption>{{ authStore.user }}</q-item-label>
-          </q-item-section>
-        </q-item>
-        <q-item clickable @click="settings_logout()" v-if="authStore.user">
-          <q-item-section avatar>
-            <q-icon name="logout" />
-          </q-item-section>
+            <q-item-section>
+              <q-item-label>{{
+                $t('mainLayout.user.loggedInAs')
+              }}</q-item-label>
+              <q-item-label caption>{{
+                authStore.username ||
+                authStore.userEmail ||
+                $t('mainLayout.user.unknown')
+              }}</q-item-label>
+            </q-item-section>
+          </q-item>
+          <q-item clickable @click="settings_logout()" v-if="authStore.user">
+            <q-item-section avatar>
+              <q-icon name="logout" />
+            </q-item-section>
 
-          <q-item-section>
-            <q-item-label>Abmelden</q-item-label>
-            <q-item-label caption></q-item-label>
-          </q-item-section>
-        </q-item>
-      </q-list>
+            <q-item-section>
+              <q-item-label>{{ $t('mainLayout.user.logout') }}</q-item-label>
+              <q-item-label caption></q-item-label>
+            </q-item-section>
+          </q-item>
+        </q-list>
+
+        <!-- Theme Toggle at the bottom -->
+        <div class="absolute-bottom q-pa-md">
+          <q-item-label header class="q-pb-sm">{{
+            $t('mainLayout.theme.label', 'Design')
+          }}</q-item-label>
+          <ThemeModeToggle />
+        </div>
+      </q-scroll-area>
     </q-drawer>
 
     <q-footer class="bg-white">
-      <app-install-banner></app-install-banner>
-      <app-update-banner></app-update-banner>
+      <AppUpdateBanner></AppUpdateBanner>
     </q-footer>
 
     <q-page-container>
       <router-view />
     </q-page-container>
 
-    <!--
-    <q-footer>
-      <q-tabs v-model="tab">
-        <router-link to="/reservation">
-          <q-tab name="reservation" label="Reservation" icon="edit_calendar" />
-        </router-link>
-        <router-link to="/">
-          <q-tab name="videos" label="Kalender" icon="calendar_month" />
-        </router-link>
-      </q-tabs>
-    </q-footer> -->
+    <!-- Development Overlay -->
+    <DevOverlay />
   </q-layout>
+  <pwa-install></pwa-install>
 </template>
 
-<script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
-import EssentialLink from "components/EssentialLink.vue";
-import AppUpdateBanner from "components/AppUpdateBanner.vue";
-import AppInstallBanner from "components/AppInstallBanner.vue";
-import { useAuthStore, useMainStore } from "stores";
-import { settings } from "app/settings.js";
+<script setup lang="ts">
+import { settings } from 'app/config/settings'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 
-const leftDrawerOpen = ref(false);
-const authStore = useAuthStore();
-const mainStore = useMainStore();
+import AppUpdateBanner from 'components/AppUpdateBanner.vue'
+import DevOverlay from 'components/DevOverlay.vue'
+import EssentialLink from 'components/EssentialLink.vue'
+import LanguageSwitcher from 'components/LanguageSwitcher.vue'
+import ThemeModeToggle from 'components/ThemeModeToggle.vue'
+import { useAuthStore } from 'stores/auth-store'
+import { useMainStore } from 'stores/main-store'
 
-function settings_logout() {
-  toggleLeftDrawer();
-  authStore.logout();
+// Store instances
+const authStore = useAuthStore()
+const mainStore = useMainStore()
+
+// Reactive state
+const leftDrawerOpen = ref(false)
+const updateTimeout = ref<null | ReturnType<typeof setInterval>>(null)
+
+// Static data
+const essentialLinks = settings.navigationLinks
+
+// Functions
+function settings_logout(): void {
+  toggleLeftDrawer()
+  authStore.logout()
 }
 
-function toggleLeftDrawer() {
-  leftDrawerOpen.value = !leftDrawerOpen.value;
+function toggleLeftDrawer(): void {
+  leftDrawerOpen.value = !leftDrawerOpen.value
 }
-
-const essentialLinks = settings.NAVIGATION_LINKS;
 
 /* For service worker updates */
-function updateRegistration() {
+function updateRegistration(): void {
   if (mainStore.registration && !mainStore.registration.waiting) {
-    console.log("Updating service-worker...");
-    mainStore.registration.update();
+    mainStore.registration.update()
   }
 }
 
-let updateTimeout = setInterval(
-  function () {
-    updateRegistration();
-  }.bind(this),
-  1000 * 60 * 30
-);
+// Lifecycle hooks
+onMounted(() => {
+  updateRegistration()
+  // Set up periodic service worker updates every 30 minutes
+  updateTimeout.value = setInterval(
+    () => {
+      updateRegistration()
+    },
+    1000 * 60 * 30
+  )
+})
 
-onMounted(() => updateRegistration());
 onBeforeUnmount(() => {
-  if (updateTimeout) {
-    clearInterval(updateTimeout);
+  if (updateTimeout.value) {
+    clearInterval(updateTimeout.value)
+    updateTimeout.value = null
   }
-});
+})
 </script>
+
+<style lang="scss" scoped></style>

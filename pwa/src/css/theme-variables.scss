@@ -1,0 +1,65 @@
+// Dynamic theme variables using CSS custom properties
+// Important: Quasar brand colors need --q- prefix to work properly
+// Custom variables can use any prefix
+
+// Light theme (default)
+.body--light {
+  --q-primary: #{$primary};
+  --q-secondary: #{$secondary};
+  --q-accent: #{$accent};
+  --q-positive: #{$positive};
+  --q-negative: #{$negative};
+  --q-info: #{$info};
+  --q-warning: #{$warning};
+
+  // Custom app variables
+  --q-link-color: #{$link-color};
+  --q-link-hover-color: #{$link-hover-color};
+  --q-link-visited-color: #{$link-visited-color};
+  --q-link-active-color: #{$link-active-color};
+
+  --q-shadow-1: #{$shadow-1};
+  --q-shadow-2: #{$shadow-2};
+  --q-shadow-3: #{$shadow-3};
+  --q-shadow-4: #{$shadow-4};
+  --q-shadow-5: #{$shadow-5};
+
+  // Header/Toolbar variables
+  --q-header-bg: #{$header-bg};
+  --q-header-text: #{$header-text};
+  --q-header-shadow: #{$header-shadow};
+  --q-toolbar-bg: #{$toolbar-bg};
+  --q-toolbar-text: #{$toolbar-text};
+}
+
+// Dark theme overrides
+.body--dark {
+  --q-primary: #{$dark-primary};
+  --q-secondary: #{$dark-secondary};
+  --q-accent: #{$dark-accent};
+  --q-positive: #{$dark-positive};
+  --q-negative: #{$dark-negative};
+  --q-info: #{$dark-info};
+  --q-warning: #{$dark-warning};
+
+  // Custom app variables
+  --q-link-color: #{$dark-link-color};
+  --q-link-hover-color: #{$dark-link-hover-color};
+  --q-link-visited-color: #{$dark-link-visited-color};
+  --q-link-active-color: #{$dark-link-active-color};
+
+  --q-shadow-1: #{$dark-shadow-1};
+  --q-shadow-2: #{$dark-shadow-2};
+  --q-shadow-3: #{$dark-shadow-3};
+  --q-shadow-4: #{$dark-shadow-4};
+  --q-shadow-5: #{$dark-shadow-5};
+
+  // Header/Toolbar variables for dark mode
+  --q-header-bg: #{$dark-header-bg};
+  --q-header-text: #{$dark-header-text};
+  --q-header-shadow: #{$dark-header-shadow};
+  --q-toolbar-bg: #{$dark-toolbar-bg};
+  --q-toolbar-text: #{$dark-toolbar-text};
+}
+
+// Note: Utility classes moved to override.scss to use the --q- prefixed variables
