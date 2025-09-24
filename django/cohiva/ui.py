@@ -1,12 +1,9 @@
-import pprint
-import importlib
-
 from django.apps import apps
-from django.contrib.admin import ModelAdmin
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 
-#from geno.admin import AddressAdmin, ChildAdmin
+# from geno.admin import AddressAdmin, ChildAdmin
+
 
 class Navigation:
     def __init__(self):
@@ -17,6 +14,7 @@ class Navigation:
         g.add_item("geno.Address", title=_("Adressen/Personen"))
         g.add_item("geno.Child", title=_("Kinder"))
         sg = g.add_subgroup(_("Erweiterte Konfiguration"))
+        sg.add_item("geno.Sub")
 
     def add_nav_group(self, name):
         group = NavGroup(name)
@@ -24,7 +22,8 @@ class Navigation:
         return group
 
     def generate_unfold_navigation(self, request):
-        return [ g.generate_unfold_navigation(request) for g in self._nav_groups ]
+        return [g.generate_unfold_navigation(request) for g in self._nav_groups]
+
 
 class NavGroup:
     def __init__(self, name, depth=0):
@@ -40,7 +39,7 @@ class NavGroup:
         return item
 
     def add_subgroup(self, name):
-        subgroup = NavGroup(name, depth=self._depth+1)
+        subgroup = NavGroup(name, depth=self._depth + 1)
         self._items.append(subgroup)
         return subgroup
 
@@ -49,7 +48,7 @@ class NavGroup:
             "title": self._name,
             "separator": True,  # Top border
             "collapsible": True,  # Collapsible group of links
-            "items": [ i.generate_unfold_menuitem(request) for i in self._items ]
+            "items": [i.generate_unfold_menuitem(request) for i in self._items],
         }
         return ret
 
@@ -62,6 +61,7 @@ class NavGroup:
         }
         return ret
 
+
 class MenuItem:
     def __init__(self, obj, title=None, link=None, permission=None):
         self._obj = obj
@@ -72,8 +72,8 @@ class MenuItem:
     def get_mytitle(self, request):
         if not self._title:
             self._title = "TEST"
-            #cls = apps.get_model(self._obj)
-            #self._title = str(cls)
+            # cls = apps.get_model(self._obj)
+            # self._title = str(cls)
         print("Title")
         return self._title
 
@@ -103,6 +103,7 @@ class MenuItem:
             # "badge": "sample_app.badge_callback",
         }
         return ret
+
 
 def generate_unfold_navigation(request):
     nav = Navigation()

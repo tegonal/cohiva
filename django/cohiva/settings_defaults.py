@@ -7,14 +7,12 @@ To change settings, overwrite them in settings.py or settings_production.py
 import locale
 from pathlib import Path
 from urllib.parse import quote
-import pprint
 
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 
 import cohiva.base_config as cbc
 from cohiva.version import __version__ as COHIVA_VERSION  # noqa: F401
-from cohiva.ui import generate_unfold_navigation
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -188,7 +186,7 @@ INSTALLED_APPS = (
     ## Geno must be before admin so we can extend templates
     "geno",
     ## Unfold
-    "unfold",  # before django.contrib.admin
+    "cohiva.apps.CohivaUnfoldConfig",  # before django.contrib.admin
     "unfold.contrib.filters",  # optional, if special filters are needed
     "unfold.contrib.forms",  # optional, if special form elements are needed
     "unfold.contrib.inlines",  # optional, if special inlines are needed
@@ -824,7 +822,7 @@ UNFOLD = {
         "show_search": True,  # Search in applications and models names
         "command_search": False,  # Replace the sidebar search with the command search
         "show_all_applications": False,  # Dropdown with all applications and models
-        #"navigation": lambda request: generate_unfold_navigation(request),
+        # "navigation": lambda request: generate_unfold_navigation(request),
         "navigation": [
             {
                 "title": _("Stammdaten"),
@@ -856,8 +854,20 @@ UNFOLD = {
                         "is_subgroup": True,
                         "collapsible": True,
                         "subitems": [
-                            {"title": "Sub1",},
-                            {"title": "Sub2",},
+                            {
+                                "title": "Attribute",
+                                "link": reverse_lazy("admin:geno_genericattribute_changelist"),
+                                "permission": lambda request: request.user.has_perm(
+                                    "geno.view_genericattribute"
+                                ),
+                            },
+                            {
+                                "title": "Mailinglisten überprüfen",
+                                "link": "/admin/geno/address/check_mailinglists/",  # reverse_lazy("geno:check_mailinglists"),
+                                "permission": lambda request: request.user.has_perm(
+                                    "geno:canview_member_mailinglists"
+                                ),
+                            },
                         ],
                     },
                     {
