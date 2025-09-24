@@ -27,6 +27,7 @@
                         {% for item in group.items %}
 
                             {% if item.is_subgroup %}
+                                {% has_nav_item_active item.items as sub_has_active %}
 
                                 <div class="hidden mb-2 has-[ol]:has-[li]:block" {% if item.collapsible %}x-data="{subNavigationOpen: {% if sub_has_active %}true{% else %}false{% endif %}}"{% endif %}>
                                 <h3 class="lflex h-[38px] items-center -mx-3 px-3 rounded-default hover:text-primary-600 dark:hover:text-primary-500 {% if item.active %}bg-base-100 font-semibold text-primary-600 dark:bg-white/[.06] dark:text-primary-500{% endif %} {% if item.collapsible %}cursor-pointer hover:text-primary-600 dark:hover:text-primary-500{% endif %}" {% if item.collapsible %}x-on:click="subNavigationOpen = !subNavigationOpen"{% endif %}>
@@ -46,7 +47,7 @@
                                     {% endif %}
                                 </h3>
                                 <ol class="flex flex-col gap-1 px-6" {% if item.collapsible %}x-show="subNavigationOpen"{% endif %}>
-                                    {% for subitem in item.subitems %}
+                                    {% for subitem in item.items %}
                                         {%  if subitem.has_permission %}
                                         <li>
                                             <a href="{% if subsubitem.link_callback %}{{ subitem.link_callback }}{% else %}{{ subitem.link }}{% endif %}" class="flex h-[38px] subitems-center -mx-3 px-3 rounded-default hover:text-primary-600 dark:hover:text-primary-500 {% if subitem.active %}bg-base-100 font-semibold text-primary-600 dark:bg-white/[.06] dark:text-primary-500{% endif %}">

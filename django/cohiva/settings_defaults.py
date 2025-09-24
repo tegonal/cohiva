@@ -812,9 +812,12 @@ UNFOLD = {
                         "title": _("Adressen/Personen"),
                         "icon": "contact_page",  # Supported icon set: https://fonts.google.com/icons
                         "link": reverse_lazy("admin:geno_address_changelist"),
+                        # "link_callback"
                         "permission": lambda request: request.user.has_perm("geno.view_address"),
                         # "badge": "sample_app.badge_callback",
                         # "permission": lambda request: request.user.is_superuser,
+                        # "active:"  ## can be value or callable / callback-str
+                        #            ## if not set it's derived from request URL/query.
                     },
                     {
                         "title": _("Kinder"),
@@ -829,10 +832,11 @@ UNFOLD = {
                     {
                         "title": _("Erweiterte Funktionen"),
                         "icon": "manufacturing",  # Supported icon set: https://fonts.google.com/icons
-                        "link": reverse_lazy("admin:geno_genericattribute_changelist"),
+                        # "link": reverse_lazy("admin:geno_genericattribute_changelist"),
                         "is_subgroup": True,
                         "collapsible": True,
-                        "subitems": [
+                        # "active": ## TODO: add function to determine if it has active subitems?
+                        "items": [
                             {
                                 "title": "Attribute",
                                 "link": reverse_lazy("admin:geno_genericattribute_changelist"),
@@ -844,7 +848,14 @@ UNFOLD = {
                                 "title": "Mailinglisten überprüfen",
                                 "link": "/admin/geno/address/check_mailinglists/",  # reverse_lazy("geno:check_mailinglists"),
                                 "permission": lambda request: request.user.has_perm(
-                                    "geno:canview_member_mailinglists"
+                                    "geno.canview_member_mailinglists"
+                                ),
+                            },
+                            {
+                                "title": "Übersicht Beteiligungen",
+                                "link": reverse_lazy("geno:share_overview"),
+                                "permission": lambda request: request.user.has_perm(
+                                    "geno.canview_share_overview"
                                 ),
                             },
                         ],
