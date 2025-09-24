@@ -1,11 +1,10 @@
 import datetime
 
+import geno.settings as geno_settings
 from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
 from django.http import HttpResponseRedirect
-
-import geno.settings as geno_settings
 from geno.exporter import ExportXlsMixin
 from geno.models import (
     Address,
@@ -877,7 +876,7 @@ class RentalUnitAdmin(GenoBaseAdmin):
         ("building", "floor"),
         ("area", "area_balcony", "area_add"),
         ("height", "volume"),
-        ("rent_total", "nk", "nk_electricity"),
+        ("rent_netto", "nk", "nk_electricity", "rent_total"),
         ("rent_year"),
         ("share", "depot"),
         "note",
@@ -892,7 +891,7 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "links",
         "backlinks",
     ]
-    readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
+    readonly_fields = ["ts_created", "ts_modified", "links", "backlinks", "rent_total"]
     list_display = [
         "name",
         "label",
@@ -902,7 +901,7 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "floor",
         "area",
         "area_add",
-        "rent_total",
+        "rent_netto",
         "nk",
         "share",
         "status",

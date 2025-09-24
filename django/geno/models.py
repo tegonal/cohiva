@@ -4,7 +4,16 @@ import math
 import uuid
 
 import select2.fields
+from cohiva.utils.settings import (
+    get_default_email,
+    get_default_formal_choice,
+    get_default_mail_footer,
+)
+from filer.fields.file import FilerFileField
+
+import geno.settings as geno_settings
 from django.conf import settings
+from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -17,14 +26,6 @@ from django.dispatch.dispatcher import receiver
 from django.template import Template
 from django.utils import timezone
 from django.utils.html import format_html, format_html_join, mark_safe
-from filer.fields.file import FilerFileField
-
-import geno.settings as geno_settings
-from cohiva.utils.settings import (
-    get_default_email,
-    get_default_formal_choice,
-    get_default_mail_footer,
-)
 from geno.model_fields import LowercaseEmailField
 from geno.utils import (
     is_member,
@@ -1229,13 +1230,13 @@ class RentalUnit(GenoBase):
     nk_electricity = models.DecimalField(
         "Strompauschale (Fr.)", max_digits=10, decimal_places=2, null=True, blank=True
     )
-    rent_total = models.DecimalField(
-        "Miete inkl. NK+Strom (Fr./Monat)",
+    rent_netto = models.DecimalField(
+        "Netto-Miete (Fr.)",
         max_digits=10,
         decimal_places=2,
         null=True,
         blank=True,
-        help_text="Die effektive Miete, welche in Rechnung gestellt wird.",
+        help_text="exkl. NK+Strom",
     )
     rent_year = models.DecimalField(
         "Nettomiete publiziert (Fr./Jahr)",
@@ -1263,6 +1264,18 @@ class RentalUnit(GenoBase):
         max_length=50,
         help_text="Mehrere Seriennr. durch Komma trennen.",
     )
+
+    @property
+    @admin.display(description="Bruttomiete (Fr.)")
+    def rent_total(self):
+        """
+        Bruttomiete inkl. NK und Strom
+        """
+        return (
+            self.rent_netto
+            + (self.nk if self.nk else 0)
+            + (self.nk_electricity if self.nk_electricity else 0)
+        )
 
     def str_short(self):
         if self.label:

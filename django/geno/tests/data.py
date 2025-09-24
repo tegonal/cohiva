@@ -74,7 +74,7 @@ def create_prototype_users(cls):
         rooms=4,
         min_occupancy=3,
         nk=100,
-        rent_total=1100,
+        rent_netto=1000,
         share=10000,
     )
     contract = Contract.objects.create(
@@ -530,7 +530,7 @@ def create_rentalunits(cls):
             rooms=4,
             min_occupancy=3,
             nk=100,
-            rent_total=1100,
+            rent_netto=1000,
             share=10000,
         )
     )
@@ -545,7 +545,7 @@ def create_rentalunits(cls):
             rooms=1,
             min_occupancy=1,
             nk=20,
-            rent_total=220,
+            rent_netto=200,
             share=4000,
         )
     )
@@ -558,7 +558,7 @@ def create_rentalunits(cls):
             height=5,
             volume=1000,
             nk=300,
-            rent_total=2500,
+            rent_netto=2200,
             share=25000,
         )
     )
@@ -571,7 +571,7 @@ def create_rentalunits(cls):
             height=5,
             volume=250,
             nk=120,
-            rent_total=700,
+            rent_netto=580,
             share=7000,
         )
     )
@@ -584,7 +584,7 @@ def create_rentalunits(cls):
             height=4,
             volume=40,
             nk=20,
-            rent_total=150,
+            rent_netto=130,
             share=1500,
         )
     )
@@ -597,7 +597,7 @@ def create_rentalunits(cls):
             height=4,
             volume=120,
             nk=60,
-            rent_total=450,
+            rent_netto=390,
             share=4500,
         )
     )

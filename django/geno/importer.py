@@ -7,14 +7,15 @@ import re
 import subprocess
 import zipfile
 
-from django.conf import settings
-from django.db import IntegrityError, transaction
-from django.db.models import Q
-from django.http import HttpResponse
 from openpyxl import load_workbook
 
 ## Installed from custom (modified) python-sepa subdirectory
 from sepa import parser as sepa_parser
+
+from django.conf import settings
+from django.db import IntegrityError, transaction
+from django.db.models import Q
+from django.http import HttpResponse
 
 from .models import (
     Address,
@@ -1131,7 +1132,7 @@ def import_keller_from_file(empty_tables_first=False):
             else:
                 new_unit = RentalUnit()
                 new_unit.building = "Holligerhof 8"
-                new_unit.rent_total = 0.0
+                new_unit.rent_netto = 0.0
                 new_unit.floor = "Keller"
                 fields = []
                 linked_unit = None
