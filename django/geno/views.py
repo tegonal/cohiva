@@ -10,6 +10,13 @@ from collections import OrderedDict
 from smtplib import SMTPException
 
 from dateutil.relativedelta import relativedelta
+from django_tables2 import RequestConfig
+from oauthlib.oauth2 import TokenExpiredError
+
+## For OAuth client
+from requests_oauthlib import OAuth2Session
+from stdnum.ch import esr
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -26,12 +33,6 @@ from django.template import Context, loader
 from django.utils import timezone
 from django.utils.encoding import smart_str
 from django.utils.html import escape
-from django_tables2 import RequestConfig
-from oauthlib.oauth2 import TokenExpiredError
-
-## For OAuth client
-from requests_oauthlib import OAuth2Session
-from stdnum.ch import esr
 
 if hasattr(settings, "SHARE_PLOT") and settings.SHARE_PLOT:
     ## For Plotting
@@ -2506,10 +2507,10 @@ def create_contracts(request, letter=False):
                     rental_unit.name,
                 )
             data["filename_tag"] = "Wohnung_%s" % rental_unit.name
-            data["miete_netto"] = nformat(
-                rental_unit.rent_total - rental_unit.nk - rental_unit.nk_electricity, 0
+            data["miete_netto"] = nformat(rental_unit.rent_netto, 0)
+            data["miete_brutto"] = nformat(
+                rental_unit.rent_netto + rental_unit.nk + rental_unit.nk_electricity, 0
             )
-            data["miete_brutto"] = nformat(rental_unit.rent_total, 0)
             data["nk_akonto"] = nformat(rental_unit.nk, 0)
             data["nk_strom"] = nformat(rental_unit.nk_electricity, 0)
             data["mindestbelegung"] = nformat(rental_unit.min_occupancy, 0)
