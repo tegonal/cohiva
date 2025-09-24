@@ -2509,7 +2509,10 @@ def create_contracts(request, letter=False):
             data["filename_tag"] = "Wohnung_%s" % rental_unit.name
             data["miete_netto"] = nformat(rental_unit.rent_netto, 0)
             data["miete_brutto"] = nformat(
-                rental_unit.rent_netto + rental_unit.nk + rental_unit.nk_electricity, 0
+                (rental_unit.rent_netto if rental_unit.rent_netto else 0.0)
+                + (rental_unit.nk if rental_unit.nk else 0.0)
+                + (rental_unit.nk_electricity if rental_unit.nk_electricity else 0.0),
+                0,
             )
             data["nk_akonto"] = nformat(rental_unit.nk, 0)
             data["nk_strom"] = nformat(rental_unit.nk_electricity, 0)
@@ -3946,7 +3949,7 @@ def rental_unit_list_units(request, export_xls=True):
         "n_children",
         "ru_nk",
         "ru_nk_electricity",
-        "ru_rent_total",
+        "ru_rent_netto",
         "name",
         "first_name",
         "email",
@@ -3978,7 +3981,7 @@ def rental_unit_list_units(request, export_xls=True):
         obj.n_children = 0
         obj.ru_nk = ru.nk
         obj.ru_nk_electricity = ru.nk_electricity
-        obj.ru_rent_total = ru.rent_total
+        obj.ru_rent_netto = ru.rent_netto
 
         ## Default values
         obj.name = "(Leerstand)"
