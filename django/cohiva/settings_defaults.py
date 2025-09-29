@@ -8,6 +8,7 @@ import locale
 from pathlib import Path
 from urllib.parse import quote
 
+from django.contrib import admin
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 
@@ -300,6 +301,9 @@ TEMPLATES = [
                 "cohiva.context_processors.baseconfig",
                 "geno.context_processors.featurelist",
             ],
+            "libraries": {
+                "cohiva_admin": "cohiva.templatetags.admin",
+            },
         },
     },
 ]
@@ -722,6 +726,76 @@ SILENCED_SYSTEM_CHECKS = [
     "models.W036",
 ]
 
+COHIVA_ADMIN_NAVIGATION = [
+    {
+        "name": "Stammdaten",
+        "items": [
+            {
+                "type": "model",
+                "value": "geno.Address",
+                "name": "Adressen/Personen",
+                "icon": "contact_page",
+            },
+            {"type": "model", "value": "geno.Child", "name": "Kinder", "icon": "child_care"},
+            {
+                "type": "model",
+                "value": "geno.Tenant",
+                "name": "Externe Nutzer:innen",
+                "icon": "account_circle",
+            },
+            {
+                "type": "subgroup",
+                "name": "Erweiterte Funktionen",
+                "icon": "manufacturing",
+                "items": [
+                    {"type": "model", "value": "geno.GenericAttribute", "name": "Attribute"},
+                    {
+                        "type": "custom",
+                        "value": "geno:check_mailinglists",
+                        "name": "Mailverteiler überprüfen",
+                        "permission": "geno.canview_member_mailinglists",
+                    },
+                    {
+                        "type": "custom",
+                        "value": "geno:share_overview",
+                        "name": "Übersicht Beteiligungen",
+                        "permission": "geno.canview_share_overview",
+                    },
+                ],
+            },
+            {
+                "type": "subgroup",
+                "name": "Erweiterte Konfiguration",
+                "icon": "construction",
+                "items": [],
+            },
+        ],
+    },
+    {
+        "name": "Mitglieder",
+        "items": [
+            {
+                "type": "custom",
+                "value": "geno:member_overview",
+                "name": "Mitgliederspiegel",
+                "permission": "geno.canview_member_overview",
+            },
+            {
+                "type": "model",
+                "value": "geno.Member",
+                "name": "Mitglieder",
+                "icon": "person_check",
+            },
+            {
+                "type": "model",
+                "value": "geno.MemberAttribute",
+                "name": "Mitglieder Attribute",
+                "icon": "user_attributes",
+            },
+        ],
+    },
+]
+
 ## Unfold UI config
 UNFOLD = {
     "SITE_TITLE": "Cohiva " + COHIVA_SITE_NICKNAME,
@@ -822,119 +896,7 @@ UNFOLD = {
         "show_search": True,  # Search in applications and models names
         "command_search": False,  # Replace the sidebar search with the command search
         "show_all_applications": False,  # Dropdown with all applications and models
-        "navigation": lambda request: django.contrib.admin.site.navigation.generate_unfold_navigation(request),
-        "navigation_OFF": [
-            {
-                "title": _("Stammdaten"),
-                "separator": True,  # Top border
-                "collapsible": True,  # Collapsible group of links
-                "items": [
-                    {
-                        "title": _("Adressen/Personen"),
-                        "icon": "contact_page",  # Supported icon set: https://fonts.google.com/icons
-                        "link": reverse_lazy("admin:geno_address_changelist"),
-                        # "link_callback"
-                        "permission": lambda request: request.user.has_perm("geno.view_address"),
-                        # "badge": "sample_app.badge_callback",
-                        # "permission": lambda request: request.user.is_superuser,
-                        # "active:"  ## can be value or callable / callback-str
-                        #            ## if not set it's derived from request URL/query.
-                    },
-                    {
-                        "title": _("Kinder"),
-                        "icon": "child_care",  # Supported icon set: https://fonts.google.com/icons
-                        "link": reverse_lazy("admin:geno_child_changelist"),
-                    },
-                    {
-                        "title": _("Externe Nutzer:innen"),
-                        "icon": "account_circle",  # Supported icon set: https://fonts.google.com/icons
-                        "link": reverse_lazy("admin:geno_tenant_changelist"),
-                    },
-                    {
-                        "title": _("Erweiterte Funktionen"),
-                        "icon": "manufacturing",  # Supported icon set: https://fonts.google.com/icons
-                        # "link": reverse_lazy("admin:geno_genericattribute_changelist"),
-                        "is_subgroup": True,
-                        "collapsible": True,
-                        # "active": ## TODO: add function to determine if it has active subitems?
-                        "items": [
-                            {
-                                "title": "Attribute",
-                                "link": reverse_lazy("admin:geno_genericattribute_changelist"),
-                                "permission": lambda request: request.user.has_perm(
-                                    "geno.view_genericattribute"
-                                ),
-                            },
-                            {
-                                "title": "Mailinglisten überprüfen",
-                                "link": "/admin/geno/address/check_mailinglists/",  # reverse_lazy("geno:check_mailinglists"),
-                                "permission": lambda request: request.user.has_perm(
-                                    "geno.canview_member_mailinglists"
-                                ),
-                            },
-                            {
-                                "title": "Übersicht Beteiligungen",
-                                "link": reverse_lazy("geno:share_overview"),
-                                "permission": lambda request: request.user.has_perm(
-                                    "geno.canview_share_overview"
-                                ),
-                            },
-                        ],
-                    },
-                    {
-                        "title": _("Erweiterte Konfiguration"),
-                        "icon": "construction",  # Supported icon set: https://fonts.google.com/icons
-                        "link": reverse_lazy("admin:geno_building_changelist"),
-                    },
-                    #                    {
-                    #                        "title": _("Dashboard"),
-                    #                        "icon": "dashboard",  # Supported icon set: https://fonts.google.com/icons
-                    #                        "link": reverse_lazy("admin:index"),
-                    #                        "badge": "sample_app.badge_callback",
-                    #                        "permission": lambda request: request.user.is_superuser,
-                    #                    },
-                    #                    {
-                    #                        "title": _("Users"),
-                    #                        "icon": "people",
-                    #                        "link": reverse_lazy("admin:auth_user_changelist"),
-                    #                    },
-                ],
-            },
-            {
-                "title": _("Mitglieder"),
-                "separator": True,  # Top border
-                "collapsible": True,  # Collapsible group of links
-                "items": [
-                    {
-                        "title": _("Übersicht Mitglieder"),
-                        "icon": "person_check",  # Supported icon set: https://fonts.google.com/icons
-                        "link": reverse_lazy("admin:geno_address_changelist"),
-                        # "badge": "sample_app.badge_callback",
-                        # "permission": lambda request: request.user.is_superuser,
-                    },
-                    {
-                        "title": _("Mitglieder"),
-                        "icon": "person_edit",  # Supported icon set: https://fonts.google.com/icons
-                        "link": reverse_lazy("admin:geno_member_changelist"),
-                    },
-                    {
-                        "title": _("Mitglieder Attribute"),
-                        "icon": "user_attributes",  # Supported icon set: https://fonts.google.com/icons
-                        "link": reverse_lazy("admin:geno_memberattribute_changelist"),
-                    },
-                    # {
-                    #    "title": _("Erweiterte Funktionen"),
-                    #    "icon": "manufacturing",  # Supported icon set: https://fonts.google.com/icons
-                    #    "link": reverse_lazy("admin:geno_genericattribute_changelist"),
-                    # },
-                    {
-                        "title": _("Erweiterte Konfiguration"),
-                        "icon": "construction",  # Supported icon set: https://fonts.google.com/icons
-                        "link": reverse_lazy("admin:geno_memberattributetype_changelist"),
-                    },
-                ],
-            },
-        ],
+        "navigation": lambda request: admin.site.navigation.generate_unfold_navigation(request),
     },
     "TABS": [
         {

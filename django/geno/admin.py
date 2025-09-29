@@ -5,13 +5,9 @@ from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
 from django.http import HttpResponseRedirect
-from django.urls import path
-from django.views.generic import TemplateView
 from unfold.admin import ModelAdmin
-from unfold.views import UnfoldModelAdminViewMixin
 
 import geno.settings as geno_settings
-import geno.views as geno_views
 from geno.exporter import ExportXlsMixin
 from geno.models import (
     Address,
@@ -94,25 +90,6 @@ def set_title_mrs(modeladmin, request, queryset):
 
 
 set_title_mrs.short_description = "Anrede auf 'Frau' setzen"
-
-
-# Custom pages for unfold
-class CheckMailinglistsView(UnfoldModelAdminViewMixin, TemplateView):
-    title = "Check Mailinglisten"  # required: custom page header title
-    permission_required = "geno.canview_member_mailinglists"  # required: tuple of permissions
-    template_name = "geno/messages_unfold.html"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        parts = [
-            {"title": "Stammdaten"},
-            {"title": "Erweiterte Funktionen"},
-            {"title": "Check Mailinglisten"},
-        ]
-        # print(f"Changing parts {context['parts']} => {parts}")
-        context["response"] = geno_views.check_mailinglists()
-        context["parts"] = parts
-        return context
 
 
 @admin.register(Address)
@@ -201,14 +178,6 @@ class AddressAdmin(GenoBaseAdmin):
     ]
     search_fields = my_search_fields
     actions = GenoBaseAdmin.actions + [set_title_mr, set_title_mrs]
-
-    def get_urls(self):
-        custom_view = self.admin_site.admin_view(CheckMailinglistsView.as_view(model_admin=self))
-        new_path = [
-            path("check_mailinglists/", custom_view, name="check_mailinglists"),
-        ] + super().get_urls()
-        print(new_path)
-        return new_path
 
 
 def mark_flag_01(modeladmin, request, queryset):

@@ -10,5 +10,4 @@ class CohivaAdminSite(UnfoldAdminSite):
 
     def __init__(self, name: str = "admin") -> None:
         super().__init__(name)
-        print("CohivaAdminSite init")
         self.navigation = Navigation()

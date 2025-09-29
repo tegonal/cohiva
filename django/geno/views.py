@@ -11,7 +11,7 @@ from smtplib import SMTPException
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.contrib import admin, messages
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
@@ -24,7 +24,6 @@ from django.http import FileResponse, Http404, HttpResponse, HttpResponseRedirec
 from django.shortcuts import redirect, render
 from django.template import Context, loader
 from django.utils import timezone
-from django.utils.decorators import classonlymethod
 from django.utils.encoding import smart_str
 from django.utils.html import escape
 from django.views.generic import TemplateView
@@ -55,6 +54,7 @@ if hasattr(settings, "MAILMAN_API") and settings.MAILMAN_API["password"]:
     import mailmanclient
 
 import geno.settings as geno_settings
+from cohiva.views.admin import CohivaAdminViewMixin
 
 from .documents import send_member_mail_process
 from .exporter import (
@@ -439,91 +439,80 @@ def documents(request, doctype, obj_id, action):
     return render(request, "geno/messages.html", {"response": ret, "title": "Document error"})
 
 
-class CustomAdminViewMixin:
-    title = "Cohiva Administration"
-    template_name = "geno/messages_unfold.html"
-
-    def get_context_data(self, **kwargs):
-        self.request.current_app = "geno"
-        return super().get_context_data(
-            **kwargs, **admin.site.each_context(self.request), title=self.title, model_admon=None
-        )
-
-    @classonlymethod
-    def as_view(cls, **initkwargs):
-        return login_required(admin.site.admin_view(super().as_view(**initkwargs)))
-
-
-class ShareOverviewView(CustomAdminViewMixin, TemplateView):
+class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
     title = "Übersicht Beteiligungen"  # required: custom page header title
     permission_required = "geno.canview_share_overview"  # required: tuple of permissions
 
     def get_context_data(self, **kwargs):
         return super().get_context_data(
             **kwargs,
-            response=share_overview(self.request),
+            response=self.share_overview(),
         )
 
+    def share_overview(self):
+        ret = []
 
-def share_overview(request):
-    ret = []
+        try:
+            stype_AS = ShareType.objects.get(name="Anteilschein")
+        except ShareType.DoesNotExist:
+            stype_AS = None
 
-    try:
-        stype_AS = ShareType.objects.get(name="Anteilschein")
-    except ShareType.DoesNotExist:
-        stype_AS = None
-
-    if len(request.GET.get("date", "")) == 10:
-        reference_date = datetime.datetime.strptime(request.GET.get("date"), "%Y-%m-%d").date()
-        ret.append({"info": "Übersicht per %s" % (reference_date.strftime("%Y-%m-%d"))})
-    else:
-        reference_date = None
-        ret.append(
-            {
-                "info": (
-                    "Übersicht per heute (datum kann mit ?date=YYYY-MM-DD in URL angegeben werden)"
-                )
-            }
-        )
-
-    total = {"value": 0}
-    for share_type in ShareType.objects.all():
-        stat = {"quantity": 0, "value": 0, "last_date": None}
-        for s in get_active_shares(date=reference_date).filter(share_type=share_type):
-            stat["quantity"] += s.quantity
-            stat["value"] += s.quantity * s.value
-            if stat["last_date"] is None or s.date > stat["last_date"]:
-                stat["last_date"] = s.date
-        obj = [
-            "Anzahl: %s" % nformat(stat["quantity"], 0),
-            "Summe CHF: %s" % nformat(stat["value"]),
-            "Letzter Eingang: %s" % stat["last_date"],
-        ]
-        ret.append({"info": share_type, "objects": obj})
-        total["value"] += stat["value"]
-    ret.append({"info": "TOTAL", "objects": ["Summe CHF: %s" % nformat(total["value"])]})
-
-    if not reference_date and request.user.has_perm("geno.canview_share") and stype_AS:
-        non_members = []
-        for s in get_active_shares(date=reference_date).filter(share_type=stype_AS):
-            try:
-                m = Member.objects.get(name=s.name)
-                if m.date_leave:
-                    non_members.append(
-                        "%s (%d) [ausgetreten %s]"
-                        % (s.name, s.quantity, m.date_leave.strftime("%d.%m.%Y"))
-                    )
-            except Member.DoesNotExist:
-                non_members.append("%s (%d)" % (s.name, s.quantity))
-        if non_members:
+        if len(self.request.GET.get("date", "")) == 10:
+            reference_date = datetime.datetime.strptime(
+                self.request.GET.get("date"), "%Y-%m-%d"
+            ).date()
+            ret.append({"info": "Übersicht per %s" % (reference_date.strftime("%Y-%m-%d"))})
+        else:
+            reference_date = None
             ret.append(
-                {"info": "WARNUNG: Nichtmitglieder mit Anteilsscheinen:", "objects": non_members}
+                {
+                    "info": (
+                        "Übersicht per heute (datum kann mit ?date=YYYY-MM-DD in URL angegeben werden)"
+                    )
+                }
             )
 
-    if not reference_date and hasattr(settings, "SHARE_PLOT") and settings.SHARE_PLOT:
-        ret.append({"info": '<img src="/geno/share/overview/plot/" alt="Statistik">'})
+        total = {"value": 0}
+        for share_type in ShareType.objects.all():
+            stat = {"quantity": 0, "value": 0, "last_date": None}
+            for s in get_active_shares(date=reference_date).filter(share_type=share_type):
+                stat["quantity"] += s.quantity
+                stat["value"] += s.quantity * s.value
+                if stat["last_date"] is None or s.date > stat["last_date"]:
+                    stat["last_date"] = s.date
+            obj = [
+                "Anzahl: %s" % nformat(stat["quantity"], 0),
+                "Summe CHF: %s" % nformat(stat["value"]),
+                "Letzter Eingang: %s" % stat["last_date"],
+            ]
+            ret.append({"info": share_type, "objects": obj})
+            total["value"] += stat["value"]
+        ret.append({"info": "TOTAL", "objects": ["Summe CHF: %s" % nformat(total["value"])]})
 
-    return ret
+        if not reference_date and self.request.user.has_perm("geno.canview_share") and stype_AS:
+            non_members = []
+            for s in get_active_shares(date=reference_date).filter(share_type=stype_AS):
+                try:
+                    m = Member.objects.get(name=s.name)
+                    if m.date_leave:
+                        non_members.append(
+                            "%s (%d) [ausgetreten %s]"
+                            % (s.name, s.quantity, m.date_leave.strftime("%d.%m.%Y"))
+                        )
+                except Member.DoesNotExist:
+                    non_members.append("%s (%d)" % (s.name, s.quantity))
+            if non_members:
+                ret.append(
+                    {
+                        "info": "WARNUNG: Nichtmitglieder mit Anteilsscheinen:",
+                        "objects": non_members,
+                    }
+                )
+
+        if not reference_date and hasattr(settings, "SHARE_PLOT") and settings.SHARE_PLOT:
+            ret.append({"info": '<img src="/geno/share/overview/plot/" alt="Statistik">'})
+
+        return ret
 
 
 @login_required
@@ -2736,251 +2725,257 @@ def create_documents(request, default_doctype, objects=None, options=None):
 
 ## TODO: Refactor to ClassBased view
 ## Custom pages for unfold
-# class CheckMailinglistsView(UnfoldModelAdminViewMixin, TemplateView):
-#    title = "Check Mailinglisten"  # required: custom page header title
-#    permission_required = ('geno.canview_member_mailinglists') # required: tuple of permissions
-#    template_name = "geno/messages_unfold.html"
-#
-#    def get_context_data(self, **kwargs):
-#        context = super().get_context_data(**kwargs)
-#        context["response"] = check_mailinglist()
-#        return context
+class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
+    title = "Mailverteiler überprüfen"
+    permission_required = "geno.canview_member_mailinglists"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["response"] = self.check_mailinglists()
+        return context
 
-# @login_required
-def check_mailinglists():  # request):
-    # if not request.user.has_perm('geno.canview_member_mailinglists'):
-    #    return unauthorized(request)
+    def check_mailinglists(self):
+        if not hasattr(settings, "MAILMAN_API") or not settings.MAILMAN_API.get("password", None):
+            return [{"info": "FEHLER: Mailman-API ist nicht konfiguriert."}]
+            # return render(request, 'geno/messages.html', { 'response': [{'info': 'FEHLER: Mailman-API ist nicht konfiguriert.'}], 'title': 'Check Mailinglisten'})
 
-    if not hasattr(settings, "MAILMAN_API") or not settings.MAILMAN_API.get("password", None):
-        return [{"info": "FEHLER: Mailman-API ist nicht konfiguriert."}]
-        # return render(request, 'geno/messages.html', { 'response': [{'info': 'FEHLER: Mailman-API ist nicht konfiguriert.'}], 'title': 'Check Mailinglisten'})
+        mailman_client = mailmanclient.Client(
+            settings.MAILMAN_API["url"],
+            settings.MAILMAN_API["user"],
+            settings.MAILMAN_API["password"],
+        )
+        ml_warnings = []
+        ml_members = {}
+        for ml in ("genossenschaft", "bewohnende", "gewerbemietende", "wohnpost"):
+            mlist = mailman_client.get_list(f"{ml}@{settings.MAILMAN_API['lists_domain']}")
+            ml_members[ml] = []  # member.email for member in mlist.members ]
+            for member in mlist.members:
+                ml_members[ml].append(member.email)
+                if member.bounce_score:
+                    ml_warnings.append(
+                        f"[{ml}] {member.email} has bounce_score = {member.bounce_score}"
+                    )
+                if member.delivery_mode != "regular":
+                    ml_warnings.append(
+                        f"[{ml}] {member.email} has delivery_mode = {member.delivery_mode}"
+                    )
+                if member.role != "member":
+                    ml_warnings.append(f"[{ml}] {member.email} has role = {member.role}")
+                if member.subscription_mode != "as_address":
+                    ml_warnings.append(
+                        f"[{ml}] {member.email} has subscription_mode = {member.subscription_mode}"
+                    )
+                # address: http://localhost:9001/3.0/addresses/aperson@example.com
+                # bounce_score: 0
+                # delivery_mode: regular
+                # display_name: Anna Person
+                # email: aperson@example.com
+                # http_etag: ...
+                # last_warning_sent: 0001-01-01T00:00:00
+                # list_id: ant.example.com
+                # member_id: 4
+                # role: member
+                # self_link: http://localhost:9001/3.0/members/4
+                # subscription_mode: as_address
+                # total_warnings_sent: 0
+                # user: http://localhost:9001/3.0/users/3
 
-    mailman_client = mailmanclient.Client(
-        settings.MAILMAN_API["url"], settings.MAILMAN_API["user"], settings.MAILMAN_API["password"]
-    )
-    ml_warnings = []
-    ml_members = {}
-    for ml in ("genossenschaft", "bewohnende", "gewerbemietende", "wohnpost"):
-        mlist = mailman_client.get_list(f"{ml}@{settings.MAILMAN_API['lists_domain']}")
-        ml_members[ml] = []  # member.email for member in mlist.members ]
-        for member in mlist.members:
-            ml_members[ml].append(member.email)
-            if member.bounce_score:
-                ml_warnings.append(
-                    f"[{ml}] {member.email} has bounce_score = {member.bounce_score}"
+        ignore_emails = settings.GENO_CHECK_MAILINGLISTS["ignore_emails"]
+
+        ret = []
+
+        ## TODO: Also check gewerbe?
+        ## Get bewohnende and check Bewohnenden-ML
+        bewohnende = []
+        bewohnende_email = []
+        bewohnende_missing = []
+        for c in get_active_contracts():
+            include = False
+            for ru in c.rental_units.all():
+                if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
+                    include = True
+                    break
+            if include:
+                for adr in c.contractors.all():
+                    if adr not in bewohnende:
+                        bewohnende.append(adr)
+                ## Add children that have an email address
+                for child in c.children.exclude(name__email__exact=""):
+                    if child.name not in bewohnende:
+                        bewohnende.append(child.name)
+        for adr in bewohnende:
+            if not adr.email:
+                bewohnende_missing.insert(0, f"IGNORIERE {adr} (KEINE Email-Adresse)")
+            elif adr.email in bewohnende_email:
+                bewohnende_missing.insert(
+                    0, f"IGNORIERE {adr} (DOPPELTE Email-Adresse {adr.email})"
                 )
-            if member.delivery_mode != "regular":
-                ml_warnings.append(
-                    f"[{ml}] {member.email} has delivery_mode = {member.delivery_mode}"
-                )
-            if member.role != "member":
-                ml_warnings.append(f"[{ml}] {member.email} has role = {member.role}")
-            if member.subscription_mode != "as_address":
-                ml_warnings.append(
-                    f"[{ml}] {member.email} has subscription_mode = {member.subscription_mode}"
-                )
-            # address: http://localhost:9001/3.0/addresses/aperson@example.com
-            # bounce_score: 0
-            # delivery_mode: regular
-            # display_name: Anna Person
-            # email: aperson@example.com
-            # http_etag: ...
-            # last_warning_sent: 0001-01-01T00:00:00
-            # list_id: ant.example.com
-            # member_id: 4
-            # role: member
-            # self_link: http://localhost:9001/3.0/members/4
-            # subscription_mode: as_address
-            # total_warnings_sent: 0
-            # user: http://localhost:9001/3.0/users/3
-
-    ignore_emails = settings.GENO_CHECK_MAILINGLISTS["ignore_emails"]
-
-    ret = []
-
-    ## TODO: Also check gewerbe?
-    ## Get bewohnende and check Bewohnenden-ML
-    bewohnende = []
-    bewohnende_email = []
-    bewohnende_missing = []
-    for c in get_active_contracts():
-        include = False
-        for ru in c.rental_units.all():
-            if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
-                include = True
-                break
-        if include:
-            for adr in c.contractors.all():
-                if adr not in bewohnende:
-                    bewohnende.append(adr)
-            ## Add children that have an email address
-            for child in c.children.exclude(name__email__exact=""):
-                if child.name not in bewohnende:
-                    bewohnende.append(child.name)
-    for adr in bewohnende:
-        if not adr.email:
-            bewohnende_missing.insert(0, f"IGNORIERE {adr} (KEINE Email-Adresse)")
-        elif adr.email in bewohnende_email:
-            bewohnende_missing.insert(0, f"IGNORIERE {adr} (DOPPELTE Email-Adresse {adr.email})")
-        else:
-            bewohnende_email.append(adr.email)
-            if adr.email in ml_members["bewohnende"]:
-                ml_members["bewohnende"].remove(adr.email)
             else:
-                ## Bewohner*in nicht in bewohnenden-ML
-                bewohnende_missing.append(adr.email)
+                bewohnende_email.append(adr.email)
+                if adr.email in ml_members["bewohnende"]:
+                    ml_members["bewohnende"].remove(adr.email)
+                else:
+                    ## Bewohner*in nicht in bewohnenden-ML
+                    bewohnende_missing.append(adr.email)
 
-    ## Get members and check Genossenschaft-ML
-    members_email = []
-    genossenschaft_missing = []
-    wohnpost_missing = []
-    for member in Member.objects.all():
-        if not is_member(member.name):
-            continue
-        if not member.name.email:
-            genossenschaft_missing.insert(0, f"IGNORIERE {member.name} (KEINE Email-Adresse)")
-        elif member.name.email in members_email:
-            genossenschaft_missing.insert(
-                0, f"IGNORIERE {member.name} (DOPPELTE Email-Adresse {member.name.email})"
-            )
-        else:
-            members_email.append(member.name.email)
-            if member.name.email in ml_members["genossenschaft"]:
-                ml_members["genossenschaft"].remove(member.name.email)
+        ## Get members and check Genossenschaft-ML
+        members_email = []
+        genossenschaft_missing = []
+        wohnpost_missing = []
+        for member in Member.objects.all():
+            if not is_member(member.name):
+                continue
+            if not member.name.email:
+                genossenschaft_missing.insert(0, f"IGNORIERE {member.name} (KEINE Email-Adresse)")
+            elif member.name.email in members_email:
+                genossenschaft_missing.insert(
+                    0, f"IGNORIERE {member.name} (DOPPELTE Email-Adresse {member.name.email})"
+                )
             else:
-                ## Member not in geno-ML
-                genossenschaft_missing.append(member.name.email)
+                members_email.append(member.name.email)
+                if member.name.email in ml_members["genossenschaft"]:
+                    ml_members["genossenschaft"].remove(member.name.email)
+                else:
+                    ## Member not in geno-ML
+                    genossenschaft_missing.append(member.name.email)
+                if (
+                    member.name.email not in ml_members["wohnpost"]
+                    and member.name.email not in ignore_emails
+                ):
+                    wohnpost_missing.append(member.name.email)
+
+        ## Bewohnende / Gewerbemietende, welche weder auf Geno-Liste noch auf Wohnpost sind
+        wohnpost_and_geno_missing = []
+        for email in ml_members["bewohnende"]:
             if (
-                member.name.email not in ml_members["wohnpost"]
-                and member.name.email not in ignore_emails
+                email not in ml_members["wohnpost"]
+                and email not in wohnpost_missing
+                and email not in ignore_emails
             ):
-                wohnpost_missing.append(member.name.email)
+                wohnpost_and_geno_missing.append(email)
+        for email in ml_members["gewerbemietende"]:
+            if (
+                email not in ml_members["wohnpost"]
+                and email not in wohnpost_missing
+                and email not in wohnpost_and_geno_missing
+                and email not in ignore_emails
+            ):
+                wohnpost_and_geno_missing.append(email)
 
-    ## Bewohnende / Gewerbemietende, welche weder auf Geno-Liste noch auf Wohnpost sind
-    wohnpost_and_geno_missing = []
-    for email in ml_members["bewohnende"]:
-        if (
-            email not in ml_members["wohnpost"]
-            and email not in wohnpost_missing
-            and email not in ignore_emails
-        ):
-            wohnpost_and_geno_missing.append(email)
-    for email in ml_members["gewerbemietende"]:
-        if (
-            email not in ml_members["wohnpost"]
-            and email not in wohnpost_missing
-            and email not in wohnpost_and_geno_missing
-            and email not in ignore_emails
-        ):
-            wohnpost_and_geno_missing.append(email)
+        ## Get active/unsubscribed/bounced subscribsers from CreateSend
+        cs_newsletter = createsend.List(list_id=settings.CREATESEND_LIST_ID_NEWSLETTER)
+        cs_newsletter.auth({"api_key": settings.CREATESEND_API_KEY})
 
-    ## Get active/unsubscribed/bounced subscribsers from CreateSend
-    cs_newsletter = createsend.List(list_id=settings.CREATESEND_LIST_ID_NEWSLETTER)
-    cs_newsletter.auth({"api_key": settings.CREATESEND_API_KEY})
+        cs_newsletter_unsubscribed = []
+        page = 1
+        num_pages = 1
+        while page <= num_pages:
+            res = cs_newsletter.unsubscribed(page=page, page_size=1000)
+            num_pages = res.NumberOfPages
+            page += 1
+            for sub in res.Results:
+                cs_newsletter_unsubscribed.append(sub.EmailAddress.lower())
 
-    cs_newsletter_unsubscribed = []
-    page = 1
-    num_pages = 1
-    while page <= num_pages:
-        res = cs_newsletter.unsubscribed(page=page, page_size=1000)
-        num_pages = res.NumberOfPages
-        page += 1
-        for sub in res.Results:
-            cs_newsletter_unsubscribed.append(sub.EmailAddress.lower())
+        cs_newsletter_bounced = []
+        page = 1
+        num_pages = 1
+        while page <= num_pages:
+            res = cs_newsletter.bounced(page=page, page_size=1000)
+            num_pages = res.NumberOfPages
+            page += 1
+            for sub in res.Results:
+                cs_newsletter_bounced.append(sub.EmailAddress.lower())
 
-    cs_newsletter_bounced = []
-    page = 1
-    num_pages = 1
-    while page <= num_pages:
-        res = cs_newsletter.bounced(page=page, page_size=1000)
-        num_pages = res.NumberOfPages
-        page += 1
-        for sub in res.Results:
-            cs_newsletter_bounced.append(sub.EmailAddress.lower())
+        cs_newsletter_deleted = []
+        page = 1
+        num_pages = 1
+        while page <= num_pages:
+            res = cs_newsletter.deleted(page=page, page_size=1000)
+            num_pages = res.NumberOfPages
+            page += 1
+            for sub in res.Results:
+                cs_newsletter_deleted.append(sub.EmailAddress.lower())
 
-    cs_newsletter_deleted = []
-    page = 1
-    num_pages = 1
-    while page <= num_pages:
-        res = cs_newsletter.deleted(page=page, page_size=1000)
-        num_pages = res.NumberOfPages
-        page += 1
-        for sub in res.Results:
-            cs_newsletter_deleted.append(sub.EmailAddress.lower())
+        cs_newsletter_active = []
+        page = 1
+        num_pages = 1
+        while page <= num_pages:
+            res = cs_newsletter.active(page=page, page_size=1000)
+            num_pages = res.NumberOfPages
+            page += 1
+            for sub in res.Results:
+                cs_newsletter_active.append(sub.EmailAddress.lower())
 
-    cs_newsletter_active = []
-    page = 1
-    num_pages = 1
-    while page <= num_pages:
-        res = cs_newsletter.active(page=page, page_size=1000)
-        num_pages = res.NumberOfPages
-        page += 1
-        for sub in res.Results:
-            cs_newsletter_active.append(sub.EmailAddress.lower())
+        newsletter_missing_cs = []
+        newsletter_extra_cs_unsubscribed = []
+        newsletter_extra_cs_bounced = []
+        newsletter_extra_cs_deleted = []
+        for email in members_email:
+            if email in cs_newsletter_unsubscribed:
+                newsletter_extra_cs_unsubscribed.append(email)
+            elif email in cs_newsletter_bounced:
+                newsletter_extra_cs_bounced.append(email)
+            elif email in cs_newsletter_deleted:
+                newsletter_extra_cs_deleted.append(email)
+            elif email not in cs_newsletter_active:
+                newsletter_missing_cs.append(email)
 
-    newsletter_missing_cs = []
-    newsletter_extra_cs_unsubscribed = []
-    newsletter_extra_cs_bounced = []
-    newsletter_extra_cs_deleted = []
-    for email in members_email:
-        if email in cs_newsletter_unsubscribed:
-            newsletter_extra_cs_unsubscribed.append(email)
-        elif email in cs_newsletter_bounced:
-            newsletter_extra_cs_bounced.append(email)
-        elif email in cs_newsletter_deleted:
-            newsletter_extra_cs_deleted.append(email)
-        elif email not in cs_newsletter_active:
-            newsletter_missing_cs.append(email)
-
-    ret.append({"info": "Mitglied nicht in genossenschaft-ML:", "objects": genossenschaft_missing})
-    ret.append(
-        {
-            "info": "In genossenschaft-ML aber nicht Mitglied:",
-            "objects": ml_members["genossenschaft"],
-        }
-    )
-    ret.append({"info": "Bewohnende aber nicht in bewohnende-ML:", "objects": bewohnende_missing})
-    ret.append(
-        {"info": "In bewohnende-ML aber nicht Bewohnende:", "objects": ml_members["bewohnende"]}
-    )
-    ret.append(
-        {"info": "Mitglied aber NICHT in Newsletter(CS):", "objects": newsletter_missing_cs}
-    )
-    ret.append(
-        {
-            "info": "Mitglied aber UNSUBSCRIBED in Newsletter(CS):",
-            "objects": newsletter_extra_cs_unsubscribed,
-        }
-    )
-    ret.append(
-        {
-            "info": "Mitglied aber BOUNCED in Newsletter(CS):",
-            "objects": newsletter_extra_cs_bounced,
-        }
-    )
-    ret.append(
-        {
-            "info": "Mitglied aber DELETED in Newsletter(CS):",
-            "objects": newsletter_extra_cs_deleted,
-        }
-    )
-    ret.append(
-        {
-            "info": "In genossenschaft-ML aber nicht in Wohnpost (%s):" % len(wohnpost_missing),
-            "objects": wohnpost_missing,
-        }
-    )
-    ret.append(
-        {
-            "info": "Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s):"
-            % len(wohnpost_and_geno_missing),
-            "objects": wohnpost_and_geno_missing,
-        }
-    )
-    ret.append({"info": "Mailman warnings:", "objects": ml_warnings})
-    # return render(request, "geno/messages.html", {"response": ret, "title": "Check Mailinglisten"})
-    return ret
+        ret.append(
+            {"info": "Mitglied nicht in genossenschaft-ML:", "objects": genossenschaft_missing}
+        )
+        ret.append(
+            {
+                "info": "In genossenschaft-ML aber nicht Mitglied:",
+                "objects": ml_members["genossenschaft"],
+            }
+        )
+        ret.append(
+            {"info": "Bewohnende aber nicht in bewohnende-ML:", "objects": bewohnende_missing}
+        )
+        ret.append(
+            {
+                "info": "In bewohnende-ML aber nicht Bewohnende:",
+                "objects": ml_members["bewohnende"],
+            }
+        )
+        ret.append(
+            {"info": "Mitglied aber NICHT in Newsletter(CS):", "objects": newsletter_missing_cs}
+        )
+        ret.append(
+            {
+                "info": "Mitglied aber UNSUBSCRIBED in Newsletter(CS):",
+                "objects": newsletter_extra_cs_unsubscribed,
+            }
+        )
+        ret.append(
+            {
+                "info": "Mitglied aber BOUNCED in Newsletter(CS):",
+                "objects": newsletter_extra_cs_bounced,
+            }
+        )
+        ret.append(
+            {
+                "info": "Mitglied aber DELETED in Newsletter(CS):",
+                "objects": newsletter_extra_cs_deleted,
+            }
+        )
+        ret.append(
+            {
+                "info": "In genossenschaft-ML aber nicht in Wohnpost (%s):"
+                % len(wohnpost_missing),
+                "objects": wohnpost_missing,
+            }
+        )
+        ret.append(
+            {
+                "info": "Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s):"
+                % len(wohnpost_and_geno_missing),
+                "objects": wohnpost_and_geno_missing,
+            }
+        )
+        ret.append({"info": "Mailman warnings:", "objects": ml_warnings})
+        # return render(request, "geno/messages.html", {"response": ret, "title": "Check Mailinglisten"})
+        return ret
 
 
 ## TODO: Refactor to ClassBased view

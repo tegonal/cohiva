@@ -1,6 +1,6 @@
 from django.apps import apps
+from django.conf import settings
 from django.urls import reverse_lazy
-from django.utils.translation import gettext_lazy as _
 
 # from geno.admin import AddressAdmin, ChildAdmin
 
@@ -8,41 +8,40 @@ from django.utils.translation import gettext_lazy as _
 class Navigation:
     def __init__(self):
         self._nav_groups = []
+        for item in settings.COHIVA_ADMIN_NAVIGATION:
+            self.add_nav_group(item)
 
-        # Define Navigation Structure
-        g = self.add_nav_group(_("Stammdaten"))
-        g.add_item("geno.Address", title=_("Adressen/Personen"))
-        g.add_item("geno.Child", title=_("Kinder"))
-        sg = g.add_subgroup(_("Erweiterte Konfiguration"))
-        sg.add_item("geno.Attribute")
-
-    def add_nav_group(self, name):
-        group = NavGroup(name)
+    def add_nav_group(self, obj):
+        group = NavGroup(obj["name"], icon=obj.get("icon", None))
+        for item in obj["items"]:
+            if item["type"] == "subgroup":
+                group.add_subgroup(item)
+            else:
+                group.add_item(item)
         self._nav_groups.append(group)
-        return group
 
     def generate_unfold_navigation(self, request):
-        print("Generate navigation")
-        return [] #g.generate_unfold_navigation(request) for g in self._nav_groups]
+        return [g.generate_unfold_navigation(request) for g in self._nav_groups]
 
 
 class NavGroup:
-    def __init__(self, name, depth=0):
+    def __init__(self, name, depth=0, icon=None):
         self._name = name
+        self._icon = icon
         self._items = []
         if depth > 1:
             raise ValueError(f"Depth level {depth} is not supported.")
         self._depth = depth
 
-    def add_item(self, obj, title=None):
-        item = MenuItem(obj, title=title)
+    def add_item(self, obj):
+        item = MenuItem(obj)
         self._items.append(item)
-        return item
 
-    def add_subgroup(self, name):
-        subgroup = NavGroup(name, depth=self._depth + 1)
+    def add_subgroup(self, obj):
+        subgroup = NavGroup(obj["name"], depth=self._depth + 1, icon=obj.get("icon", None))
+        for item in obj["items"]:
+            subgroup.add_item(item)
         self._items.append(subgroup)
-        return subgroup
 
     def generate_unfold_navigation(self, request):
         ret = {
@@ -53,59 +52,60 @@ class NavGroup:
         }
         return ret
 
-    def generate_unfold_menuitem(self, request):
-        # Subgroup
+    def generate_unfold_menuitem(self, request):  # Subgroup
         ret = {
             "title": self._name,
-            "icon": "construction",  # Supported icon set: https://fonts.google.com/icons
             "link": None,
+            "collapsible": True,
+            "is_subgroup": True,
+            "items": [i.generate_unfold_menuitem(request) for i in self._items],
         }
+        if self._icon:
+            ret["icon"] = self._icon
         return ret
 
 
 class MenuItem:
-    def __init__(self, obj, title=None, link=None, permission=None):
-        self._obj = obj
-        self._title = title
-        self._link = link
-        self._permission = permission
+    def __init__(self, obj):
+        self._type = obj.get("type")
+        self._value = obj.get("value")
+        self._title = obj.get("name", None)
+        self._icon = obj.get("icon", None)
+        self._permission = obj.get("permission", None)
 
-    def get_mytitle(self, request):
+    def get_title(self):
         if not self._title:
-            self._title = "TEST"
-            # cls = apps.get_model(self._obj)
-            # self._title = str(cls)
-        print("Title")
+            return "UNKNOWN"
         return self._title
 
-    def get_link(self, request):
-        print(f"get link ({self._title})")
-        if not self._link:
-            cls = apps.get_model(self._obj)
-            self._link = reverse_lazy(
-                f"admin:{cls._meta.app_label}_{cls._meta.model_name}_changelist"
-            )
-        return self._link
+    def get_link(self):
+        if self._type == "model":
+            cls = apps.get_model(self._value)
+            link = reverse_lazy(f"admin:{cls._meta.app_label}_{cls._meta.model_name}_changelist")
+        elif self._type == "custom":
+            link = reverse_lazy(self._value)
+        else:
+            raise ValueError(f"Unknown type: {self._type}")
+        return link
 
     def get_permission(self, request):
-        if not self._permission:
-            cls = apps.get_model(self._obj)
-            self._permission = request.user.has_perm(
-                f"{cls._meta.app_label}.view_{cls._meta.model_name}"
-            )
-        return self._permission
+        if self._permission:
+            return request.user.has_perm(self._permission)
+        if self._type == "model":
+            cls = apps.get_model(self._value)
+            return request.user.has_perm(f"{cls._meta.app_label}.view_{cls._meta.model_name}")
+        return False
 
     def generate_unfold_menuitem(self, request):
         ret = {
             "title": self._title,
-            "icon": "contact_page",  # Supported icon set: https://fonts.google.com/icons
-            "link": lambda request: self.get_link(request),
-            "permission": lambda request: self.get_permission(request),
+            "link": self.get_link(),
+            # "link_callback",
+            "permission": lambda req: self.get_permission(req),
             # "badge": "sample_app.badge_callback",
+            # "active:"  ## can be value or callable / callback-str
+            #            ## if not set it's derived from request URL/query.
         }
+        if self._icon:
+            ret["icon"] = self._icon  # Supported icon set: https://fonts.google.com/icons
         return ret
-
-
-def generate_unfold_navigation(request):
-    nav = Navigation()
-    return nav.generate_unfold_navigation(request)

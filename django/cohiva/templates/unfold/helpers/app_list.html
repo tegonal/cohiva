@@ -1,10 +1,10 @@
-{% load i18n unfold %}
+{% load i18n unfold cohiva_admin %}
 
 {% if sidebar_navigation %}
     <div class="h-0 grow overflow-auto" data-simplebar>
         {% for group in sidebar_navigation %}
             {% if group.items %}
-                {% has_nav_item_active group.items as has_active %}
+                {% has_nav_or_subnav_item_active group.items as has_active %}
 
                 <div class="hidden mb-2 has-[ol]:has-[li]:block" {% if group.collapsible %}x-data="{navigationOpen: {% if has_active %}true{% else %}false{% endif %}}"{% endif %}>
                     {% if group.separator %}
