@@ -1,10 +1,11 @@
 import datetime
 
-import geno.settings as geno_settings
 from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
 from django.http import HttpResponseRedirect
+
+import geno.settings as geno_settings
 from geno.exporter import ExportXlsMixin
 from geno.models import (
     Address,

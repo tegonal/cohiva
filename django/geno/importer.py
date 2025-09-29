@@ -7,15 +7,14 @@ import re
 import subprocess
 import zipfile
 
-from openpyxl import load_workbook
-
-## Installed from custom (modified) python-sepa subdirectory
-from sepa import parser as sepa_parser
-
 from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.http import HttpResponse
+from openpyxl import load_workbook
+
+## Installed from custom (modified) python-sepa subdirectory
+from sepa import parser as sepa_parser
 
 from .models import (
     Address,

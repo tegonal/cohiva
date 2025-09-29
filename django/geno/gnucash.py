@@ -8,8 +8,11 @@ import warnings
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from smtplib import SMTPException
 
-## For PDF merging
-from cohiva.utils.pdf import PdfGenerator
+from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
+from django.db.models import Q
+from django.template import Context, loader
+from django.utils.html import escape
 from html2text import html2text
 
 ## For GnuCash and interest calc.
@@ -23,11 +26,9 @@ from stdnum.ch import esr
 from svglib.svglib import svg2rlg
 
 import geno.settings as geno_settings
-from django.conf import settings
-from django.core.mail import EmailMultiAlternatives
-from django.db.models import Q
-from django.template import Context, loader
-from django.utils.html import escape
+
+## For PDF merging
+from cohiva.utils.pdf import PdfGenerator
 
 from .models import (
     Address,
