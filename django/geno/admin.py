@@ -877,7 +877,6 @@ class RentalUnitAdmin(GenoBaseAdmin):
         ("area", "area_balcony", "area_add"),
         ("height", "volume"),
         ("rent_netto", "nk", "nk_electricity", "rent_total"),
-        ("rent_year"),
         ("share", "depot"),
         "note",
         "svg_polygon",
