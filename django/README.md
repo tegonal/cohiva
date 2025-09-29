@@ -2,21 +2,28 @@
 
 ## Install required system packages
 
-Example using `aptitude` on Debian 11:
+Example for Debian 11 (should work on most Debian/Ubuntu based systems):
 
-    aptitude install build-essential
-    aptitude install python3-dev
-    aptitude install python3-venv
-    aptitude install libmariadb-dev   ## or default-libmysqlclient-dev
-    aptitude install libfreetype-dev
-    aptitude install libjpeg-dev
-    aptitude install libffi-dev
-    aptitude install redis-server     ## for celery broker/result backend
-    aptitude install poppler-utils    ## (optional, for tests)
-    aptitude install xmlsec1	          ## for SAML 2.0 IDP (see SAML_IDP_CONFIG settings)
-    aptitude install libreoffice-writer   ## for PDF generation from .odt templates
+    sudo apt install build-essential
+    sudo apt install python3-dev
+    sudo apt install python3-venv
+    sudo apt install libmariadb-dev   ## or default-libmysqlclient-dev
+    sudo apt install libfreetype-dev
+    sudo apt install libjpeg-dev
+    sudo apt install libffi-dev
+    sudo apt install redis-server     ## for celery broker/result backend
+    sudo apt install poppler-utils    ## (optional, for tests)
+    sudo apt install xmlsec1	          ## for SAML 2.0 IDP (see SAML_IDP_CONFIG settings)
+    sudo apt install libreoffice-writer   ## for PDF generation from .odt templates
 
 NOTE: This list may not be complete. If you get errors when installing python packages in the next step, you might need to install additional packages, such as `libxml2-dev`.
+
+## Install locale
+
+Cohiva currently expects the `de_CH.UTF-8` locale to be installed. On a Debian/Ubuntu based system you can install it with the following commands, if it's missing:
+
+    sudo locale-gen de_CH.UTF-8
+    sudo update-locale
 
 ## Setup Python environment
 
@@ -39,9 +46,10 @@ Example for project `cohiva-demo`:
 
 ## Setup Development/Staging Database
 
-- Create a MariaDB/MySQL user (e.g. 'cohiva') and pick a database prefix (e.g. 'cohiva')
+- Install a MariaDB/MySQL server if you haven't one already (e.g. `sudo apt install mariadb-server`)
+- Create a MariaDB/MySQL user and pick a database prefix
 - Create the database `<DBPREFIX>_django_test` for development/staging.
-- Grant permissions for that database and also for `test_<DBPREFIX>_django_test`, which will be automatically created when running tests. For example:
+- Grant permissions for that database and also for `test_<DBPREFIX>_django_test`, which will be automatically created when running tests. For example (with `sudo mariadb`):
 ```
     CREATE USER 'cohiva'@'localhost' IDENTIFIED BY '<SECRET>';
     CREATE DATABASE `cohiva_django_test`;  -- dev/staging database

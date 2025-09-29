@@ -12,6 +12,9 @@ DB_HOSTNAME = "127.0.0.1"
 PROD_HOSTNAME = "demo"
 DOMAIN = "cohiva.ch"
 
+# Container IP address, if you run Cohiva in Docker (optional, comment out to disable).
+DOCKER_IP = "172.20.42.100"
+
 SITE_NAME = "Genossenschaft Musterweg"
 SITE_NICKNAME = "Musterweg"
 SITE_SECRET = "<SECRET>"

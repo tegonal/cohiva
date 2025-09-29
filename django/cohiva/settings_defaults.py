@@ -38,12 +38,13 @@ EMAIL_SUBJECT_PREFIX = f"[Cohiva {cbc.SITE_NICKNAME}] "
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
-    cbc.DOCKER_IP,
     "[::1]",
     "test." + cbc.DOMAIN,
     "test." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
     PORTAL_SECONDARY_HOST,
 ]
+if hasattr(cbc, "DOCKER_IP"):
+    ALLOWED_HOSTS.append(cbc.DOCKER_IP)
 # Developer hosts for debugging
 INTERNAL_IPS = ("localhost", "127.0.0.1")
 
