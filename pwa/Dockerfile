@@ -1,7 +1,7 @@
 # Multi-stage Dockerfile for Quasar PWA production deployment
 
 # Stage 1: Dependencies
-FROM node:24-alpine AS deps
+FROM node:24 AS deps
 WORKDIR /app
 
 # Copy Yarn 4 configuration files and package.json first
@@ -15,7 +15,7 @@ RUN corepack enable
 RUN yarn install --immutable
 
 # Stage 2: Builder
-FROM node:24-alpine AS builder
+FROM node:24 AS builder
 WORKDIR /app
 
 # Copy Yarn 4 configuration from deps stage
@@ -40,18 +40,11 @@ RUN yarn validate:config
 RUN yarn build:pwa
 
 # Stage 3: Production
-FROM node:24-alpine AS production
+FROM node:24-slim AS production
 WORKDIR /app
 
-# Copy package.json and yarn config for corepack
-COPY package.json yarn.lock ./
-COPY .yarnrc.yml ./
-
-# Enable corepack after copying config files
-RUN corepack enable
-
-# Install Quasar CLI globally for the serve command
-RUN yarn global add @quasar/cli
+# Install Quasar CLI globally using npm (Yarn 4 doesn't support global installs)
+RUN npm install -g @quasar/cli
 
 # Copy built PWA from builder stage
 COPY --from=builder /app/dist ./dist
