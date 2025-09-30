@@ -877,8 +877,7 @@ class RentalUnitAdmin(GenoBaseAdmin):
         ("building", "floor"),
         ("area", "area_balcony", "area_add"),
         ("height", "volume"),
-        ("rent_total", "nk", "nk_electricity"),
-        ("rent_year"),
+        ("rent_netto", "nk", "nk_electricity", "rent_total"),
         ("share", "depot"),
         "note",
         "svg_polygon",
@@ -892,7 +891,7 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "links",
         "backlinks",
     ]
-    readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
+    readonly_fields = ["ts_created", "ts_modified", "links", "backlinks", "rent_total"]
     list_display = [
         "name",
         "label",
@@ -902,7 +901,7 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "floor",
         "area",
         "area_add",
-        "rent_total",
+        "rent_netto",
         "nk",
         "share",
         "status",

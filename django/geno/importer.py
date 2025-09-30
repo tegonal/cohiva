@@ -1131,7 +1131,7 @@ def import_keller_from_file(empty_tables_first=False):
             else:
                 new_unit = RentalUnit()
                 new_unit.building = "Holligerhof 8"
-                new_unit.rent_total = 0.0
+                new_unit.rent_netto = 0.0
                 new_unit.floor = "Keller"
                 fields = []
                 linked_unit = None

@@ -671,11 +671,30 @@ COHIVA_REPORT_EMAIL = GENO_DEFAULT_EMAIL
 ## With the following option you can change the default configuration of the Django admin site
 # for the Cohiva models (fields, readonly_fields, list_display, list_filter)
 # COHIVA_ADMIN_FIELDS = {
-#   'geno.admin': {
-#        'RentalUnitAdmin.list_display': ['name', 'label', 'rental_type', 'rooms', 'floor',
-#        'area', 'area_add', 'rent_total', 'rent_year', 'nk', 'nk_electricity', 'share',
-#        'status', 'adit_serial', 'comment'],
-#   },
+#     "geno.admin": {
+#         "RentalUnitAdmin.fields": [
+#             "name",
+#             ("label", "label_short"),
+#             ("rental_type", "rooms", "min_occupancy"),
+#             ("building", "floor"),
+#             ("area", "area_balcony", "area_add"),
+#             ("height", "volume"),
+#             ("rent_netto", "nk", "nk_electricity", "rent_total"),
+#             "rent_year", # activate rent per year filed
+#             ("share", "depot"),
+#             "note",
+#             "svg_polygon",
+#             "description",
+#             "status",
+#             "adit_serial",
+#             "active",
+#             "comment",
+#             "ts_created",
+#             "ts_modified",
+#             "links",
+#             "backlinks",
+#         ],
+#     },
 # }
 
 ## Share settings
