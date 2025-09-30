@@ -1,11 +1,10 @@
 import datetime
 
+import geno.settings as geno_settings
 from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
 from django.http import HttpResponseRedirect
-
-import geno.settings as geno_settings
 from geno.exporter import ExportXlsMixin
 from geno.models import (
     Address,
@@ -961,10 +960,29 @@ class ContractAdminModelForm(forms.ModelForm):
             )
         return main_contact
 
+class VertragstypFilter(admin.SimpleListFilter):
+    title = 'Vertragstyp'
+    parameter_name = 'main_contract'
+
+    def lookups(self, request, model_admin):
+        # define the filter options
+        return (
+            ('hv', 'Hauptvertrag'),
+            ('zv', 'Zusatzvertrag'),
+        )
+
+    def queryset(self, request, queryset):
+        # apply the filter to the queryset
+        if self.value() == 'hv':
+            return queryset.filter(main_contract=None)
+        if self.value() == 'zv':
+            return queryset.filter(main_contract__isnull=False)
+
 
 class ContractAdmin(GenoBaseAdmin):
     form = ContractAdminModelForm
     fields = [
+        "main_contract",
         "contractors",
         "main_contact",
         "rental_units",
@@ -1001,6 +1019,7 @@ class ContractAdmin(GenoBaseAdmin):
         "comment",
     ]
     list_filter = [
+        VertragstypFilter,
         "state",
         "rental_units__rental_type",
         "rental_units__floor",
@@ -1016,6 +1035,19 @@ class ContractAdmin(GenoBaseAdmin):
         contract_set_startdate_nextmonth,
     ]
     filter_horizontal = ["contractors", "children", "rental_units"]
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        extra_context = extra_context or {}
+        obj = Contract.objects.get(id=object_id)
+        # only show "Add subcontract" button if this is a main contract
+        extra_context["show_addSubcontract"] = obj.main_contract is None
+        return self.changeform_view(request, object_id, form_url, extra_context)
+
+    def response_change(self, request, obj):
+        if "_addSubcontract" in request.POST:
+            # display add subcontract in admin with main contract preset
+            return HttpResponseRedirect(f"/admin/geno/contract/add/?main_contract={obj.pk}")
+        return super().response_change(request, obj)
 
 
 admin.site.register(Contract, ContractAdmin)

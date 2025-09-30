@@ -4,6 +4,14 @@ import math
 import uuid
 
 import select2.fields
+from filer.fields.file import FilerFileField
+
+import geno.settings as geno_settings
+from cohiva.utils.settings import (
+    get_default_email,
+    get_default_formal_choice,
+    get_default_mail_footer,
+)
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.models import User
@@ -18,14 +26,6 @@ from django.dispatch.dispatcher import receiver
 from django.template import Template
 from django.utils import timezone
 from django.utils.html import format_html, format_html_join, mark_safe
-from filer.fields.file import FilerFileField
-
-import geno.settings as geno_settings
-from cohiva.utils.settings import (
-    get_default_email,
-    get_default_formal_choice,
-    get_default_mail_footer,
-)
 from geno.model_fields import LowercaseEmailField
 from geno.utils import (
     is_member,
@@ -1297,6 +1297,15 @@ class RentalUnit(GenoBase):
 
 
 class Contract(GenoBase):
+    main_contract = select2.fields.ForeignKey(
+        'self',
+        verbose_name="Hauptvertrag",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="sub_contract",
+        overlay='Untervertrag'
+    )
     contractors = models.ManyToManyField(
         Address, verbose_name="Vertragspartner", related_name="address_contracts"
     )
