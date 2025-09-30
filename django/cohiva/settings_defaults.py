@@ -9,7 +9,6 @@ from pathlib import Path
 from urllib.parse import quote
 
 from django.contrib import admin
-from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 
 import cohiva.base_config as cbc
@@ -728,69 +727,89 @@ SILENCED_SYSTEM_CHECKS = [
 
 COHIVA_ADMIN_NAVIGATION = [
     {
-        "name": "Stammdaten",
+        "name": _("Stammdaten"),
         "items": [
             {
                 "type": "model",
                 "value": "geno.Address",
-                "name": "Adressen/Personen",
+                "name": _("Adressen/Personen"),
                 "icon": "contact_page",
             },
-            {"type": "model", "value": "geno.Child", "name": "Kinder", "icon": "child_care"},
+            {"type": "model", "value": "geno.Child", "icon": "child_care"},
             {
                 "type": "model",
                 "value": "geno.Tenant",
-                "name": "Externe Nutzer:innen",
+                "name": _("Externe Nutzer:innen"),
                 "icon": "account_circle",
             },
             {
                 "type": "subgroup",
-                "name": "Erweiterte Funktionen",
+                "name": _("Erweitert"),
                 "icon": "manufacturing",
                 "items": [
-                    {"type": "model", "value": "geno.GenericAttribute", "name": "Attribute"},
-                    {
-                        "type": "custom",
-                        "value": "geno:check_mailinglists",
-                        "name": "Mailverteiler überprüfen",
-                        "permission": "geno.canview_member_mailinglists",
-                    },
-                    {
-                        "type": "custom",
-                        "value": "geno:share_overview",
-                        "name": "Übersicht Beteiligungen",
-                        "permission": "geno.canview_share_overview",
-                    },
+                    {"type": "model", "value": "geno.GenericAttribute"},
+                    {"type": "view", "value": "geno:check_mailinglists"},
+                    {"type": "view", "value": "geno:export_carddav"},
+                    {"type": "model", "value": "portal.TenantAdmin"},
+                    {"type": "model", "value": "geno.Building"},
                 ],
             },
             {
                 "type": "subgroup",
-                "name": "Erweiterte Konfiguration",
+                "name": _("Erweiterte Konfiguration"),
                 "icon": "construction",
                 "items": [],
             },
         ],
     },
     {
-        "name": "Mitglieder",
+        "name": _("Mitglieder"),
         "items": [
             {
-                "type": "custom",
+                "type": "view",
                 "value": "geno:member_overview",
-                "name": "Mitgliederspiegel",
+                "name": _("Mitgliederspiegel"),
                 "permission": "geno.canview_member_overview",
             },
             {
-                "type": "model",
-                "value": "geno.Member",
-                "name": "Mitglieder",
-                "icon": "person_check",
+                "type": "tabgroup",
+                "items": [
+                    {"type": "model", "value": "geno.Member", "icon": "person_check"},
+                    {"type": "model", "value": "geno.MemberAttribute", "icon": "user_attributes"},
+                ],
             },
             {
-                "type": "model",
-                "value": "geno.MemberAttribute",
-                "name": "Mitglieder Attribute",
-                "icon": "user_attributes",
+                "type": "subgroup",
+                "name": _("Erweitert"),
+                "icon": "manufacturing",
+                "items": [
+                    {"type": "model", "value": "geno.MemberAttributeType"},
+                ],
+            },
+        ],
+    },
+    {
+        "name": _("Vermietung"),
+        "items": [
+            {"type": "model", "value": "geno.RentalUnit", "icon": "house"},
+            {"type": "model", "value": "geno.Contract", "icon": "contract"},
+        ],
+    },
+    {
+        "name": _("Inkasso"),
+        "items": [
+            {"type": "view", "value": "geno:add_payments", "icon": "money"},
+            {"type": "view", "value": "geno:create_invoice_manual", "icon": "invoice"},
+            {"type": "view", "value": "geno:create_invoice_rent", "icon": "invoice_house"},
+            {"type": "view", "value": "geno:debitors", "icon": "accounts"},
+            {
+                "type": "subgroup",
+                "name": _("Erweitert"),
+                "icon": "manufacturing",
+                "items": [
+                    {"type": "model", "value": "geno.Invoice"},
+                    {"type": "model", "value": "geno.InvoiceCategory"},
+                ],
             },
         ],
     },
@@ -807,7 +826,6 @@ UNFOLD = {
             "title": _("Cohiva Website"),
             "link": "https://cohiva.ch",
         },
-        # ...
     ],
     #    "SITE_URL": "/",
     #    # "SITE_ICON": lambda request: static("icon.svg"),  # both modes, optimise for 32px height
@@ -898,58 +916,5 @@ UNFOLD = {
         "show_all_applications": False,  # Dropdown with all applications and models
         "navigation": lambda request: admin.site.navigation.generate_unfold_navigation(request),
     },
-    "TABS": [
-        {
-            "models": [
-                "geno.address",
-            ],
-            "items": [
-                {
-                    "title": _("Liste"),
-                    "link": reverse_lazy("admin:geno_address_changelist"),
-                    # "permission": "sample_app.permission_callback",
-                },
-                {
-                    "title": _("Herunterladen"),
-                    "link": reverse_lazy("geno:address_export"),
-                    # "permission": "sample_app.permission_callback",
-                },
-            ],
-        },
-        {
-            "models": [
-                "geno.building",
-            ],
-            "items": [
-                {
-                    "title": _("Liegenschaften"),
-                    "link": reverse_lazy("admin:geno_building_changelist"),
-                    # "permission": "sample_app.permission_callback",
-                },
-            ],
-        },
-        {
-            "models": [
-                "geno.genericattribute",
-                "portal.tenantadmin",
-            ],
-            "items": [
-                {
-                    "title": _("Attribute"),
-                    "link": reverse_lazy("admin:geno_genericattribute_changelist"),
-                    # "permission": "sample_app.permission_callback",
-                },
-                {
-                    "title": _("Mailinglisten überprüfen"),
-                    "link": "/admin/geno/address/check_mailinglists/",  # reverse_lazy("geno:check_mailinglists"),
-                    # "permission": "sample_app.permission_callback",
-                },
-                {
-                    "title": _("Nutzer:innenadmins"),
-                    "link": reverse_lazy("admin:portal_tenantadmin_changelist"),
-                    # "permission": "sample_app.permission_callback",
-                },
-            ],
-        },
-    ],
+    "TABS": lambda request: admin.site.navigation.generate_unfold_tabs(request),
 }

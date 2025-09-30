@@ -72,6 +72,7 @@ class FutureDateFilter(SimpleListFilter):
             return queryset.exclude(date_end__lt=range_start).exclude(date_start__gt=range_end)
 
 
+@admin.register(Reservation)
 class ReservationAdmin(GenoBaseAdmin):
     model = Reservation
     fields = [
@@ -125,7 +126,7 @@ class ReservationAdmin(GenoBaseAdmin):
         "usage_type",
         "is_auto_blocker",
     ]
-    my_search_fields = [
+    search_fields = [
         "name__name",
         "contact__name",
         "contact__first_name",
@@ -136,7 +137,7 @@ class ReservationAdmin(GenoBaseAdmin):
         "key_number",
         "additional_information",
     ]
-    search_fields = my_search_fields
+
     formfield_overrides = {
         models.CharField: {"widget": TextInput(attrs={"size": "10"})},
     }
@@ -147,9 +148,7 @@ class ReservationAdmin(GenoBaseAdmin):
         return form
 
 
-admin.site.register(Reservation, ReservationAdmin)
-
-
+@admin.register(ReservationObject)
 class ReservationObjectAdmin(GenoBaseAdmin):
     model = ReservationObject
     fields = [
@@ -168,14 +167,12 @@ class ReservationObjectAdmin(GenoBaseAdmin):
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "reservation_type", "short_description", "cost"]
     list_filter = ["reservation_type", "usage_types"]
-    my_search_fields = ["name", "short_description", "description"]
-    search_fields = my_search_fields
+    search_fields = ["name", "short_description", "description"]
+
     filter_horizontal = ["usage_types"]
 
 
-admin.site.register(ReservationObject, ReservationObjectAdmin)
-
-
+@admin.register(ReservationType)
 class ReservationTypeAdmin(GenoBaseAdmin):
     model = ReservationType
     fields = [
@@ -197,11 +194,7 @@ class ReservationTypeAdmin(GenoBaseAdmin):
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "required_role", "active", "color"]
     list_filter = ["active", "required_role"]
-    my_search_fields = ["name"]
-    search_fields = my_search_fields
-
-
-admin.site.register(ReservationType, ReservationTypeAdmin)
+    search_fields = ["name"]
 
 
 class ReservationPriceInline(admin.TabularInline):
@@ -224,6 +217,7 @@ class ReservationPriceInline(admin.TabularInline):
 #        return field
 
 
+@admin.register(ReservationPrice)
 class ReservationPriceAdmin(GenoBaseAdmin):
     model = ReservationPrice
     fields = [
@@ -240,64 +234,49 @@ class ReservationPriceAdmin(GenoBaseAdmin):
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "usage_type", "priority", "cost"]
     list_filter = ["usage_type", "cost_type"]
-    my_search_fields = ["name", "usage_type__label", "usage_type__name"]
-    search_fields = my_search_fields
+    search_fields = ["name", "usage_type__label", "usage_type__name"]
 
 
-admin.site.register(ReservationPrice, ReservationPriceAdmin)
-
-
+@admin.register(ReservationUsageType)
 class ReservationUsageTypeAdmin(GenoBaseAdmin):
     model = ReservationUsageType
     fields = ["name", "label", "ts_created", "ts_modified", "links", "backlinks"]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "label"]
     list_filter = []
-    my_search_fields = ["name", "label"]
-    search_fields = my_search_fields
+    search_fields = ["name", "label"]
+
     inlines = [ReservationPriceInline]
 
 
-admin.site.register(ReservationUsageType, ReservationUsageTypeAdmin)
-
-
+@admin.register(ReportCategory)
 class ReportCategoryAdmin(GenoBaseAdmin):
     model = ReportCategory
     fields = ["name", "report_type", "ts_created", "ts_modified", "links", "backlinks"]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "report_type"]
     list_filter = ["report_type"]
-    my_search_fields = ["name"]
-    search_fields = my_search_fields
+    search_fields = ["name"]
 
 
-admin.site.register(ReportCategory, ReportCategoryAdmin)
-
-
+@admin.register(ReportType)
 class ReportTypeAdmin(GenoBaseAdmin):
     model = ReportType
     fields = ["name", "ts_created", "ts_modified", "links", "backlinks"]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name"]
     list_filter = []
-    my_search_fields = ["name"]
-    search_fields = my_search_fields
+    search_fields = ["name"]
 
 
-admin.site.register(ReportType, ReportTypeAdmin)
-
-
+@admin.register(ReportPicture)
 class ReportPictureAdmin(GenoBaseAdmin):
     model = ReportPicture
     fields = ["name", "image", "report", "ts_created", "ts_modified", "links", "backlinks"]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "image", "report"]
     list_filter = ["report__status"]
-    my_search_fields = ["name"]
-    search_fields = my_search_fields
-
-
-admin.site.register(ReportPicture, ReportPictureAdmin)
+    search_fields = ["name"]
 
 
 class ReportPictureInline(admin.TabularInline):
@@ -306,17 +285,14 @@ class ReportPictureInline(admin.TabularInline):
     extra = 0
 
 
+@admin.register(ReportLogEntry)
 class ReportLogEntryAdmin(GenoBaseAdmin):
     model = ReportLogEntry
     fields = ["name", "text", "user", "ts_created", "ts_modified", "links", "backlinks"]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "text", "user", "ts_modified"]
     list_filter = []
-    my_search_fields = ["name__name", "text"]
-    search_fields = my_search_fields
-
-
-admin.site.register(ReportLogEntry, ReportLogEntryAdmin)
+    search_fields = ["name__name", "text"]
 
 
 class ReportLogEntryInline(admin.TabularInline):
@@ -331,6 +307,7 @@ class ReportLogEntryInline(admin.TabularInline):
         return formset
 
 
+@admin.register(Report)
 class ReportAdmin(GenoBaseAdmin):
     model = Report
     fields = [
@@ -368,7 +345,7 @@ class ReportAdmin(GenoBaseAdmin):
         "report_date",
         "status_date",
     ]
-    my_search_fields = [
+    search_fields = [
         "id",
         "name",
         "contact__name",
@@ -377,8 +354,5 @@ class ReportAdmin(GenoBaseAdmin):
         "rental_unit__name",
         "text",
     ]
-    search_fields = my_search_fields
+
     inlines = [ReportPictureInline, ReportLogEntryInline]
-
-
-admin.site.register(Report, ReportAdmin)

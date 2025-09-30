@@ -1,8 +1,6 @@
 from django.apps import apps
 from django.conf import settings
-from django.urls import reverse_lazy
-
-# from geno.admin import AddressAdmin, ChildAdmin
+from django.urls import NoReverseMatch, Resolver404, resolve, reverse
 
 
 class Navigation:
@@ -12,10 +10,12 @@ class Navigation:
             self.add_nav_group(item)
 
     def add_nav_group(self, obj):
-        group = NavGroup(obj["name"], icon=obj.get("icon", None))
-        for item in obj["items"]:
-            if item["type"] == "subgroup":
+        group = NavGroup(obj.get("name", "Group"), icon=obj.get("icon", None))
+        for item in obj.get("items", []):
+            if item.get("type", None) == "subgroup":
                 group.add_subgroup(item)
+            elif item.get("type", None) == "tabgroup":
+                group.add_subgroup(item, tabs=True)
             else:
                 group.add_item(item)
         self._nav_groups.append(group)
@@ -23,12 +23,19 @@ class Navigation:
     def generate_unfold_navigation(self, request):
         return [g.generate_unfold_navigation(request) for g in self._nav_groups]
 
+    def generate_unfold_tabs(self, request):
+        ret = []
+        for group in self._nav_groups:
+            ret.extend(group.generate_unfold_tabs(request))
+        return ret
+
 
 class NavGroup:
-    def __init__(self, name, depth=0, icon=None):
+    def __init__(self, name, depth=0, icon=None, tabs=False):
         self._name = name
         self._icon = icon
         self._items = []
+        self._tabs = tabs
         if depth > 1:
             raise ValueError(f"Depth level {depth} is not supported.")
         self._depth = depth
@@ -37,9 +44,14 @@ class NavGroup:
         item = MenuItem(obj)
         self._items.append(item)
 
-    def add_subgroup(self, obj):
-        subgroup = NavGroup(obj["name"], depth=self._depth + 1, icon=obj.get("icon", None))
-        for item in obj["items"]:
+    def add_subgroup(self, obj, tabs=False):
+        subgroup = NavGroup(
+            obj.get("name", "Subgroup"),
+            depth=self._depth + 1,
+            icon=obj.get("icon", None),
+            tabs=tabs,
+        )
+        for item in obj.get("items", []):
             subgroup.add_item(item)
         self._items.append(subgroup)
 
@@ -53,6 +65,9 @@ class NavGroup:
         return ret
 
     def generate_unfold_menuitem(self, request):  # Subgroup
+        if self._tabs and len(self._items):
+            ## For tab groups we take the first tab as the menu item
+            return self._items[0].generate_unfold_menuitem(request)
         ret = {
             "title": self._name,
             "link": None,
@@ -64,6 +79,21 @@ class NavGroup:
             ret["icon"] = self._icon
         return ret
 
+    def generate_unfold_tabs(self, request):
+        if self._tabs:
+            tabs = {"models": [], "items": []}
+            for item in self._items:
+                tabs["models"].append(item.get_tab_model())
+                tabs["items"].append(item.generate_unfold_menuitem(request))
+            return [tabs]
+        ret = []
+        for group in self._items:
+            if isinstance(group, NavGroup):
+                tabs = group.generate_unfold_tabs(request)
+                if tabs:
+                    ret.extend(tabs)
+        return ret
+
 
 class MenuItem:
     def __init__(self, obj):
@@ -72,6 +102,29 @@ class MenuItem:
         self._title = obj.get("name", None)
         self._icon = obj.get("icon", None)
         self._permission = obj.get("permission", None)
+        self._cls = None
+
+    def determine_missing_values(self):
+        if self._type == "model":
+            if not self._cls:
+                self._cls = apps.get_model(self._value)
+            if not self._permission:
+                self._permission = f"{self._cls._meta.app_label}.view_{self._cls._meta.model_name}"
+            if not self._title:
+                self._title = self._cls._meta.verbose_name_plural
+        elif self._type == "view":
+            if not self._cls:
+                try:
+                    view = resolve(reverse(self._value)).func
+                except (NoReverseMatch, Resolver404):
+                    view = None
+                if hasattr(view, "view_class"):
+                    self._cls = view.view_class
+            if self._cls:
+                if not self._permission and hasattr(self._cls, "permission_required"):
+                    self._permission = self._cls.permission_required
+                if not self._title and hasattr(self._cls, "title"):
+                    self._title = self._cls.title
 
     def get_title(self):
         if not self._title:
@@ -80,10 +133,14 @@ class MenuItem:
 
     def get_link(self):
         if self._type == "model":
-            cls = apps.get_model(self._value)
-            link = reverse_lazy(f"admin:{cls._meta.app_label}_{cls._meta.model_name}_changelist")
-        elif self._type == "custom":
-            link = reverse_lazy(self._value)
+            link = reverse(
+                f"admin:{self._cls._meta.app_label}_{self._cls._meta.model_name}_changelist"
+            )
+        elif self._type == "view":
+            try:
+                link = reverse(self._value)
+            except NoReverseMatch:
+                link = ""
         else:
             raise ValueError(f"Unknown type: {self._type}")
         return link
@@ -91,12 +148,10 @@ class MenuItem:
     def get_permission(self, request):
         if self._permission:
             return request.user.has_perm(self._permission)
-        if self._type == "model":
-            cls = apps.get_model(self._value)
-            return request.user.has_perm(f"{cls._meta.app_label}.view_{cls._meta.model_name}")
         return False
 
     def generate_unfold_menuitem(self, request):
+        self.determine_missing_values()
         ret = {
             "title": self._title,
             "link": self.get_link(),
@@ -109,3 +164,9 @@ class MenuItem:
         if self._icon:
             ret["icon"] = self._icon  # Supported icon set: https://fonts.google.com/icons
         return ret
+
+    def get_tab_model(self):
+        self.determine_missing_values()
+        if self._cls:
+            return f"{self._cls._meta.app_label}.{self._cls._meta.model_name}"
+        return None

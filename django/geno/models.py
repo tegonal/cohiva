@@ -45,6 +45,7 @@ class GenoBase(models.Model):
     ts_modified = models.DateTimeField("Geändert", auto_now=True)
 
     ## List objects linked to by this instance.
+    @admin.display(description="Links")
     def links(self):
         foreign_key_fields = []
         for field in self._meta.get_fields():
@@ -76,9 +77,8 @@ class GenoBase(models.Model):
             "<ul>{}</ul>", format_html_join("\n", "<li>{}: {}</li>", foreign_key_fields)
         )
 
-    links.short_description = "Links"
-
     ## List objects that link to this instance.
+    @admin.display(description="Backlinks")
     def backlinks(self):
         if self.id is None:
             return ""
@@ -134,11 +134,10 @@ class GenoBase(models.Model):
                 models_done.append(rfield.related_model)
         return format_html("<ul>{}</ul>", format_html_join("\n", "<li>{}: {}</li>", items))
 
-    backlinks.short_description = "Backlinks"
-
     def get_object_actions(self):
         return []
 
+    @admin.display(description="Aktionen")
     def object_actions(self):
         actions = self.get_object_actions()
         if not actions:
@@ -158,8 +157,6 @@ class GenoBase(models.Model):
             action_buttons.append(f"<li>{button_html}</li>")
         action_list = "\n".join(action_buttons)
         return mark_safe(f'<ul class="cohiva_object-actions">{action_list}</ul>')
-
-    object_actions.short_description = "Aktionen"
 
     def save_as_copy(self):
         if hasattr(self, "name") and isinstance(self.name, str):
@@ -306,6 +303,7 @@ class Address(GenoBase):
             return "%s, %s" % (self.name, self.first_name)
 
     @property
+    @admin.display(description="Strasse/Nr.")
     def street(self):
         ret = ""
         if self.street_name:
@@ -322,22 +320,17 @@ class Address(GenoBase):
                 ret += f" {self.po_box_number}"
         return ret
 
-    street.fget.short_description = "Strasse/Nr."
-
     @property
+    @admin.display(description="PLZ/Ort")
     def city(self):
         if self.city_zipcode and self.city_name:
             return f"{self.city_zipcode} {self.city_name}"
         else:
             return self.city_name
 
-    city.fget.short_description = "PLZ/Ort"
-
+    @admin.display(description="Person/Organisation")
     def list_name(self):
         return self.__str__()
-
-    list_name.short_description = "Person/Organisation"
-    # list_name.admin_order_field = 'name'
 
     def get_filename_str(self):
         if self.organization:
@@ -651,7 +644,7 @@ def sync_user(sender, instance, created, **kwargs):
 
 
 class Child(GenoBase):
-    name = select2.fields.OneToOneField(
+    name = models.OneToOneField(
         Address, verbose_name="Person", on_delete=models.CASCADE, related_name="address_child"
     )
     presence = models.DecimalField("Anwesenheit (Tage/Woche)", max_digits=2, decimal_places=1)
@@ -661,6 +654,7 @@ class Child(GenoBase):
         "Import-ID", max_length=255, unique=True, null=True, default=None, blank=True
     )
 
+    @admin.display(description="Alter", ordering="name__date_birth")
     def age(self, precision=1):
         if self.name.date_birth:
             age_years = (datetime.date.today() - self.name.date_birth) / datetime.timedelta(
@@ -672,9 +666,6 @@ class Child(GenoBase):
             return nformat(age_years, precision)
         else:
             return "-"
-
-    age.short_description = "Alter"
-    age.admin_order_field = "name__date_birth"
 
     def __str__(self):
         if self.name:
@@ -932,13 +923,12 @@ class Share(GenoBase):
     ## Reverse relation to Documents
     documents = GenericRelation("Document", related_query_name="shares")
 
+    @admin.display(description="Zinssatz")
     def interest(self):
         if self.interest_mode == "Standard":
             return self.share_type.standard_interest
         else:
             return self.manual_interest
-
-    interest.short_description = "Zinssatz"
 
     def __str__(self):
         extra_info = self.share_type
@@ -959,6 +949,7 @@ class Share(GenoBase):
             )
         return actions
 
+    @admin.display(description="Total")
     def value_total(self):
         if self.quantity and self.value:
             return self.quantity * self.value
@@ -972,8 +963,6 @@ class Share(GenoBase):
         if self.attached_to_building is not None and self.attached_to_contract is not None:
             raise ValidationError("Vertrag und Liegeneschaft dürfen nicht beide ausgewählt sein.")
         super().clean(*args, **kwargs)
-
-    value_total.short_description = "Total"
 
     class Meta:
         verbose_name = "Beteiligung"
