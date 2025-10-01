@@ -23,9 +23,6 @@ dist
 .DS_Store
 Thumbs.db
 
-# Generated files
-example-config/generated
-
 # Vendor files
 vendor/
 *.min.js

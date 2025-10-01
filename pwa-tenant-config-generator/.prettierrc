@@ -24,9 +24,21 @@
       }
     },
     {
+      "files": "*.scss",
+      "options": {
+        "parser": "scss"
+      }
+    },
+    {
       "files": "*.md",
       "options": {
         "parser": "markdown"
+      }
+    },
+    {
+      "files": "*.html",
+      "options": {
+        "parser": "html"
       }
     }
   ]

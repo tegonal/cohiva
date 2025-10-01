@@ -16,8 +16,8 @@
     "test": "echo \"No test specified\" && exit 0",
     "lint": "eslint -c ./eslint.config.js \"./src/**/*.ts\"",
     "lint:fix": "eslint -c ./eslint.config.js \"./src/**/*.ts\" --fix",
-    "format": "prettier --write \"**/*.{js,ts,mjs,cjs,json,md}\"",
-    "format:check": "prettier --check \"**/*.{js,ts,mjs,cjs,json,md}\"",
+    "format": "prettier --write \"**/*.{js,ts,mjs,cjs,scss,css,html,md,json,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{js,ts,mjs,cjs,scss,css,html,md,json,yml,yaml}\"",
     "type-check": "tsc --noEmit",
     "check": "yarn type-check && yarn lint:fix && yarn format",
     "self-update": "yarn set version stable && yarn"

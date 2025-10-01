@@ -308,7 +308,8 @@ async function generatePWAAssets(
   console.log(`   Running pwa-asset-generator (standard icons)...`)
 
   // Detect CI environment and add --no-sandbox flag if needed
-  const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true'
+  const isCI =
+    process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true'
   const sandboxFlag = isCI ? '-n' : ''
 
   const iconBaseCmd =

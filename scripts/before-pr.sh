@@ -40,8 +40,6 @@ function checkPython() {
 function checkPWA() {
 	(
 		cd "$projectDir/pwa"
-		yarn install
-		yarn setup:ci-config
 		yarn build
 		yarn lint
 		yarn format:check

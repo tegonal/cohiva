@@ -5,6 +5,7 @@ Generates tenant-specific PWA assets from config files (settings, theme, logos).
 ## Important: Commit Generated Assets
 
 **All generated assets must be committed to the repository.** The `overlay/` directory contains pre-generated assets that are required for:
+
 - CI/CD pipelines (no asset generation in CI)
 - Docker container builds
 - Development setup
@@ -122,6 +123,7 @@ The `overlay/` directory must be committed because:
 4. **Reproducibility**: Pre-generated assets ensure consistent output across environments
 
 **Developer Workflow:**
+
 1. Edit config files (settings.ts, theme.ts, logos)
 2. Run `yarn generate --config-dir path/to/config`
 3. Review generated files in `overlay/`
