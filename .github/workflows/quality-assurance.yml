@@ -36,5 +36,6 @@ jobs:
           ln -s website_example ./django/website
           corepack enable
           ( cd pwa && yarn install )
+          ( cd pwa && yarn setup:dev-config )
       - name: before-pr.sh
         run: ./scripts/before-pr.sh
