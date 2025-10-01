@@ -1177,20 +1177,20 @@ class Registration(GenoBase):
         verbose_name = "Anmeldung"
         verbose_name_plural = "Anmeldungen"
 
+RENTAL_UNIT_TYPES = (
+    ("Wohnung", "Wohnung"),
+    ("Grosswohnung", "Grosswohnung"),
+    ("Jokerzimmer", "Jokerzimmer"),
+    ("Selbstausbau", "Selbstausbau"),
+    ("Kellerabteil", "Kellerabteil"),
+    ("Gewerbe", "Gewerbefläche"),
+    ("Lager", "Lagerraum"),
+    ("Hobby", "Hobbyraum"),
+    ("Gemeinschaft", "Gemeinschaftsräume/Diverses"),
+    ("Parkplatz", "Parkplatz"),
+)
 
 class RentalUnit(GenoBase):
-    RENTAL_UNIT_TYPES = (
-        ("Wohnung", "Wohnung"),
-        ("Grosswohnung", "Grosswohnung"),
-        ("Jokerzimmer", "Jokerzimmer"),
-        ("Selbstausbau", "Selbstausbau"),
-        ("Kellerabteil", "Kellerabteil"),
-        ("Gewerbe", "Gewerbefläche"),
-        ("Lager", "Lagerraum"),
-        ("Hobby", "Hobbyraum"),
-        ("Gemeinschaft", "Gemeinschaftsräume/Diverses"),
-        ("Parkplatz", "Parkplatz"),
-    )
     name = models.CharField("Nr.", max_length=255)
     label = models.CharField("Bezeichnung", max_length=50, blank=True)
     label_short = models.CharField("Kurzbezeichnung", blank=True, max_length=50)
@@ -1776,3 +1776,57 @@ class ContentTemplate(GenoBase):
 
     def __str__(self):
         return f"{self.template_type}: {self.name}"
+
+class TenantsView(GenoBase):
+
+    bu_name = models.CharField("Liegenschaft", max_length=100, unique=True)
+    ru_name = models.CharField("Mietobjekt Nr.", max_length=255)
+    ru_label = models.CharField("Mietobjekt Bezeichnung", max_length=50, blank=True)
+    ru_type = models.CharField("Mietobjekt Typ", max_length=50, choices=RENTAL_UNIT_TYPES)
+    ru_floor = models.CharField("Mietobjekt Stockwerk", max_length=50, blank=True)
+    ru_rooms = models.DecimalField(
+        "Mietobjekt Anzahl Zimmer", max_digits=5, decimal_places=1, null=True, blank=True
+    )
+    ru_area = models.DecimalField(
+        "Mietobjekt Fläche (m2)", max_digits=10, decimal_places=2, null=True, blank=True
+    )
+
+    organization = models.CharField("Mieter*in Organisation", max_length=100, blank=True)
+    ad_name = models.CharField("Mieter*in Nachname", max_length=30)
+    ad_first_name = models.CharField("Mieter*in Vorname", max_length=30)
+    ad_title = models.CharField("Mieter*in Titel", max_length=50, blank=True)
+    ad_email = models.CharField("Mieter*in Email", max_length=100, blank=True)
+    c_ischild = models.BooleanField("Ist Kind", default=False)
+    c_age = models.IntegerField("Alter Kind", null=True, blank=True)
+    presence = models.CharField("Anwesenheit Kind", max_length=50, blank=True)
+    ad_date_birth = models.DateField("Mieter*in Geburtsdatum", null=True, blank=True)
+    ad_city = models.CharField("Mieter*in Ort", max_length=100, blank=True)
+    ad_street = models.CharField("Mieter*in Strasse", max_length=100, blank=True)
+    ad_tel1 = models.CharField("Mieter*in Telefon 1", max_length=30, blank=True)
+    ad_tel2 = models.CharField("Mieter*in Telefon 2", max_length=30, blank=True)
+    p_hometown = models.CharField("Mieter*in Heimatort", max_length=100, blank=True)
+    p_occupation = models.CharField("Mieter*in Beruf", max_length=100, blank=True)
+    p_membership_date = models.DateField("Mieter*in Mitglied seit", null=True, blank=True)
+
+    building = select2.fields.ForeignKey(
+        "Building", verbose_name="Liegenschaft", on_delete=models.CASCADE
+    )
+    rental_unit = select2.fields.ForeignKey(
+        "RentalUnit", verbose_name="Mietobjekt", on_delete=models.CASCADE
+    )
+    contract = select2.fields.ForeignKey(
+        Contract, verbose_name="Vertrag", on_delete=models.CASCADE
+    )
+
+    class Meta:
+        db_table = 'geno_TenantsView'
+        managed = False
+        verbose_name = "Mieter*innenspiegel"
+        verbose_name_plural = "Mieter*innen"
+        ordering = ["bu_name", "ru_name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["building", "rental_unit", "tenant", "contract"],
+                name="unique_tenantsview_entry",
+            ),
+        ]

@@ -31,6 +31,7 @@ from geno.models import (
     Share,
     ShareType,
     Tenant,
+    TenantsView,
 )
 
 
@@ -1200,6 +1201,154 @@ class InvoiceAdmin(GenoBaseAdmin):
 
 admin.site.register(Invoice, InvoiceAdmin)
 
+class TenantsViewAdmin(GenoBaseAdmin):
+    fields = [
+        "bu_name",
+        "ru_name",
+        "ru_label",
+        "ru_type",
+        "ru_floor",
+        "ru_rooms",
+        "ru_area",
+        "organization",
+        "ad_name",
+        "ad_first_name",
+        "ad_title",
+        "ad_email",
+        "c_ischild",
+        "c_age",
+        "presence",
+        "ad_date_birth",
+        "ad_city",
+        "ad_street",
+        "ad_tel1",
+        "ad_tel2",
+        "p_hometown",
+        "p_occupation",
+        "p_membership_date",
+    ]
+
+    exportablefields = [
+        "bu_name",
+        "ru_name",
+        "ru_label",
+        "ru_type",
+        "ru_floor",
+        "ru_rooms",
+        "ru_area",
+        "organization",
+        "ad_name",
+        "ad_first_name",
+        "ad_title",
+        "ad_email",
+        "c_ischild",
+        "c_age",
+        "presence",
+        "ad_date_birth",
+        "ad_city",
+        "ad_street",
+        "ad_tel1",
+        "ad_tel2",
+        "p_hometown",
+        "p_occupation",
+        "p_membership_date",
+    ]
+
+    readonly_fields = [
+        "bu_name",
+        "ru_name",
+        "ru_label",
+        "ru_type",
+        "ru_floor",
+        "ru_rooms",
+        "ru_area",
+        "organization",
+        "ad_name",
+        "ad_first_name",
+        "ad_title",
+        "ad_email",
+        "c_ischild",
+        "c_age",
+        "presence",
+        "ad_date_birth",
+        "ad_city",
+        "ad_street",
+        "ad_tel1",
+        "ad_tel2",
+        "p_hometown",
+        "p_occupation",
+        "p_membership_date",
+    ]
+
+    list_display = [
+        "bu_name",
+        "ru_name",
+        "ru_label",
+        "ru_type",
+        "ru_floor",
+        "ru_rooms",
+        "ru_area",
+        "organization",
+        "ad_name",
+        "ad_first_name",
+        "ad_title",
+        "ad_email",
+        "c_ischild",
+        "c_age",
+        "presence",
+        "ad_date_birth",
+        "ad_city",
+        "ad_street",
+        "ad_tel1",
+        "ad_tel2",
+        "p_hometown",
+        "p_occupation",
+        "p_membership_date",
+    ]
+
+    my_search_fields = [
+        "bu_name",
+        "ru_name",
+        "ru_label",
+        "ru_type",
+        "ru_floor",
+        "ru_rooms",
+        "ru_area",
+        "organization",
+        "ad_name",
+        "ad_first_name",
+        "ad_title",
+        "ad_email",
+        "c_ischild",
+        "c_age",
+        "presence",
+        "ad_date_birth",
+        "ad_city",
+        "ad_street",
+        "ad_tel1",
+        "ad_tel2",
+        "p_hometown",
+        "p_occupation",
+        "p_membership_date",
+    ]
+    list_filter = [
+        "bu_name",
+        "ru_type",
+        "ru_floor",
+        "c_ischild"
+    ]
+    search_fields = my_search_fields
+    list_display_links = None
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return True
+    def has_delete_permission(self, request, obj=None):
+        return False
+    ordering = ("-bu_name", "-ru_name")
+
+admin.site.register(TenantsView, TenantsViewAdmin)
 
 class LookupTableAdmin(GenoBaseAdmin):
     model = LookupTable
