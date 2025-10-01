@@ -71,6 +71,22 @@
               <q-item-label caption></q-item-label>
             </q-item-section>
           </q-item>
+
+          <!-- Dev Mode PWA Install Button -->
+          <q-item v-if="isDev" clickable @click="showPwaInstallDialog">
+            <q-item-section avatar>
+              <q-icon name="sym_o_install_mobile" />
+            </q-item-section>
+
+            <q-item-section>
+              <q-item-label>{{
+                $t('mainLayout.pwaInstall.label')
+              }}</q-item-label>
+              <q-item-label caption>{{
+                $t('mainLayout.pwaInstall.devModeOnly')
+              }}</q-item-label>
+            </q-item-section>
+          </q-item>
         </q-list>
 
         <!-- Theme Toggle at the bottom -->
@@ -98,7 +114,7 @@
 </template>
 
 <script setup lang="ts">
-import { settings } from 'app/config/settings'
+import { settings } from 'app/tenant-config/settings'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 import AppUpdateBanner from 'components/AppUpdateBanner.vue'
@@ -108,6 +124,9 @@ import LanguageSwitcher from 'components/LanguageSwitcher.vue'
 import ThemeModeToggle from 'components/ThemeModeToggle.vue'
 import { useAuthStore } from 'stores/auth-store'
 import { useMainStore } from 'stores/main-store'
+
+// Check if we're in dev mode
+const isDev = process.env.NODE_ENV === 'development'
 
 // Store instances
 const authStore = useAuthStore()
@@ -128,6 +147,13 @@ function settings_logout(): void {
 
 function toggleLeftDrawer(): void {
   leftDrawerOpen.value = !leftDrawerOpen.value
+}
+
+function showPwaInstallDialog(): void {
+  const pwaInstall = document.querySelector('pwa-install') as any
+  if (pwaInstall) {
+    pwaInstall.showDialog(true)
+  }
 }
 
 /* For service worker updates */

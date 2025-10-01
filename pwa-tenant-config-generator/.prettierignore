@@ -1,0 +1,35 @@
+# Dependencies
+node_modules
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs
+dist
+*.js
+
+# IDE
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated files
+example-config/generated
+
+# Vendor files
+vendor/
+*.min.js
+
+# Coverage
+coverage/
+.nyc_output/

@@ -1,5 +1,7 @@
 import { Dark } from 'quasar'
 import { computed } from 'vue'
+import logoDark from '../assets/logo-dark.svg'
+import logoLight from '../assets/logo.svg'
 
 /**
  * Composable for getting theme-aware logo and icon paths
@@ -8,7 +10,7 @@ import { computed } from 'vue'
 export function useThemedLogo() {
   // Reactive computed properties that update when dark mode changes
   const logoPath = computed(() => {
-    return Dark.isActive ? '/src/assets/logo-dark.svg' : '/src/assets/logo.svg'
+    return Dark.isActive ? logoDark : logoLight
   })
 
   // For CSS background images, we can use CSS classes instead

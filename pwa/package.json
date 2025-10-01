@@ -7,16 +7,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "yarn run validate:config && yarn run make:tenant-config && quasar dev",
-    "dev:watch": "yarn run validate:config && tsx scripts/watch-config.ts & quasar dev",
-    "watch:config": "yarn run validate:config && tsx scripts/watch-config.ts",
-    "build": "yarn run validate:config && yarn run make:tenant-config && quasar build -m pwa",
-    "build:pwa": "yarn run validate:config && yarn run make:tenant-config && quasar build -m pwa",
+    "dev": "yarn run setup:dev-config && yarn run validate:config && quasar dev",
+    "dev:tenant": "tsx scripts/dev-with-tenant.ts",
+    "build": "yarn run validate:config && quasar build -m pwa",
+    "build:pwa": "yarn run validate:config && quasar build -m pwa",
+    "setup:dev-config": "tsx scripts/setup-dev-config.ts",
     "validate:config": "tsx scripts/validate-config.ts",
-    "make:tenant-config": "tsx scripts/make-tenant-config.ts",
+    "clean": "rm -rf tenant-config/overlay tenant-config/src tenant-config/public public/manifest.json public/icons public/og-image.png public/twitter-card.png",
     "serve": "quasar serve dist/pwa/",
-    "lint": "eslint -c ./eslint.config.js \"./src*/**/*.{ts,vue}\" \"./config/**/*.{ts,js}\" \"./scripts/**/*.ts\"",
-    "lint:fix": "eslint -c ./eslint.config.js \"./src*/**/*.{ts,vue}\" \"./config/**/*.{ts,js}\" \"./scripts/**/*.ts\" --fix",
+    "lint": "eslint -c ./eslint.config.js \"./src*/**/*.{ts,vue}\" \"./tenant-config/**/*.{ts,js}\" \"./scripts/**/*.ts\"",
+    "lint:fix": "eslint -c ./eslint.config.js \"./src*/**/*.{ts,vue}\" \"./tenant-config/**/*.{ts,js}\" \"./scripts/**/*.ts\" --fix",
     "format": "prettier --write \"**/*.{js,ts,mjs,cjs,vue,scss,css,html,md,json,yml,yaml}\"",
     "format:check": "prettier --check \"**/*.{js,ts,mjs,cjs,vue,scss,css,html,md,json,yml,yaml}\"",
     "test": "echo \"No test specified\" && exit 0",
@@ -24,12 +24,8 @@
     "check": "yarn type-check && yarn lint:fix && yarn format",
     "upgrade": "quasar upgrade",
     "upgrade:install": "quasar upgrade --install",
-    "prepare": "quasar prepare",
-    "optimize:images": "tsx scripts/optimize-images.ts",
-    "download:fonts": "tsx scripts/download-roboto.ts",
-    "icon:generate": "npx @quasar/icongenie generate -p icongenie-profile.json -o public",
     "up": "yarn upgrade-interactive",
-    "postinstall": "quasar prepare"
+    "self-update": "yarn set version stable && yarn"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.19",
@@ -64,6 +60,7 @@
     "@typescript-eslint/parser": "^8.44.0",
     "autoprefixer": "^10.4.21",
     "chokidar": "^4.0.3",
+    "concurrently": "^9.2.1",
     "eslint": "^9.36.0",
     "eslint-plugin-perfectionist": "^4.15.0",
     "eslint-plugin-vue": "^10.5.0",
@@ -71,11 +68,8 @@
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",
     "register-service-worker": "^1.7.2",
-    "sharp": "^0.34.4",
-    "svgo": "^4.0.0",
     "tsx": "^4.20.5",
     "typescript": "~5.9.2",
-    "vite-plugin-imagemin": "^0.6.1",
     "vue-eslint-parser": "^10.2.0",
     "vue-tsc": "^3.0.7",
     "workbox-build": "^7.3.0",
@@ -91,5 +85,5 @@
     "node": "^24",
     "yarn": "^4.9.4"
   },
-  "packageManager": "yarn@4.9.4"
+  "packageManager": "yarn@4.10.3"
 }

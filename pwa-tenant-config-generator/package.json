@@ -1,0 +1,49 @@
+{
+  "name": "cohiva-pwa-tools",
+  "version": "1.0.0",
+  "description": "Tenant configuration generator for Cohiva PWA",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "pwa-tools": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "generate": "tsx src/index.ts",
+    "generate:pwa": "tsx src/index.ts --config-dir ../pwa/config",
+    "dev": "tsx src/index.ts",
+    "clean": "rm -rf example-config/overlay example-config/.temp-icon.png",
+    "test": "echo \"No test specified\" && exit 0",
+    "lint": "eslint -c ./eslint.config.js \"./src/**/*.ts\"",
+    "lint:fix": "eslint -c ./eslint.config.js \"./src/**/*.ts\" --fix",
+    "format": "prettier --write \"**/*.{js,ts,mjs,cjs,json,md}\"",
+    "format:check": "prettier --check \"**/*.{js,ts,mjs,cjs,json,md}\"",
+    "type-check": "tsc --noEmit",
+    "check": "yarn type-check && yarn lint:fix && yarn format",
+    "self-update": "yarn set version stable && yarn"
+  },
+  "engines": {
+    "node": "^24"
+  },
+  "dependencies": {
+    "fs-extra": "^11.2.0",
+    "pwa-asset-generator": "^8.1.2",
+    "sharp": "^0.34.4",
+    "svgo": "^4.0.0",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.19.0",
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^24.5.2",
+    "@typescript-eslint/eslint-plugin": "^8.20.0",
+    "@typescript-eslint/parser": "^8.20.0",
+    "eslint": "^9.19.0",
+    "eslint-plugin-perfectionist": "^4.6.0",
+    "globals": "^15.14.0",
+    "prettier": "^3.5.1",
+    "tsx": "^4.20.5",
+    "typescript": "~5.9.2"
+  },
+  "packageManager": "yarn@4.10.3"
+}

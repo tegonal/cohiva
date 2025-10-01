@@ -2,7 +2,7 @@
 .thumbs.db
 node_modules
 
-# Local config or generated files
+# Local config or overlay files
 /src-pwa/manifest.json
 /public/favicon.ico
 /public/icons
