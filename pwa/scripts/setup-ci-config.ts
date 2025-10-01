@@ -103,6 +103,33 @@ async function main() {
     recursive: true,
   })
 
+  // Copy src-pwa/ files (manifest, etc.)
+  const srcPwaSource = path.join(overlaySource, 'src-pwa')
+  const srcPwaTarget = path.join(PWA_ROOT, 'src-pwa')
+
+  if (fs.existsSync(srcPwaSource)) {
+    console.log('[ci-setup]    Copying src-pwa/')
+    fs.cpSync(srcPwaSource, srcPwaTarget, { force: true, recursive: true })
+  }
+
+  // Copy src/assets/
+  const assetsSource = path.join(overlaySource, 'src', 'assets')
+  const assetsTarget = path.join(PWA_ROOT, 'src', 'assets')
+
+  if (fs.existsSync(assetsSource)) {
+    console.log('[ci-setup]    Copying src/assets/')
+    fs.cpSync(assetsSource, assetsTarget, { force: true, recursive: true })
+  }
+
+  // Copy src/css/
+  const cssSource = path.join(overlaySource, 'src', 'css')
+  const cssTarget = path.join(PWA_ROOT, 'src', 'css')
+
+  if (fs.existsSync(cssSource)) {
+    console.log('[ci-setup]    Copying src/css/')
+    fs.cpSync(cssSource, cssTarget, { force: true, recursive: true })
+  }
+
   // Copy manifest.json to public/ for dev mode
   const manifestSource = path.join(overlaySource, 'src-pwa', 'manifest.json')
   const manifestTarget = path.join(PWA_ROOT, 'public', 'manifest.json')
