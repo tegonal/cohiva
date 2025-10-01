@@ -307,6 +307,10 @@ async function generatePWAAssets(
   // Generate icons with icon background color
   console.log(`   Running pwa-asset-generator (standard icons)...`)
 
+  // Detect CI environment and add --no-sandbox flag if needed
+  const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true'
+  const sandboxFlag = isCI ? '--no-sandbox' : ''
+
   const iconBaseCmd =
     `"${pwaAssetBin}" "${iconSourcePath}" "${iconsDir}" ` +
     `--background "${iconBackgroundColor}" ` +
@@ -314,7 +318,8 @@ async function generatePWAAssets(
     `--padding "10%" ` +
     `--type png ` +
     `--favicon ` +
-    `--icon-only`
+    `--icon-only ` +
+    `${sandboxFlag}`
 
   // Generate standard icons (192, 512) and capture HTML output
   let iconMetaTags = ''
@@ -360,7 +365,8 @@ async function generatePWAAssets(
     `--padding "10%" ` +
     `--type png ` +
     `--splash-only ` +
-    `--scrape true`
+    `--scrape true ` +
+    `${sandboxFlag}`
 
   let splashMetaTags = ''
   try {
@@ -400,7 +406,8 @@ async function generatePWAAssets(
       `--type png ` +
       `--splash-only ` +
       `--dark-mode ` +
-      `--scrape true`
+      `--scrape true ` +
+      `${sandboxFlag}`
 
     try {
       const { stdout } = await execAsync(darkSplashCmd)
