@@ -1,4 +1,3 @@
-import select2.fields
 from django.db import models
 from wagtail import blocks
 from wagtail.admin.panels import FieldPanel
@@ -96,7 +95,7 @@ class PortalHelpPageSection(Page):
 
 
 class TenantAdmin(GenoBase):
-    name = select2.fields.OneToOneField(
+    name = models.OneToOneField(
         Address,
         verbose_name="Person",
         on_delete=models.CASCADE,
@@ -121,30 +120,3 @@ class TenantAdmin(GenoBase):
 
     def list_active_buildings(self):
         return ", ".join([str(b) for b in self.buildings.filter(active=True)])
-
-
-# class PortalTemplates(GenoBase):
-#    name = models.CharField('Name', max_length=100)  # e.g. portal_invitation_subject, portal_invitation, portal_invitation_existing_user
-#    building = select2.fields.ForeignKey(Building, verbose_name='Vorlage für Gebäude')
-#    template = select2.fields.ForeignKey(ContentTemplate, verbose_name="Vorlage")
-#
-#    class Meta
-#        unique_together(name,building)
-#        verbose_name = "Portal Vorlagen"
-# class PortalConfig(GenoBase):
-#    name = models.CharField('Name', max_length=100)  # e.g. portal_invitation_subject, portal_invitation, portal_invitation_existing_user
-#    building = select2.fields.ForeignKey(Building, verbose_name='Konfiguration für Gebäude')
-#    value = models.TextField('Wert')
-#    active = models.BooleanField('Aktiv', default=True)
-#
-#    class Meta:
-#        unique_together(name,building,active)
-#        verbose_name = "Portal Konfiguration"
-#
-#    @classmethod
-#    def get_config_value(cls, name, building, default_value=None):
-#        try:
-#            obj = cls.objects.get(name=name, building=building, active=True)
-#            return obj.value
-#        except cls.DoesNotExist:
-#            return default_value

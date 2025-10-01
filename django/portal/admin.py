@@ -23,3 +23,4 @@ class TenantAdminAdmin(GenoBaseAdmin):
     list_display = ["name", "list_active_buildings", "active"]
     list_filter = ["active"]
     search_fields = ["name__name", "name__first_name", "buildings__name", "notes"]
+    autocomplete_fields = ["name", "buildings"]

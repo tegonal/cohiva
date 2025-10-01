@@ -170,7 +170,7 @@ class AddressAdmin(GenoBaseAdmin):
         "bankaccount",
         "comment",
     ]
-
+    autocomplete_fields = ["user"]
     actions = GenoBaseAdmin.actions + [set_title_mr, set_title_mrs]
 
 
@@ -280,7 +280,7 @@ class MemberAdmin(GenoBaseAdmin):
         "date_leave",
     ]
     search_fields = ["name__organization", "name__name", "name__first_name", "notes"]
-
+    autocomplete_fields = ["name"]
     actions = GenoBaseAdmin.actions + [
         mark_flag_01,
         unmark_flag_01,
@@ -359,6 +359,7 @@ class TenantAdmin(GenoBaseAdmin):
     list_display = ["name", "building", "key_number", "active"]
     list_filter = ["building__name", "active"]
     search_fields = ["name__name", "name__first_name", "building__name", "key_number", "notes"]
+    autocomplete_fields = ["name", "building"]
 
 
 @admin.register(MemberAttributeType)
@@ -437,7 +438,7 @@ class MemberAttributeAdmin(GenoBaseAdmin):
         "value",
         "comment",
     ]
-
+    autocomplete_fields = ["member", "attribute_type"]
     actions = GenoBaseAdmin.actions + [
         mark_billed,
         mark_paid,
@@ -593,7 +594,7 @@ class ShareAdmin(GenoBaseAdmin):
         "comment",
         "note",
     ]
-
+    autocomplete_fields = ["name", "share_type", "attached_to_contract", "attached_to_building"]
     actions = GenoBaseAdmin.actions + [
         share_mark_paid,
         share_mark_billed,
@@ -634,6 +635,7 @@ class DocumentTypeAdmin(GenoBaseAdmin):
         "template__description",
         "template_file",
     ]
+    autocomplete_fields = ["template"]
 
 
 @admin.register(Document)
@@ -662,6 +664,7 @@ class DocumentAdmin(GenoBaseAdmin):
     list_display = ["name", "doctype", "content_type", "ts_created", "ts_modified"]
     search_fields = ["name", "comment"]
     list_filter = ["doctype", "ts_created", "ts_modified", "content_type"]
+    autocomplete_fields = ["doctype"]
 
 
 class BankAccountForm(forms.ModelForm):
@@ -756,6 +759,7 @@ class RegistrationAdmin(GenoBaseAdmin):
         "slot__event",
         "slot",
     ]
+    autocomplete_fields = ["slot"]
 
 
 @admin.register(RegistrationSlot)
@@ -778,6 +782,7 @@ class RegistrationSlotAdmin(GenoBaseAdmin):
     ordering = ("-name",)
     search_fields = ["alt_text", "event__name", "comment"]
     list_filter = ["event", "max_places"]
+    autocomplete_fields = ["event", "is_backup_for"]
 
 
 class RegistrationSlotInline(admin.TabularInline):
@@ -899,6 +904,7 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "rentalunit_contracts__contractors__first_name",
     ]
     list_filter = ["rental_type", "rooms", "building__name", "floor", "status", "active"]
+    autocomplete_fields = ["building"]
 
 
 @admin.display(description='Als "unterzeichnet" markieren')
@@ -1001,7 +1007,13 @@ class ContractAdmin(GenoBaseAdmin):
         "date_end",
         "send_qrbill",
     ]
-
+    autocomplete_fields = [
+        "contractors",
+        "main_contact",
+        "rental_units",
+        "children",
+        "billing_contract",
+    ]
     actions = GenoBaseAdmin.actions + [
         contract_mark_signed,
         contract_mark_offered,
@@ -1066,6 +1078,7 @@ class InvoiceCategoryAdmin(GenoBaseAdmin):
         "comment",
     ]
     list_filter = ["active", "manual_allowed", "linked_object_type"]
+    autocomplete_fields = ["email_template"]
 
 
 class InvoiceAdminModelForm(forms.ModelForm):
@@ -1151,7 +1164,7 @@ class InvoiceAdmin(GenoBaseAdmin):
         "month",
         "is_additional_invoice",
     ]
-
+    autocomplete_fields = ["invoice_category", "person", "contract"]
     actions = GenoBaseAdmin.actions + [invoice_revert_consolidation]
 
     @admin.display(description="Person/Vertrag")
@@ -1327,7 +1340,7 @@ class ContentTemplateAdmin(GenoBaseAdmin):
         "ts_created",
         "ts_modified",
     ]
-
+    autocomplete_fields = ["template_context"]
     filter_horizontal = ["template_context"]
 
     class Media:
@@ -1342,6 +1355,7 @@ class ContentTemplateOptionAdmin(GenoBaseAdmin):
     list_display = ["name", "value", "comment", "ts_created", "ts_modified"]
     search_fields = ["name", "value", "comment"]
     list_filter = ["name", "ts_created", "ts_modified"]
+    autocomplete_fields = ["name"]
 
 
 @admin.register(ContentTemplateOptionType)

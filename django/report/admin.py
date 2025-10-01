@@ -48,6 +48,7 @@ class ReportAdmin(GenoBaseAdmin):
     list_display = ["name", "report_type", "state", "task_id", "comment"]
     list_filter = ["report_type", "state", "ts_created", "ts_modified"]
     search_fields = ["name", "state_info", "task_id", "comment"]
+    autocomplete_fields = ["report_type"]
 
 
 @admin.register(ReportInputField)
@@ -68,6 +69,7 @@ class ReportInputFieldAdmin(GenoBaseAdmin):
     list_display = ["name", "report_type", "field_type", "active"]
     list_filter = ["report_type", "field_type", "active"]
     search_fields = ["name", "description", "comment"]
+    autocomplete_fields = ["report_type"]
 
 
 @admin.register(ReportInputData)
@@ -85,7 +87,8 @@ class ReportInputDataAdmin(GenoBaseAdmin):
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "report", "value"]
     list_filter = ["report"]
-    search_fields = ["name", "report__name", "value", "comment"]
+    search_fields = ["name__name", "report__name", "value", "comment"]
+    autocomplete_fields = ["name", "report"]
 
 
 @admin.register(ReportOutput)
@@ -107,3 +110,4 @@ class ReportOutputAdmin(GenoBaseAdmin):
     list_display = ["name", "group", "report", "output_type", "value"]
     list_filter = ["group", "report", "output_type"]
     search_fields = ["name", "report__name", "value", "comment"]
+    autocomplete_fields = ["report"]

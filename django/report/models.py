@@ -1,7 +1,6 @@
 import os
 
 import jsonc
-import select2.fields
 from django.conf import settings
 from django.db import models
 from django.dispatch.dispatcher import receiver
@@ -32,9 +31,7 @@ REPORT_STATE_CHOICES = (
 
 class Report(GenoBase):
     name = models.CharField("Name", max_length=80)
-    report_type = select2.fields.ForeignKey(
-        ReportType, verbose_name="Reporttyp", on_delete=models.CASCADE
-    )
+    report_type = models.ForeignKey(ReportType, verbose_name="Reporttyp", on_delete=models.CASCADE)
     task_id = models.UUIDField("Task-ID", editable=False, blank=True, null=True)
     state = models.CharField("Status", default="new", choices=REPORT_STATE_CHOICES, max_length=30)
     state_info = models.TextField("Statusinfo", blank=True)
@@ -96,9 +93,7 @@ REPORT_FIELDTYPE_CHOICES = (
 class ReportInputField(GenoBase):
     name = models.CharField("Name", max_length=80)
     description = models.CharField("Beschreibung", max_length=200, blank=True)
-    report_type = select2.fields.ForeignKey(
-        ReportType, verbose_name="Reporttyp", on_delete=models.CASCADE
-    )
+    report_type = models.ForeignKey(ReportType, verbose_name="Reporttyp", on_delete=models.CASCADE)
     field_type = models.CharField("Feldtyp", choices=REPORT_FIELDTYPE_CHOICES, max_length=30)
     active = models.BooleanField("Aktiv", default=True)
 
@@ -110,10 +105,10 @@ class ReportInputField(GenoBase):
 
 
 class ReportInputData(GenoBase):
-    name = select2.fields.ForeignKey(
+    name = models.ForeignKey(
         ReportInputField, verbose_name="Eingabefeld", on_delete=models.CASCADE
     )
-    report = select2.fields.ForeignKey(Report, verbose_name="Report", on_delete=models.CASCADE)
+    report = models.ForeignKey(Report, verbose_name="Report", on_delete=models.CASCADE)
     value = models.TextField(
         "Wert"
     )  ## store lists in value?  Should be able to copy list values from spreadsheet in UI!
@@ -166,7 +161,7 @@ REPORT_OUTPUTTYPE_CHOICES = (
 class ReportOutput(GenoBase):
     name = models.CharField("Name", max_length=200)
     group = models.CharField("Gruppe", max_length=80, blank=True)
-    report = select2.fields.ForeignKey(Report, verbose_name="Report", on_delete=models.CASCADE)
+    report = models.ForeignKey(Report, verbose_name="Report", on_delete=models.CASCADE)
     output_type = models.CharField("Feldtyp", choices=REPORT_OUTPUTTYPE_CHOICES, max_length=30)
     value = models.TextField("Wert")
     regeneration_json = models.TextField("JSON-Daten für neues Erzeugen", blank=True)

@@ -4,7 +4,6 @@ import math
 import uuid
 from decimal import Decimal
 
-import select2.fields
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.models import User
@@ -712,12 +711,10 @@ class Building(GenoBase):
 
 
 class Tenant(GenoBase):
-    name = select2.fields.OneToOneField(
+    name = models.OneToOneField(
         Address, verbose_name="Person", on_delete=models.CASCADE, related_name="address_tenant"
     )
-    building = select2.fields.ForeignKey(
-        Building, verbose_name="Gebäude", on_delete=models.CASCADE
-    )
+    building = models.ForeignKey(Building, verbose_name="Gebäude", on_delete=models.CASCADE)
     key_number = models.CharField(
         "Schlüsselnr.",
         default="",
@@ -742,7 +739,7 @@ class Tenant(GenoBase):
 
 
 class Member(GenoBase):
-    name = select2.fields.OneToOneField(
+    name = models.OneToOneField(
         Address, verbose_name="Person/Organisation", on_delete=models.CASCADE
     )
     date_join = models.DateField("Eintritt")
@@ -816,8 +813,8 @@ class MemberAttributeType(GenoBase):
 
 
 class MemberAttribute(GenoBase):
-    member = select2.fields.ForeignKey(Member, verbose_name="Mitglied", on_delete=models.CASCADE)
-    attribute_type = select2.fields.ForeignKey(
+    member = models.ForeignKey(Member, verbose_name="Mitglied", on_delete=models.CASCADE)
+    attribute_type = models.ForeignKey(
         MemberAttributeType, verbose_name="Attributtyp", on_delete=models.CASCADE
     )
     date = models.DateField("Datum", null=True, blank=True)
@@ -851,10 +848,8 @@ class ShareType(GenoBase):
 
 
 class Share(GenoBase):
-    name = select2.fields.ForeignKey(
-        Address, verbose_name="Person/Organisation", on_delete=models.CASCADE
-    )
-    share_type = select2.fields.ForeignKey(
+    name = models.ForeignKey(Address, verbose_name="Person/Organisation", on_delete=models.CASCADE)
+    share_type = models.ForeignKey(
         ShareType, verbose_name="Beteiligungstyp", on_delete=models.CASCADE
     )
     STATE_CHOICES = (
@@ -897,7 +892,7 @@ class Share(GenoBase):
     is_interest_credit = models.BooleanField("Zinsgutschrift", default=False)
     is_pension_fund = models.BooleanField("WEF-Guthaben (BVG/3.Säule)", default=False)
     is_business = models.BooleanField("Gewerbe", default=False)
-    attached_to_contract = select2.fields.ForeignKey(
+    attached_to_contract = models.ForeignKey(
         "Contract",
         verbose_name="Fixe Zuteilung als Pflichtanteil für Vertrag",
         help_text=(
@@ -909,7 +904,7 @@ class Share(GenoBase):
         on_delete=models.SET_NULL,
         related_name="contract_attached_shares",
     )
-    attached_to_building = select2.fields.ForeignKey(
+    attached_to_building = models.ForeignKey(
         "Building",
         verbose_name="Liegenschaft",
         help_text=("Nur ausfüllbar wenn kein Vertrag gewählt ist."),
@@ -1010,7 +1005,7 @@ DOCUMENTTYPE_NAME_CHOICES = (
 class DocumentType(GenoBase):
     name = models.CharField("Name", max_length=50, unique=True, choices=DOCUMENTTYPE_NAME_CHOICES)
     description = models.CharField("Beschreibung", max_length=200)
-    template = select2.fields.ForeignKey(
+    template = models.ForeignKey(
         "ContentTemplate",
         verbose_name="Vorlage",
         on_delete=models.CASCADE,
@@ -1040,9 +1035,7 @@ class DocumentType(GenoBase):
 
 class Document(GenoBase):
     name = models.CharField("Name", max_length=250)
-    doctype = select2.fields.ForeignKey(
-        DocumentType, verbose_name="Dokumenttyp", on_delete=models.CASCADE
-    )
+    doctype = models.ForeignKey(DocumentType, verbose_name="Dokumenttyp", on_delete=models.CASCADE)
     data = models.TextField("Data")
 
     ## Generic relation to object
@@ -1156,9 +1149,7 @@ class RegistrationSlot(GenoBase):
         default=-1,
         help_text="Für unbeschränkte Anzahl -1 (minus 1) eingeben.",
     )
-    event = select2.fields.ForeignKey(
-        RegistrationEvent, verbose_name="Anlass", on_delete=models.CASCADE
-    )
+    event = models.ForeignKey(RegistrationEvent, verbose_name="Anlass", on_delete=models.CASCADE)
     is_backup_for = models.OneToOneField(
         "self",
         verbose_name="Ist Backup für Termin",
@@ -1195,7 +1186,7 @@ class Registration(GenoBase):
     telephone = models.CharField(
         "Telefon", max_length=30, blank=True, help_text="Angabe zwingend wegen COVID-19 Massnahmen"
     )
-    slot = select2.fields.ForeignKey(
+    slot = models.ForeignKey(
         RegistrationSlot, verbose_name="Datum/Zeit Beginn", on_delete=models.CASCADE
     )
     notes = models.TextField("Kommentar", blank=True)
@@ -1238,9 +1229,7 @@ class RentalUnit(GenoBase):
     label_short = models.CharField("Kurzbezeichnung", blank=True, max_length=50)
     rental_type = models.CharField("Typ", max_length=50, choices=RENTAL_UNIT_TYPES)
     # building = models.CharField('Gebäude(teil)', max_length=100, blank=True)
-    building = select2.fields.ForeignKey(
-        "Building", verbose_name="Liegenschaft", on_delete=models.CASCADE
-    )
+    building = models.ForeignKey("Building", verbose_name="Liegenschaft", on_delete=models.CASCADE)
     floor = models.CharField("Stockwerk", max_length=50, blank=True)
     area = models.DecimalField(
         "Fläche (m2)", max_digits=10, decimal_places=2, null=True, blank=True
@@ -1364,7 +1353,7 @@ class Contract(GenoBase):
     contractors = models.ManyToManyField(
         Address, verbose_name="Vertragspartner", related_name="address_contracts"
     )
-    main_contact = select2.fields.ForeignKey(
+    main_contact = models.ForeignKey(
         Address,
         verbose_name="Kontaktperson/Hauptmieter*in",
         null=True,
@@ -1415,7 +1404,7 @@ class Contract(GenoBase):
         "QR-Rechnung", max_length=50, choices=CONTRACT_QRBILL_CHOICES, default="only_next"
     )
     ## TODO: Billing and Debitoren for linked contracts.
-    billing_contract = select2.fields.ForeignKey(
+    billing_contract = models.ForeignKey(
         "Contract",
         verbose_name="In Inkasso von diesem Vertrag integrieren",
         null=True,
@@ -1589,7 +1578,7 @@ class InvoiceCategory(GenoBase):
         "Kontonummer Forderungen", max_length=50, default="1102"
     )
     manual_allowed = models.BooleanField("Manuelle Rechnungsstellung erlaubt", default=False)
-    email_template = select2.fields.ForeignKey(
+    email_template = models.ForeignKey(
         "ContentTemplate",
         verbose_name="Email-Vorlage",
         on_delete=models.SET_NULL,
@@ -1622,7 +1611,7 @@ INVOICE_TYPE_CHOICES = (
 
 class Invoice(GenoBase):
     name = models.CharField("Beschreibung", max_length=1000)
-    person = select2.fields.ForeignKey(
+    person = models.ForeignKey(
         Address,
         verbose_name="Person/Organisation",
         on_delete=models.CASCADE,
@@ -1633,7 +1622,7 @@ class Invoice(GenoBase):
     invoice_type = models.CharField(
         "Typ", max_length=50, choices=INVOICE_TYPE_CHOICES, default="Invoice", db_index=True
     )
-    invoice_category = select2.fields.ForeignKey(
+    invoice_category = models.ForeignKey(
         InvoiceCategory, verbose_name="Kategorie", on_delete=models.CASCADE, db_index=True
     )
     date = models.DateField("Datum")
@@ -1651,7 +1640,7 @@ class Invoice(GenoBase):
     is_additional_invoice = models.BooleanField(
         "Zusatzrechnung zu einer Hauptrechnung?", default=False, db_index=True
     )
-    contract = select2.fields.ForeignKey(
+    contract = models.ForeignKey(
         Contract,
         verbose_name="Vertrag",
         null=True,
@@ -1749,7 +1738,7 @@ class ContentTemplateOptionType(GenoBase):
 
 
 class ContentTemplateOption(GenoBase):
-    name = select2.fields.ForeignKey(
+    name = models.ForeignKey(
         ContentTemplateOptionType, verbose_name="Variable", on_delete=models.CASCADE
     )
     value = models.CharField("Wert", max_length=100, blank=True)

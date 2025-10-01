@@ -137,7 +137,7 @@ class ReservationAdmin(GenoBaseAdmin):
         "key_number",
         "additional_information",
     ]
-
+    autocomplete_fields = ["name", "contact", "usage_type"]
     formfield_overrides = {
         models.CharField: {"widget": TextInput(attrs={"size": "10"})},
     }
@@ -168,7 +168,7 @@ class ReservationObjectAdmin(GenoBaseAdmin):
     list_display = ["name", "reservation_type", "short_description", "cost"]
     list_filter = ["reservation_type", "usage_types"]
     search_fields = ["name", "short_description", "description"]
-
+    autocomplete_fields = ["reservation_type", "usage_types"]
     filter_horizontal = ["usage_types"]
 
 
@@ -195,6 +195,7 @@ class ReservationTypeAdmin(GenoBaseAdmin):
     list_display = ["name", "required_role", "active", "color"]
     list_filter = ["active", "required_role"]
     search_fields = ["name"]
+    autocomplete_fields = ["confirmation_email_template"]
 
 
 class ReservationPriceInline(admin.TabularInline):
@@ -235,6 +236,7 @@ class ReservationPriceAdmin(GenoBaseAdmin):
     list_display = ["name", "usage_type", "priority", "cost"]
     list_filter = ["usage_type", "cost_type"]
     search_fields = ["name", "usage_type__label", "usage_type__name"]
+    autocomplete_fields = ["usage_type"]
 
 
 @admin.register(ReservationUsageType)
@@ -257,6 +259,7 @@ class ReportCategoryAdmin(GenoBaseAdmin):
     list_display = ["name", "report_type"]
     list_filter = ["report_type"]
     search_fields = ["name"]
+    autocomplete_fields = ["report_type"]
 
 
 @admin.register(ReportType)
@@ -277,6 +280,7 @@ class ReportPictureAdmin(GenoBaseAdmin):
     list_display = ["name", "image", "report"]
     list_filter = ["report__status"]
     search_fields = ["name"]
+    autocomplete_fields = ["report"]
 
 
 class ReportPictureInline(admin.TabularInline):
@@ -293,6 +297,7 @@ class ReportLogEntryAdmin(GenoBaseAdmin):
     list_display = ["name", "text", "user", "ts_modified"]
     list_filter = []
     search_fields = ["name__name", "text"]
+    autocomplete_fields = ["name", "user"]
 
 
 class ReportLogEntryInline(admin.TabularInline):
@@ -354,5 +359,5 @@ class ReportAdmin(GenoBaseAdmin):
         "rental_unit__name",
         "text",
     ]
-
+    autocomplete_fields = ["report_type", "category", "rental_unit", "contact"]
     inlines = [ReportPictureInline, ReportLogEntryInline]
