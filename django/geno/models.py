@@ -1490,7 +1490,7 @@ class Contract(GenoBase):
         )
 
 
-def get_active_contracts(date=None, pre_select=None):
+def get_active_contracts(date=None, pre_select=None, include_subcontracts=False):
     if date is None:
         date = datetime.date.today()
         if date < datetime.date(2021, 12, 1):
@@ -1498,8 +1498,10 @@ def get_active_contracts(date=None, pre_select=None):
     if not pre_select:
         pre_select = Contract.objects.all()
     select = pre_select.filter(Q(date_end=None) | Q(date_end__gt=date)).filter(date__lte=date)
-    return select
-
+    if include_subcontracts:
+        return select
+    else:
+        return select.filter(main_contract__isnull=True)
 
 INVOICE_OBJECT_TYPE_CHOICES = (
     ("Address", "Adresse"),

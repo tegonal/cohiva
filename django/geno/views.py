@@ -3803,6 +3803,8 @@ def rental_unit_list_tenants(request, export_xls=True):
     bewohnende = []
     bewohnende_mit_kinder_in_wohnung = []
     data = []
+    include_subcontracts = request.GET.get("include_subcontracts", False)
+    print('rental_unit_list_tenants', export_xls, include_subcontracts)
     data_fields = [
         "ru_name",
         "ru_type",
@@ -3827,7 +3829,7 @@ def rental_unit_list_tenants(request, export_xls=True):
         "membership_date",
         "emonitor_id",
     ]
-    for c in get_active_contracts():
+    for c in get_active_contracts(include_subcontracts=include_subcontracts):
         is_wohnen = False
         for ru in c.rental_units.all():
             if ru.rental_type not in ("Gewerbe", "Lager", "Hobby"):
