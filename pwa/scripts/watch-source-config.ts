@@ -36,7 +36,11 @@ if (!configDirArg) {
 }
 
 const PWA_ROOT = path.resolve(__dirname, '..')
-const GENERATOR_ROOT = path.resolve(PWA_ROOT, '..', 'pwa-tenant-config-generator')
+const GENERATOR_ROOT = path.resolve(
+  PWA_ROOT,
+  '..',
+  'pwa-tenant-config-generator'
+)
 const PWA_CONFIG_DIR = path.join(PWA_ROOT, 'tenant-config')
 
 // Resolve source config directory
@@ -112,7 +116,9 @@ async function main(): Promise<void> {
       console.log(`[watch-source] Removed: ${relativePath}`)
       handleChange(changedPath)
     })
-    .on('error', (error) => console.error('[watch-source] Watcher error:', error))
+    .on('error', (error) =>
+      console.error('[watch-source] Watcher error:', error)
+    )
 
   // Handle graceful shutdown
   process.on('SIGINT', () => {

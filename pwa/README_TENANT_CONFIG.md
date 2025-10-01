@@ -5,6 +5,7 @@ Tenant configurations contain branding, theming, settings, and generated assets 
 ## Prerequisites
 
 This guide assumes you have the full Cohiva monorepo checked out:
+
 ```
 cohiva/
 ├── pwa/                           # This project
@@ -32,6 +33,7 @@ cp -r example-config/* tenant-configs/my-tenant/
 ```
 
 Edit the config files:
+
 - `settings.ts` - App name, API endpoints, OAuth client ID
 - `theme.ts` - Colors (primary, secondary, dark)
 - `schemas.ts` - API schemas
@@ -47,6 +49,7 @@ yarn generate --config-dir tenant-configs/my-tenant
 ```
 
 This creates `tenant-configs/my-tenant/overlay/` with:
+
 - 89+ icons and splash screens (all iOS/Android sizes)
 - PWA manifest, optimized logos, theme CSS
 - `pwa-meta.ts` - Meta tags imported by Quasar
@@ -79,7 +82,7 @@ services:
   pwa-my-tenant:
     image: cohiva-pwa:latest
     ports:
-      - "4000:4000"
+      - '4000:4000'
     volumes:
       - /path/to/pwa-tenant-config-generator/tenant-configs/my-tenant:/app/tenant-config:ro
 ```
@@ -97,6 +100,7 @@ docker run -d \
 ### What Happens at Startup
 
 The container:
+
 1. Validates `/app/tenant-config/overlay/` exists
 2. Copies overlay assets to `/app/src/`, `/app/src-pwa/`, `/app/public/`
 3. Builds PWA (~1-2 minutes)
@@ -149,6 +153,7 @@ tenant-configs/my-tenant/
 ## Troubleshooting
 
 **Container fails to start**
+
 ```bash
 # Check volume is mounted
 docker exec container ls /app/tenant-config/overlay
@@ -158,11 +163,13 @@ docker logs container
 ```
 
 **Missing pwa-meta.ts import error**
+
 ```bash
 yarn setup:dev-config
 ```
 
 **Config not updating in dev**
+
 ```bash
 rm -rf tenant-config/overlay && yarn dev
 ```

@@ -54,13 +54,19 @@ async function main() {
     logError('Configuration not generated!')
     log('')
     log('[validate] The tenant-config/overlay/ directory is missing.', 'yellow')
-    log('[validate] This means the config has not been generated yet.', 'yellow')
+    log(
+      '[validate] This means the config has not been generated yet.',
+      'yellow'
+    )
     log('')
     log('[validate] To fix this, run:', 'cyan')
     log('[validate]   yarn setup:dev-config', 'cyan')
     log('')
     log('[validate] Or for a custom tenant config:', 'cyan')
-    log('[validate]   tsx scripts/setup-dev-config.ts --config-dir path/to/config', 'cyan')
+    log(
+      '[validate]   tsx scripts/setup-dev-config.ts --config-dir path/to/config',
+      'cyan'
+    )
     log('')
     process.exit(1)
   }
@@ -85,7 +91,10 @@ async function main() {
 
     // Check that hostnames are valid
     if (settings.testHostname === settings.prodHostname) {
-      log('[validate] Warning: testHostname and prodHostname are the same', 'yellow')
+      log(
+        '[validate] Warning: testHostname and prodHostname are the same',
+        'yellow'
+      )
     }
 
     // Check OAuth client ID format

@@ -5,6 +5,7 @@ Progressive Web App for housing cooperative management.
 ## Prerequisites
 
 Requires the full Cohiva monorepo:
+
 ```
 cohiva/
 ├── pwa/                           # This project
@@ -53,6 +54,7 @@ The `tenant-config/` directory is gitignored - configs are deployment-specific a
 On first `yarn dev`, the example config is automatically generated and copied to `tenant-config/`.
 
 **See [README_TENANT_CONFIG.md](README_TENANT_CONFIG.md)** for:
+
 - Creating custom tenant configs
 - Docker deployment
 - Production setup
@@ -100,15 +102,18 @@ See [README_TENANT_CONFIG.md](README_TENANT_CONFIG.md) for production deployment
 ## Troubleshooting
 
 **Missing config on first run**
+
 ```bash
 yarn setup:dev-config
 ```
 
 **Config validation fails**
+
 - Check `tenant-config/settings.ts` matches schema
 - Verify colors in `tenant-config/theme.ts` are valid hex (#RRGGBB)
 - Ensure OAuth client ID is set
 
 **Port conflicts**
+
 - Dev server: 9000 (auto-increments if busy)
 - Prod server: 4000

@@ -22,10 +22,15 @@ const __dirname = path.dirname(__filename)
 
 // Parse arguments
 const configDirIndex = process.argv.indexOf('--config-dir')
-const configDirArg = configDirIndex !== -1 ? process.argv[configDirIndex + 1] : null
+const configDirArg =
+  configDirIndex !== -1 ? process.argv[configDirIndex + 1] : null
 
 const PWA_ROOT = path.resolve(__dirname, '..')
-const GENERATOR_ROOT = path.resolve(PWA_ROOT, '..', 'pwa-tenant-config-generator')
+const GENERATOR_ROOT = path.resolve(
+  PWA_ROOT,
+  '..',
+  'pwa-tenant-config-generator'
+)
 const PWA_CONFIG_DIR = path.join(PWA_ROOT, 'tenant-config')
 
 // Determine source config directory
@@ -44,18 +49,26 @@ async function main() {
 
   // Check if source config directory exists
   if (!fs.existsSync(sourceConfigDir)) {
-    console.error('[ci-setup] Error: Config directory not found at', sourceConfigDir)
+    console.error(
+      '[ci-setup] Error: Config directory not found at',
+      sourceConfigDir
+    )
     process.exit(1)
   }
 
   // Verify overlay exists (REQUIRED for CI)
   const overlaySource = path.join(sourceConfigDir, 'overlay')
   if (!fs.existsSync(overlaySource)) {
-    console.error('[ci-setup] Error: Pre-generated overlay/ directory not found!')
+    console.error(
+      '[ci-setup] Error: Pre-generated overlay/ directory not found!'
+    )
     console.error('[ci-setup] Expected at:', overlaySource)
     console.error('')
     console.error('[ci-setup] CI setup requires pre-generated assets.')
-    console.error('[ci-setup] Run locally: yarn generate --config-dir', path.basename(sourceConfigDir))
+    console.error(
+      '[ci-setup] Run locally: yarn generate --config-dir',
+      path.basename(sourceConfigDir)
+    )
     console.error('[ci-setup] Then commit the overlay/ directory.')
     process.exit(1)
   }

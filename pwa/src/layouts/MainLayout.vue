@@ -145,15 +145,15 @@ function settings_logout(): void {
   authStore.logout()
 }
 
-function toggleLeftDrawer(): void {
-  leftDrawerOpen.value = !leftDrawerOpen.value
-}
-
 function showPwaInstallDialog(): void {
   const pwaInstall = document.querySelector('pwa-install') as any
   if (pwaInstall) {
     pwaInstall.showDialog(true)
   }
+}
+
+function toggleLeftDrawer(): void {
+  leftDrawerOpen.value = !leftDrawerOpen.value
 }
 
 /* For service worker updates */

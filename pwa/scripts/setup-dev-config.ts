@@ -21,10 +21,15 @@ const __dirname = path.dirname(__filename)
 
 // Parse arguments
 const configDirIndex = process.argv.indexOf('--config-dir')
-const configDirArg = configDirIndex !== -1 ? process.argv[configDirIndex + 1] : null
+const configDirArg =
+  configDirIndex !== -1 ? process.argv[configDirIndex + 1] : null
 
 const PWA_ROOT = path.resolve(__dirname, '..')
-const GENERATOR_ROOT = path.resolve(PWA_ROOT, '..', 'pwa-tenant-config-generator')
+const GENERATOR_ROOT = path.resolve(
+  PWA_ROOT,
+  '..',
+  'pwa-tenant-config-generator'
+)
 const PWA_CONFIG_DIR = path.join(PWA_ROOT, 'tenant-config')
 
 // Determine source config directory
@@ -49,14 +54,22 @@ async function main() {
 
   // Check if pwa-tenant-config-generator directory exists
   if (!fs.existsSync(GENERATOR_ROOT)) {
-    console.error('[setup] Error: pwa-tenant-config-generator directory not found at', GENERATOR_ROOT)
-    console.error('[setup] Expected structure: cohiva/pwa and cohiva/pwa-tenant-config-generator')
+    console.error(
+      '[setup] Error: pwa-tenant-config-generator directory not found at',
+      GENERATOR_ROOT
+    )
+    console.error(
+      '[setup] Expected structure: cohiva/pwa and cohiva/pwa-tenant-config-generator'
+    )
     process.exit(1)
   }
 
   // Check if source config directory exists
   if (!fs.existsSync(sourceConfigDir)) {
-    console.error('[setup] Error: Config directory not found at', sourceConfigDir)
+    console.error(
+      '[setup] Error: Config directory not found at',
+      sourceConfigDir
+    )
     process.exit(1)
   }
 
@@ -68,7 +81,9 @@ async function main() {
   // Install pwa-tenant-config-generator dependencies if needed
   const generatorNodeModules = path.join(GENERATOR_ROOT, 'node_modules')
   if (!fs.existsSync(generatorNodeModules)) {
-    console.log('[setup] Installing pwa-tenant-config-generator dependencies...')
+    console.log(
+      '[setup] Installing pwa-tenant-config-generator dependencies...'
+    )
     execSync('yarn install', {
       cwd: GENERATOR_ROOT,
       stdio: 'inherit',

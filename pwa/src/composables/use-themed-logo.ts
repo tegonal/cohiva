@@ -1,5 +1,6 @@
 import { Dark } from 'quasar'
 import { computed } from 'vue'
+
 import logoDark from '../assets/logo-dark.svg'
 import logoLight from '../assets/logo.svg'
 

@@ -41,8 +41,8 @@ function cleanupPython() {
 function cleanupPWA() {
 	(
 		cd "$projectDir/pwa"
-		yarn lint:fix
-		yarn format
+		yarn lint
+		yarn format:check
 		logSuccess "Cleaned up PWA code"
 	)
 }
