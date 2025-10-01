@@ -2,12 +2,21 @@
 
 Generates tenant-specific PWA assets from config files (settings, theme, logos).
 
+## Important: Commit Generated Assets
+
+**All generated assets must be committed to the repository.** The `overlay/` directory contains pre-generated assets that are required for:
+- CI/CD pipelines (no asset generation in CI)
+- Docker container builds
+- Development setup
+
 ## Quick Start
 
 ```bash
 corepack enable
 yarn install
 yarn generate --config-dir tenant-configs/my-tenant
+git add tenant-configs/my-tenant/overlay
+git commit -m "Add tenant config assets"
 ```
 
 ## Creating a Tenant Config
@@ -24,9 +33,13 @@ cd tenant-configs/my-tenant
 # - schemas.ts: API schemas
 # - Replace logo.svg, logo-dark.svg, app-icon.svg
 
-# Generate assets
+# Generate assets (REQUIRED before commit)
 cd ../..
 yarn generate --config-dir tenant-configs/my-tenant
+
+# Commit everything including overlay/
+git add tenant-configs/my-tenant
+git commit -m "Add my-tenant configuration"
 ```
 
 ## Required Input Files
@@ -98,6 +111,21 @@ The generated config is mounted in Docker and copied at container startup:
 ```bash
 docker run -v /path/to/tenant-configs/my-tenant:/app/tenant-config:ro cohiva-pwa
 ```
+
+## Why Commit Generated Assets?
+
+The `overlay/` directory must be committed because:
+
+1. **CI/CD Limitation**: Asset generation requires Chromium/Puppeteer which has sandbox issues in GitHub Actions and other CI environments
+2. **Build Performance**: Skipping asset generation speeds up CI builds significantly (~2 minutes saved)
+3. **Docker Simplicity**: Container startup only needs to copy files, not generate them
+4. **Reproducibility**: Pre-generated assets ensure consistent output across environments
+
+**Developer Workflow:**
+1. Edit config files (settings.ts, theme.ts, logos)
+2. Run `yarn generate --config-dir path/to/config`
+3. Review generated files in `overlay/`
+4. Commit both source config and generated `overlay/` directory
 
 ## Troubleshooting
 

@@ -35,8 +35,7 @@ jobs:
           pip install ruff==0.12.10
           ln -s website_example ./django/website
           corepack enable
-          ( cd pwa-tenant-config-generator && yarn install )
           ( cd pwa && yarn install )
-          ( cd pwa && yarn setup:dev-config )
+          ( cd pwa && yarn setup:ci-config )
       - name: before-pr.sh
         run: ./scripts/before-pr.sh

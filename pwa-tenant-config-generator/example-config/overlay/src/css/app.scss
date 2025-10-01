@@ -1,0 +1,13 @@
+// Generated from config/theme.ts
+// Do not edit directly - modify config/theme.ts instead
+
+// Import web fonts first (this sets font variables)
+@import './webfonts.scss';
+
+// Custom app styles
+.app-logo {
+  height: 40px;
+  width: auto;
+}
+
+// Additional custom styles can be added below

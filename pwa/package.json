@@ -12,6 +12,7 @@
     "build": "yarn run validate:config && quasar build -m pwa",
     "build:pwa": "yarn run validate:config && quasar build -m pwa",
     "setup:dev-config": "tsx scripts/setup-dev-config.ts",
+    "setup:ci-config": "tsx scripts/setup-ci-config.ts",
     "validate:config": "tsx scripts/validate-config.ts",
     "clean": "rm -rf tenant-config/overlay tenant-config/src tenant-config/public public/manifest.json public/icons public/og-image.png public/twitter-card.png",
     "serve": "quasar serve dist/pwa/",
