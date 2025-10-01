@@ -1807,6 +1807,7 @@ class TenantsView(GenoBase):
     p_hometown = models.CharField("Mieter*in Heimatort", max_length=100, blank=True)
     p_occupation = models.CharField("Mieter*in Beruf", max_length=100, blank=True)
     p_membership_date = models.DateField("Mieter*in Mitglied seit", null=True, blank=True)
+    c_issubcontract = models.BooleanField("Ist Untervertrag", default=False)
 
     building = select2.fields.ForeignKey(
         "Building", verbose_name="Liegenschaft", on_delete=models.CASCADE

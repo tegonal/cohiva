@@ -1215,32 +1215,7 @@ class TenantsViewAdmin(GenoBaseAdmin):
         "ad_first_name",
         "ad_title",
         "ad_email",
-        "c_ischild",
-        "c_age",
-        "presence",
-        "ad_date_birth",
-        "ad_city",
-        "ad_street",
-        "ad_tel1",
-        "ad_tel2",
-        "p_hometown",
-        "p_occupation",
-        "p_membership_date",
-    ]
-
-    exportablefields = [
-        "bu_name",
-        "ru_name",
-        "ru_label",
-        "ru_type",
-        "ru_floor",
-        "ru_rooms",
-        "ru_area",
-        "organization",
-        "ad_name",
-        "ad_first_name",
-        "ad_title",
-        "ad_email",
+        "c_issubcontract",
         "c_ischild",
         "c_age",
         "presence",
@@ -1267,6 +1242,7 @@ class TenantsViewAdmin(GenoBaseAdmin):
         "ad_first_name",
         "ad_title",
         "ad_email",
+        "c_issubcontract",
         "c_ischild",
         "c_age",
         "presence",
@@ -1293,6 +1269,7 @@ class TenantsViewAdmin(GenoBaseAdmin):
         "ad_first_name",
         "ad_title",
         "ad_email",
+        "c_issubcontract",
         "c_ischild",
         "c_age",
         "presence",
@@ -1319,7 +1296,6 @@ class TenantsViewAdmin(GenoBaseAdmin):
         "ad_first_name",
         "ad_title",
         "ad_email",
-        "c_ischild",
         "c_age",
         "presence",
         "ad_date_birth",
@@ -1335,13 +1311,15 @@ class TenantsViewAdmin(GenoBaseAdmin):
         "bu_name",
         "ru_type",
         "ru_floor",
-        "c_ischild"
+        "c_ischild",
+        "c_issubcontract",
     ]
     search_fields = my_search_fields
     list_display_links = None
+    actions = ["export_as_xls"]
+
     def has_add_permission(self, request):
         return False
-
     def has_change_permission(self, request, obj=None):
         return True
     def has_delete_permission(self, request, obj=None):

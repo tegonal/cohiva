@@ -38,11 +38,12 @@ SELECT DISTINCT
     m.date_join as p_membership_date,
     bu.id as building_id,
     ru.id as rental_unit_id,
+    c.isSC as c_isSubcontract,
     c.id as contract_id,
     c.ts_created,
     c.ts_modified
 FROM
-    geno_contract c
+    (select ctmp.*, 0 as isSC from geno_contract ctmp UNION select sctmp.*, 1 as isSC from geno_contract ctmp JOIN geno_contract sctmp ON ctmp.id = sctmp.main_contract_id) as c
 LEFT JOIN
     geno_contract_rental_units cru ON cru.contract_id = c.id
 LEFT JOIN
@@ -84,11 +85,12 @@ SELECT DISTINCT
     m.date_join as p_membership_date,
     bu.id as building_id,
     ru.id as rental_unit_id,
+    c.isSC as c_isSubcontract,
     c.id as contract_id,
     c.ts_created,
     c.ts_modified
 FROM
-    geno_contract c
+    (select ctmp.*, 0 as isSC from geno_contract ctmp UNION select sctmp.*, 1 as isSC from geno_contract ctmp JOIN geno_contract sctmp ON ctmp.id = sctmp.main_contract_id) as c
 LEFT JOIN
     geno_contract_rental_units cru ON cru.contract_id = c.id
 LEFT JOIN
@@ -102,4 +104,4 @@ LEFT JOIN
 LEFT JOIN
     geno_address ad ON ad.id = ch.name_id
 LEFT JOIN
-    geno_member m ON m.name_id = ad.id ;""", """DROP VIEW geno_TenantsView;""")]
+    geno_member m ON m.name_id = ad.id;""", """DROP VIEW geno_TenantsView;""")]
