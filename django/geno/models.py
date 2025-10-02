@@ -175,6 +175,14 @@ class GenoBase(models.Model):
     class Meta:
         abstract = True
 
+class BankAccount(GenoBase):
+    iban = models.CharField("IBAN", max_length=34, blank=True)
+    finanzinstitut = models.CharField("Finanzinstitut", max_length=100, blank=True)
+    kontoinhaber = models.CharField("Kontoinhaber", max_length=100, blank=True)
+
+    def __str__(self):
+        return f"{self.iban} ({self.kontoinhaber})"
+
 
 class Address(GenoBase):
     TITLE_CHOICES = (
@@ -220,7 +228,14 @@ class Address(GenoBase):
     date_birth = models.DateField("Geburtsdatum", null=True, blank=True)
     hometown = models.CharField("Heimatort", max_length=50, blank=True)
     occupation = models.CharField("Beruf/Ausbildung", max_length=150, blank=True)
-    bankaccount = models.CharField("Kontoverbindung", max_length=150, blank=True)
+    bankaccount = models.ForeignKey(
+        BankAccount,
+        verbose_name="Kontoverbindung",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        help_text="Z.B. für Rückzahlung Nebenkosten",
+    )
     interest_action = models.CharField(
         "Standard-Zinsvergütung",
         max_length=100,
@@ -1346,8 +1361,13 @@ class Contract(GenoBase):
         on_delete=models.SET_NULL,
         related_name="contract_billing_contracts",
     )
-    bankaccount = models.CharField(
-        "Kontoverbindung", max_length=150, blank=True, help_text="Z.B. für Rückzahlung Nebenkosten"
+    bankaccount = models.ForeignKey(
+        BankAccount,
+        verbose_name="Kontoverbindung",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        help_text="Bankverbindung der Person/Organisation"
     )
 
     ## Reverse relation to Documents
