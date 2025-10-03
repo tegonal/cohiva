@@ -661,6 +661,7 @@ def member_overview(request):
             ("Total", 0),
             ("Frauen", 0),
             ("Männer", 0),
+            ("Divers", 0),
             ("Organisationen", 0),
             ("Andere/Unbekannt", 0),
         ]
@@ -690,6 +691,8 @@ def member_overview(request):
                 stat["Organisationen"] += 1
             elif m.name.title == "Herr":
                 stat["Männer"] += 1
+            elif m.name.title == "Divers":
+                stat["Divers"] += 1
             elif m.name.title == "Frau":
                 stat["Frauen"] += 1
             else:

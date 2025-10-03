@@ -547,7 +547,7 @@ def import_members_from_file(empty_tables_first=False):
 
 def update_address_from_file():
     ## Update/Check field from Eigenmittel spreadsheet
-    anrede = {"M": "Herr", "F": "Frau", "P": "Paar", "O": "Org"}
+    anrede = {"M": "Herr", "F": "Frau", "D": "Divers", "P": "Paar", "O": "Org"}
     count = 0
     response = []
     with open("/tmp/Eigenmittelliste.csv", "rb") as csvfile:
