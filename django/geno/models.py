@@ -216,8 +216,11 @@ class Address(GenoBase):
     country = models.CharField("Land", max_length=100, blank=True, default="Schweiz")
     telephone = models.CharField("Telefon", max_length=30, blank=True)
     mobile = models.CharField("2. Telefon", max_length=30, blank=True)
+    telephoneOffice = models.CharField("Telefon Geschäft", max_length=30, blank=True)
+    telephoneOffice2 = models.CharField("2. Telefon Geschäft", max_length=30, blank=True)
     email = LowercaseEmailField("Email", blank=True)
     email2 = LowercaseEmailField("2. Email", blank=True)
+    website = models.CharField("Webseite", max_length=300, blank=True)
     date_birth = models.DateField("Geburtsdatum", null=True, blank=True)
     hometown = models.CharField("Heimatort", max_length=50, blank=True)
     occupation = models.CharField("Beruf/Ausbildung", max_length=150, blank=True)
@@ -249,8 +252,8 @@ class Address(GenoBase):
     gnucash_id = models.CharField(
         "GnuCash-ID", max_length=30, unique=True, null=True, default=None
     )
-    emonitor_id = models.IntegerField(
-        "eMonitor-ID", unique=True, null=True, default=None, blank=True
+    import_id = models.IntegerField(
+        "Import-ID", unique=True, null=True, default=None, blank=True
     )
     random_id = models.UUIDField("Zufalls-ID", unique=True, default=uuid.uuid4, editable=False)
 
@@ -549,7 +552,7 @@ class Address(GenoBase):
 
     def save_as_copy(self):
         self.user = None
-        self.emonitor_id = None
+        self.import_id = None
         self.gnucash_id = None
         self.random_id = uuid.uuid4()
         super().save_as_copy()
@@ -618,8 +621,8 @@ class Child(GenoBase):
     presence = models.DecimalField("Anwesenheit (Tage/Woche)", max_digits=2, decimal_places=1)
     parents = models.CharField("Eltern(teil)", max_length=200, blank=True)
     notes = models.TextField("Bemerkungen", blank=True)
-    emonitor_id = models.IntegerField(
-        "eMonitor-ID", unique=True, null=True, default=None, blank=True
+    import_id = models.IntegerField(
+        "Import-ID", unique=True, null=True, default=None, blank=True
     )
 
     def age(self, precision=1):
@@ -652,6 +655,17 @@ class Child(GenoBase):
 class Building(GenoBase):
     name = models.CharField("Liegenschaft", max_length=100, unique=True)
     description = models.CharField("Beschreibung", max_length=200, blank=True)
+    street_name = models.CharField("Strasse", max_length=100, blank=True)
+    house_number = models.CharField("Hausnummer", max_length=100, blank=True)
+    city_zipcode = models.CharField("PLZ", max_length=30, blank=True)
+    city_name = models.CharField("Ort", max_length=100, blank=True)
+    country = models.CharField("Land", max_length=100, blank=True, default="Schweiz")
+    value_insurance = models.DecimalField(
+        "Gebäudeversicherungswert (Fr.)", max_digits=12, decimal_places=2, null=True, blank=True
+    )
+    value_build = models.DecimalField(
+        "Anlagekosten (Fr.)", max_digits=12, decimal_places=2, null=True, blank=True
+    )
     team = models.CharField(
         "Rocket.Chat Team",
         max_length=100,
@@ -661,6 +675,7 @@ class Building(GenoBase):
             "(für automatische Zuordnung von Nutzer:innen)."
         ),
     )
+    egid = models.PositiveIntegerField("EGID", null=True)
     active = models.BooleanField("Aktiv", default=True)
 
     class Meta:
@@ -1255,6 +1270,8 @@ class RentalUnit(GenoBase):
     note = models.CharField("Zusatzinfo", max_length=200, blank=True)
     active = models.BooleanField("Aktiv", default=True)
     status = models.CharField("Status", default="Verfügbar", max_length=100)
+    ewid = models.PositiveIntegerField("EWID", null=True)
+    internal_nr = models.PositiveIntegerField("Interne-Nummer", null=True)
     svg_polygon = models.TextField("SVG Polygon", default="", blank=True)
     description = models.TextField("Beschreibung", default="", blank=True)
     adit_serial = models.TextField(
@@ -1264,6 +1281,7 @@ class RentalUnit(GenoBase):
         max_length=50,
         help_text="Mehrere Seriennr. durch Komma trennen.",
     )
+    import_id = models.IntegerField("Import-ID", unique=True, null=True, default=None, blank=True)
 
     @property
     @admin.display(description="Bruttomiete (Fr.)")
@@ -1325,8 +1343,8 @@ class Contract(GenoBase):
     date = models.DateField("Datum Beginn")
     date_end = models.DateField("Datum Ende", null=True, blank=True, default=None)
     note = models.CharField("Zusatzinfo", max_length=200, blank=True)
-    emonitor_id = models.IntegerField(
-        "eMonitor-ID", unique=True, null=True, default=None, blank=True
+    import_id = models.IntegerField(
+        "Import-ID", unique=True, null=True, default=None, blank=True
     )
     rent_reduction = models.DecimalField(
         "Mietzinsreduktion Nettomiete (Fr./Monat)",
@@ -1458,7 +1476,7 @@ class Contract(GenoBase):
         old_contractors = self.contractors.all()
         old_children = self.children.all()
         old_rental_units = self.rental_units.all()
-        self.emonitor_id = None
+        self.import_id = None
         super().save_as_copy()
         self.contractors.set(old_contractors)
         self.children.set(old_children)

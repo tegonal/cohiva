@@ -97,8 +97,8 @@ class AddressAdmin(GenoBaseAdmin):
         "extra",
         ("street_name", "house_number", "po_box", "po_box_number"),
         ("city_zipcode", "city_name", "country"),
-        ("telephone", "mobile"),
-        ("email", "email2"),
+        ("telephone", "mobile", "telephoneOffice", "telephoneOffice2"),
+        ("email", "email2", "website"),
         "date_birth",
         "hometown",
         "occupation",
@@ -110,7 +110,7 @@ class AddressAdmin(GenoBaseAdmin):
         "comment",
         ("carddav_href", "carddav_etag", "carddav_syncts"),
         ("ts_created", "ts_modified"),
-        ("gnucash_id", "emonitor_id", "random_id"),
+        ("gnucash_id", "import_id", "random_id"),
         "user",
         "object_actions",
         "links",
@@ -119,7 +119,7 @@ class AddressAdmin(GenoBaseAdmin):
     readonly_fields = [
         "ts_created",
         "ts_modified",
-        "emonitor_id",
+        "import_id",
         "gnucash_id",
         "random_id",
         "object_actions",
@@ -319,13 +319,13 @@ class ChildAdmin(GenoBaseAdmin):
         ("presence", "age"),
         "parents",
         "notes",
-        "emonitor_id",
+        "import_id",
         "ts_created",
         "ts_modified",
         "links",
         "backlinks",
     ]
-    readonly_fields = ["age", "emonitor_id", "ts_created", "ts_modified", "links", "backlinks"]
+    readonly_fields = ["age", "import_id", "ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "presence", "parents", "age"]
     list_filter = ["presence", "name__active"]
     my_search_fields = ["name__name", "name__first_name", "parents", "notes"]
@@ -340,6 +340,10 @@ class BuildingAdmin(GenoBaseAdmin):
     fields = [
         "name",
         "description",
+        ("street_name", "house_number"),
+        ("city_zipcode", "city_name", "country"),
+        "egid",
+        ("value_insurance", "value_build"),
         "team",
         "active",
         "ts_created",
@@ -879,6 +883,7 @@ class RentalUnitAdmin(GenoBaseAdmin):
         ("height", "volume"),
         ("rent_netto", "nk", "nk_electricity", "rent_total"),
         ("share", "depot"),
+        ("internal_nr", "ewid"),
         "note",
         "svg_polygon",
         "description",
@@ -886,6 +891,7 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "adit_serial",
         "active",
         "comment",
+        "import_id"
         "ts_created",
         "ts_modified",
         "links",
@@ -982,7 +988,7 @@ class ContractAdmin(GenoBaseAdmin):
         "comment",
         "ts_created",
         "ts_modified",
-        "emonitor_id",
+        "import_id",
         "object_actions",
         "links",
         "backlinks",
