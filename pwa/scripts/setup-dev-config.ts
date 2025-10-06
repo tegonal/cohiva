@@ -47,11 +47,6 @@ if (configDirArg) {
 async function main() {
   const overlayTarget = path.join(PWA_CONFIG_DIR, 'overlay')
 
-  // In regular dev mode with no custom config, only setup if config doesn't exist
-  if (!configDirArg && fs.existsSync(overlayTarget)) {
-    return // Silent skip in regular mode
-  }
-
   // Check if pwa-tenant-config-generator directory exists
   if (!fs.existsSync(GENERATOR_ROOT)) {
     console.error(
@@ -91,8 +86,10 @@ async function main() {
     console.log('')
   }
 
-  // Generate and copy config
-  if (configDirArg || !fs.existsSync(overlayTarget)) {
+  // Generate and copy config (skip generation if overlay exists and no custom config)
+  const shouldGenerate = configDirArg || !fs.existsSync(overlayTarget)
+
+  if (shouldGenerate) {
     const configName = path.basename(sourceConfigDir)
     console.log(
       configDirArg
@@ -131,51 +128,38 @@ async function main() {
       console.log(`[setup]    Copying ${item}`)
       fs.cpSync(sourcePath, targetPath, { force: true, recursive: true })
     }
+  }
 
-    // Copy overlay files to pwa/tenant-config/overlay
-    const overlaySource = path.join(sourceConfigDir, 'overlay')
+  // Always copy overlay files to pwa/tenant-config/overlay
+  const overlaySource = path.join(sourceConfigDir, 'overlay')
 
-    if (fs.existsSync(overlaySource)) {
-      console.log('[setup]    Copying overlay/')
-      fs.cpSync(overlaySource, overlayTarget, {
+  if (fs.existsSync(overlaySource)) {
+    if (!shouldGenerate) {
+      console.log('[setup] Updating overlay files...')
+    }
+    console.log('[setup]    Copying overlay/')
+    fs.cpSync(overlaySource, overlayTarget, {
+      force: true,
+      recursive: true,
+    })
+
+    // Copy overlay files over the project root
+    console.log('[setup]    Copying overlay to project root...')
+    const overlayItems = fs.readdirSync(overlayTarget)
+
+    for (const item of overlayItems) {
+      const overlayItemPath = path.join(overlayTarget, item)
+      const projectItemPath = path.join(PWA_ROOT, item)
+
+      console.log(`[setup]       Copying ${item}`)
+      fs.cpSync(overlayItemPath, projectItemPath, {
         force: true,
         recursive: true,
       })
     }
+  }
 
-    // Copy manifest.json to public/ for dev mode
-    const manifestSource = path.join(overlaySource, 'src-pwa', 'manifest.json')
-    const manifestTarget = path.join(PWA_ROOT, 'public', 'manifest.json')
-
-    if (fs.existsSync(manifestSource)) {
-      console.log('[setup]    Copying manifest.json to public/')
-      fs.cpSync(manifestSource, manifestTarget, { force: true })
-    }
-
-    // Copy icons to public/icons/ for dev mode
-    const iconsSource = path.join(overlaySource, 'public', 'icons')
-    const iconsTarget = path.join(PWA_ROOT, 'public', 'icons')
-
-    if (fs.existsSync(iconsSource)) {
-      console.log('[setup]    Copying icons to public/icons/')
-      fs.cpSync(iconsSource, iconsTarget, { force: true, recursive: true })
-    }
-
-    // Copy social media images to public root for dev mode
-    const publicSource = path.join(overlaySource, 'public')
-    const publicTarget = path.join(PWA_ROOT, 'public')
-    const socialImages = ['og-image.png', 'twitter-card.png']
-
-    for (const image of socialImages) {
-      const imageSource = path.join(publicSource, image)
-      const imageTarget = path.join(publicTarget, image)
-
-      if (fs.existsSync(imageSource)) {
-        console.log(`[setup]    Copying ${image} to public/`)
-        fs.cpSync(imageSource, imageTarget, { force: true })
-      }
-    }
-
+  if (shouldGenerate) {
     console.log('')
     console.log('[setup] Configuration setup complete!')
   }

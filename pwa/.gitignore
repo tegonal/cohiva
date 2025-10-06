@@ -9,11 +9,14 @@ node_modules
 /public/twitter-card.png
 /public/og-image.png
 /src/assets/logo.svg
+src/assets/logo-dark.svg
 /src/assets/icon.svg
 /src/css/app.scss
 /src/css/override.scss
 /src/css/webfonts.scss
 /src/css/fonts
+pwa-meta.ts
+pwa-meta-tags.html
 
 # Quasar core related directories
 .quasar

@@ -42,7 +42,7 @@ function checkPWA() {
 		cd "$projectDir/pwa"
 		yarn build
 		yarn lint
-		yarn format:check
+		yarn prettier
 	)
 }
 
