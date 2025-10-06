@@ -64,6 +64,7 @@ class Migration(migrations.Migration):
                         choices=[
                             ("Herr", "Herr"),
                             ("Frau", "Frau"),
+                            ("Divers", "Divers"),
                             ("Paar", "Familie/Paar"),
                             ("Org", "Organisation/Firma"),
                         ],

@@ -661,6 +661,7 @@ def member_overview(request):
             ("Total", 0),
             ("Frauen", 0),
             ("Männer", 0),
+            ("Divers", 0),
             ("Organisationen", 0),
             ("Andere/Unbekannt", 0),
         ]
@@ -690,6 +691,8 @@ def member_overview(request):
                 stat["Organisationen"] += 1
             elif m.name.title == "Herr":
                 stat["Männer"] += 1
+            elif m.name.title == "Divers":
+                stat["Divers"] += 1
             elif m.name.title == "Frau":
                 stat["Frauen"] += 1
             else:
@@ -3803,6 +3806,8 @@ def rental_unit_list_tenants(request, export_xls=True):
     bewohnende = []
     bewohnende_mit_kinder_in_wohnung = []
     data = []
+    include_subcontracts = request.GET.get("include_subcontracts", False)
+    print('rental_unit_list_tenants', export_xls, include_subcontracts)
     data_fields = [
         "ru_name",
         "ru_type",
@@ -3827,7 +3832,7 @@ def rental_unit_list_tenants(request, export_xls=True):
         "membership_date",
         "import_id",
     ]
-    for c in get_active_contracts():
+    for c in get_active_contracts(include_subcontracts=include_subcontracts):
         is_wohnen = False
         for ru in c.rental_units.all():
             if ru.rental_type not in ("Gewerbe", "Lager", "Hobby"):

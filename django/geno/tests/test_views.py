@@ -61,7 +61,6 @@ class GenoViewsTest(GenoAdminTestCase):
             # TODO: OLD CODE'contract/create/',
             # TODO: OLD CODE'contract/create_letter/',
             "contract/create_documents/check/",
-            "rental/tenants/",
             "rental/units/",
             "rental/units/mailbox/",
             "rental/units/protocol/",

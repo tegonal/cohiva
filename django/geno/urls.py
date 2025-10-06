@@ -69,7 +69,6 @@ urlpatterns = [
         geno_views.create_documents,
         {"default_doctype": "contract_check"},
     ),
-    path("rental/tenants/", geno_views.rental_unit_list_tenants),
     path("rental/units/", geno_views.rental_unit_list_units),
     path(
         "rental/units/mailbox/", geno_views.rental_unit_list_create_documents, {"doc": "mailbox"}
