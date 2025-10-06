@@ -4,9 +4,8 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('geno', '0004_rentalunitrentnetto'),
+        ("geno", "0006_tenantsview"),
     ]
 
     operations = [

@@ -1252,7 +1252,8 @@ def import_emonitor_contracts_from_file(empty_tables_first=False):
                 try:
                     contract = Contract.objects.get(import_id=new.import_id)
                     fields.append(
-                        "===> FOUND EXISTING contract with import_id ID %s" % (contract.emonitor_id)
+                        "===> FOUND EXISTING contract with import_id ID %s"
+                        % (contract.emonitor_id)
                     )
                 except Contract.DoesNotExist:
                     contract = new

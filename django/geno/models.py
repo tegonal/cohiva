@@ -253,8 +253,8 @@ class Address(GenoBase):
     gnucash_id = models.CharField(
         "GnuCash-ID", max_length=30, unique=True, null=True, default=None
     )
-    import_id = models.IntegerField(
-        "Import-ID", unique=True, null=True, default=None, blank=True
+    import_id = models.CharField(
+        "Import-ID", max_length=255, unique=True, null=True, default=None, blank=True
     )
     random_id = models.UUIDField("Zufalls-ID", unique=True, default=uuid.uuid4, editable=False)
 
@@ -631,8 +631,8 @@ class Child(GenoBase):
     presence = models.DecimalField("Anwesenheit (Tage/Woche)", max_digits=2, decimal_places=1)
     parents = models.CharField("Eltern(teil)", max_length=200, blank=True)
     notes = models.TextField("Bemerkungen", blank=True)
-    import_id = models.IntegerField(
-        "Import-ID", unique=True, null=True, default=None, blank=True
+    import_id = models.CharField(
+        "Import-ID", max_length=255, unique=True, null=True, default=None, blank=True
     )
 
     def age(self, precision=1):
@@ -1202,6 +1202,7 @@ class Registration(GenoBase):
         verbose_name = "Anmeldung"
         verbose_name_plural = "Anmeldungen"
 
+
 RENTAL_UNIT_TYPES = (
     ("Wohnung", "Wohnung"),
     ("Grosswohnung", "Grosswohnung"),
@@ -1214,6 +1215,7 @@ RENTAL_UNIT_TYPES = (
     ("Gemeinschaft", "Gemeinschaftsräume/Diverses"),
     ("Parkplatz", "Parkplatz"),
 )
+
 
 class RentalUnit(GenoBase):
     name = models.CharField("Nr.", max_length=255)
@@ -1291,7 +1293,9 @@ class RentalUnit(GenoBase):
         max_length=50,
         help_text="Mehrere Seriennr. durch Komma trennen.",
     )
-    import_id = models.IntegerField("Import-ID", unique=True, null=True, default=None, blank=True)
+    import_id = models.CharField(
+        "Import-ID", max_length=255, unique=True, null=True, default=None, blank=True
+    )
 
     @property
     @admin.display(description="Bruttomiete (Fr.)")
@@ -1326,13 +1330,13 @@ class RentalUnit(GenoBase):
 
 class Contract(GenoBase):
     main_contract = select2.fields.ForeignKey(
-        'self',
+        "self",
         verbose_name="Hauptvertrag",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
         related_name="sub_contract",
-        overlay='Untervertrag'
+        overlay="Untervertrag",
     )
     contractors = models.ManyToManyField(
         Address, verbose_name="Vertragspartner", related_name="address_contracts"
@@ -1362,8 +1366,8 @@ class Contract(GenoBase):
     date = models.DateField("Datum Beginn")
     date_end = models.DateField("Datum Ende", null=True, blank=True, default=None)
     note = models.CharField("Zusatzinfo", max_length=200, blank=True)
-    import_id = models.IntegerField(
-        "Import-ID", unique=True, null=True, default=None, blank=True
+    import_id = models.CharField(
+        "Import-ID", max_length=255, unique=True, null=True, default=None, blank=True
     )
     rent_reduction = models.DecimalField(
         "Mietzinsreduktion Nettomiete (Fr./Monat)",
@@ -1530,6 +1534,7 @@ def get_active_contracts(date=None, pre_select=None, include_subcontracts=False)
         return select
     else:
         return select.filter(main_contract__isnull=True)
+
 
 INVOICE_OBJECT_TYPE_CHOICES = (
     ("Address", "Adresse"),
@@ -1805,8 +1810,8 @@ class ContentTemplate(GenoBase):
     def __str__(self):
         return f"{self.template_type}: {self.name}"
 
-class TenantsView(GenoBase):
 
+class TenantsView(GenoBase):
     bu_name = models.CharField("Liegenschaft", max_length=100, unique=True)
     ru_name = models.CharField("Mietobjekt Nr.", max_length=255)
     ru_label = models.CharField("Mietobjekt Bezeichnung", max_length=50, blank=True)
@@ -1848,14 +1853,14 @@ class TenantsView(GenoBase):
     )
 
     class Meta:
-        db_table = 'geno_TenantsView'
+        db_table = "geno_TenantsView"
         managed = False
         verbose_name = "Mieter*innenspiegel"
         verbose_name_plural = "Mieter*innen"
         ordering = ["bu_name", "ru_name"]
         constraints = [
             models.UniqueConstraint(
-                fields=["building", "rental_unit", "tenant", "contract"],
+                fields=["building", "rental_unit", "contract"],
                 name="unique_tenantsview_entry",
             ),
         ]

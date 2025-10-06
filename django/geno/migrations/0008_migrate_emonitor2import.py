@@ -4,31 +4,45 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('geno', '0005_address_building_extension'),
+        ("geno", "0007_address_building_extension"),
     ]
 
     operations = [
         migrations.AlterField(
             model_name="address",
             name="emonitor_id",
-            field=models.IntegerField(
-                blank=True, default=None, null=True, unique=True, verbose_name="Import-ID"
+            field=models.CharField(
+                blank=True,
+                default=None,
+                max_length=255,
+                null=True,
+                unique=True,
+                verbose_name="Import-ID",
             ),
         ),
         migrations.AlterField(
             model_name="child",
             name="emonitor_id",
-            field=models.IntegerField(
-                blank=True, default=None, null=True, unique=True, verbose_name="Import-ID"
+            field=models.CharField(
+                blank=True,
+                default=None,
+                max_length=255,
+                null=True,
+                unique=True,
+                verbose_name="Import-ID",
             ),
         ),
         migrations.AlterField(
             model_name="contract",
             name="emonitor_id",
-            field=models.IntegerField(
-                blank=True, default=None, null=True, unique=True, verbose_name="Import-ID"
+            field=models.CharField(
+                blank=True,
+                default=None,
+                max_length=255,
+                null=True,
+                unique=True,
+                verbose_name="Import-ID",
             ),
         ),
         migrations.RenameField(

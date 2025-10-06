@@ -3807,7 +3807,7 @@ def rental_unit_list_tenants(request, export_xls=True):
     bewohnende_mit_kinder_in_wohnung = []
     data = []
     include_subcontracts = request.GET.get("include_subcontracts", False)
-    print('rental_unit_list_tenants', export_xls, include_subcontracts)
+    print("rental_unit_list_tenants", export_xls, include_subcontracts)
     data_fields = [
         "ru_name",
         "ru_type",
