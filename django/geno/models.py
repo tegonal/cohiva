@@ -181,6 +181,7 @@ class Address(GenoBase):
     TITLE_CHOICES = (
         ("Herr", "Herr"),
         ("Frau", "Frau"),
+        ("Divers", "Divers"),
         ("Paar", "Familie/Paar"),
         ("Org", "Organisation/Firma"),
     )
@@ -461,6 +462,9 @@ class Address(GenoBase):
             if self.title == "Herr" and len(self.first_name):
                 anrede_person = "Lieber %s" % self.first_name
                 words_select = 0
+            elif self.title == "Divers" and len(self.first_name):
+                anrede_person = "Liebe*r %s" % self.first_name
+                words_select = 0
             elif self.title == "Frau" and len(self.first_name):
                 anrede_person = "Liebe %s" % self.first_name
                 words_select = 0
@@ -476,6 +480,12 @@ class Address(GenoBase):
                     anrede_person = "Sehr geehrter Herr %s" % self.name
                 else:
                     anrede_person = "Lieber Herr %s" % self.name
+                words_select = 1
+            elif self.title == "Divers" and len(self.name):
+                if settings.GENO_FORMAL:
+                    anrede_person = "Sehr geehrte*r %s" % self.name
+                else:
+                    anrede_person = "Guten Tag  %s" % self.name
                 words_select = 1
             elif self.title == "Frau" and len(self.name):
                 if settings.GENO_FORMAL:
