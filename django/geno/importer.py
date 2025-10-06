@@ -31,6 +31,9 @@ from .models import (
 from .sepa_reader import SepaReaderException, read_camt
 from .utils import decode_from_iso8859
 
+# prefix for eMonitor entries
+EMONITOR_PREFIX = "eMon: "
+
 
 def process_eigenmittel():
     import openpyxl
@@ -911,7 +914,7 @@ def import_emonitor_children_from_file(empty_tables_first=False):
                     if header[i] == "Bewerbung":
                         contract_id = int(val)
                     elif header[i] == "ID":
-                        new_child.import_id = int(val)
+                        new_child.import_id = EMONITOR_PREFIX + val
                     elif header[i] == "Vorname":
                         new_adr.first_name = val
                     elif header[i] == "Nachname":
@@ -977,7 +980,7 @@ def import_emonitor_addresses_from_file(empty_tables_first=False):
                     if str(header[i], "utf-8") == "Bewerbungs-ID":
                         contract_id = int(val)
                     elif str(header[i], "utf-8") == "Erwachsener ID":
-                        new_adr.import_id = int(val)
+                        new_adr.import_id = EMONITOR_PREFIX + val
                     elif str(header[i], "utf-8") == "Anrede":
                         new_adr.title = val
                     elif str(header[i], "utf-8") == "Vorname":
@@ -1221,7 +1224,7 @@ def import_emonitor_contracts_from_file(empty_tables_first=False):
                     val = str(val.strip(), "utf-8")
                     # "ID","Erwachsene","Kinder","Erstellungsdatum","Zuweisung Wohnung","Parkplatz gewünscht","Zuweisung Parkplatz","Zuweisung Nebenräume","Telefonnummer","Status"
                     if str(header[i], "utf-8") == "ID":
-                        new.import_id = int(val)  ## Bewerbungs-ID
+                        new.import_id = EMONITOR_PREFIX + val  ## Bewerbungs-ID
                     elif str(header[i], "utf-8") == "Kinder":
                         new.children = val
                     elif str(header[i], "utf-8") == "Zuweisung Wohnung":
