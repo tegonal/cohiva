@@ -962,22 +962,23 @@ class ContractAdminModelForm(forms.ModelForm):
             )
         return main_contact
 
+
 class VertragstypFilter(admin.SimpleListFilter):
-    title = 'Vertragstyp'
-    parameter_name = 'main_contract'
+    title = "Vertragstyp"
+    parameter_name = "main_contract"
 
     def lookups(self, request, model_admin):
         # define the filter options
         return (
-            ('hv', 'Hauptvertrag'),
-            ('zv', 'Zusatzvertrag'),
+            ("hv", "Hauptvertrag"),
+            ("zv", "Zusatzvertrag"),
         )
 
     def queryset(self, request, queryset):
         # apply the filter to the queryset
-        if self.value() == 'hv':
+        if self.value() == "hv":
             return queryset.filter(main_contract=None)
-        if self.value() == 'zv':
+        if self.value() == "zv":
             return queryset.filter(main_contract__isnull=False)
 
 
@@ -1201,6 +1202,7 @@ class InvoiceAdmin(GenoBaseAdmin):
 
 admin.site.register(Invoice, InvoiceAdmin)
 
+
 class TenantsViewAdmin(GenoBaseAdmin):
     fields = [
         "bu_name",
@@ -1320,13 +1322,18 @@ class TenantsViewAdmin(GenoBaseAdmin):
 
     def has_add_permission(self, request):
         return False
+
     def has_change_permission(self, request, obj=None):
         return True
+
     def has_delete_permission(self, request, obj=None):
         return False
+
     ordering = ("-bu_name", "-ru_name")
 
+
 admin.site.register(TenantsView, TenantsViewAdmin)
+
 
 class LookupTableAdmin(GenoBaseAdmin):
     model = LookupTable

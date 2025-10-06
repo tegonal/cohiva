@@ -1187,6 +1187,7 @@ class Registration(GenoBase):
         verbose_name = "Anmeldung"
         verbose_name_plural = "Anmeldungen"
 
+
 RENTAL_UNIT_TYPES = (
     ("Wohnung", "Wohnung"),
     ("Grosswohnung", "Grosswohnung"),
@@ -1199,6 +1200,7 @@ RENTAL_UNIT_TYPES = (
     ("Gemeinschaft", "Gemeinschaftsräume/Diverses"),
     ("Parkplatz", "Parkplatz"),
 )
+
 
 class RentalUnit(GenoBase):
     name = models.CharField("Nr.", max_length=255)
@@ -1308,13 +1310,13 @@ class RentalUnit(GenoBase):
 
 class Contract(GenoBase):
     main_contract = select2.fields.ForeignKey(
-        'self',
+        "self",
         verbose_name="Hauptvertrag",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
         related_name="sub_contract",
-        overlay='Untervertrag'
+        overlay="Untervertrag",
     )
     contractors = models.ManyToManyField(
         Address, verbose_name="Vertragspartner", related_name="address_contracts"
@@ -1512,6 +1514,7 @@ def get_active_contracts(date=None, pre_select=None, include_subcontracts=False)
         return select
     else:
         return select.filter(main_contract__isnull=True)
+
 
 INVOICE_OBJECT_TYPE_CHOICES = (
     ("Address", "Adresse"),
@@ -1787,8 +1790,8 @@ class ContentTemplate(GenoBase):
     def __str__(self):
         return f"{self.template_type}: {self.name}"
 
-class TenantsView(GenoBase):
 
+class TenantsView(GenoBase):
     bu_name = models.CharField("Liegenschaft", max_length=100, unique=True)
     ru_name = models.CharField("Mietobjekt Nr.", max_length=255)
     ru_label = models.CharField("Mietobjekt Bezeichnung", max_length=50, blank=True)
@@ -1830,7 +1833,7 @@ class TenantsView(GenoBase):
     )
 
     class Meta:
-        db_table = 'geno_TenantsView'
+        db_table = "geno_TenantsView"
         managed = False
         verbose_name = "Mieter*innenspiegel"
         verbose_name_plural = "Mieter*innen"
