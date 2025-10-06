@@ -44,7 +44,7 @@ SELECT DISTINCT
     c.ts_created,
     c.ts_modified
 FROM
-    (select ctmp.*, 0 as isSC from geno_contract ctmp UNION select sctmp.*, 1 as isSC from geno_contract ctmp JOIN geno_contract sctmp ON ctmp.id = sctmp.main_contract_id) as c
+    (select ctmp.id as id, ctmp.ts_created as ts_created, ctmp.ts_modified as ts_modified, 0 as isSC from geno_contract ctmp UNION select sctmp.id as id, sctmp.ts_created as ts_created, sctmp.ts_modified as ts_modified, 1 as isSC from geno_contract ctmp JOIN geno_contract sctmp ON ctmp.id = sctmp.main_contract_id) as c
 LEFT JOIN
     geno_contract_rental_units cru ON cru.contract_id = c.id
 LEFT JOIN
@@ -91,7 +91,7 @@ SELECT DISTINCT
     c.ts_created,
     c.ts_modified
 FROM
-    (select ctmp.*, 0 as isSC from geno_contract ctmp UNION select sctmp.*, 1 as isSC from geno_contract ctmp JOIN geno_contract sctmp ON ctmp.id = sctmp.main_contract_id) as c
+    (select ctmp.id as id, ctmp.ts_created as ts_created, ctmp.ts_modified as ts_modified, 0 as isSC from geno_contract ctmp UNION select sctmp.id as id, sctmp.ts_created as ts_created, sctmp.ts_modified as ts_modified,  1 as isSC from geno_contract ctmp JOIN geno_contract sctmp ON ctmp.id = sctmp.main_contract_id) as c
 LEFT JOIN
     geno_contract_rental_units cru ON cru.contract_id = c.id
 LEFT JOIN
