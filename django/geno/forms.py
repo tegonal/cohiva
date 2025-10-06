@@ -763,6 +763,7 @@ class ManualInvoiceForm(forms.Form):
         name=None,
         model=None,
     )
+    address.widget.attrs.update({"style": "width: 30em;"})
     extra_text = forms.CharField(
         label="Zusatztext", help_text="(optional)", widget=forms.Textarea, required=False
     )

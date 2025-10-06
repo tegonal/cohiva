@@ -104,9 +104,7 @@ class InvoiceOverviewTable(tables.Table):
             obj_type = "c"
         else:
             obj_type = "p"
-        return mark_safe(
-            '<a href="/geno/invoice/detail/%s/%d/">Details</a>' % (obj_type, value.pk)
-        )
+        return mark_safe('<a href="/geno/debtor/detail/%s/%d/">Details</a>' % (obj_type, value.pk))
 
     class Meta:
         attrs = {"class": "paleblue"}

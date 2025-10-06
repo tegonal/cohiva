@@ -8,42 +8,6 @@
           <th><a href="/geno/member/list">Mitgliederliste</a></th>
           <td>Mitgliederliste anzeigen</td>
         </tr>
-        {% comment %}
-        <tr>
-          <th><a href="/geno/member/list_admin">Mitgliederliste (Admin)</a></th>
-          <td>Mitgliederliste im Admin-Modus anzeigen</td>
-        </tr>
-        {% endcomment %}
-        {% endif %}
-        {% if perms.geno.rental_objects %}
-        <tr>
-          <th><a href="/geno/rental/units">Mietobjektespiegel</a></th>
-          <td>Mietobjektespiegel anzeigen (eine Zeile pro Mietobjekt)</td>
-        </tr>
-        {% comment %}
-        <tr>
-          <th><a href="/geno/rental/units/mailbox">Mietobjekt-Dokumente erzeugen</a></th>
-          <td><a href="/geno/rental/units/protocol">Protokoll</a></td>
-        </tr>
-        {% endcomment %}
-        {% endif %}
-        {% if perms.geno.canview_member_overview %}
-        <tr>
-          <th><a href="/geno/member/overview">Übersicht Mitglieder</a></th>
-          <td>Mitglieder-Statistik <a href="/geno/member/overview?date=last_year">(Ende Vorjahr)</a></td>
-        </tr>
-        {% endif %}
-        {% if perms.geno.canview_member %}
-        <tr>
-          <th><a href="/geno/address/export">Adressliste exportieren</a></th>
-          <td>Adressliste (inkl. Nichtmitglieder) für LibreOffice/Excel</td>
-        </tr>
-          {% if perms.geno.adit %}
-        <tr>
-          <th><a href="/geno/export/adit">ADIT für Gegensprechanlage exportieren</a></th>
-          <td>Für Programmierung Gegensprechanlage (Excel-Datei)</td>
-        </tr>
-          {% endif %}
         {% endif %}
     </table>
 </div>
@@ -53,16 +17,6 @@
 <div class="module">
     <table>
     <caption>Finanzen</caption>
-        <tr>
-          <th><a href="/geno/share/overview">Übersicht Finanzierung</a></th>
-          <td>Summe der Beteiligungen anzeigen</td>
-        </tr>
-        {% if perms.geno.canview_share %}
-        <tr>
-          <th><a href="/geno/share/export?aggregate=yes">Liste Beteiligungen</a> | <a href="/geno/share/export?jahresende=yes&aggregate=yes">per 31.12. Vorjahr</a></th>
-          <td>Liste der Anteilscheine, Darlehen etc. für LibreOffice/Excel</td>
-        </tr>
-        {% endif %}
         {% if perms.geno.canview_billing %}
          {% if perms.geno.check_payments %}
         <tr>
@@ -97,10 +51,6 @@
           <td></td>
         </tr>
              {% endif %}
-        <tr>
-          <th><a href="/geno/invoice/overview">Debitoren Übersicht</a></th>
-          <td>Controlling der Zahlungseingänge</td>
-        </tr>
           {% endif %} {# transaction_invoice #}
          {% endif %} {# transaction #}
         {% endif %} {# canview_billing #}

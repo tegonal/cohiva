@@ -734,8 +734,8 @@ class Tenant(GenoBase):
 
     class Meta:
         ordering = ["name"]
-        verbose_name = "Nutzer:in"
-        verbose_name_plural = "Nutzer:innen"
+        verbose_name = "Externe Nutzer:in"
+        verbose_name_plural = "Externe Nutzer:innen"
 
 
 class Member(GenoBase):

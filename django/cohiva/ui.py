@@ -168,5 +168,8 @@ class MenuItem:
     def get_tab_model(self):
         self.determine_missing_values()
         if self._cls:
-            return f"{self._cls._meta.app_label}.{self._cls._meta.model_name}"
+            if self._type == "model":
+                return f"{self._cls._meta.app_label}.{self._cls._meta.model_name}"
+            else:
+                return f"{self._cls.__module__}.{self._cls.__name__}"
         return None

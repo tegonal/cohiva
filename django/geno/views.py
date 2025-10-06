@@ -19,20 +19,20 @@ from django.core.mail import EmailMultiAlternatives
 from django.db.models import Q
 from django.forms import formset_factory
 from django.http import FileResponse, Http404, HttpResponse, HttpResponseRedirect
-
-# from django.urls import reverse
 from django.shortcuts import redirect, render
 from django.template import Context, loader
 from django.utils import timezone
 from django.utils.encoding import smart_str
 from django.utils.html import escape
-from django.views.generic import TemplateView
+from django.views.generic import FormView, TemplateView
 from django_tables2 import RequestConfig
 from oauthlib.oauth2 import TokenExpiredError
 
 ## For OAuth client
 from requests_oauthlib import OAuth2Session
 from stdnum.ch import esr
+
+from credit_accounting.forms import TransactionUploadForm
 
 if hasattr(settings, "SHARE_PLOT") and settings.SHARE_PLOT:
     ## For Plotting
@@ -70,13 +70,13 @@ from .forms import (
     MemberMailActionForm,
     MemberMailForm,
     MemberMailSelectForm,
-    SendInvoicesForm,
     TransactionForm,
     TransactionFormInvoice,
     TransactionUploadFileForm,
     TransactionUploadProcessForm,
     WebstampForm,
     process_registration_forms,
+    SendInvoicesForm,
 )
 from .gnucash import (
     add_invoice,
@@ -515,7 +515,6 @@ class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
         return ret
 
 
-@login_required
 def member_overview_plot(request):
     if not request.user.has_perm("geno.canview_member_overview"):
         return unauthorized(request)
@@ -662,103 +661,110 @@ def share_overview_boxplot(request):
     return response
 
 
-@login_required
-def member_overview(request):
-    if not request.user.has_perm("geno.canview_member_overview"):
-        return unauthorized(request)
+class MemberOverviewView(CohivaAdminViewMixin, TemplateView):
+    title = "Mitgliederspiegel"
+    permission_required = "geno.canview_member_overview"
 
-    ret = []
-    stat = OrderedDict(
-        [
-            ("Total", 0),
-            ("Frauen", 0),
-            ("Männer", 0),
-            ("Divers", 0),
-            ("Organisationen", 0),
-            ("Andere/Unbekannt", 0),
-        ]
-    )
+    def get_context_data(self, **kwargs):
+        return super().get_context_data(
+            **kwargs,
+            response=self.member_overview(),
+        )
 
-    # age_limits = (20,30,40,50,60,70,80,1000)
-    age_limits = (30, 45, 60, 1000)
-    age_stat = {}
-    for limit in age_limits:
-        age_stat["u%d" % limit] = 0
-    age_stat["Unbekannt"] = 0
+    def member_overview(self):
+        ret = []
+        stat = OrderedDict(
+            [
+                ("Total", 0),
+                ("Frauen", 0),
+                ("Männer", 0),
+                ("Divers", 0),
+                ("Organisationen", 0),
+                ("Andere/Unbekannt", 0),
+            ]
+        )
 
-    date_mode = "strict"
-    today = datetime.date.today()
-    reference_date = today
-    if request.GET.get("date", "") == "last_year":
-        date_mode = "last_year"
-        reference_date = datetime.date(today.year - 1, 12, 31)
-
-    # for m in Member.objects.exclude(date_leave__isnull=False):
-    for m in Member.objects.all():
-        if is_member(m.name, date_mode=date_mode):
-            stat["Total"] += 1
-
-            ## Gender stat
-            if m.name.title == "Org" or m.name.organization:
-                stat["Organisationen"] += 1
-            elif m.name.title == "Herr":
-                stat["Männer"] += 1
-            elif m.name.title == "Divers":
-                stat["Divers"] += 1
-            elif m.name.title == "Frau":
-                stat["Frauen"] += 1
-            else:
-                stat["Andere/Unbekannt"] += 1
-
-            ## Age stat
-            if m.name.date_birth:
-                born = m.name.date_birth
-                age = (
-                    reference_date.year
-                    - born.year
-                    - ((reference_date.month, reference_date.day) < (born.month, born.day))
-                )
-                for limit in age_limits:
-                    if age < limit:
-                        age_stat["u%d" % limit] += 1
-                        break
-            else:
-                age_stat["Unbekannt"] += 1
-
-    tot = stat["Total"]
-    if tot > 0:
-        obj = []
-        for k, v in stat.items():
-            obj.append("%s: %d (%d%%)" % (k, v, round(float(v) / float(tot) * 100.0)))
-    else:
-        obj = ["Keine Mitglieder gefunden"]
-
-    ret.append({"info": "Mitgliederspiegel", "objects": obj})
-
-    if tot > 0:
-        obj = []
-        last = 0
+        # age_limits = (20,30,40,50,60,70,80,1000)
+        age_limits = (30, 45, 60, 1000)
+        age_stat = {}
         for limit in age_limits:
-            v = age_stat["u%d" % limit]
-            if limit == 1000:
-                obj.append("Über %d: %d (%d%%)" % (last, v, round(float(v) / float(tot) * 100.0)))
-            else:
-                obj.append(
-                    "%d - %d: %d (%d%%)" % (last, limit, v, round(float(v) / float(tot) * 100.0))
-                )
-            last = limit
-        if age_stat["Unbekannt"]:
-            v = age_stat["Unbekannt"]
-            obj.append("Unbekannt: %d (%d%%)" % (v, round(float(v) / float(tot) * 100.0)))
+            age_stat["u%d" % limit] = 0
+        age_stat["Unbekannt"] = 0
 
-    ret.append({"info": "Altersverteilung", "objects": obj})
+        date_mode = "strict"
+        today = datetime.date.today()
+        reference_date = today
+        if self.request.GET.get("date", "") == "last_year":
+            date_mode = "last_year"
+            reference_date = datetime.date(today.year - 1, 12, 31)
 
-    if hasattr(settings, "SHARE_PLOT") and settings.SHARE_PLOT:
-        ret.append({"info": '<img src="/geno/member/overview/plot/" alt="Statistik">'})
+        # for m in Member.objects.exclude(date_leave__isnull=False):
+        for m in Member.objects.all():
+            if is_member(m.name, date_mode=date_mode):
+                stat["Total"] += 1
 
-    return render(
-        request, "geno/messages.html", {"response": ret, "title": "Übersicht Mitglieder"}
-    )
+                ## Gender stat
+                if m.name.title == "Org" or m.name.organization:
+                    stat["Organisationen"] += 1
+                elif m.name.title == "Herr":
+                    stat["Männer"] += 1
+                elif m.name.title == "Divers":
+                    stat["Divers"] += 1
+                elif m.name.title == "Frau":
+                    stat["Frauen"] += 1
+                else:
+                    stat["Andere/Unbekannt"] += 1
+
+                ## Age stat
+                if m.name.date_birth:
+                    born = m.name.date_birth
+                    age = (
+                        reference_date.year
+                        - born.year
+                        - ((reference_date.month, reference_date.day) < (born.month, born.day))
+                    )
+                    for limit in age_limits:
+                        if age < limit:
+                            age_stat["u%d" % limit] += 1
+                            break
+                else:
+                    age_stat["Unbekannt"] += 1
+
+        tot = stat["Total"]
+        if tot > 0:
+            obj = []
+            for k, v in stat.items():
+                obj.append("%s: %d (%d%%)" % (k, v, round(float(v) / float(tot) * 100.0)))
+        else:
+            obj = ["Keine Mitglieder gefunden"]
+
+        ret.append({"info": "Mitgliederspiegel", "objects": obj})
+
+        if tot > 0:
+            obj = []
+            last = 0
+            for limit in age_limits:
+                v = age_stat["u%d" % limit]
+                if limit == 1000:
+                    obj.append(
+                        "Über %d: %d (%d%%)" % (last, v, round(float(v) / float(tot) * 100.0))
+                    )
+                else:
+                    obj.append(
+                        "%d - %d: %d (%d%%)"
+                        % (last, limit, v, round(float(v) / float(tot) * 100.0))
+                    )
+                last = limit
+            if age_stat["Unbekannt"]:
+                v = age_stat["Unbekannt"]
+                obj.append("Unbekannt: %d (%d%%)" % (v, round(float(v) / float(tot) * 100.0)))
+
+        ret.append({"info": "Altersverteilung", "objects": obj})
+
+        if hasattr(settings, "SHARE_PLOT") and settings.SHARE_PLOT:
+            ret.append({"info": '<img src="/geno/member/overview/plot/" alt="Statistik">'})
+
+        return ret
 
 
 @login_required
@@ -1362,36 +1368,52 @@ def transaction(request):
     )
 
 
-@login_required
-def invoice(request, action="create", key=None, key_type=None, consolidate=True):
-    if not request.user.has_perm("geno.transaction"):
-        return unauthorized(request)
+class DebtorView(CohivaAdminViewMixin, TemplateView):
+    title = "Debitoren"
+    permission_required = ("geno.canview_billing", "geno.transaction", "geno.transaction_invoice")
+    template_name = "geno/table.html"
+    action = "overview"
 
-    if action in ("overview", "detail"):
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form"] = self.get_form()
+        if self.action == "overview":
+            context.update(self.debtor_list())
+        elif self.action == "detail":
+            context.update(self.debtor_detail(self.kwargs["key_type"], self.kwargs["key"]))
+        return context
+
+    def get(self, request, *args, **kwargs):
         if "invoice_filter" not in request.session or request.GET.get("reset_filter", "0") == "1":
             request.session["invoice_filter"] = {"category_filter": "_all"}
             if request.GET.get("reset_filter", "0") == "1":
                 ## Reload to get rid of get request argument
                 return HttpResponseRedirect(request.path)
-        initial = request.session["invoice_filter"].copy()
-        if action == "detail":
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.get(request, *args, **kwargs)
+
+    def get_form(self):
+        initial = self.request.session["invoice_filter"].copy()
+        if self.action == "detail":
             if "search_detail" in initial:
                 initial["search"] = initial["search_detail"]
             else:
                 initial["search"] = ""
-        if request.POST:
-            form = InvoiceFilterForm(request.POST)
+        if self.request.POST:
+            form = InvoiceFilterForm(self.request.POST)
             if form.is_valid():
-                if action == "detail":
-                    request.session["invoice_filter"]["search_detail"] = form.cleaned_data[
+                if self.action == "detail":
+                    self.request.session["invoice_filter"]["search_detail"] = form.cleaned_data[
                         "search"
                     ]
                 else:
-                    request.session["invoice_filter"]["search"] = form.cleaned_data["search"]
-                request.session["invoice_filter"]["category_filter"] = form.cleaned_data[
+                    self.request.session["invoice_filter"]["search"] = form.cleaned_data["search"]
+                self.request.session["invoice_filter"]["category_filter"] = form.cleaned_data[
                     "category_filter"
                 ]
-                request.session["invoice_filter"]["show_consolidated"] = form.cleaned_data[
+                self.request.session["invoice_filter"]["show_consolidated"] = form.cleaned_data[
                     "show_consolidated"
                 ]
                 if form.cleaned_data["date_from"]:
@@ -1402,49 +1424,66 @@ def invoice(request, action="create", key=None, key_type=None, consolidate=True)
                     date_to = form.cleaned_data["date_to"].strftime("%d.%m.%Y")
                 else:
                     date_to = ""
-                request.session["invoice_filter"]["date_from"] = date_from
-                request.session["invoice_filter"]["date_to"] = date_to
+                self.request.session["invoice_filter"]["date_from"] = date_from
+                self.request.session["invoice_filter"]["date_to"] = date_to
         else:
             form = InvoiceFilterForm(initial=initial)
+        return form
 
-    if action == "overview":
-        if request.POST.get("consolidate"):
+    def debtor_list(self):
+        if self.request.POST.get("consolidate"):
             consolidate_invoices()
-        data = invoice_overview(request.session["invoice_filter"])
+        data = invoice_overview(self.request.session["invoice_filter"])
         table = InvoiceOverviewTable(data)
         table.order_by = "-total"
-        RequestConfig(request, paginate={"per_page": 100}).configure(table)
-        return render(
-            request,
-            "geno/table.html",
-            {"title": "Debitoren Übersicht", "table": table, "form": form, "invoice_table": True},
-        )
-    elif action == "detail":
-        # print(key_type)
-        # print(key)
+        RequestConfig(self.request, paginate={"per_page": 100}).configure(table)
+        return {"title": "Debitoren", "table": table, "invoice_table": True}
+
+    def debtor_detail(self, key_type, key):
         if key_type == "c":
             obj = Contract.objects.get(pk=key)
         else:
             obj = Address.objects.get(pk=key)
-        if request.POST.get("consolidate"):
+        if self.request.POST.get("consolidate"):
             consolidate_invoices(obj)
-        data = invoice_detail(obj, request.session["invoice_filter"])
+        data = invoice_detail(obj, self.request.session["invoice_filter"])
         table = InvoiceDetailTable(data)
-        RequestConfig(request, paginate={"per_page": 100}).configure(table)
-        return render(
-            request,
-            "geno/table.html",
-            {
-                "title": "Detailansicht: %s" % (obj),
-                "table": table,
-                "form": form,
-                "invoice_table": True,
-                "breadcrumbs": [
-                    {"name": "Debitoren Übersicht", "href": "/geno/invoice/overview/"}
-                ],
-            },
-        )
-    elif action in ("create", "download"):
+        RequestConfig(self.request, paginate={"per_page": 100}).configure(table)
+        return {
+            "title": "Detailansicht: %s" % (obj),
+            "table": table,
+            "invoice_table": True,
+            "breadcrumbs": [{"name": "Debitoren", "href": "/geno/debtor/"}],
+        }
+
+
+class InvoiceBatchView(CohivaAdminViewMixin, TemplateView):
+    title = "Mietzinsrechnung erstellen"
+    permission_required = (
+        "geno.canview_billing",
+        "geno.transaction",
+        "geno.transaction_invoice",
+        "geno.add_invoice",
+    )
+    template_name = "geno/table.html"
+    action = "overview"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form"] = self.get_form()
+        if self.action == "overview":
+            context.update(self.debtor_list())
+        elif self.action == "detail":
+            context.update(self.debtor_detail(self.kwargs["key_type"], self.kwargs["key"]))
+        return context
+
+
+@login_required
+def invoice(request, action="create", key=None, key_type=None, consolidate=True):
+    if not request.user.has_perm("geno.transaction"):
+        return unauthorized(request)
+
+    if action in ("create", "download"):
         ret = []
 
         if action == "download":
@@ -3519,68 +3558,68 @@ def send_contract_mail(request):
     )
 
 
-@login_required
-def transaction_upload(request):
-    if not request.user.has_perm("geno.transaction"):
-        return unauthorized(request)
-
-    initial = {}
-    ret = []
+class TransactionUploadView(CohivaAdminViewMixin, FormView):
+    title = "Zahlungen erfassen"
+    permission_required = ("geno.transaction", "geno.transaction_invoice", "geno.add_invoice")
+    template_name = "geno/transaction_upload.html"
+    form_class = TransactionUploadForm
     import_message = ""
-    form = TransactionUploadFileForm(request.POST or None, request.FILES, initial=initial)
-    if request.method == "POST":
-        # print form.data
-        if form.is_valid():
-            # if not request.FILES:
-            #    return HttpResponseRedirect('/geno/transaction_upload/process/')
-            if "file" in request.FILES:
-                uploaded_file = request.FILES["file"]
-                transaction_data = process_transaction_file(request.FILES["file"])
+    import_items = []
+    actions = []  ## title, path, items (for dropdown), method_name (for dropdown?), icon, variant
+    if settings.DEMO:
+        actions.append(
+            {"title": "DEMO-Zahlungsdatei erzeugen", "path": "/geno/transaction_upload/testdata"}
+        )
 
-                if transaction_data["error"]:
-                    messages.error(
-                        request, "Konnte Datei nicht verarbeiten: %s" % transaction_data["error"]
-                    )
-                    logger.error(
-                        f"Transaction upload: Error while processing {uploaded_file}: "
-                        f"{transaction_data['error']}"
-                    )
-                elif transaction_data["type"].startswith("camt.053") or transaction_data[
-                    "type"
-                ].startswith("camt.054"):
-                    import_message = "Import von Buchungen aus %s:" % uploaded_file
-                    ret = process_sepa_transactions(transaction_data["data"])
-                    if len(ret["success"]):
-                        logger.info(
-                            f"Transaction upload: Imported {len(ret['success'])} records "
-                            f"from {uploaded_file}."
-                        )
-                else:
-                    messages.error(
-                        request,
-                        "Konnte Datei nicht verarbeiten: Unbekannter typ %s"
-                        % transaction_data["type"],
-                    )
-                    logger.error(
-                        f"Transaction upload: Error while processing {uploaded_file}: "
-                        f"Invalid type {transaction_data['type']}"
-                    )
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "import_message": self.import_message,
+                "import_items": self.import_items,
+                "item_name": "Buchungen",
+                # "title": "Bankauszug verarbeiten",
+            }
+        )
+        return context
 
+    def form_valid(self, form):
+        if "file" in self.request.FILES:
+            uploaded_file = self.request.FILES["file"]
+            transaction_data = process_transaction_file(self.request.FILES["file"])
+
+            if transaction_data["error"]:
+                messages.error(
+                    self.request, "Konnte Datei nicht verarbeiten: %s" % transaction_data["error"]
+                )
+                logger.error(
+                    f"Transaction upload: Error while processing {uploaded_file}: "
+                    f"{transaction_data['error']}"
+                )
+            elif transaction_data["type"].startswith("camt.053") or transaction_data[
+                "type"
+            ].startswith("camt.054"):
+                self.import_message = "Import von Buchungen aus %s:" % uploaded_file
+                self.import_items = process_sepa_transactions(transaction_data["data"])
+                if len(self.import_items["success"]):
+                    logger.info(
+                        f"Transaction upload: Imported {len(self.import_items['success'])} records "
+                        f"from {uploaded_file}."
+                    )
             else:
-                messages.error(request, "Konnte Datei nicht hochladen.")
+                messages.error(
+                    self.request,
+                    "Konnte Datei nicht verarbeiten: Unbekannter typ %s"
+                    % transaction_data["type"],
+                )
+                logger.error(
+                    f"Transaction upload: Error while processing {uploaded_file}: "
+                    f"Invalid type {transaction_data['type']}"
+                )
 
-    return render(
-        request,
-        "geno/transaction_upload.html",
-        {
-            "import_message": import_message,
-            "import_items": ret,
-            "item_name": "Buchungen",
-            "title": "Bankauszug verarbeiten",
-            "form": form,
-            "form_action": "/geno/transaction_upload/",
-        },
-    )
+        else:
+            messages.error(self.request, "Konnte Datei nicht hochladen.")
+        return self.get(self.request)
 
 
 @login_required
@@ -3677,174 +3716,223 @@ def transaction_testdata(request):
     return response
 
 
-@login_required
-def invoice_manual(request):
-    if not request.user.has_perm("geno.transaction"):
-        return unauthorized(request)
-
-    error = False
-    email_template = None
-    InvoiceFormset = formset_factory(ManualInvoiceLineForm, extra=0)
-    if request.method == "POST":
-        form = ManualInvoiceForm(request.POST)
-        formset = InvoiceFormset(request.POST, request.FILES)
-        if form.is_valid() and formset.is_valid():
-            ## TODO: Use InvoiceCreator to do this
-            invoice_category = form.cleaned_data["category"]
-            address = form.cleaned_data["address"]
-            invoice_date = form.cleaned_data["date"]
-
-            lines_count = 0
-            total_amount = 0
-            invoice_lines = []
-            error = False
-            comment = []
-            for line in formset.cleaned_data:
-                if line["amount"]:
-                    if not len(line["text"]) or not line["date"]:
-                        messages.error(
-                            request,
-                            "Zeile mit Betrag aber ohne Datum/Beschreibung! "
-                            "Bitte eingeben oder Betrag löschen.",
-                        )
-                        error = True
-                        break
-                    line["date"] = line["date"].strftime("%d.%m.%Y")
-                    line["total"] = nformat(line["amount"])
-                    invoice_lines.append(line)
-                    lines_count += 1
-                    total_amount += line["amount"]
-                    comment.append("%s CHF %s" % (line["text"], line["total"]))
-
-            if not lines_count:
-                messages.error(
-                    request,
-                    "Keine Rechnungspositionen eingegeben! Bitte mindestens eine Zeile ausfüllen.",
-                )
-                error = 1
-
-            if (
-                not error
-                and "submit_action_pdf" in request.POST
-                or "submit_action_mail" in request.POST
-            ):
-                dry_run = False
-                if "submit_action_mail" in request.POST:
-                    ## Send email
-                    email_template = "email_invoice.html"
-
-                invoice = add_invoice(
-                    None,
-                    invoice_category,
-                    invoice_category.name,
-                    invoice_date,
-                    total_amount,
-                    address=address,
-                    comment="/".join(comment),
-                )
-                if isinstance(invoice, str):
-                    messages.error(request, "Konnte Rechnungs-Objekt nicht erzeugen: %s" % invoice)
-                    error = 1
-                else:
-                    invoice_id = invoice.id
-
-            else:
-                ## Test/Preview
-                dry_run = True
-                invoice_id = 9999999999
-
-            if not error:
-                ref_number = get_reference_nr(invoice_category, address.id, invoice_id)
-                output_filename = "Rechnung_%s_%s_%s.pdf" % (
-                    invoice_category.name,
-                    invoice_date.strftime("%Y%m%d"),
-                    esr.compact(ref_number),
-                )
-                context = address.get_context()
-                if invoice_category.name == "Geschäftsstelle":
-                    context["betreff"] = "Rechnung"
-                else:
-                    context["betreff"] = "Rechnung %s" % invoice_category.name
-                context["extra_text"] = form.cleaned_data["extra_text"]
-                context["invoice_date"] = invoice_date.strftime("%d.%m.%Y")
-                context["invoice_duedate"] = (invoice_date + relativedelta(months=1)).strftime(
-                    "%d.%m.%Y"
-                )
-                context["invoice_nr"] = invoice_id
-                context["show_liegenschaft"] = False
-                context["contract_info"] = None
-                context["sect_rent"] = False
-                context["sect_generic"] = True
-                context["generic_info"] = invoice_lines
-                context["s_generic_total"] = nformat(total_amount)
-                context["qr_amount"] = total_amount
-                context["qr_extra_info"] = "Rechnung %s" % context["invoice_nr"]
-                context["preview"] = dry_run
-
-                email_subject = "%s Nr. %s/%s" % (
-                    context["betreff"],
-                    context["invoice_nr"],
-                    context["invoice_date"],
-                )
-
-                (ret, mails_sent, mail_recipient) = create_qrbill(
-                    ref_number,
-                    address,
-                    context,
-                    output_filename,
-                    render,
-                    email_template,
-                    email_subject,
-                    dry_run,
-                )
-
-                info = "%s CHF %s Nr. %s/%s, %s" % (
-                    address,
-                    total_amount,
-                    context["invoice_nr"],
-                    context["invoice_date"],
-                    context["betreff"],
-                )
-                if ret:
-                    print("ERROR MSG")
-                    messages.error(
-                        request, "Fehler beim erzeugen der Rechnung für %s: %s" % (info, ret)
-                    )
-                elif email_template:
-                    if mails_sent == 1:
-                        messages.success(
-                            request,
-                            "Email '%s' mit QR-Rechnung an %s geschickt. %s"
-                            % (email_subject, mail_recipient, output_filename),
-                        )
-                    else:
-                        messages.error(
-                            request,
-                            "FEHLER beim Versenden des Emails '%s' mit QR-Rechnung an %s! %s."
-                            % (email_subject, mail_recipient, output_filename),
-                        )
-                else:
-                    pdf_file = open("/tmp/%s" % output_filename, "rb")
-                    resp = FileResponse(pdf_file, content_type="application/pdf")
-                    resp["Content-Disposition"] = "attachment; filename=%s" % output_filename
-                    return resp
-    else:
-        form = ManualInvoiceForm(initial={"date": datetime.date.today()})
-        formset = InvoiceFormset(
-            initial=[
-                {"date": datetime.date.today()},
-                {"date": datetime.date.today()},
-                {"date": datetime.date.today()},
-                {"date": datetime.date.today()},
-                {"date": datetime.date.today()},
-            ]
-        )
-
-    return render(
-        request,
-        "geno/invoice_manual.html",
-        {"form": form, "formset": formset, "form_action": "/geno/invoice/", "error": error},
+class InvoiceView(CohivaAdminViewMixin, TemplateView):
+    title = "Rechnung erstellen"
+    permission_required = (
+        "geno.canview_billing",
+        "geno.transaction",
+        "geno.transaction_invoice",
+        "geno.add_invoice",
     )
+    template_name = "geno/invoice_manual.html"
+    action = "overview"
+    error_flag = False
+
+    def post(self, request, *args, **kwargs):
+        form = self.get_form()
+        formset = self.get_formset()
+        if form.is_valid() and formset.is_valid():
+            ret = self.process(form, formset)
+            if isinstance(ret, FileResponse):
+                return ret
+        return self.get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form"] = self.get_form()
+        context["formset"] = self.get_formset()
+        context["form_action"] = "/geno/invoice/"
+        context["error_flag"] = self.error_flag
+        return context
+
+    def get_form(self):
+        if self.request.method == "POST":
+            form = ManualInvoiceForm(self.request.POST)
+        else:
+            form = ManualInvoiceForm(initial={"date": datetime.date.today()})
+        return form
+
+    def get_formset(self):
+        InvoiceFormset = formset_factory(ManualInvoiceLineForm, extra=0)
+        if self.request.method == "POST":
+            formset = InvoiceFormset(self.request.POST, self.request.FILES)
+        else:
+            formset = InvoiceFormset(
+                initial=[
+                    {"date": datetime.date.today()},
+                    {"date": datetime.date.today()},
+                    {"date": datetime.date.today()},
+                    {"date": datetime.date.today()},
+                    {"date": datetime.date.today()},
+                ]
+            )
+        return formset
+
+    def process(self, form, formset):
+        email_template = None
+
+        ## TODO: Use InvoiceCreator to do this
+        invoice_category = form.cleaned_data["category"]
+        address = form.cleaned_data["address"]
+        invoice_date = form.cleaned_data["date"]
+
+        lines_count = 0
+        total_amount = 0
+        invoice_lines = []
+        comment = []
+        for line in formset.cleaned_data:
+            if line["amount"]:
+                if not len(line["text"]) or not line["date"]:
+                    messages.error(
+                        self.request,
+                        "Zeile mit Betrag aber ohne Datum/Beschreibung! "
+                        "Bitte eingeben oder Betrag löschen.",
+                    )
+                    self.error_flag = True
+                    break
+                line["date"] = line["date"].strftime("%d.%m.%Y")
+                line["total"] = nformat(line["amount"])
+                invoice_lines.append(line)
+                lines_count += 1
+                total_amount += line["amount"]
+                comment.append("%s CHF %s" % (line["text"], line["total"]))
+
+        if not lines_count:
+            messages.error(
+                self.request,
+                "Keine Rechnungspositionen eingegeben! Bitte mindestens eine Zeile ausfüllen.",
+            )
+            self.error_flag = True
+
+        if (
+            not self.error_flag
+            and "submit_action_pdf" in self.request.POST
+            or "submit_action_mail" in self.request.POST
+        ):
+            dry_run = False
+            if "submit_action_mail" in self.request.POST:
+                ## Send email
+                email_template = "email_invoice.html"
+
+            invoice = add_invoice(
+                None,
+                invoice_category,
+                invoice_category.name,
+                invoice_date,
+                total_amount,
+                address=address,
+                comment="/".join(comment),
+            )
+            if isinstance(invoice, str):
+                messages.error(
+                    self.request, "Konnte Rechnungs-Objekt nicht erzeugen: %s" % invoice
+                )
+                self.error_flag = True
+            else:
+                invoice_id = invoice.id
+
+        else:
+            ## Test/Preview
+            dry_run = True
+            invoice_id = 9999999999
+
+        if not self.error_flag:
+            ref_number = get_reference_nr(invoice_category, address.id, invoice_id)
+            output_filename = "Rechnung_%s_%s_%s.pdf" % (
+                invoice_category.name,
+                invoice_date.strftime("%Y%m%d"),
+                esr.compact(ref_number),
+            )
+            context = address.get_context()
+            if invoice_category.name == "Geschäftsstelle":
+                context["betreff"] = "Rechnung"
+            else:
+                context["betreff"] = "Rechnung %s" % invoice_category.name
+            context["extra_text"] = form.cleaned_data["extra_text"]
+            context["invoice_date"] = invoice_date.strftime("%d.%m.%Y")
+            context["invoice_duedate"] = (invoice_date + relativedelta(months=1)).strftime(
+                "%d.%m.%Y"
+            )
+            context["invoice_nr"] = invoice_id
+            context["show_liegenschaft"] = False
+            context["contract_info"] = None
+            context["sect_rent"] = False
+            context["sect_generic"] = True
+            context["generic_info"] = invoice_lines
+            context["s_generic_total"] = nformat(total_amount)
+            context["qr_amount"] = total_amount
+            context["qr_extra_info"] = "Rechnung %s" % context["invoice_nr"]
+            context["preview"] = dry_run
+
+            email_subject = "%s Nr. %s/%s" % (
+                context["betreff"],
+                context["invoice_nr"],
+                context["invoice_date"],
+            )
+
+            (ret, mails_sent, mail_recipient) = create_qrbill(
+                ref_number,
+                address,
+                context,
+                output_filename,
+                render,
+                email_template,
+                email_subject,
+                dry_run,
+            )
+
+            info = "%s CHF %s Nr. %s/%s, %s" % (
+                address,
+                total_amount,
+                context["invoice_nr"],
+                context["invoice_date"],
+                context["betreff"],
+            )
+            if ret:
+                messages.error(
+                    self.request, "Fehler beim erzeugen der Rechnung für %s: %s" % (info, ret)
+                )
+                self.error_flag = True
+            elif email_template:
+                if mails_sent == 1:
+                    messages.success(
+                        self.request,
+                        "Email '%s' mit QR-Rechnung an %s geschickt. %s"
+                        % (email_subject, mail_recipient, output_filename),
+                    )
+                else:
+                    messages.error(
+                        self.request,
+                        "FEHLER beim Versenden des Emails '%s' mit QR-Rechnung an %s! %s."
+                        % (email_subject, mail_recipient, output_filename),
+                    )
+                    self.error_flag = True
+            else:
+                pdf_file = open("/tmp/%s" % output_filename, "rb")
+                resp = FileResponse(pdf_file, content_type="application/pdf")
+                resp["Content-Disposition"] = "attachment; filename=%s" % output_filename
+                return resp
+        return self.get(self.request)
+
+
+class ResidentListView(CohivaAdminViewMixin, TemplateView):
+    title = "Mieter:innenspiegel"
+    permission_required = "geno.rental_objects"
+    # model_admin = ResidentListAdmin
+
+    def get_context_data(self, **kwargs):
+        # admin_instance = ResidentListAdmin(model=Contract, admin_site=admin.site)
+        context = super().get_context_data(**kwargs)
+        context["response"] = [
+            {
+                "info": "TODO: Add list of residents and action to download.",
+                "objects": [
+                    '<a href="/geno/rental/tenants" class="text-primary-600">Mieter*innenspiegel</a> (eine Zeile pro Person und Mietobjekt)',
+                    '<a href="/geno/rental/units" class="text-primary-600">Mietobjektespiegel</a> (eine Zeile pro Mietobjekt)',
+                ],
+            }
+        ]
+        return context
 
 
 @login_required
@@ -3853,7 +3941,6 @@ def rental_unit_list_tenants(request, export_xls=True):
     bewohnende_mit_kinder_in_wohnung = []
     data = []
     include_subcontracts = request.GET.get("include_subcontracts", False)
-    print("rental_unit_list_tenants", export_xls, include_subcontracts)
     data_fields = [
         "ru_name",
         "ru_type",

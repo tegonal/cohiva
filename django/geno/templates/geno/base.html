@@ -1,20 +1,74 @@
-{% extends "admin/base_site.html" %}
+{% extends "admin/base.html" %}
 
-{% block title %}
+{% load admin_urls i18n unfold admin_list static %}
+
+{% block extrastyle %}
+<link href="{% static 'geno/css/styles.css' %}" rel="stylesheet">
+
+{# Django Admin UI stuff that we use in custom views #}
+{#<script src="/admin/jsi18n/"></script>#}
+<script src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+{#<script src="{% static 'admin/js/calendar.js' %}"></script>#}
+{#<script src="{% static 'admin/js/jquery.init.js' %}"></script>#}
+{#<script src="{% static 'admin/js/admin/DateTimeShortcuts.js' %}"></script>#}
+{#<script src="{% static 'admin/js/core.js' %}"></script>#}
+
+{# Select2 dropdown TODO: Replace with Admin Widget #}
+<link href="{% static 'select2/css/select2.css' %}" type="text/css" media="all" rel="stylesheet">}
+<script src="{% static 'select2/js/select2.jquery_ready.js' %}"></script>}
+<script src="{% static 'select2/js/select2.jquery_ui_sortable.js' %}"></script>}
+<script src="{% static 'select2/js/select2.js' %}"></script>
+
+{# Datepicker TODO: Replace with Admin Date-Widget #}
+<link href="{% static 'geno/css/jquery-ui.css' %}" rel="stylesheet">
+<script src="{% static 'geno/js/jquery-ui.js' %}"></script>
+<script src="{% static 'geno/js/datepicker.js' %}"></script>
+{% endblock %}
+
+
+{% block title_OLD %}
 {{ title }} | {{ site_title|default:_('Genossenschaft Administration') }}
 {% endblock %}
 
-{% block content_title %}
+{% block content_title_OLD %}
 {% if title %}
 <h1>
 {% for item in breadcrumbs %}
-<a href="{{item.href}}">{{item.name}}</a> &gt; 
+<a href="{{item.href}}">{{item.name}}</a> &gt;
 {% endfor %}
 {{ title }}
 </h1>{% endif %}
 {% endblock %}
 
-{% block branding %}
+{% block branding_OLD %}
 <h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_('Genossenschaft Administration') }}</a></h1>
 {% endblock %}
 
+{% block content_before %}
+CUSTOM HEADER
+{% endblock %}
+
+{% block breadcrumbs %}{% if not false %}
+    <div class="px-4">
+        <div class="container mb-6 mx-auto -my-3 lg:mb-12">
+            <ul class="flex flex-wrap">
+                {% url 'admin:index' as link %}
+                {% trans 'Home' as name %}
+                {% include 'unfold/helpers/breadcrumb_item.html' with link=link name=name %}
+
+                {% url 'admin:formula_driver_changelist' as link %}
+                {% trans 'Drivers' as name %}
+                {% include 'unfold/helpers/breadcrumb_item.html' with link=link name=name %}
+
+                {% trans 'Custom page' as name %}
+                {% include 'unfold/helpers/breadcrumb_item.html' with name=name %}
+            </ul>
+        </div>
+    </div>
+{% endif %}{% endblock %}
+
+{% block content %}
+    {% block object-tools %}{% endblock %}
+    {% tab_list "changelist" cohiva_view_name %}
+    {% block custom_content %}{% endblock %}
+{% endblock %}

@@ -736,12 +736,7 @@ COHIVA_ADMIN_NAVIGATION = [
                 "icon": "contact_page",
             },
             {"type": "model", "value": "geno.Child", "icon": "child_care"},
-            {
-                "type": "model",
-                "value": "geno.Tenant",
-                "name": _("Externe Nutzer:innen"),
-                "icon": "account_circle",
-            },
+            {"type": "model", "value": "geno.Tenant", "icon": "account_circle"},
             {
                 "type": "subgroup",
                 "name": _("Erweitert"),
@@ -768,8 +763,8 @@ COHIVA_ADMIN_NAVIGATION = [
             {
                 "type": "view",
                 "value": "geno:member_overview",
-                "name": _("Mitgliederspiegel"),
                 "permission": "geno.canview_member_overview",
+                "icon": "show_chart",
             },
             {
                 "type": "tabgroup",
@@ -791,6 +786,7 @@ COHIVA_ADMIN_NAVIGATION = [
     {
         "name": _("Vermietung"),
         "items": [
+            {"type": "view", "value": "geno:resident-list", "icon": "list"},
             {"type": "model", "value": "geno.RentalUnit", "icon": "house"},
             {"type": "model", "value": "geno.Contract", "icon": "contract"},
         ],
@@ -798,10 +794,18 @@ COHIVA_ADMIN_NAVIGATION = [
     {
         "name": _("Inkasso"),
         "items": [
-            {"type": "view", "value": "geno:add_payments", "icon": "money"},
-            {"type": "view", "value": "geno:create_invoice_manual", "icon": "invoice"},
+            {"type": "view", "value": "geno:debtor-list", "icon": "account_balance"},
+            {"type": "view", "value": "geno:invoice-manual", "icon": "checkbook"},
+            {
+                "type": "tabgroup",
+                "items": [
+                    {"type": "view", "value": "geno:transaction-upload", "icon": "money"},
+                    {"type": "view", "value": "geno:transaction-testdata"},
+                    {"type": "view", "value": "geno:transaction-invoice"},
+                    {"type": "view", "value": "geno:transaction-manual"},
+                ],
+            },
             {"type": "view", "value": "geno:create_invoice_rent", "icon": "invoice_house"},
-            {"type": "view", "value": "geno:debitors", "icon": "accounts"},
             {
                 "type": "subgroup",
                 "name": _("Erweitert"),
@@ -809,6 +813,24 @@ COHIVA_ADMIN_NAVIGATION = [
                 "items": [
                     {"type": "model", "value": "geno.Invoice"},
                     {"type": "model", "value": "geno.InvoiceCategory"},
+                ],
+            },
+        ],
+    },
+    {
+        "name": _("Finanzierung"),
+        "items": [
+            {"type": "view", "value": "geno:share_overview", "icon": "finance"},
+            {"type": "view", "value": "geno:create_invoice_manual", "icon": "invoice"},
+            {"type": "view", "value": "geno:create_invoice_rent", "icon": "invoice_house"},
+            {"type": "view", "value": "geno:debitors", "icon": "accounts"},
+            {"type": "model", "value": "geno.Share", "icon": "request_page"},
+            {
+                "type": "subgroup",
+                "name": _("Erweitert"),
+                "icon": "manufacturing",
+                "items": [
+                    {"type": "model", "value": "geno.ShareType"},
                 ],
             },
         ],

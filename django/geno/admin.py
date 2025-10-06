@@ -5,7 +5,11 @@ from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
 from django.http import HttpResponseRedirect
+from django.shortcuts import redirect
+from django.urls import reverse
+from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, TabularInline
+from unfold.decorators import action
 
 import geno.settings as geno_settings
 from geno.exporter import ExportXlsMixin
@@ -172,6 +176,31 @@ class AddressAdmin(GenoBaseAdmin):
     ]
     autocomplete_fields = ["user"]
     actions = GenoBaseAdmin.actions + [set_title_mr, set_title_mrs]
+    actions_list = [
+        "export_address_list",
+        {
+            "title": _("Weitere Aktionen"),
+            "items": ["export_adit"],
+            # "variant": ActionVariant.PRIMARY,
+        },
+    ]
+
+    @action(
+        description=_("Export"),
+        permissions=["geno.canview_member"],
+        icon="download",
+        # variant=ActionVariant.PRIMARY,
+    )
+    def export_address_list(self, request):
+        return redirect(reverse("geno:address_export"))
+
+    @action(
+        description=_("Export ADIT"),
+        permissions=["geno.canview_member", "geno.adit"],
+        icon="doorbell",
+    )
+    def export_adit(self, request):
+        return redirect(reverse("geno:generic-export", args=("adit",)))
 
 
 @admin.display(description="Als '%s' markieren" % geno_settings.MEMBER_FLAGS[1])
@@ -606,6 +635,28 @@ class ShareAdmin(GenoBaseAdmin):
         share_set_interest_mode_standard,
         share_send_membermail,
     ]
+    actions_list = [
+        "export_shares",
+        "export_shares_endofyear",
+    ]
+
+    @action(
+        description=_("Export"),
+        permissions=["geno.canview_share"],
+        icon="download",
+        # variant=ActionVariant.PRIMARY,
+    )
+    def export_shares(self, request):
+        return redirect(reverse("geno:share-export") + "?aggregate=yes")
+
+    @action(
+        description=_("Export per Ende Vorjahr"),
+        permissions=["geno.canview_share"],
+        icon="clock_arrow_down",
+        # variant=ActionVariant.PRIMARY,
+    )
+    def export_shares_endofyear(self, request):
+        return redirect(reverse("geno:share-export") + "?aggregate=yes&jahresende=yes")
 
 
 @admin.register(DocumentType)
@@ -1033,6 +1084,27 @@ class ContractAdmin(GenoBaseAdmin):
             # display add subcontract in admin with main contract preset
             return HttpResponseRedirect(f"/admin/geno/contract/add/?main_contract={obj.pk}")
         return super().response_change(request, obj)
+
+
+# class ResidentListAdmin(GenoBaseAdmin):
+#    model = Contract
+#    actions_list = [
+#        "export_address_list",
+#    ]
+#
+#    @action(
+#        description=_("Export"),
+#        permissions=["geno.canview_member"],
+#        icon="download",
+#        # variant=ActionVariant.PRIMARY,
+#    )
+#    def export_address_list(self, request):
+#        return redirect(reverse("geno:address_export"))
+#
+#    # def get_urls(self):
+#    #    print("get urls")
+#    #    view = self.admin_site.admin_view(ResidentListView.as_view(model_admin=self))
+#    #    return super().get_urls() + [path("resident-list", view, name="resident-list")]
 
 
 @admin.display(description='Als "NICHT konsolidiert" markieren')

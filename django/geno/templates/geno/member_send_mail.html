@@ -3,43 +3,7 @@
 {% load i18n %}
 
 {% block extrastyle %}
-<link rel="stylesheet" href="{% static 'django_tables2/themes/paleblue/css/screen.css' %}" />
-{# For datepicker UI #}
-<link rel="stylesheet" href="//code.jquery.com/ui/1.14.1/themes/base/jquery-ui.css">
-<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
-<script src="https://code.jquery.com/ui/1.14.1/jquery-ui.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  /* Configure datepicker */
-  django.jQuery(function($) {
-    $( ".datepicker" ).datepicker({
-      changeMonth: true,
-      changeYear: true,
-      //yearRange: "2010:2030",
-      defaultDate: 0,
-      dateFormat: "dd.mm.yy",
-    });
-  });
-});
-  /* Set focus to name field */
-/*  $(document).ready(function() {
-    window.onload = function() {
-      $("#id_name").focus();
-    };
-  }); */
-</script>
-
-<!-- <script type="text/javascript" src="/admin/jsi18n/"></script>
-<script type="text/javascript" src="/static/admin/js/core.js"></script>
-<script type="text/javascript" src="/static/admin/js/vendor/jquery/jquery.js"></script>
-<script type="text/javascript" src="/static/admin/js/admin/RelatedObjectLookups.js"></script>
-<script type="text/javascript" src="/static/admin/js/actions.js"></script>
-<script type="text/javascript" src="/static/admin/js/urlify.js"></script>
-<script type="text/javascript" src="/static/admin/js/prepopulate.js"></script>
-<script type="text/javascript" src="/static/admin/js/vendor/xregexp/xregexp.js"></script>
-<script type="text/javascript" src="/static/admin/js/SelectBox.js"></script>
-<script type="text/javascript" src="/static/admin/js/SelectFilter2.js"></script>
--->
+{{ block.super }}
 <link rel="stylesheet" type="text/css" href="/static/admin/css/forms.css" />
 <script type="text/javascript" src="/admin/jsi18n/"></script>
 <script type="text/javascript" src="/static/admin/js/jquery.init.js"></script>
@@ -68,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 {% endblock extrastyle %}
 
-{% block content %}
+{% block custom_content %}
 
 {% if form_action %}
 <h2>{{info}}</h2>

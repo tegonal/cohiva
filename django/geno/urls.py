@@ -5,13 +5,11 @@ from . import views as geno_views
 app_name = "geno"
 urlpatterns = [
     re_path(r"^import/([a-z_-]+)/?$", geno_views.import_generic),
-    re_path(r"^export/([a-z_-]+)/?$", geno_views.export_generic),
+    re_path(r"^export/([a-z_-]+)/?$", geno_views.export_generic, name="generic-export"),
     re_path(r"^documents/([a-z_-]+)/([0-9]+)/([a-z_-]+)/?$", geno_views.documents),
-    # path("share/overview/", geno_views.share_overview, name="share_overview"),
-    # path("share/overview/", login_required(geno_views.ShareOverviewView.as_view()), name="share_overview"),
     path("share/overview/", geno_views.ShareOverviewView.as_view(), name="share_overview"),
     path("share/overview/plot/", geno_views.share_overview_boxplot),
-    path("share/export/", geno_views.share_export),
+    path("share/export/", geno_views.share_export, name="share-export"),
     path("share/confirm/", geno_views.share_confirm),
     re_path(
         r"^share/statement/(?P<date>[a-z0-9_-]+)/(?P<address>[0-9]+)/?$",
@@ -23,7 +21,7 @@ urlpatterns = [
     path("share/interest/transactions/", geno_views.share_interest_transactions),
     path("share/check/", geno_views.share_check),
     path("share/duedate_reminder/", geno_views.share_duedate_reminder),
-    path("member/overview/", geno_views.member_overview, name="member_overview"),
+    path("member/overview/", geno_views.MemberOverviewView.as_view(), name="member_overview"),
     path("member/overview/plot/", geno_views.member_overview_plot),
     path("member/list/", geno_views.member_list),
     path("member/list_admin/", geno_views.member_list_admin),
@@ -42,32 +40,32 @@ urlpatterns = [
     path("maintenance/", geno_views.run_maintenance_tasks),
     path("maintenance/check_portal_users/", geno_views.check_portal_users),
     path("maintenance/check_duplicate_invoices/", geno_views.check_duplicate_invoices),
-    path("transaction/", geno_views.transaction),
-    path("transaction_upload/", geno_views.transaction_upload),
+    path("transaction/", geno_views.transaction, name="transaction-manual"),
+    path(
+        "transaction_upload/",
+        geno_views.TransactionUploadView.as_view(),
+        name="transaction-upload",
+    ),
     path("transaction_upload/process/", geno_views.transaction_upload_process),
-    path("transaction_testdata/", geno_views.transaction_testdata),
-    path("transaction_invoice/", geno_views.transaction_invoice),
-    path("invoice/", geno_views.invoice_manual),
-    path("invoice/form/", geno_views.invoice_form),
+    path(
+        "transaction_upload/testdata/",
+        geno_views.transaction_testdata,
+        name="transaction-testdata",
+    ),
+    path("transaction_invoice/", geno_views.transaction_invoice, name="transaction-invoice"),
+    path("invoice/", geno_views.InvoiceView.as_view(), name="invoice-manual"),
+    path("invoice/form", geno_views.invoice_form, name="invoice-auto-form")
     path("invoice/auto/", geno_views.invoice),
     re_path(
         r"^invoice/download/(?P<key_type>[a-z_-]+)/(?P<key>[0-9]+)/?$",
         geno_views.invoice,
         {"action": "download"},
     ),
-    path("invoice/overview/", geno_views.invoice, {"action": "overview"}),
-    path(
-        "invoice/overview/all/", geno_views.invoice, {"action": "overview", "consolidate": False}
-    ),
+    path("debtor/", geno_views.DebtorView.as_view(action="overview"), name="debtor-list"),
     re_path(
-        r"^invoice/detail/(?P<key_type>[cp])/(?P<key>[0-9]+)/?$",
-        geno_views.invoice,
-        {"action": "detail"},
-    ),
-    re_path(
-        r"^invoice/detail/(?P<key_type>[cp])/(?P<key>[0-9]+)/all/?$",
-        geno_views.invoice,
-        {"action": "detail", "consolidate": False},
+        r"^debtor/detail/(?P<key_type>[cp])/(?P<key>[0-9]+)/?$",
+        geno_views.DebtorView.as_view(action="detail"),
+        name="debtor-detail",
     ),
     path("contract/create/", geno_views.create_contracts),
     path("contract/create_letter/", geno_views.create_contracts, {"letter": True}),
@@ -76,7 +74,13 @@ urlpatterns = [
         geno_views.create_documents,
         {"default_doctype": "contract_check"},
     ),
-    path("rental/units/", geno_views.rental_unit_list_units),
+    path(
+        "rental/resident_list",
+        geno_views.ResidentListView.as_view(),
+        name="resident-list",
+    ),
+    path("rental/tenants/", geno_views.rental_unit_list_tenants, name="resident-list-tenants"),
+    path("rental/units/", geno_views.rental_unit_list_units, name="resident-list-units"),
     path(
         "rental/units/mailbox/", geno_views.rental_unit_list_create_documents, {"doc": "mailbox"}
     ),

@@ -115,8 +115,8 @@ class TenantAdmin(GenoBase):
 
     class Meta:
         ordering = ["name"]
-        verbose_name = "Nutzeradmin"
-        verbose_name_plural = "Nutzeradmins"
+        verbose_name = "Admin externer Nutzer:innen"
+        verbose_name_plural = "Admins externer Nutzer:innen"
 
     def list_active_buildings(self):
         return ", ".join([str(b) for b in self.buildings.filter(active=True)])

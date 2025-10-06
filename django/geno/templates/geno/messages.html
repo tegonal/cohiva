@@ -1,7 +1,6 @@
 {% extends "geno/base.html" %}
-{% load i18n %}
 
-{% block content %}
+{% block custom_content %}
 
 {% if form_action %}
 <form action="{{ form_action }}" method="post">
@@ -11,7 +10,6 @@
 </form>
 {% endif %}
 
-{% if tgtblank == '1' %}[<a href="javascript:close()">Close</a>]{% else %}[<a href="/admin">Zurück</a>]{% endif %} [<a href="javascript:window.scrollTo(0, document.body.scrollHeight)">Nach unten</a>]<br />
 <ul>
 {% for r in response %}
 <li>{{ r.info|safe }}
@@ -23,5 +21,5 @@
 </li>
 {% endfor %}
 </ul>
-{% if tgtblank == '1' %}[<a href="javascript:close()">Close</a>]{% else %}[<a href="/admin">Zurück</a>]{% endif %} [<a href="javascript:window.scrollTo(0, 0)">Nach oben</a>]<br />
+
 {% endblock %}
