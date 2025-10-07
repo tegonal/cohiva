@@ -190,27 +190,26 @@ def create_invoices(dry_run=True, reference_date=None, single_contract=None, dow
                     rent_type = "rent_other"
                 elif ru.rental_type == "Parkplatz":
                     rent_type = "rent_parking"
-                if not ru.rent_total:
-                    ru.rent_total = Decimal(0.0)
+                if not ru.rent_netto:
+                    ru.rent_netto = Decimal(0.0)
                 if not ru.nk:
                     ru.nk = Decimal(0.0)
                 if not ru.nk_electricity:
                     ru.nk_electricity = Decimal(0.0)
                 if not ru.depot:
                     ru.depot = Decimal(0.0)
-                rent_net = ru.rent_total - ru.nk - ru.nk_electricity
                 sum_depot += ru.depot
-                sum_rent_total += ru.rent_total
+                sum_rent_total += ru.rent_total if ru.rent_total else 0.0
                 sum_nk += ru.nk
                 sum_nk_electricity += ru.nk_electricity
-                sum_rent_net += rent_net
-                if rent_net or ru.nk:
+                sum_rent_net += ru.rent_netto
+                if ru.rent_netto or ru.nk:
                     rent_info.append(
                         {
                             "text": ru.str_short(),
-                            "net": rent_net,
+                            "net": ru.rent_netto,
                             "nk": ru.nk,
-                            "total": rent_net + ru.nk,
+                            "total": ru.rent_netto + ru.nk,
                         }
                     )
                 if ru.nk_electricity:

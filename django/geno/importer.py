@@ -31,6 +31,9 @@ from .models import (
 from .sepa_reader import SepaReaderException, read_camt
 from .utils import decode_from_iso8859
 
+# prefix for eMonitor entries
+EMONITOR_PREFIX = "eMon: "
+
 
 def process_eigenmittel():
     import openpyxl
@@ -547,7 +550,7 @@ def import_members_from_file(empty_tables_first=False):
 
 def update_address_from_file():
     ## Update/Check field from Eigenmittel spreadsheet
-    anrede = {"M": "Herr", "F": "Frau", "P": "Paar", "O": "Org"}
+    anrede = {"M": "Herr", "F": "Frau", "D": "Divers", "P": "Paar", "O": "Org"}
     count = 0
     response = []
     with open("/tmp/Eigenmittelliste.csv", "rb") as csvfile:
@@ -911,7 +914,7 @@ def import_emonitor_children_from_file(empty_tables_first=False):
                     if header[i] == "Bewerbung":
                         contract_id = int(val)
                     elif header[i] == "ID":
-                        new_child.emonitor_id = int(val)
+                        new_child.import_id = EMONITOR_PREFIX + val
                     elif header[i] == "Vorname":
                         new_adr.first_name = val
                     elif header[i] == "Nachname":
@@ -928,7 +931,7 @@ def import_emonitor_children_from_file(empty_tables_first=False):
                         new_adr.comment = "Von eMonitor %s" % (val)
                         new_child.comment = "Von eMonitor %s" % (val)
 
-                contract = Contract.objects.get(emonitor_id=contract_id)
+                contract = Contract.objects.get(import_id=contract_id)
 
                 if not new_adr.name and not new_adr.first_name:
                     fields.append("Ignoring empty name!")
@@ -977,7 +980,7 @@ def import_emonitor_addresses_from_file(empty_tables_first=False):
                     if str(header[i], "utf-8") == "Bewerbungs-ID":
                         contract_id = int(val)
                     elif str(header[i], "utf-8") == "Erwachsener ID":
-                        new_adr.emonitor_id = int(val)
+                        new_adr.import_id = EMONITOR_PREFIX + val
                     elif str(header[i], "utf-8") == "Anrede":
                         new_adr.title = val
                     elif str(header[i], "utf-8") == "Vorname":
@@ -1015,7 +1018,7 @@ def import_emonitor_addresses_from_file(empty_tables_first=False):
                 if plz:
                     new_adr.city_name = "%s %s" % (plz, new_adr.city)
 
-                contract = Contract.objects.get(emonitor_id=contract_id)
+                contract = Contract.objects.get(import_id=contract_id)
 
                 if not new_adr.name and not new_adr.first_name:
                     fields.append("Ignoring empty name!")
@@ -1058,7 +1061,7 @@ def import_emonitor_addresses_from_file(empty_tables_first=False):
                         )
                         old_adr = existing[0]
                         for a in (
-                            "emonitor_id",
+                            "import_id",
                             "title",
                             "date_birth",
                             "street",
@@ -1069,7 +1072,7 @@ def import_emonitor_addresses_from_file(empty_tables_first=False):
                             att_old = getattr(old_adr, a)
                             att_new = getattr(new_adr, a)
                             if att_new and att_old != att_new:
-                                if a == "emonitor_id" and not att_old:
+                                if a == "import_id" and not att_old:
                                     setattr(old_adr, a, att_new)
                                     fields.append("Setting %s: %s -> %s" % (a, att_old, att_new))
                                     save = True
@@ -1131,7 +1134,7 @@ def import_keller_from_file(empty_tables_first=False):
             else:
                 new_unit = RentalUnit()
                 new_unit.building = "Holligerhof 8"
-                new_unit.rent_total = 0.0
+                new_unit.rent_netto = 0.0
                 new_unit.floor = "Keller"
                 fields = []
                 linked_unit = None
@@ -1221,7 +1224,7 @@ def import_emonitor_contracts_from_file(empty_tables_first=False):
                     val = str(val.strip(), "utf-8")
                     # "ID","Erwachsene","Kinder","Erstellungsdatum","Zuweisung Wohnung","Parkplatz gewünscht","Zuweisung Parkplatz","Zuweisung Nebenräume","Telefonnummer","Status"
                     if str(header[i], "utf-8") == "ID":
-                        new.emonitor_id = int(val)  ## Bewerbungs-ID
+                        new.import_id = EMONITOR_PREFIX + val  ## Bewerbungs-ID
                     elif str(header[i], "utf-8") == "Kinder":
                         new.children = val
                     elif str(header[i], "utf-8") == "Zuweisung Wohnung":
@@ -1250,14 +1253,15 @@ def import_emonitor_contracts_from_file(empty_tables_first=False):
 
                 ## Check if we have a contract already
                 try:
-                    contract = Contract.objects.get(emonitor_id=new.emonitor_id)
+                    contract = Contract.objects.get(import_id=new.import_id)
                     fields.append(
-                        "===> FOUND EXISTING contract with eMonitor ID %s" % (contract.emonitor_id)
+                        "===> FOUND EXISTING contract with import_id ID %s"
+                        % (contract.emonitor_id)
                     )
                 except Contract.DoesNotExist:
                     contract = new
                     fields.append(
-                        "Creating new contract with eMonitor ID %s" % (contract.emonitor_id)
+                        "Creating new contract with import_id ID %s" % (contract.emonitor_id)
                     )
 
                 ## Add rental unit(s)

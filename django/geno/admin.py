@@ -33,6 +33,7 @@ from geno.models import (
     Share,
     ShareType,
     Tenant,
+    TenantsView,
 )
 
 
@@ -98,8 +99,8 @@ class AddressAdmin(GenoBaseAdmin):
         "extra",
         ("street_name", "house_number", "po_box", "po_box_number"),
         ("city_zipcode", "city_name", "country"),
-        ("telephone", "mobile"),
-        ("email", "email2"),
+        ("telephone", "mobile", "telephoneOffice", "telephoneOffice2"),
+        ("email", "email2", "website"),
         "date_birth",
         "hometown",
         "occupation",
@@ -111,7 +112,7 @@ class AddressAdmin(GenoBaseAdmin):
         "comment",
         ("carddav_href", "carddav_etag", "carddav_syncts"),
         ("ts_created", "ts_modified"),
-        ("gnucash_id", "emonitor_id", "random_id"),
+        ("gnucash_id", "import_id", "random_id"),
         "user",
         "object_actions",
         "links",
@@ -120,7 +121,7 @@ class AddressAdmin(GenoBaseAdmin):
     readonly_fields = [
         "ts_created",
         "ts_modified",
-        "emonitor_id",
+        "import_id",
         "gnucash_id",
         "random_id",
         "object_actions",
@@ -318,13 +319,13 @@ class ChildAdmin(GenoBaseAdmin):
         ("presence", "age"),
         "parents",
         "notes",
-        "emonitor_id",
+        "import_id",
         "ts_created",
         "ts_modified",
         "links",
         "backlinks",
     ]
-    readonly_fields = ["age", "emonitor_id", "ts_created", "ts_modified", "links", "backlinks"]
+    readonly_fields = ["age", "import_id", "ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "presence", "parents", "age"]
     list_filter = ["presence", "name__active"]
     my_search_fields = ["name__name", "name__first_name", "parents", "notes"]
@@ -339,6 +340,10 @@ class BuildingAdmin(GenoBaseAdmin):
     fields = [
         "name",
         "description",
+        ("street_name", "house_number"),
+        ("city_zipcode", "city_name", "country"),
+        "egid",
+        ("value_insurance", "value_build"),
         "team",
         "active",
         "ts_created",
@@ -909,9 +914,9 @@ class RentalUnitAdmin(GenoBaseAdmin):
         ("building", "floor"),
         ("area", "area_balcony", "area_add"),
         ("height", "volume"),
-        ("rent_total", "nk", "nk_electricity"),
-        ("rent_year"),
+        ("rent_netto", "nk", "nk_electricity", "rent_total"),
         ("share", "depot"),
+        ("internal_nr", "ewid"),
         "note",
         "svg_polygon",
         "description",
@@ -919,12 +924,12 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "adit_serial",
         "active",
         "comment",
-        "ts_created",
+        "import_idts_created",
         "ts_modified",
         "links",
         "backlinks",
     ]
-    readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
+    readonly_fields = ["ts_created", "ts_modified", "links", "backlinks", "rent_total"]
     list_display = [
         "name",
         "label",
@@ -934,7 +939,7 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "floor",
         "area",
         "area_add",
-        "rent_total",
+        "rent_netto",
         "nk",
         "share",
         "status",
@@ -995,9 +1000,30 @@ class ContractAdminModelForm(forms.ModelForm):
         return main_contact
 
 
+class VertragstypFilter(admin.SimpleListFilter):
+    title = "Vertragstyp"
+    parameter_name = "main_contract"
+
+    def lookups(self, request, model_admin):
+        # define the filter options
+        return (
+            ("hv", "Hauptvertrag"),
+            ("zv", "Zusatzvertrag"),
+        )
+
+    def queryset(self, request, queryset):
+        # apply the filter to the queryset
+        if self.value() == "hv":
+            return queryset.filter(main_contract=None)
+        if self.value() == "zv":
+            return queryset.filter(main_contract__isnull=False)
+
+
 class ContractAdmin(GenoBaseAdmin):
     form = ContractAdminModelForm
-    fields= [
+    fields = [
+        "main_contract",
+
         "contractors",
         "main_contact",
         "rental_units",
@@ -1015,7 +1041,7 @@ class ContractAdmin(GenoBaseAdmin):
         "comment",
         "ts_created",
         "ts_modified",
-        "emonitor_id",
+        "import_id",
         "object_actions",
         "links",
         "backlinks",
@@ -1040,6 +1066,7 @@ class ContractAdmin(GenoBaseAdmin):
         "comment",
     ]
     list_filter = [
+        VertragstypFilter,
         "state",
         "rental_units__rental_type",
         "rental_units__floor",
@@ -1055,6 +1082,19 @@ class ContractAdmin(GenoBaseAdmin):
         contract_set_startdate_nextmonth,
     ]
     filter_horizontal = ["contractors", "children", "rental_units"]
+
+    def change_view(self, request, object_id, form_url="", extra_context=None):
+        extra_context = extra_context or {}
+        obj = Contract.objects.get(id=object_id)
+        # only show "Add subcontract" button if this is a main contract
+        extra_context["show_addSubcontract"] = obj.main_contract is None
+        return self.changeform_view(request, object_id, form_url, extra_context)
+
+    def response_change(self, request, obj):
+        if "_addSubcontract" in request.POST:
+            # display add subcontract in admin with main contract preset
+            return HttpResponseRedirect(f"/admin/geno/contract/add/?main_contract={obj.pk}")
+        return super().response_change(request, obj)
 
 
 admin.site.register(Contract, ContractAdmin)
@@ -1205,6 +1245,138 @@ class InvoiceAdmin(GenoBaseAdmin):
 
 
 admin.site.register(Invoice, InvoiceAdmin)
+
+
+class TenantsViewAdmin(GenoBaseAdmin):
+    fields = [
+        "bu_name",
+        "ru_name",
+        "ru_label",
+        "ru_type",
+        "ru_floor",
+        "ru_rooms",
+        "ru_area",
+        "organization",
+        "ad_name",
+        "ad_first_name",
+        "ad_title",
+        "ad_email",
+        "c_issubcontract",
+        "c_ischild",
+        "c_age",
+        "presence",
+        "ad_date_birth",
+        "ad_city",
+        "ad_street",
+        "ad_tel1",
+        "ad_tel2",
+        "p_hometown",
+        "p_occupation",
+        "p_membership_date",
+    ]
+
+    readonly_fields = [
+        "bu_name",
+        "ru_name",
+        "ru_label",
+        "ru_type",
+        "ru_floor",
+        "ru_rooms",
+        "ru_area",
+        "organization",
+        "ad_name",
+        "ad_first_name",
+        "ad_title",
+        "ad_email",
+        "c_issubcontract",
+        "c_ischild",
+        "c_age",
+        "presence",
+        "ad_date_birth",
+        "ad_city",
+        "ad_street",
+        "ad_tel1",
+        "ad_tel2",
+        "p_hometown",
+        "p_occupation",
+        "p_membership_date",
+    ]
+
+    list_display = [
+        "bu_name",
+        "ru_name",
+        "ru_label",
+        "ru_type",
+        "ru_floor",
+        "ru_rooms",
+        "ru_area",
+        "organization",
+        "ad_name",
+        "ad_first_name",
+        "ad_title",
+        "ad_email",
+        "c_issubcontract",
+        "c_ischild",
+        "c_age",
+        "presence",
+        "ad_date_birth",
+        "ad_city",
+        "ad_street",
+        "ad_tel1",
+        "ad_tel2",
+        "p_hometown",
+        "p_occupation",
+        "p_membership_date",
+    ]
+
+    my_search_fields = [
+        "bu_name",
+        "ru_name",
+        "ru_label",
+        "ru_type",
+        "ru_floor",
+        "ru_rooms",
+        "ru_area",
+        "organization",
+        "ad_name",
+        "ad_first_name",
+        "ad_title",
+        "ad_email",
+        "c_age",
+        "presence",
+        "ad_date_birth",
+        "ad_city",
+        "ad_street",
+        "ad_tel1",
+        "ad_tel2",
+        "p_hometown",
+        "p_occupation",
+        "p_membership_date",
+    ]
+    list_filter = [
+        "bu_name",
+        "ru_type",
+        "ru_floor",
+        "c_ischild",
+        "c_issubcontract",
+    ]
+    search_fields = my_search_fields
+    list_display_links = None
+    actions = ["export_as_xls"]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return True
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    ordering = ("-bu_name", "-ru_name")
+
+
+admin.site.register(TenantsView, TenantsViewAdmin)
 
 
 class LookupTableAdmin(GenoBaseAdmin):

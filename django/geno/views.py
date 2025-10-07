@@ -661,6 +661,7 @@ def member_overview(request):
             ("Total", 0),
             ("Frauen", 0),
             ("Männer", 0),
+            ("Divers", 0),
             ("Organisationen", 0),
             ("Andere/Unbekannt", 0),
         ]
@@ -690,6 +691,8 @@ def member_overview(request):
                 stat["Organisationen"] += 1
             elif m.name.title == "Herr":
                 stat["Männer"] += 1
+            elif m.name.title == "Divers":
+                stat["Divers"] += 1
             elif m.name.title == "Frau":
                 stat["Frauen"] += 1
             else:
@@ -2506,10 +2509,13 @@ def create_contracts(request, letter=False):
                     rental_unit.name,
                 )
             data["filename_tag"] = "Wohnung_%s" % rental_unit.name
-            data["miete_netto"] = nformat(
-                rental_unit.rent_total - rental_unit.nk - rental_unit.nk_electricity, 0
+            data["miete_netto"] = nformat(rental_unit.rent_netto, 0)
+            data["miete_brutto"] = nformat(
+                (rental_unit.rent_netto if rental_unit.rent_netto else 0.0)
+                + (rental_unit.nk if rental_unit.nk else 0.0)
+                + (rental_unit.nk_electricity if rental_unit.nk_electricity else 0.0),
+                0,
             )
-            data["miete_brutto"] = nformat(rental_unit.rent_total, 0)
             data["nk_akonto"] = nformat(rental_unit.nk, 0)
             data["nk_strom"] = nformat(rental_unit.nk_electricity, 0)
             data["mindestbelegung"] = nformat(rental_unit.min_occupancy, 0)
@@ -3800,6 +3806,8 @@ def rental_unit_list_tenants(request, export_xls=True):
     bewohnende = []
     bewohnende_mit_kinder_in_wohnung = []
     data = []
+    include_subcontracts = request.GET.get("include_subcontracts", False)
+    print("rental_unit_list_tenants", export_xls, include_subcontracts)
     data_fields = [
         "ru_name",
         "ru_type",
@@ -3822,9 +3830,9 @@ def rental_unit_list_tenants(request, export_xls=True):
         "hometown",
         "occupation",
         "membership_date",
-        "emonitor_id",
+        "import_id",
     ]
-    for c in get_active_contracts():
+    for c in get_active_contracts(include_subcontracts=include_subcontracts):
         is_wohnen = False
         for ru in c.rental_units.all():
             if ru.rental_type not in ("Gewerbe", "Lager", "Hobby"):
@@ -3866,7 +3874,7 @@ def rental_unit_list_tenants(request, export_xls=True):
                 obj.tel2 = adr.mobile
                 obj.hometown = adr.hometown
                 obj.occupation = adr.occupation
-                obj.emonitor_id = adr.emonitor_id
+                obj.import_id = adr.import_id
                 try:
                     obj.membership_date = Member.objects.get(name=adr).date_join.strftime(
                         "%d.%m.%Y"
@@ -3901,7 +3909,7 @@ def rental_unit_list_tenants(request, export_xls=True):
                 obj.tel2 = child.name.mobile
                 obj.hometown = child.name.hometown
                 obj.occupation = child.name.occupation
-                obj.emonitor_id = child.emonitor_id
+                obj.import_id = child.import_id
                 obj.membership_date = None
                 if len("%s %s" % (obj.name, obj.first_name)) > 32:
                     logger.warning("Name longer than 32 chars: %s %s" % (obj.name, obj.first_name))
@@ -3945,7 +3953,7 @@ def rental_unit_list_units(request, export_xls=True):
         "n_children",
         "ru_nk",
         "ru_nk_electricity",
-        "ru_rent_total",
+        "ru_rent_netto",
         "name",
         "first_name",
         "email",
@@ -3977,7 +3985,7 @@ def rental_unit_list_units(request, export_xls=True):
         obj.n_children = 0
         obj.ru_nk = ru.nk
         obj.ru_nk_electricity = ru.nk_electricity
-        obj.ru_rent_total = ru.rent_total
+        obj.ru_rent_netto = ru.rent_netto
 
         ## Default values
         obj.name = "(Leerstand)"
