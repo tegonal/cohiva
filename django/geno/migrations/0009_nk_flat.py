@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('geno', '0006_tenantsview'),
+        ('geno', '0008_migrate_emonitor2import'),
     ]
 
     operations = [
