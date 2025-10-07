@@ -1291,7 +1291,7 @@ class RentalUnit(GenoBase):
         return (
             self.rent_netto
             + (self.nk if self.nk else 0)
-            + (self.nk_flat if self.flat else 0)
+            + (self.nk_flat if self.nk_flat else 0)
             + (self.nk_electricity if self.nk_electricity else 0)
         )
 
@@ -1845,7 +1845,7 @@ class TenantsView(GenoBase):
         ordering = ["bu_name", "ru_name"]
         constraints = [
             models.UniqueConstraint(
-                fields=["building", "rental_unit", "tenant", "contract"],
+                fields=["building", "rental_unit", "contract"],
                 name="unique_tenantsview_entry",
             ),
         ]

@@ -11,13 +11,26 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterField(
-            model_name='rentalunit',
-            name='nk',
-            field=models.DecimalField(blank=True, decimal_places=2, help_text='Wird bei unvermieteten Gewerberäumen auch auf der Website angezeigt.', max_digits=10, null=True, verbose_name='Nebenkosten Akonto (Fr.)'),
+            model_name="rentalunit",
+            name="nk",
+            field=models.DecimalField(
+                blank=True,
+                decimal_places=2,
+                help_text="Wird bei unvermieteten Gewerberäumen auch auf der Website angezeigt.",
+                max_digits=10,
+                null=True,
+                verbose_name="Nebenkosten Akonto (Fr.)",
+            ),
         ),
-        migrations.AlterField(
-            model_name='rentalunit',
-            name='nk_flat',
-            field=models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True, verbose_name='Nebenkosten Pauschal (Fr.)'),
+        migrations.AddField(
+            model_name="rentalunit",
+            name="nk_flat",
+            field=models.DecimalField(
+                blank=True,
+                decimal_places=2,
+                max_digits=10,
+                null=True,
+                verbose_name="Nebenkosten Pauschal (Fr.)",
+            ),
         ),
     ]

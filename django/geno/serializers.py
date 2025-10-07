@@ -36,6 +36,7 @@ class RentalUnitSerializer(serializers.ModelSerializer):
             "height",
             "volume",
             "rent_total",
+            "rent_netto",
             "rent_year",
             "nk",
             "nk_flat",
