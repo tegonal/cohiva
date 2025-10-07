@@ -85,5 +85,5 @@ class ContractSerializer(serializers.ModelSerializer):
             "ts_modified",
             "contact_formal",
         ]
-        ## exclude unused fields: 'children', 'children_old', 'emonitor_id',
+        ## exclude unused fields: 'children', 'children_old', 'import_id',
         ## 'object_actions', 'links', 'backlinks'

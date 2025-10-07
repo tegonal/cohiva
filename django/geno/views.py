@@ -3809,7 +3809,7 @@ def rental_unit_list_tenants(request, export_xls=True):
     bewohnende_mit_kinder_in_wohnung = []
     data = []
     include_subcontracts = request.GET.get("include_subcontracts", False)
-    print('rental_unit_list_tenants', export_xls, include_subcontracts)
+    print("rental_unit_list_tenants", export_xls, include_subcontracts)
     data_fields = [
         "ru_name",
         "ru_type",
@@ -3832,7 +3832,7 @@ def rental_unit_list_tenants(request, export_xls=True):
         "hometown",
         "occupation",
         "membership_date",
-        "emonitor_id",
+        "import_id",
     ]
     for c in get_active_contracts(include_subcontracts=include_subcontracts):
         is_wohnen = False
@@ -3876,7 +3876,7 @@ def rental_unit_list_tenants(request, export_xls=True):
                 obj.tel2 = adr.mobile
                 obj.hometown = adr.hometown
                 obj.occupation = adr.occupation
-                obj.emonitor_id = adr.emonitor_id
+                obj.import_id = adr.import_id
                 try:
                     obj.membership_date = Member.objects.get(name=adr).date_join.strftime(
                         "%d.%m.%Y"
@@ -3911,7 +3911,7 @@ def rental_unit_list_tenants(request, export_xls=True):
                 obj.tel2 = child.name.mobile
                 obj.hometown = child.name.hometown
                 obj.occupation = child.name.occupation
-                obj.emonitor_id = child.emonitor_id
+                obj.import_id = child.import_id
                 obj.membership_date = None
                 if len("%s %s" % (obj.name, obj.first_name)) > 32:
                     logger.warning("Name longer than 32 chars: %s %s" % (obj.name, obj.first_name))

@@ -6,15 +6,21 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('geno', '0004_rentalunitrentnetto'),
+        ("geno", "0004_rentalunitrentnetto"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='contract',
-            name='main_contract',
-            field=select2.fields.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='sub_contract', to='geno.contract', verbose_name='Hauptvertrag'),
+            model_name="contract",
+            name="main_contract",
+            field=select2.fields.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="sub_contract",
+                to="geno.contract",
+                verbose_name="Hauptvertrag",
+            ),
         ),
     ]
