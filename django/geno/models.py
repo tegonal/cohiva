@@ -1230,12 +1230,19 @@ class RentalUnit(GenoBase):
         "Mindestbelegung", max_digits=5, decimal_places=1, null=True, blank=True
     )
     nk = models.DecimalField(
-        "Nebenkosten (Fr.)",
+        "Nebenkosten Akonto (Fr.)",
         max_digits=10,
         decimal_places=2,
         null=True,
         blank=True,
         help_text="Wird bei unvermieteten Gewerberäumen auch auf der Website angezeigt.",
+    )
+    nk_flat = models.DecimalField(
+        "Nebenkosten Pauschal (Fr.)",
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
     )
     nk_electricity = models.DecimalField(
         "Strompauschale (Fr.)", max_digits=10, decimal_places=2, null=True, blank=True
@@ -1284,6 +1291,7 @@ class RentalUnit(GenoBase):
         return (
             self.rent_netto
             + (self.nk if self.nk else 0)
+            + (self.nk_flat if self.flat else 0)
             + (self.nk_electricity if self.nk_electricity else 0)
         )
 

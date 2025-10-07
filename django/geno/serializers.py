@@ -38,6 +38,7 @@ class RentalUnitSerializer(serializers.ModelSerializer):
             "rent_total",
             "rent_year",
             "nk",
+            "nk_flat",
             "nk_electricity",
             "share",
             "depot",

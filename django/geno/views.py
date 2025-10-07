@@ -2513,10 +2513,12 @@ def create_contracts(request, letter=False):
             data["miete_brutto"] = nformat(
                 (rental_unit.rent_netto if rental_unit.rent_netto else 0.0)
                 + (rental_unit.nk if rental_unit.nk else 0.0)
+                + (rental_unit.nk_flat if rental_unit.nk_flat else 0.0)
                 + (rental_unit.nk_electricity if rental_unit.nk_electricity else 0.0),
                 0,
             )
             data["nk_akonto"] = nformat(rental_unit.nk, 0)
+            data["nk_pauschal"] = nformat(rental_unit.nk_flat, 0)
             data["nk_strom"] = nformat(rental_unit.nk_electricity, 0)
             data["mindestbelegung"] = nformat(rental_unit.min_occupancy, 0)
             data["pflichtanteil"] = nformat(rental_unit.share, 0)
@@ -3952,6 +3954,7 @@ def rental_unit_list_units(request, export_xls=True):
         "n_adults",
         "n_children",
         "ru_nk",
+        "ru_nk_flat",
         "ru_nk_electricity",
         "ru_rent_netto",
         "name",
@@ -3984,6 +3987,7 @@ def rental_unit_list_units(request, export_xls=True):
         obj.n_adults = 0
         obj.n_children = 0
         obj.ru_nk = ru.nk
+        obj.ru_nk_flat = ru.nk_flat
         obj.ru_nk_electricity = ru.nk_electricity
         obj.ru_rent_netto = ru.rent_netto
 
