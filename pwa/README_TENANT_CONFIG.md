@@ -59,11 +59,7 @@ Test locally:
 ```bash
 cd pwa
 
-# Option 1: One-time copy
-tsx scripts/setup-dev-config.ts --config-dir ../pwa-tenant-config-generator/tenant-configs/my-tenant
-yarn dev
-
-# Option 2: Watch mode (auto-regenerates on source changes)
+# Start PWA in dev mode with specific tenant config in watch mode (auto-regenerates on source changes)
 yarn dev:tenant ../pwa-tenant-config-generator/tenant-configs/my-tenant
 ```
 
