@@ -58,8 +58,8 @@ const concurrently = spawn(
     'watch,dev',
     '-c',
     'cyan,green',
-    `tsx scripts/watch-source-config.ts --config-dir ${configDir}`,
-    'quasar dev',
+    `"tsx scripts/watch-source-config.ts --config-dir ${configDir}"`,
+    '"quasar dev"',
   ],
   {
     cwd: rootDir,
