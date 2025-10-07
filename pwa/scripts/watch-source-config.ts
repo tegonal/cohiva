@@ -83,17 +83,8 @@ async function main(): Promise<void> {
   // Initial build
   await regenerateConfig()
 
-  // Watch for changes (exclude overlay/ directory)
-  const watchPaths = [
-    path.join(sourceConfigDir, '*.js'),
-    path.join(sourceConfigDir, '*.ts'),
-    path.join(sourceConfigDir, '*.scss'),
-    path.join(sourceConfigDir, '*.svg'),
-    path.join(sourceConfigDir, '*.png'),
-    path.join(sourceConfigDir, 'fonts'),
-  ]
-
-  const watcher = chokidar.watch(watchPaths, {
+  // Watch the entire source config directory
+  const watcher = chokidar.watch(sourceConfigDir, {
     awaitWriteFinish: {
       pollInterval: 100,
       stabilityThreshold: 300,
@@ -103,6 +94,9 @@ async function main(): Promise<void> {
       '**/.git/**',
       '**/overlay/**',
       '**/.temp-*',
+      '**/.gitignore',
+      '**/README.md',
+      '**/DJANGO_OAUTH.md',
     ],
     ignoreInitial: true,
     persistent: true,
@@ -167,7 +161,7 @@ async function regenerateConfig(): Promise<void> {
       fs.cpSync(sourcePath, targetPath, { force: true, recursive: true })
     }
 
-    // Copy overlay files
+    // Copy overlay files to tenant-config/overlay
     const overlaySource = path.join(sourceConfigDir, 'overlay')
     const overlayTarget = path.join(PWA_CONFIG_DIR, 'overlay')
 
@@ -176,6 +170,21 @@ async function regenerateConfig(): Promise<void> {
         force: true,
         recursive: true,
       })
+
+      // Copy overlay files over the project root
+      console.log('[watch-source] Copying overlay to project root...')
+      const overlayItems = fs.readdirSync(overlayTarget)
+
+      for (const item of overlayItems) {
+        const overlayItemPath = path.join(overlayTarget, item)
+        const projectItemPath = path.join(PWA_ROOT, item)
+
+        console.log(`[watch-source]    Copying ${item}`)
+        fs.cpSync(overlayItemPath, projectItemPath, {
+          force: true,
+          recursive: true,
+        })
+      }
     }
 
     const elapsed = Date.now() - startTime

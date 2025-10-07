@@ -32,11 +32,8 @@ Development server runs at http://localhost:9000
 
 ```bash
 # Development
-yarn dev              # Standard dev server
-yarn dev:watch        # Dev server + auto-regenerate local config on changes
-
-# Development with custom tenant config (auto-regenerates on source changes)
-yarn dev:tenant ../pwa-tenant-config-generator/tenant-configs/my-tenant
+yarn dev              # Standard dev server with example config (one-time setup)
+yarn dev:tenant <path> # Dev server with custom tenant + auto-reload on config changes
 
 # Build
 yarn build            # Production build (validates config first)
@@ -51,7 +48,24 @@ yarn check            # Lint + format + type-check
 
 The `tenant-config/` directory is gitignored - configs are deployment-specific and generated from `pwa-tenant-config-generator`.
 
-On first `yarn dev`, the example config is automatically generated and copied to `tenant-config/`.
+### Development Modes
+
+**`yarn dev` - Standard Mode**
+- Uses `example-config` from `pwa-tenant-config-generator`
+- Generates config once at startup (if not already present)
+- Config changes require restarting dev server
+- Best for: Quick development with default config
+
+**`yarn dev:tenant <path>` - Custom Tenant Mode**
+- Uses specified tenant config directory (e.g., `../pwa-tenant-config-generator/tenant-configs/my-tenant`)
+- Watches config files for changes and auto-regenerates
+- Dev server automatically picks up config updates
+- Best for: Developing/testing specific tenant configurations
+
+Both modes:
+1. Generate PWA assets (icons, manifests, meta tags)
+2. Copy config to `tenant-config/`
+3. Apply overlay files to project root
 
 **See [README_TENANT_CONFIG.md](README_TENANT_CONFIG.md)** for:
 

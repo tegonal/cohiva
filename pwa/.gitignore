@@ -12,6 +12,7 @@ node_modules
 src/assets/logo-dark.svg
 /src/assets/icon.svg
 /src/css/app.scss
+/src/css/quasar.variables.scss
 /src/css/override.scss
 /src/css/webfonts.scss
 /src/css/fonts
