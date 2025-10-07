@@ -98,8 +98,8 @@ class AddressAdmin(GenoBaseAdmin):
         "extra",
         ("street_name", "house_number", "po_box", "po_box_number"),
         ("city_zipcode", "city_name", "country"),
-        ("telephone", "mobile"),
-        ("email", "email2"),
+        ("telephone", "mobile", "telephoneOffice", "telephoneOffice2"),
+        ("email", "email2", "website"),
         "date_birth",
         "hometown",
         "occupation",
@@ -111,7 +111,7 @@ class AddressAdmin(GenoBaseAdmin):
         "comment",
         ("carddav_href", "carddav_etag", "carddav_syncts"),
         ("ts_created", "ts_modified"),
-        ("gnucash_id", "emonitor_id", "random_id"),
+        ("gnucash_id", "import_id", "random_id"),
         "user",
         "object_actions",
         "links",
@@ -120,7 +120,7 @@ class AddressAdmin(GenoBaseAdmin):
     readonly_fields = [
         "ts_created",
         "ts_modified",
-        "emonitor_id",
+        "import_id",
         "gnucash_id",
         "random_id",
         "object_actions",
@@ -320,13 +320,13 @@ class ChildAdmin(GenoBaseAdmin):
         ("presence", "age"),
         "parents",
         "notes",
-        "emonitor_id",
+        "import_id",
         "ts_created",
         "ts_modified",
         "links",
         "backlinks",
     ]
-    readonly_fields = ["age", "emonitor_id", "ts_created", "ts_modified", "links", "backlinks"]
+    readonly_fields = ["age", "import_id", "ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "presence", "parents", "age"]
     list_filter = ["presence", "name__active"]
     my_search_fields = ["name__name", "name__first_name", "parents", "notes"]
@@ -341,6 +341,10 @@ class BuildingAdmin(GenoBaseAdmin):
     fields = [
         "name",
         "description",
+        ("street_name", "house_number"),
+        ("city_zipcode", "city_name", "country"),
+        "egid",
+        ("value_insurance", "value_build"),
         "team",
         "active",
         "ts_created",
@@ -880,6 +884,7 @@ class RentalUnitAdmin(GenoBaseAdmin):
         ("height", "volume"),
         ("rent_netto", "nk", "nk_electricity", "rent_total"),
         ("share", "depot"),
+        ("internal_nr", "ewid"),
         "note",
         "svg_polygon",
         "description",
@@ -887,7 +892,7 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "adit_serial",
         "active",
         "comment",
-        "ts_created",
+        "import_idts_created",
         "ts_modified",
         "links",
         "backlinks",
@@ -962,22 +967,23 @@ class ContractAdminModelForm(forms.ModelForm):
             )
         return main_contact
 
+
 class VertragstypFilter(admin.SimpleListFilter):
-    title = 'Vertragstyp'
-    parameter_name = 'main_contract'
+    title = "Vertragstyp"
+    parameter_name = "main_contract"
 
     def lookups(self, request, model_admin):
         # define the filter options
         return (
-            ('hv', 'Hauptvertrag'),
-            ('zv', 'Zusatzvertrag'),
+            ("hv", "Hauptvertrag"),
+            ("zv", "Zusatzvertrag"),
         )
 
     def queryset(self, request, queryset):
         # apply the filter to the queryset
-        if self.value() == 'hv':
+        if self.value() == "hv":
             return queryset.filter(main_contract=None)
-        if self.value() == 'zv':
+        if self.value() == "zv":
             return queryset.filter(main_contract__isnull=False)
 
 
@@ -1002,7 +1008,7 @@ class ContractAdmin(GenoBaseAdmin):
         "comment",
         "ts_created",
         "ts_modified",
-        "emonitor_id",
+        "import_id",
         "object_actions",
         "links",
         "backlinks",
@@ -1201,6 +1207,7 @@ class InvoiceAdmin(GenoBaseAdmin):
 
 admin.site.register(Invoice, InvoiceAdmin)
 
+
 class TenantsViewAdmin(GenoBaseAdmin):
     fields = [
         "bu_name",
@@ -1320,13 +1327,18 @@ class TenantsViewAdmin(GenoBaseAdmin):
 
     def has_add_permission(self, request):
         return False
+
     def has_change_permission(self, request, obj=None):
         return True
+
     def has_delete_permission(self, request, obj=None):
         return False
+
     ordering = ("-bu_name", "-ru_name")
 
+
 admin.site.register(TenantsView, TenantsViewAdmin)
+
 
 class LookupTableAdmin(GenoBaseAdmin):
     model = LookupTable
