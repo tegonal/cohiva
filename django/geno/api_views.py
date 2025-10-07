@@ -390,11 +390,9 @@ class QRBill(APIView):
         total_amount = request.data["total_amount"]
         if total_amount < 0:
             self.context["qr_amount"] = 0
-            ##TODO Mikel: how should we change this?
             if self.contract and self.contract.bankaccount:
                 self.context["extra_text"] = (
                     "Ohne anderslautenden Gegenbericht in den nächsten 30 Tagen, werden wir das Guthaben von CHF %s auf das bei uns registrierte Konto %s überweisen."
-                    ##TODO Mikel: how should we change this?
                     % (nformat(-1 * total_amount), self.contract.bankaccount)
                 )
             else:

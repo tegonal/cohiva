@@ -181,8 +181,16 @@ class BankAccount(GenoBase):
     kontoinhaber = models.CharField("Kontoinhaber", max_length=100, blank=True)
 
     def __str__(self):
-        return f"{self.iban} ({self.kontoinhaber})"
-
+        kontoinhaber = self.kontoinhaber.strip() if self.kontoinhaber else ""
+        iban = self.iban.strip() if self.iban else ""
+        if kontoinhaber and iban:
+            return f"{kontoinhaber} ({iban})"
+        elif kontoinhaber:
+            return kontoinhaber
+        elif iban:
+            return iban
+        else:
+            return "Kein Konto angegeben"
 
 class Address(GenoBase):
     TITLE_CHOICES = (

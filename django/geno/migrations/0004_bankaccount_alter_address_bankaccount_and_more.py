@@ -11,8 +11,8 @@ def migrate_bank_accounts(apps, schema_editor):
 
     # Migrate address
     for add in address.objects.all():
-        iban = add.bankaccount
-        iban_parsed = parse_iban_field(iban)
+        bankaccount_string = add.bankaccount
+        iban_parsed = parse_iban_field(bankaccount_string)
         if iban_parsed[0] == 'valid_iban_with_bank':
             bank, created = bank_account.objects.get_or_create(
                 iban=iban_parsed[1],
@@ -23,14 +23,14 @@ def migrate_bank_accounts(apps, schema_editor):
             bank, created = bank_account.objects.get_or_create(iban=iban_parsed[1])
             add.bankaccount = bank.id
         else:
-            bank = bank_account.objects.create(comment = iban or "")
+            bank = bank_account.objects.create(comment = bankaccount_string)
             add.bankaccount = bank.id
         add.save()
 
     # Migrate contract
     for cont in contract.objects.all():
-        iban = cont.bankaccount
-        iban_parsed = parse_iban_field(iban)
+        bankaccount_string = cont.bankaccount
+        iban_parsed = parse_iban_field(bankaccount_string)
         if iban_parsed[0] == "valid_iban_with_bank":
             bank, created = bank_account.objects.get_or_create(
                 iban=iban_parsed[1],
@@ -40,10 +40,47 @@ def migrate_bank_accounts(apps, schema_editor):
         elif iban_parsed[0] == "valid_iban":
             bank, created = bank_account.objects.get_or_create(iban=iban_parsed[1])
             cont.bankaccount = bank.id
-        elif iban_parsed[0] == "other":
-            bank, created = bank_account.objects.get_or_create(comment=iban_parsed[1] or "")
+        elif iban_parsed[0] == "other" and bankaccount_string == "":
+            bank = bank_account.objects.create(comment="")
+            cont.bankaccount = bank.id
+        elif iban_parsed[0] == "other" and bankaccount_string != "":
+            bank, created = bank_account.objects.get_or_create(comment=bankaccount_string)
             cont.bankaccount = bank.id
         cont.save()
+
+def reverse_migrate_bank_accounts(apps, schema_editor):
+    address = apps.get_model('geno', 'Address')
+    contract = apps.get_model('geno', 'Contract')
+    bank_account = apps.get_model('geno', 'BankAccount')
+
+    # Reverse for address
+    for add in address.objects.all():
+        if add.bankaccount:
+            bank = bank_account.objects.get(id=add.bankaccount)
+            if bank.iban:
+                value = bank.iban
+                if bank.finanzinstitut:
+                    value = f"{value}, {bank.finanzinstitut}"
+            else:
+                value = bank.comment
+            add.bankaccount = value
+            add.save()
+
+    # Reverse for contract
+    for cont in contract.objects.all():
+        if cont.bankaccount:
+            bank = bank_account.objects.get(id=cont.bankaccount)
+            if bank.iban:
+                value = bank.iban
+                if bank.finanzinstitut:
+                    value = f"{value}, {bank.finanzinstitut}"
+            else:
+                value = bank.comment
+            cont.bankaccount = value
+            cont.save()
+    # Remove all BankAccount objects
+    bank_account.objects.all().delete()
+    migrations.DeleteModel(name='BankAccount')
 
 def parse_iban_field(value):
     if not value:
@@ -81,7 +118,8 @@ class Migration(migrations.Migration):
                 'abstract': False,
             },
         ),
-        migrations.RunPython(migrate_bank_accounts),
+
+        migrations.RunPython(migrate_bank_accounts, reverse_migrate_bank_accounts),
 
         migrations.AlterField(
             model_name='address',

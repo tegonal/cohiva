@@ -4,6 +4,7 @@ from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
 from django.http import HttpResponseRedirect
+from stdnum import iban as iban_util
 
 import geno.settings as geno_settings
 from geno.exporter import ExportXlsMixin
@@ -51,24 +52,6 @@ def copy_objects(modeladmin, request, queryset):
 
 copy_objects.short_description = "Ausgewählte Objekte kopieren"
 
-
-class BankAccountFieldsMixin:
-    def bankaccount_iban(self, obj):
-        return obj.bankaccount.iban if hasattr(obj, "bankaccount") and obj.bankaccount else ""
-    bankaccount_iban.short_description = "IBAN"
-
-    def bankaccount_finanzinstitut(self, obj):
-        return obj.bankaccount.finanzinstitut if hasattr(obj, "bankaccount") and obj.bankaccount else ""
-    bankaccount_finanzinstitut.short_description = "Finanzinstitut"
-
-    def bankaccount_kontoinhaber(self, obj):
-        return obj.bankaccount.kontoinhaber if hasattr(obj, "bankaccount") and obj.bankaccount else ""
-    bankaccount_kontoinhaber.short_description = "Kontoinhaber"
-
-    def bankaccount_comment(self, obj):
-        return obj.bankaccount.comment if hasattr(obj, "bankaccount") and obj.bankaccount else ""
-    bankaccount_comment.short_description = "Comment"
-
 ## Base admin class
 class GenoBaseAdmin(admin.ModelAdmin, ExportXlsMixin):
     model = None
@@ -106,46 +89,34 @@ def set_title_mrs(modeladmin, request, queryset):
 set_title_mrs.short_description = "Anrede auf 'Frau' setzen"
 
 
-class AddressAdmin(BankAccountFieldsMixin, GenoBaseAdmin):
+class AddressAdmin(GenoBaseAdmin):
     model = Address
-    fieldsets = (
-        (None, {
-            "fields": [
-                "organization",
-                ("name", "first_name"),
-                ("title", "formal"),
-                "extra",
-                ("street_name", "house_number", "po_box", "po_box_number"),
-                ("city_zipcode", "city_name", "country"),
-                ("telephone", "mobile"),
-                ("email", "email2"),
-                "date_birth",
-                "hometown",
-                "occupation",
-                ("interest_action"),
-                "paymentslip",
-                "ignore_in_lists",
-                "login_permission",
-                "active",
-                "comment",
-                ("carddav_href", "carddav_etag", "carddav_syncts"),
-                ("ts_created", "ts_modified"),
-                ("gnucash_id", "emonitor_id", "random_id"),
-                "user",
-                "object_actions",
-                "links",
-                "backlinks",
-            ]
-        }),
-        ("Bank Account", {
-            "fields": (
-                "bankaccount_iban",
-                "bankaccount_finanzinstitut",
-                "bankaccount_kontoinhaber",
-                "bankaccount_comment",
-            ),
-        }),
-    )
+    fields = [
+        "organization",
+        ("name", "first_name"),
+        ("title", "formal"),
+        "extra",
+        ("street_name", "house_number", "po_box", "po_box_number"),
+        ("city_zipcode", "city_name", "country"),
+        ("telephone", "mobile"),
+        ("email", "email2"),
+        "date_birth",
+        "hometown",
+        "occupation",
+        ("bankaccount", "interest_action"),
+        "paymentslip",
+        "ignore_in_lists",
+        "login_permission",
+        "active",
+        "comment",
+        ("carddav_href", "carddav_etag", "carddav_syncts"),
+        ("ts_created", "ts_modified"),
+        ("gnucash_id", "emonitor_id", "random_id"),
+        "user",
+        "object_actions",
+        "links",
+        "backlinks",
+    ]
     readonly_fields = [
         "ts_created",
         "ts_modified",
@@ -158,10 +129,6 @@ class AddressAdmin(BankAccountFieldsMixin, GenoBaseAdmin):
         "carddav_href",
         "carddav_etag",
         "carddav_syncts",
-        "bankaccount_iban",
-        "bankaccount_finanzinstitut",
-        "bankaccount_kontoinhaber",
-        "bankaccount_comment",
     ]
     list_display = [
         "list_name",
@@ -175,10 +142,6 @@ class AddressAdmin(BankAccountFieldsMixin, GenoBaseAdmin):
         "ts_created",
         "ts_modified",
         "comment",
-        "bankaccount_iban",
-        "bankaccount_finanzinstitut",
-        "bankaccount_kontoinhaber",
-        "bankaccount_comment",
     ]
     list_filter = [
         "title",
@@ -763,15 +726,39 @@ class DocumentAdmin(GenoBaseAdmin):
     search_fields = my_search_fields
 
 admin.site.register(Document, DocumentAdmin)
+class BankAccountForm(forms.ModelForm):
+    class Meta:
+        model = BankAccount
+        fields = "__all__"
+
+    def clean_iban(self):
+        value = self.cleaned_data.get("iban")
+        if not value:
+            return value
+        if not iban_util.is_valid(value):
+            raise forms.ValidationError("Invalid IBAN format.")
+        return value
 
 class BankAccountAdmin(GenoBaseAdmin):
     model = BankAccount
+    form = BankAccountForm
+
+    def iban_display(self, obj):
+        return obj.iban if obj.iban else "(empty)"
+
     list_display = [
-        "iban",
+        "iban_display",
         "finanzinstitut",
         "kontoinhaber",
-        "comment"
+        "comment",
+        "ts_created",
+        "ts_modified"
     ]
+    my_search_fields = [
+        "iban",
+        "finanzinstitut"
+    ]
+    search_fields = my_search_fields
 
 admin.site.register(BankAccount, BankAccountAdmin)
 
@@ -1008,59 +995,37 @@ class ContractAdminModelForm(forms.ModelForm):
         return main_contact
 
 
-class ContractAdmin(BankAccountFieldsMixin, GenoBaseAdmin):
+class ContractAdmin(GenoBaseAdmin):
     form = ContractAdminModelForm
-    fieldsets = (
-        (
-            None,
-            {
-                "fields": [
-                    "contractors",
-                    "main_contact",
-                    "rental_units",
-                    "children",
-                    "children_old",
-                    "state",
-                    "date",
-                    "date_end",
-                    "rent_reduction",
-                    "share_reduction",
-                    "send_qrbill",
-                    "billing_contract",
-                    "bankaccount",
-                    "note",
-                    "comment",
-                    "ts_created",
-                    "ts_modified",
-                    "emonitor_id",
-                    "object_actions",
-                    "links",
-                    "backlinks",
-                ]
-            },
-        ),
-        (
-            "Bank Account",
-            {
-                "fields": (
-                    "bankaccount_iban",
-                    "bankaccount_finanzinstitut",
-                    "bankaccount_kontoinhaber",
-                    "bankaccount_comment",
-                ),
-            },
-        ),
-    )
+    fields= [
+        "contractors",
+        "main_contact",
+        "rental_units",
+        "children",
+        "children_old",
+        "state",
+        "date",
+        "date_end",
+        "rent_reduction",
+        "share_reduction",
+        "send_qrbill",
+        "billing_contract",
+        "bankaccount",
+        "note",
+        "comment",
+        "ts_created",
+        "ts_modified",
+        "emonitor_id",
+        "object_actions",
+        "links",
+        "backlinks",
+    ]
     readonly_fields = [
         "ts_created",
         "ts_modified",
         "object_actions",
         "links",
         "backlinks",
-        "bankaccount_iban",
-        "bankaccount_finanzinstitut",
-        "bankaccount_kontoinhaber",
-        "bankaccount_comment",
     ]
     list_display = ["__str__", "state", "date", "date_end", "note", "comment"]
     my_search_fields = [

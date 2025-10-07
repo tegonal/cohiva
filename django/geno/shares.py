@@ -268,9 +268,7 @@ def get_share_statement_data(adr, year, enddate=None):
     ## Formular:
     if inter["total"][2]:
         statement_data["form"] = True
-        ##TODO Mikel: how should we change this?
         if adr.interest_action == "Bank" and adr.bankaccount:
-            ##TODO Mikel: how should we change this?
             statement_data["loan_default_action"] = "auf das Konto %s überweisen" % adr.bankaccount
         elif adr.interest_action == "Loan":
             statement_data["loan_default_action"] = "direkt dem Darlehen anrechnen"
