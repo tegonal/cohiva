@@ -7,7 +7,6 @@ import subprocess
 import tempfile
 import zipfile
 from collections import OrderedDict
-from smtplib import SMTPException
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
@@ -15,15 +14,14 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
-from django.core.mail import EmailMultiAlternatives
 from django.db.models import Q
 from django.forms import formset_factory
 from django.http import FileResponse, Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
-from django.template import Context, loader
+from django.template import Context
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.encoding import smart_str
-from django.utils.html import escape
 from django.views.generic import FormView, TemplateView
 from django_tables2 import RequestConfig
 from oauthlib.oauth2 import TokenExpiredError
@@ -31,6 +29,7 @@ from oauthlib.oauth2 import TokenExpiredError
 ## For OAuth client
 from requests_oauthlib import OAuth2Session
 from stdnum.ch import esr
+from unfold.enums import ActionVariant
 
 from credit_accounting.forms import TransactionUploadForm
 
@@ -56,7 +55,7 @@ if hasattr(settings, "MAILMAN_API") and settings.MAILMAN_API["password"]:
 import geno.settings as geno_settings
 from cohiva.views.admin import CohivaAdminViewMixin
 
-from .documents import send_member_mail_process
+from .documents import context_format, create_documents, get_context_data, send_member_mail_process
 from .exporter import (
     export_addresses_carddav,
     export_adit_file,
@@ -76,7 +75,6 @@ from .forms import (
     TransactionUploadProcessForm,
     WebstampForm,
     process_registration_forms,
-    SendInvoicesForm,
 )
 from .gnucash import (
     add_invoice,
@@ -212,187 +210,6 @@ def export_generic(request, what):
         return export_adit_file()
     c = {"response": ret, "title": title}
     return render(request, "geno/messages.html", c)
-
-
-def get_context_data(doctype, obj_id, extra_context):
-    c = extra_context
-    filename_prefix = {
-        "memberletter": "Brief_Bestätigung_Mitgliedschaft",
-        "memberfinanz": "Brief_Finanzielle_Unterstützung",
-        "memberfee": "Brief_Einforderung_Mitgliederbeitrag",
-        "memberfeereminder": "Brief_Einforderung_Mitgliederbeitrag_Reminder",
-        "shareconfirm": "Brief_Bestätigung_Anteilscheine",
-        "shareconfirm_req": "Brief_Bestätigung_Einforderung",
-        #'shareconfirm_reqpart': "Brief_Bestätigung_Einforderung_Rate",
-        "loanreminder": "Brief_Erinnerung_Darlehen",
-        "statement": "Kontoauszug",
-        "mailing": "Brief_Mitglieder",
-        "contract": "Vertrag",
-        "contract_letter": "Vertrag_Begleitbrief",
-        "contract_check": "Formular_Überprüfung_Belegung_Fahrzeuge",
-    }
-
-    filename_ext = ".odt"
-    if doctype[0:6] == "member":
-        obj = Member.objects.get(pk=obj_id)
-        adr = obj.name
-        c["datum_eintritt"] = obj.date_join.strftime("%d.%m.%Y")
-    elif doctype[0:5] == "share":
-        obj = Share.objects.get(pk=obj_id)
-        adr = obj.name
-
-        if Share.objects.filter(name=adr).filter(share_type=obj.share_type).count() == 1:
-            c["is_first_share"] = True
-        else:
-            c["is_first_share"] = False
-
-        try:
-            stype_share = ShareType.objects.get(name="Anteilschein")
-        except ShareType.DoesNotExist:
-            stype_share = "Nonexistent"
-        try:
-            stype_loan_noint = ShareType.objects.get(name="Darlehen zinslos")
-        except ShareType.DoesNotExist:
-            stype_loan_noint = "Nonexistent"
-        try:
-            stype_loan_int = ShareType.objects.get(name="Darlehen verzinst")
-        except ShareType.DoesNotExist:
-            stype_loan_int = "Nonexistent"
-        try:
-            stype_loan_special = ShareType.objects.get(name="Darlehen spezial")
-        except ShareType.DoesNotExist:
-            stype_loan_special = "Nonexistent"
-        try:
-            stype_deposit = ShareType.objects.get(name="Depositenkasse")
-        except ShareType.DoesNotExist:
-            stype_deposit = "Nonexistent"
-
-        if obj.date_due:
-            duedate = obj.date_due
-        elif obj.duration:
-            duedate = obj.date + relativedelta(years=obj.duration)
-        else:
-            duedate = None
-        if duedate:
-            duedate_text = " (Fälligkeit: %s)" % duedate.strftime("%d.%m.%Y")
-        else:
-            duedate_text = ""
-
-        c["betrag_text_zusatz"] = None
-        if obj.share_type == stype_share:
-            if hasattr(adr, "member"):
-                c["datum_eintritt"] = adr.member.date_join.strftime("%d.%m.%Y")
-            else:
-                c["datum_eintritt"] = None
-            if c["datum_eintritt"] and c["is_first_share"]:
-                c["betreff"] = "Bestätigung Anteilscheine/Mitgliedschaft"
-            else:
-                c["betreff"] = "Bestätigung Anteilscheine"
-            if obj.quantity == 1:
-                c["betrag_text"] = "1 Anteilschein zu CHF %s" % (nformat(obj.value))
-            else:
-                c["betrag_text"] = "%s Anteilscheine zu CHF %s in Summe CHF %s" % (
-                    nformat(obj.quantity, 0),
-                    nformat(obj.value),
-                    nformat(obj.quantity * obj.value),
-                )
-            if obj.is_pension_fund:
-                c["betrag_text"] = "%s (aus Mitteln der beruflichen Vorsorge)" % (c["betrag_text"])
-                c["bvg"] = True
-            else:
-                c["bvg"] = False
-            count = 0
-            amount = 0
-            for s in get_active_shares().filter(name=obj.name).filter(share_type=stype_share):
-                count += s.quantity
-                amount += s.quantity * s.value
-            if count == 1:
-                c["total_anzahl"] = "1 Anteilschein"
-            else:
-                c["total_anzahl"] = "%s Anteilscheine" % (nformat(count, 0))
-            c["total_summe"] = "%s" % (nformat(amount))
-        elif obj.share_type == stype_loan_noint:
-            c["betrag_text"] = "Zinsloses Darlehen von CHF %s%s" % (
-                nformat(obj.value, 2),
-                duedate_text,
-            )
-        elif obj.share_type == stype_loan_int:
-            c["betrag_text"] = "Darlehen von CHF %s%s" % (nformat(obj.value, 2), duedate_text)
-            c["betrag_text_zusatz"] = "Aktueller Zinssatz: %s%%" % (nformat(obj.interest(), 2))
-        elif obj.share_type == stype_deposit:
-            c["betrag_text"] = "Einlage in die Depositenkasse von CHF %s" % (nformat(obj.value, 2))
-            c["betrag_text_zusatz"] = "Aktueller Zinssatz: %s%%" % (nformat(obj.interest(), 2))
-        elif obj.share_type == stype_loan_special:
-            c["betrag_text"] = "Darlehen von CHF %s%s" % (nformat(obj.value, 2), duedate_text)
-            c["betrag_text_zusatz"] = "Zinssatz: %s%% (gemäss Darlehensvertrag)" % (
-                nformat(obj.interest(), 2)
-            )
-        else:
-            c["betrag_text"] = "%s von CHF %s" % (obj.share_type.name, nformat(obj.value, 2))
-
-        c["datum_zahlung"] = obj.date.strftime("%d.%m.%Y")
-    elif doctype == "statement" or doctype == "mailing" or doctype == "loanreminder":
-        obj = Address.objects.get(pk=obj_id)
-        adr = obj
-    elif doctype[0:8] == "contract":
-        obj = Contract.objects.get(pk=obj_id)
-        adr = obj.get_contact_address()
-        # adr = obj.person
-        c["mietobjekt"] = ", ".join([str(ru) for ru in obj.rental_units.all()])
-        c["mindestbelegung"] = " + ".join(
-            [str(int(ru.min_occupancy)) for ru in obj.rental_units.filter(min_occupancy__gt=0)]
-        )
-        c["bewohnende"] = []
-        duplicate_check = []
-        for tenant in obj.contractors.exclude(ignore_in_lists=True):
-            dup_id = f"{tenant.name}{tenant.first_name}"
-            if dup_id not in duplicate_check:
-                c["bewohnende"].append({"name": tenant.name, "vorname": tenant.first_name})
-                duplicate_check.append(dup_id)
-        for child in obj.children.exclude(name__ignore_in_lists=True):
-            dup_id = f"{child.name.name}{child.name.first_name}"
-            if dup_id not in duplicate_check:
-                c["bewohnende"].append({"name": child.name.name, "vorname": child.name.first_name})
-                duplicate_check.append(dup_id)
-        # c['area'] = "%s" % (nformat(obj.area,0))
-        # c['netto'] = "%s" % (nformat(obj.rent_total-obj.nk,2))
-        # c['nk'] = "%s" % (nformat(obj.nk,2))
-        # c['rent_total'] = "%s" % (nformat(obj.rent_total,2))
-        # c['depot'] = "%s" % (nformat(obj.depot,2))
-        # c['begin'] = obj.date.strftime("%d.%m.%Y")
-    else:
-        raise RuntimeError("Doctype not implemented.")
-
-    adr_filename_str = ""
-    if adr:
-        c.update(adr.get_context())
-        adr_filename_str = adr.get_filename_str()
-    if "filename_tag" in c:
-        filename_tag = "_%s" % c["filename_tag"]
-    else:
-        filename_tag = ""
-    if c["roomnr"]:
-        adr_filename_str = "%s_%s" % (c["roomnr"], adr_filename_str)
-    filename = "%s_%s%s%s" % (
-        filename_prefix[doctype],
-        adr_filename_str,
-        filename_tag,
-        filename_ext,
-    )
-
-    return {
-        "content_object": obj,
-        "visible_filename": filename.replace(" ", "").replace("+", "-").replace("/", "-"),
-        "context": c,
-    }
-
-
-def context_format(context, output_format="odt"):
-    # for k,v in context.items():
-    #    if output_format == 'odt':
-    #        if isinstance(context[k], basestring):
-    #            context[k] = mark_safe(v.replace('\n', '<text:line-break />'))
-    return context
 
 
 @login_required
@@ -1133,241 +950,6 @@ def share_export(request):
     return response
 
 
-@login_required
-def transaction_invoice(request):
-    if not request.user.has_perm("geno.transaction"):
-        return unauthorized(request)
-
-    if request.method == "POST":
-        form = TransactionFormInvoice(request.POST)
-        if form.is_valid():
-            # Process transaction
-            invoice = form.cleaned_data["invoice"]
-            if form.cleaned_data["amount"]:
-                amount = form.cleaned_data["amount"]
-            else:
-                amount = invoice.amount
-            ret = pay_invoice(invoice, form.cleaned_data["date"], amount)
-            if ret:
-                messages.error(
-                    request, "Zahlung von %s konnte nicht gebucht werden: %s" % (invoice, ret)
-                )
-            else:
-                messages.success(request, "Zahlung gebucht: %s [%.2f]" % (invoice, amount))
-                form = TransactionFormInvoice(initial={"date": form.cleaned_data["date"]})
-    else:
-        form = TransactionFormInvoice()  # initial={'transaction': default_transaction})
-    return render(
-        request,
-        "geno/transaction.html",
-        {"form": form, "form_action": "/geno/transaction_invoice/"},
-    )
-
-
-@login_required
-def transaction(request):
-    if not request.user.has_perm("geno.transaction"):
-        return unauthorized(request)
-
-    error = False
-    if request.method == "POST":
-        form = TransactionForm(request.POST)
-        if form.is_valid():
-            # Process transaction
-            if form.cleaned_data["transaction"][0:3] == "fee":
-                fee_year = form.cleaned_data["transaction"][3:]
-                try:
-                    att_type = MemberAttributeType.objects.get(
-                        name="Mitgliederbeitrag %s" % fee_year
-                    )
-                except MemberAttributeType.DoesNotExist:
-                    error = True
-                    messages.error(
-                        request,
-                        "Mitglieder Attribut 'Mitgliederbeitrag %s' existiert nicht." % fee_year,
-                    )
-                if not error:
-                    member = Member.objects.filter(name=form.cleaned_data["name"])
-                    if len(member) != 1:
-                        error = True
-                        messages.error(
-                            request,
-                            "Member not found or not unique: %s" % form.cleaned_data["name"],
-                        )
-                    else:
-                        att = MemberAttribute.objects.filter(
-                            member=member[0], attribute_type=att_type
-                        )
-                        for a in att:
-                            messages.info(
-                                request,
-                                "Mitglieder Attribut gefunden: %s - %s" % (a.date, a.value),
-                            )
-                        if len(att) == 0:
-                            ## Create new attribute
-                            att = MemberAttribute(member=member[0], attribute_type=att_type)
-                        elif len(att) == 1:
-                            att = att[0]
-                            if att.value.startswith("Bezahlt"):
-                                error = True
-                                messages.error(request, "Schon als bezahlt markiert")
-                            elif (
-                                att.value != "Mail-Rechnung geschickt"
-                                and att.value != "Mail-Reminder geschickt"
-                                and att.value != "Rechnung geschickt"
-                                and att.value != "Gefordert"
-                                and att.value != "Brief-Rechnung geschickt"
-                                and att.value != "Brief-Reminder geschickt"
-                                and att.value != "Brief-Mahnung geschickt"
-                                and att.value != "Brief-Mahnung2 geschickt"
-                            ):
-                                error = True
-                                messages.error(request, "Unknown attribute value")
-                        else:
-                            error = True
-                            messages.error(request, "More than one attribute found")
-                if not error and settings.GNUCASH:
-                    ## Add transaction to GnuCash
-                    msg = "Undefined"
-                    try:
-                        book = open_book(
-                            uri_conn=settings.GNUCASH_DB_SECRET,
-                            readonly=settings.GNUCASH_READONLY,
-                            do_backup=False,
-                        )
-                        to_account = book.accounts(
-                            code=geno_settings.GNUCASH_ACC_POST
-                        )  # Aktiven:Umlaufvermögen:Flüssige Mittel:Postkonto
-                        from_account = book.accounts(
-                            code=geno_settings.GNUCASH_ACC_MEMBER_FEE
-                        )  # Ertrag aus Leistungen:Mitgliederbeiträge")
-                        amount = Decimal("80.00")
-                        t = Transaction(
-                            post_date=form.cleaned_data["date"],
-                            enter_date=datetime.datetime.now(),
-                            currency=book.currencies(mnemonic="CHF"),
-                            description="Mitgliederbeitrag %s %s" % (fee_year, member[0]),
-                            splits=[
-                                Split(account=to_account, value=amount, memo=""),
-                                Split(account=from_account, value=-amount, memo=""),
-                            ],
-                        )
-                        msg = "CHF %s, %s [%s > %s]" % (
-                            amount,
-                            t.description,
-                            from_account.name,
-                            to_account.name,
-                        )
-                        book.save()
-                        book.close()
-                    except Exception as e:
-                        error = True
-                        messages.error(request, "Could not create Gnucash transaction: %s" % e)
-                    if not error:
-                        messages.success(request, "Added GnuCash transaction: %s" % (msg))
-                    else:
-                        with contextlib.suppress(builtins.BaseException):
-                            book.close()
-                if not error:
-                    ## Update/add attribute
-                    att.value = "Bezahlt"
-                    att.date = form.cleaned_data["date"]
-                    att.save()
-                    messages.success(
-                        request,
-                        "Mitglieder Attribut hinzugefügt/aktualisiert: %s - %s [%s]"
-                        % (att.date, att.value, att.member),
-                    )
-            elif form.cleaned_data["transaction"] in (
-                "as_single",
-                "as_extra",
-                "as_founder",
-                "development",
-            ):
-                if form.cleaned_data["transaction"] == "development":
-                    count = 1
-                    value = form.cleaned_data["amount"]
-                    share_type = "Entwicklungsbeitrag"
-                elif (
-                    form.cleaned_data["amount"]
-                    and float(form.cleaned_data["amount"]) % 200.00 == 0.0
-                ):
-                    value = 200
-                    count = int(form.cleaned_data["amount"] / value)
-                    if form.cleaned_data["transaction"] == "as_single":
-                        share_type = "Anteilschein Einzelmitglied"
-                    elif form.cleaned_data["transaction"] == "as_founder":
-                        share_type = "Anteilschein Gründungsmitglied"
-                    else:
-                        share_type = "Anteilschein freiwillig"
-                else:
-                    error = True
-                    messages.error(request, "Betrag ist kein Vielfaches von 200.-!")
-                if not error:
-                    share = Share(
-                        name=form.cleaned_data["name"],
-                        share_type=ShareType.objects.get(name=share_type),
-                        state="bezahlt",
-                        date=form.cleaned_data["date"],
-                        quantity=count,
-                        value=value,
-                    )
-                    share.save()
-                    messages.info(
-                        request,
-                        "%sx CHF %s %s hinzugefügt - %s [%s]"
-                        % (
-                            count,
-                            value,
-                            share_type,
-                            form.cleaned_data["date"],
-                            form.cleaned_data["name"],
-                        ),
-                    )
-            else:
-                if form.cleaned_data["amount"]:
-                    if len(form.cleaned_data["note"]):
-                        note = form.cleaned_data["note"]
-                    else:
-                        note = None
-                    ret_error = process_transaction(
-                        form.cleaned_data["transaction"],
-                        form.cleaned_data["date"],
-                        form.cleaned_data["name"],
-                        form.cleaned_data["amount"],
-                        None,
-                        note,
-                    )
-                    info = "%s: %s CHF %s [%s]" % (
-                        form.cleaned_data["transaction"],
-                        form.cleaned_data["date"],
-                        form.cleaned_data["amount"],
-                        form.cleaned_data["name"],
-                    )
-                    if not ret_error:
-                        messages.success(request, "Buchung ausgeführt: %s" % (info))
-                    else:
-                        error = True
-                        messages.error(
-                            request, "FEHLER bei der Buchung: %s -- %s" % (info, ret_error)
-                        )
-                else:
-                    error = True
-                    messages.error(request, "Kein Betrag angegeben!")
-    else:
-        now = datetime.datetime.now()
-        if now.month < 6:
-            default_transaction = "fee%s" % (now.year - 1)
-        else:
-            default_transaction = "fee%s" % now.year
-        form = TransactionForm(initial={"transaction": default_transaction})
-    return render(
-        request,
-        "geno/transaction.html",
-        {"form": form, "form_action": "/geno/transaction/", "error": error},
-    )
-
-
 class DebtorView(CohivaAdminViewMixin, TemplateView):
     title = "Debitoren"
     permission_required = ("geno.canview_billing", "geno.transaction", "geno.transaction_invoice")
@@ -1615,75 +1197,241 @@ def check_payments(request):
     return render(request, "geno/messages.html", {"response": ret, "title": "Check Zahlungen"})
 
 
-@login_required
-def share_confirm(request):
-    if not request.user.has_perm("geno.canview_share") or not request.user.has_perm(
-        "geno.canview_billing"
-    ):
-        return unauthorized(request)
+class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
+    doctype = None
 
-    ## Find shares without documents (ignore single AS)
-    stype_share = ShareType.objects.get(name="Anteilschein")
-    try:
-        stype_hypo = ShareType.objects.get(name="Hypothek")
-    except ShareType.DoesNotExist:
-        stype_hypo = None
-    objects = []
-    for s in (
-        get_active_shares(interest=False)
-        .filter(date__gt=datetime.date(2018, 7, 1))
-        .exclude(share_type=stype_hypo)
-        .order_by("-date")
-    ):
-        obj_data = {"obj": s, "info": "%s %dx %s" % (s.date, s.quantity, s.value)}
-        if s.share_type == stype_share:
-            obj_data["doctype"] = "shareconfirm"
-            obj_data["info"] = "%s [Best. Anteilschein]" % obj_data["info"]
-        doc = (
-            Document.objects.filter(object_id=s.pk)
-            .filter(content_type=ContentType.objects.get(app_label="geno", model="share"))
-            .filter(doctype__name__startswith="shareconfirm")
-        )
-        if doc.count() == 0:
-            objects.append(obj_data)
-    options = {
-        "beschreibung": "Bestätigungen Einzahlung Beteiligung",
-        "link_url": "/geno/share/confirm",
-    }
-    return create_documents(request, "shareconfirm_req", objects, options)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.error_message = ""
+        self.result = []
+        if not self.doctype:
+            self.doctype = self.get_doctype()
+        self.objects = self.get_objects()
+        self.options = self.get_options()
+
+    def get_doctype(self):
+        return None
+
+    def get_objects(self):
+        return []
+
+    def get_options(self):
+        return {}
+
+    def get(self, request, *args, **kwargs):
+        if not self.doctype:
+            self.error_message = "Dokumententyp fehlt!"
+        else:
+            self.options["makezip"] = request.GET.get("makezip", "") == "yes"
+            if not self.options.get("link_url", None):
+                self.options["link_url"] = request.path
+            self.result = create_documents(self.doctype, self.objects, self.options)
+            if isinstance(self.result, HttpResponse):
+                return self.result
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.error_message:
+            context["response"] = [{"info": self.error_message}]
+        else:
+            context["response"] = self.result
+        context["title"] = "Dokumente erzeugen - %s" % self.options.get("beschreibung", "")
+        return context
 
 
-@login_required
-def member_confirm(request, doctype=None):
-    if not request.user.has_perm("geno.add_document"):
-        return unauthorized(request)
+class MemberLetterView(DocumentGeneratorView):
+    permission_required = ("geno.add_document", "geno.send_newmembers")
 
-    if not doctype:
-        raise ValueError("Missing doctype!")
-
-    ## Find members with missing documents (after 2020-01-01)
-    objects = []
-    for m in Member.objects.filter(date_join__gt=datetime.date(2020, 1, 1)).exclude(
-        date_leave__isnull=False
-    ):
-        doc = (
-            Document.objects.filter(object_id=m.pk)
-            .filter(content_type=ContentType.objects.get(app_label="geno", model="member"))
-            .filter(doctype__name=doctype)
-        )
-        if doc.count() == 0:
-            objects.append(
-                {
-                    "obj": m,
-                    "doctype": doctype,
-                    "info": "%s, Beitritt %s" % (m, m.date_join.strftime("%d.%m.%Y")),
-                }
+    def get_objects(self):
+        objects = []
+        ## Find members with missing documents (after cutoff date 2020-01-01)
+        for m in Member.objects.filter(
+            date_join__gt=settings.GENO_MEMBER_LETTER_CUTOFF_DATE
+        ).exclude(date_leave__isnull=False):
+            doc = (
+                Document.objects.filter(object_id=m.pk)
+                .filter(content_type=ContentType.objects.get(app_label="geno", model="member"))
+                .filter(doctype__name=self.doctype)
             )
-    options = {
-        "beschreibung": "Fehlende Dokumente erzeugen: %s" % doctype,
-        "link_url": "/geno/member/confirm/%s/" % doctype,
-    }
-    return create_documents(request, doctype, objects, options)
+            if doc.count() == 0:
+                objects.append(
+                    {
+                        "obj": m,
+                        "doctype": self.doctype,
+                        "info": "%s, Beitritt %s" % (m, m.date_join.strftime("%d.%m.%Y")),
+                    }
+                )
+        return objects
+
+    def get_options(self):
+        return {
+            "beschreibung": "Mitgliederbriefe",
+            "link_url": "/geno/member/confirm/%s" % self.doctype,
+        }
+
+
+class ShareConfirmationLetterView(DocumentGeneratorView):
+    permission_required = (
+        "geno.add_document",
+        "geno.confirm_share",
+        "geno.canview_share",
+        "geno.carview_billing",
+    )
+    doctype = "shareconfirm_req"
+
+    def get_objects(self):
+        # Find shares without documents (ignore single AS)
+        stype_share = ShareType.objects.get(name="Anteilschein")
+        try:
+            stype_hypo = ShareType.objects.get(name="Hypothek")
+        except ShareType.DoesNotExist:
+            stype_hypo = None
+        objects = []
+        for s in (
+            get_active_shares(interest=False)
+            .filter(date__gt=settings.GENO_SHARE_LETTER_CUTOFF_DATE)
+            .exclude(share_type=stype_hypo)
+            .order_by("-date")
+        ):
+            obj_data = {"obj": s, "info": "%s %dx %s" % (s.date, s.quantity, s.value)}
+            if s.share_type == stype_share:
+                obj_data["doctype"] = "shareconfirm"
+                obj_data["info"] = "%s [Best. Anteilschein]" % obj_data["info"]
+            doc = (
+                Document.objects.filter(object_id=s.pk)
+                .filter(content_type=ContentType.objects.get(app_label="geno", model="share"))
+                .filter(doctype__name__startswith="shareconfirm")
+            )
+            if doc.count() == 0:
+                objects.append(obj_data)
+        return objects
+
+    def get_options(self):
+        return {
+            "beschreibung": "Bestätigungen Einzahlung Beteiligung",
+            "link_url": "/geno/share/confirm",
+        }
+
+
+class ShareReminderLetterView(DocumentGeneratorView):
+    permission_required = (
+        "geno.add_document",
+        "geno.confirm_share",
+        "geno.canview_share",
+        "geno.carview_billing",
+    )
+    doctype = "loanreminder"
+
+    def get_objects(self):
+        cutoff_date = timezone.now() + relativedelta(months=16)
+        today = datetime.date.today()
+        next_year = today.year + 1
+
+        # ret = []
+        objects = []
+        for adr in Address.objects.filter(active=True):
+            ## Check if we have a recent reminder document already
+            try:
+                last_reminder = (
+                    Document.objects.filter(object_id=adr.pk)
+                    .filter(
+                        content_type=ContentType.objects.get(app_label="geno", model="address")
+                    )
+                    .filter(doctype__name=self.doctype)
+                    .latest("ts_created")
+                )
+                last_reminder_cutoff_date = last_reminder.ts_created + relativedelta(months=16)
+            except Document.DoesNotExist:
+                last_reminder = None
+                last_reminder_cutoff_date = None
+
+            share_contexts = []
+            info = []
+            ## Get active loans that have no end date
+            for share in (
+                get_active_shares()
+                .filter(name=adr)
+                .filter(share_type__name__startswith="Darlehen")
+                .filter(date_end=None)
+                .filter(is_interest_credit=False)
+            ):
+                startdate = share.date
+                if share.date_due:
+                    duedate = share.date_due
+                    if share.duration:
+                        startdate = share.date_due - relativedelta(years=share.duration)
+                elif share.duration:
+                    duedate = share.date + relativedelta(years=share.duration)
+                else:
+                    duedate = None
+                    info.append("WARNUNG: %s hat KEIN FÄLLIGKEITSDATUM!" % (share))
+                if duedate and duedate < cutoff_date.date():
+                    if (
+                        not last_reminder_cutoff_date
+                        or duedate >= last_reminder_cutoff_date.date()
+                    ):
+                        info.append(
+                            "%s[%s]: NEEDS REMINDER"
+                            % (nformat(share.quantity * share.value), duedate)
+                        )
+                        share_context = {
+                            "zaehler": "",
+                            "betrag": nformat(share.quantity * share.value),
+                        }
+                        if share.duration:
+                            share_context["laufzeit"] = "%s Jahre - " % share.duration
+                        else:
+                            share_context["laufzeit"] = ""
+                        share_context["laufzeit"] += "%s – %s" % (
+                            startdate.strftime("%d.%m.%Y"),
+                            duedate.strftime("%d.%m.%Y"),
+                        )
+                        share_context["zinssatz"] = nformat(share.interest())
+                        share_context["plus5jahre"] = (duedate + relativedelta(years=5)).strftime(
+                            "%d.%m.%Y"
+                        )
+                        share_context["plus10jahre"] = (
+                            duedate + relativedelta(years=10)
+                        ).strftime("%d.%m.%Y")
+                        share_context["datum_zins_neu"] = "01.01.%s" % next_year
+                        share_contexts.append(share_context)
+                    else:
+                        info.append(
+                            "%s[%s]: Already reminded (%s)"
+                            % (
+                                nformat(share.quantity * share.value),
+                                duedate,
+                                last_reminder.ts_created,
+                            )
+                        )
+                else:
+                    info.append(
+                        "%s[%s]: Not due" % (nformat(share.quantity * share.value), duedate)
+                    )
+
+            if len(share_contexts) > 1:
+                counter = 1
+                for sc in share_contexts:
+                    sc["zaehler"] = "(Darlehen %s von %s)" % (counter, len(share_contexts))
+                    counter += 1
+
+            if share_contexts:
+                # ret.append({'info': '%s' % (adr), 'objects': objects})
+                objects.append(
+                    {
+                        "obj": adr,
+                        "info": "%s Darlehen: %s" % (len(share_contexts), " / ".join(info)),
+                        "extra_context": {"darlehen": share_contexts},
+                    }
+                )
+        return objects
+
+    def get_options(self):
+        return {
+            "beschreibung": "Brief Erinnerung Darlehen",
+            "link_url": "/geno/share/duedate_reminder",
+        }
 
 
 ## TODO: Refactor to ClassBased view
@@ -2291,111 +2039,7 @@ def share_mailing(request):
         "beschreibung": "Mailings",
         "link_url": "/geno/share/mailing",
     }
-    return create_documents(request, "mailing", objects, options)
-
-
-## TODO: Refactor to ClassBased view
-@login_required
-def share_duedate_reminder(request):
-    if not request.user.has_perm("geno.canview_share") or not request.user.has_perm(
-        "geno.canview_billing"
-    ):
-        return unauthorized(request)
-
-    cutoff_date = timezone.now() + relativedelta(months=16)
-    today = datetime.date.today()
-    next_year = today.year + 1
-
-    # ret = []
-    objects = []
-    for adr in Address.objects.filter(active=True):
-        ## Check if we have a recent reminder document already
-        try:
-            last_reminder = (
-                Document.objects.filter(object_id=adr.pk)
-                .filter(content_type=ContentType.objects.get(app_label="geno", model="address"))
-                .filter(doctype__name="loanreminder")
-                .latest("ts_created")
-            )
-            last_reminder_cutoff_date = last_reminder.ts_created + relativedelta(months=16)
-        except Document.DoesNotExist:
-            last_reminder_cutoff_date = None
-
-        share_contexts = []
-        info = []
-        ## Get active loans that have no end date
-        for share in (
-            get_active_shares()
-            .filter(name=adr)
-            .filter(share_type__name__startswith="Darlehen")
-            .filter(date_end=None)
-            .filter(is_interest_credit=False)
-        ):
-            startdate = share.date
-            if share.date_due:
-                duedate = share.date_due
-                if share.duration:
-                    startdate = share.date_due - relativedelta(years=share.duration)
-            elif share.duration:
-                duedate = share.date + relativedelta(years=share.duration)
-            else:
-                duedate = None
-                info.append("WARNUNG: %s hat KEIN FÄLLIGKEITSDATUM!" % (share))
-            if duedate and duedate < cutoff_date.date():
-                if not last_reminder_cutoff_date or duedate >= last_reminder_cutoff_date.date():
-                    info.append(
-                        "%s[%s]: NEEDS REMINDER" % (nformat(share.quantity * share.value), duedate)
-                    )
-                    share_context = {"zaehler": ""}
-                    share_context["betrag"] = nformat(share.quantity * share.value)
-                    if share.duration:
-                        share_context["laufzeit"] = "%s Jahre - " % share.duration
-                    else:
-                        share_context["laufzeit"] = ""
-                    share_context["laufzeit"] += "%s – %s" % (
-                        startdate.strftime("%d.%m.%Y"),
-                        duedate.strftime("%d.%m.%Y"),
-                    )
-                    share_context["zinssatz"] = nformat(share.interest())
-                    share_context["plus5jahre"] = (duedate + relativedelta(years=5)).strftime(
-                        "%d.%m.%Y"
-                    )
-                    share_context["plus10jahre"] = (duedate + relativedelta(years=10)).strftime(
-                        "%d.%m.%Y"
-                    )
-                    share_context["datum_zins_neu"] = "01.01.%s" % next_year
-                    share_contexts.append(share_context)
-                else:
-                    info.append(
-                        "%s[%s]: Already reminded (%s)"
-                        % (
-                            nformat(share.quantity * share.value),
-                            duedate,
-                            last_reminder.ts_created,
-                        )
-                    )
-            else:
-                info.append("%s[%s]: Not due" % (nformat(share.quantity * share.value), duedate))
-
-        if len(share_contexts) > 1:
-            counter = 1
-            for sc in share_contexts:
-                sc["zaehler"] = "(Darlehen %s von %s)" % (counter, len(share_contexts))
-                counter += 1
-
-        if share_contexts:
-            # ret.append({'info': '%s' % (adr), 'objects': objects})
-            objects.append(
-                {
-                    "obj": adr,
-                    "info": "%s Darlehen: %s" % (len(share_contexts), " / ".join(info)),
-                    "extra_context": {"darlehen": share_contexts},
-                }
-            )
-
-    options = {"link_url": "/geno/share/duedate_reminder"}
-    options["beschreibung"] = "Brief Erinnerung Darlehen"
-    return create_documents(request, "loanreminder", objects, options)
+    return create_documents_deprecated(request, "mailing", objects, options)
 
 
 ## TODO: Refactor to ClassBased view
@@ -2494,7 +2138,7 @@ def share_statement(request, date="previous_year", address=None):
             skip_count,
         )
     )
-    return create_documents(request, "statement", objects, options)
+    return create_documents_deprecated(request, "statement", objects, options)
 
 
 @login_required
@@ -2619,17 +2263,18 @@ def create_contracts(request, letter=False):
             "beschreibung": "Mietverträge Begleitbrief",
             "link_url": "/geno/contract/create_letter",
         }
-        return create_documents(request, "contract_letter", objects, options)
+        return create_documents_deprecated(request, "contract_letter", objects, options)
     else:
         options = {
             "beschreibung": "Mietverträge",
             "link_url": "/geno/contract/create",
         }
-        return create_documents(request, "contract", objects, options)
+        return create_documents_deprecated(request, "contract", objects, options)
 
 
+## Remove this after all views use DocumentGeneratorBaseView
 @login_required
-def create_documents(request, default_doctype, objects=None, options=None):
+def create_documents_deprecated(request, default_doctype, objects=None, options=None):
     if request.GET.get("makezip", "") == "yes":
         makezip = True
     else:
@@ -2762,8 +2407,6 @@ def create_documents(request, default_doctype, objects=None, options=None):
     )
 
 
-## TODO: Refactor to ClassBased view
-## Custom pages for unfold
 class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
     title = "Mailverteiler überprüfen"
     permission_required = "geno.canview_member_mailinglists"
@@ -3329,233 +2972,93 @@ def send_member_mail_filter_by_invoice(form, member_list):
     return errors
 
 
-## TODO: Refactor to ClassBased view
-@login_required
-def send_member_mail(request):
-    if not request.user.has_perm("geno.send_mail"):
-        return unauthorized(request)
+class MailWizardView(CohivaAdminViewMixin, FormView):
+    title = "Dokumente erstellen/versenden"
+    step_title = "Schritt 1: Empfänger:innen filtern"
+    form_action = reverse_lazy("geno:mail-wizard-start")
+    permission_required = "geno.send_mail"
+    template_name = "geno/member_send_mail.html"
+    form_class = MemberMailForm
 
-    initial = {}
-    ret = {"errors": [], "show_results": False}
-    errors = []
-    form = MemberMailForm(request.POST or None, initial=initial)
-    if request.method == "POST":
-        if form.is_valid():
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.result = {"errors": [], "show_results": False}
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "info": self.step_title,
+                "response": self.result,
+                "form_action": self.form_action,
+            }
+        )
+        return context
+
+    def form_valid(self, form):
+        errors = []
+        ## Filter members
+        self.request.session["members"] = []
+        if form.cleaned_data["base_dataset"] == "renters":
+            errors = send_member_mail_filter_rental(form, self.request.session["members"])
+            ## Filter for rental_type
+        elif form.cleaned_data["base_dataset"] == "addresses":
+            ## Filter for documents
+            errors = send_member_mail_filter_addresses(form, self.request.session["members"])
+        elif form.cleaned_data["base_dataset"] == "shares":
+            errors = send_member_mail_filter_shares(form, self.request.session["members"])
+        elif form.cleaned_data["base_dataset"] == "active_members":
             ## Filter members
-            request.session["members"] = []
-
-            if form.cleaned_data["base_dataset"] == "renters":
-                errors = send_member_mail_filter_rental(form, request.session["members"])
-                ## Filter for rental_type
-            elif form.cleaned_data["base_dataset"] == "addresses":
-                ## Filter for documents
-                errors = send_member_mail_filter_addresses(form, request.session["members"])
-            elif form.cleaned_data["base_dataset"] == "shares":
-                errors = send_member_mail_filter_shares(form, request.session["members"])
-            elif form.cleaned_data["base_dataset"] == "active_members":
-                ## Filter members
-                errors = send_member_mail_filter_members(form, request.session["members"])
-            else:
-                errors.append("Ungültiger Basis-Datensatz")
-            ## Filter by invoice existance
-            errors.extend(send_member_mail_filter_by_invoice(form, request.session["members"]))
-            if not errors:
-                return HttpResponseRedirect("/geno/member/send_mail/select/")
-        ret["show_results"] = True
-        for error in errors:
-            ret["errors"].append({"info": error})
-    return render(
-        request,
-        "geno/member_send_mail.html",
-        {
-            "response": ret,
-            "title": "Dokumente/Mailings erstellen/versenden",
-            "info": "Schritt 1: Empfänger:innen filtern",
-            "form": form,
-            "form_action": "/geno/member/send_mail/",
-        },
-    )
+            errors = send_member_mail_filter_members(form, self.request.session["members"])
+        else:
+            errors.append("Ungültiger Basis-Datensatz")
+        ## Filter by invoice existence
+        errors.extend(send_member_mail_filter_by_invoice(form, self.request.session["members"]))
+        if not errors:
+            return HttpResponseRedirect(reverse("geno:mail-wizard-select"))
+        self.result = {"errors": [{"info": error} for error in errors], "show_results": True}
+        return self.get(self.request)
 
 
-@login_required
-def send_member_mail_select(request):
-    if not request.user.has_perm("geno.send_mail"):
-        return unauthorized(request)
+class MailWizardSelectView(MailWizardView):
+    step_title = "Schritt 2: Empfänger:innen auswählen"
+    form_action = reverse_lazy("geno:mail-wizard-select")
 
-    if "members" not in request.session:
-        return HttpResponseRedirect("/geno/member/send_mail/")
+    def get(self, request, *args, **kwargs):
+        if "members" not in request.session:
+            return HttpResponseRedirect(reverse("geno:mail-wizard-start"))
+        return super().get(request, *args, **kwargs)
 
-    initial = {}
-    form = MemberMailSelectForm(
-        request.POST or None, initial=initial, members=request.session["members"]
-    )
-    if request.method == "POST":
-        # print(form.data)
-        if form.is_valid():
-            request.session["select_members"] = form.cleaned_data["select_members"]
-            return HttpResponseRedirect("/geno/member/send_mail/action/")
-    return render(
-        request,
-        "geno/member_send_mail.html",
-        {
-            "response": {},
-            "title": "Dokumente/Mailings erstellen/versenden",
-            "info": "Schritt 2: Empfänger:innen auswählen",
-            "form": form,
-            "form_action": "/geno/member/send_mail/select/",
-        },
-    )
+    def get_form(self, form_class=None):
+        return MemberMailSelectForm(
+            self.request.POST or None,
+            initial=self.get_initial(),
+            members=self.request.session["members"],
+        )
+
+    def form_valid(self, form):
+        self.request.session["select_members"] = form.cleaned_data["select_members"]
+        return HttpResponseRedirect(reverse("geno:mail-wizard-action"))
 
 
-## TODO: Refactor to ClassBased view
-@login_required
-def send_member_mail_action(request):
-    if not request.user.has_perm("geno.send_mail"):
-        return unauthorized(request)
+class MailWizardActionView(MailWizardView):
+    step_title = "Schritt 3: Aktionen ausführen"
+    form_class = MemberMailActionForm
+    form_action = reverse_lazy("geno:mail-wizard-action")
 
-    initial = {"email_copy": settings.GENO_DEFAULT_EMAIL}
-    ret = {}
-    form = MemberMailActionForm(request.POST or None, initial=initial)
-    if request.method == "POST":
-        # print(form.data)
-        if form.is_valid():
-            form.cleaned_data["members"] = []
-            for m in request.session["members"]:
-                if str(m["id"]) in request.session["select_members"]:
-                    form.cleaned_data["members"].append(m)
-            ret = send_member_mail_process(form.cleaned_data)
-            if isinstance(ret, HttpResponse):
-                return ret
-            ret["show_results"] = True
+    def get_initial(self):
+        return {"email_copy": settings.GENO_DEFAULT_EMAIL}
 
-    return render(
-        request,
-        "geno/member_send_mail.html",
-        {
-            "response": ret,
-            "title": "Dokumente/Mailings erstellen/versenden",
-            "info": "Schritt 3: Aktionen ausführen",
-            "form": form,
-            "form_action": "/geno/member/send_mail/action/",
-        },
-    )
-
-
-@login_required
-def send_contract_mail(request):
-    ret = []
-    email_copy = settings.TEST_MAIL_RECIPIENT
-    # email_copy = None
-    commit = True
-    count = 0
-    counted = {}
-
-    return render(
-        request,
-        "geno/messages.html",
-        {
-            "response": [{"info": "Funktion zur Zeit deaktiviert."}],
-            "title": "Versand and Mieter*innen",
-        },
-    )
-
-    with open("/home/wsadmin/einzug.json") as f:
-        data = json.load(f)
-
-    for c in get_active_contracts():
-        for ru in c.rental_units.all():
-            emails = []
-            adrs = []
-            obj = []
-            termine = []
-            has_data = False
-            if ru.name in data and ru.name not in ("408", "104", "112", "405"):
-                counted[ru.name] = True
-                count += 1
-                has_data = True
-                for d in data[ru.name]["moving"]:
-                    obj.append("Zügeltermin: %s, %s" % (d["date"], d["access"]))
-                    termine.append("%s, %s" % (d["date"], d["access"]))
-                if not termine:
-                    termine.append("Noch kein Termin festgelegt.")
-                for adr in c.contractors.all():
-                    if adr.email:
-                        if adr.email not in emails:
-                            emails.append(adr.email)
-                            obj.append("Email an: %s" % adr.email)
-                            if commit or ru.name in (
-                                "011",
-                                "002",
-                                "408",
-                                "002",
-                                "010",
-                                "404",
-                                "504",
-                                "104",
-                                "205",
-                                "395",
-                                "008",
-                                "310",
-                                "006",
-                            ):
-                                adrs.append(adr)
-                    else:
-                        obj.append("WARNUNG: Keine Email für %s" % adr)
-
-            for adr in adrs:
-                context = {"termin_uebergabe": data[ru.name]["handover"], "termine": termine}
-                context.update(adr.get_context())
-                mail_recipient = adr.get_mail_recipient()
-                mail_subject = "Übergabetermin Wohnung %s" % ru.name
-                mail_template = loader.get_template("geno/contract_email.html")
-                mail_text = mail_template.render(context)
-                if email_copy and mail_recipient != email_copy:
-                    bcc = [
-                        email_copy,
-                    ]
-                else:
-                    bcc = None
-
-                mails_sent = 0
-                try:
-                    mail = EmailMultiAlternatives(
-                        mail_subject,
-                        mail_text,
-                        f'"{settings.GENO_NAME}" <{settings.SERVER_EMAIL}>',
-                        [mail_recipient],
-                        bcc,
-                    )
-                    mail.attach_alternative(mail_text, "text/html")
-                    mails_sent = mail.send()
-                except SMTPException as e:
-                    obj.append(
-                        "Konnte mail an %s nicht schicken!!! SMTP-Fehler: %s"
-                        % (escape(mail_recipient), e)
-                    )
-                except Exception as e:
-                    obj.append(
-                        "Konnte mail an %s nicht schicken!!! Allgemeiner Fehler: %s"
-                        % (escape(mail_recipient), e)
-                    )
-                if mails_sent == 1:
-                    obj.append("Email an %s geschickt." % (escape(mail_recipient)))
-
-            if has_data:
-                ret.append(
-                    {
-                        "info": "Wohnung %s: %s" % (ru.name, data[ru.name]["handover"]),
-                        "objects": obj,
-                    }
-                )
-
-    for d in data:
-        if d not in counted:
-            ret.append({"info": "WARNING: Not counted/found: %s" % d})
-
-    ret.append({"info": "Count wohnungen = %s" % count, "objects": []})
-    return render(
-        request, "geno/messages.html", {"response": ret, "title": "Versand and Mieter*innen"}
-    )
+    def form_valid(self, form):
+        form.cleaned_data["members"] = []
+        for m in self.request.session["members"]:
+            if str(m["id"]) in self.request.session["select_members"]:
+                form.cleaned_data["members"].append(m)
+        self.result = send_member_mail_process(form.cleaned_data)
+        if isinstance(self.result, HttpResponse):
+            return self.result
+        self.result["show_results"] = True
+        return self.get(self.request)
 
 
 class TransactionUploadView(CohivaAdminViewMixin, FormView):
@@ -3620,6 +3123,249 @@ class TransactionUploadView(CohivaAdminViewMixin, FormView):
         else:
             messages.error(self.request, "Konnte Datei nicht hochladen.")
         return self.get(self.request)
+
+
+class TransactionInvoiceView(CohivaAdminViewMixin, FormView):
+    title = "Zahlung einer Rechnung manuell erfassen"
+    permission_required = ("geno.transaction", "geno.transaction_invoice", "geno.add_invoice")
+    template_name = "geno/transaction.html"
+    form_class = TransactionFormInvoice
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "form_action": "/geno/transaction_invoice/",
+            }
+        )
+        return context
+
+    def form_valid(self, form):
+        invoice_to_pay = form.cleaned_data["invoice"]
+        if form.cleaned_data["amount"]:
+            amount = form.cleaned_data["amount"]
+        else:
+            amount = invoice_to_pay.amount
+        ret = pay_invoice(invoice_to_pay, form.cleaned_data["date"], amount)
+        if ret:
+            messages.error(
+                self.request,
+                "Zahlung von %s konnte nicht gebucht werden: %s" % (invoice_to_pay, ret),
+            )
+        else:
+            messages.success(self.request, "Zahlung gebucht: %s [%.2f]" % (invoice_to_pay, amount))
+            self.initial = {"date": form.cleaned_data["date"]}
+        return self.get(self.request)
+
+
+class TransactionManualView(CohivaAdminViewMixin, FormView):
+    title = "Zahlung ohne Rechnung manuell erfassen"
+    permission_required = ("geno.transaction", "geno.transaction_invoice", "geno.add_invoice")
+    template_name = "geno/transaction.html"
+    form_class = TransactionForm
+    error_flag = False
+
+    def get_initial(self):
+        now = datetime.datetime.now()
+        if now.month < 6:
+            default_transaction = "fee%s" % (now.year - 1)
+        else:
+            default_transaction = "fee%s" % now.year
+        return {"transaction": default_transaction}
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "form_action": "/geno/transaction/",
+                # "title": "Bankauszug verarbeiten",
+            }
+        )
+        return context
+
+    def form_valid(self, form):
+        if form.cleaned_data["transaction"][0:3] == "fee":
+            self.error_flag = self.process_fee(form)
+        elif form.cleaned_data["transaction"] in (
+            "as_single",
+            "as_extra",
+            "as_founder",
+            "development",
+        ):
+            self.error_flag = self.process_share(form)
+        else:
+            self.error_flag = self.process_default(form)
+        return self.get(self.request)
+
+    def process_fee(self, form):
+        fee_year = form.cleaned_data["transaction"][3:]
+        try:
+            att_type = MemberAttributeType.objects.get(name="Mitgliederbeitrag %s" % fee_year)
+        except MemberAttributeType.DoesNotExist:
+            messages.error(
+                self.request,
+                "Mitglieder Attribut 'Mitgliederbeitrag %s' existiert nicht." % fee_year,
+            )
+            return True
+
+        member = Member.objects.filter(name=form.cleaned_data["name"])
+        if len(member) != 1:
+            messages.error(
+                self.request,
+                "Member not found or not unique: %s" % form.cleaned_data["name"],
+            )
+            return True
+        att = MemberAttribute.objects.filter(member=member[0], attribute_type=att_type)
+        for a in att:
+            messages.info(
+                self.request,
+                "Mitglieder Attribut gefunden: %s - %s" % (a.date, a.value),
+            )
+        if len(att) == 0:
+            ## Create new attribute
+            att = MemberAttribute(member=member[0], attribute_type=att_type)
+        elif len(att) == 1:
+            att = att[0]
+            if att.value.startswith("Bezahlt"):
+                messages.error(self.request, "Schon als bezahlt markiert")
+                return True
+            elif (
+                att.value != "Mail-Rechnung geschickt"
+                and att.value != "Mail-Reminder geschickt"
+                and att.value != "Rechnung geschickt"
+                and att.value != "Gefordert"
+                and att.value != "Brief-Rechnung geschickt"
+                and att.value != "Brief-Reminder geschickt"
+                and att.value != "Brief-Mahnung geschickt"
+                and att.value != "Brief-Mahnung2 geschickt"
+            ):
+                messages.error(self.request, "Unknown attribute value")
+                return True
+        else:
+            messages.error(self.request, "More than one attribute found")
+            return True
+
+        if settings.GNUCASH:
+            ## Add transaction to GnuCash
+            msg = "Undefined"
+            try:
+                book = open_book(
+                    uri_conn=settings.GNUCASH_DB_SECRET,
+                    readonly=settings.GNUCASH_READONLY,
+                    do_backup=False,
+                )
+                to_account = book.accounts(
+                    code=geno_settings.GNUCASH_ACC_POST
+                )  # Aktiven:Umlaufvermögen:Flüssige Mittel:Postkonto
+                from_account = book.accounts(
+                    code=geno_settings.GNUCASH_ACC_MEMBER_FEE
+                )  # Ertrag aus Leistungen:Mitgliederbeiträge")
+                amount = Decimal("80.00")
+                t = Transaction(
+                    post_date=form.cleaned_data["date"],
+                    enter_date=datetime.datetime.now(),
+                    currency=book.currencies(mnemonic="CHF"),
+                    description="Mitgliederbeitrag %s %s" % (fee_year, member[0]),
+                    splits=[
+                        Split(account=to_account, value=amount, memo=""),
+                        Split(account=from_account, value=-amount, memo=""),
+                    ],
+                )
+                msg = "CHF %s, %s [%s > %s]" % (
+                    amount,
+                    t.description,
+                    from_account.name,
+                    to_account.name,
+                )
+                book.save()
+                book.close()
+            except Exception as e:
+                messages.error(self.request, "Could not create Gnucash transaction: %s" % e)
+                with contextlib.suppress(builtins.BaseException):
+                    book.close()
+                return True
+            messages.success(self.request, "Added GnuCash transaction: %s" % msg)
+            return False
+
+        ## Update/add attribute
+        att.value = "Bezahlt"
+        att.date = form.cleaned_data["date"]
+        att.save()
+        messages.success(
+            self.request,
+            "Mitglieder Attribut hinzugefügt/aktualisiert: %s - %s [%s]"
+            % (att.date, att.value, att.member),
+        )
+        return False
+
+    def process_share(self, form):
+        if form.cleaned_data["transaction"] == "development":
+            count = 1
+            value = form.cleaned_data["amount"]
+            share_type = "Entwicklungsbeitrag"
+        elif form.cleaned_data["amount"] and float(form.cleaned_data["amount"]) % 200.00 == 0.0:
+            value = 200
+            count = int(form.cleaned_data["amount"] / value)
+            if form.cleaned_data["transaction"] == "as_single":
+                share_type = "Anteilschein Einzelmitglied"
+            elif form.cleaned_data["transaction"] == "as_founder":
+                share_type = "Anteilschein Gründungsmitglied"
+            else:
+                share_type = "Anteilschein freiwillig"
+        else:
+            messages.error(self.request, "Betrag ist kein Vielfaches von 200.-!")
+            return True
+
+        share = Share(
+            name=form.cleaned_data["name"],
+            share_type=ShareType.objects.get(name=share_type),
+            state="bezahlt",
+            date=form.cleaned_data["date"],
+            quantity=count,
+            value=value,
+        )
+        share.save()
+        messages.info(
+            self.request,
+            "%sx CHF %s %s hinzugefügt - %s [%s]"
+            % (
+                count,
+                value,
+                share_type,
+                form.cleaned_data["date"],
+                form.cleaned_data["name"],
+            ),
+        )
+        return False
+
+    def process_default(self, form):
+        if not form.cleaned_data["amount"]:
+            messages.error(self.request, "Kein Betrag angegeben!")
+            return True
+
+        if len(form.cleaned_data["note"]):
+            note = form.cleaned_data["note"]
+        else:
+            note = None
+        ret_error = process_transaction(
+            form.cleaned_data["transaction"],
+            form.cleaned_data["date"],
+            form.cleaned_data["name"],
+            form.cleaned_data["amount"],
+            None,
+            note,
+        )
+        info = "%s: %s CHF %s [%s]" % (
+            form.cleaned_data["transaction"],
+            form.cleaned_data["date"],
+            form.cleaned_data["amount"],
+            form.cleaned_data["name"],
+        )
+        if ret_error:
+            messages.error(self.request, "FEHLER bei der Buchung: %s -- %s" % (info, ret_error))
+            return True
+        messages.success(self.request, "Buchung ausgeführt: %s" % (info))
+        return False
 
 
 @login_required
@@ -3725,8 +3471,30 @@ class InvoiceView(CohivaAdminViewMixin, TemplateView):
         "geno.add_invoice",
     )
     template_name = "geno/invoice_manual.html"
-    action = "overview"
     error_flag = False
+    actions = [
+        {
+            "title": "Mietzins-Rechnungen erstellen",
+            "variant": ActionVariant.PRIMARY,
+            "items": [
+                {
+                    "title": "Bis nächster Monat",
+                    "path": "/geno/invoice/auto/?date=next_month",
+                    "permission_required": ("geno.view_rentalunit",),
+                },
+                {
+                    "title": "Bis aktueller Monat",
+                    "path": "/geno/invoice/auto/",
+                    "permission_required": ("geno.view_rentalunit",),
+                },
+                {
+                    "title": "Bis letzten Monat",
+                    "path": "/geno/invoice/auto/?date=last_month",
+                    "permission_required": ("geno.view_rentalunit",),
+                },
+            ],
+        }
+    ]  ## title, path, items (for dropdown), method_name (for dropdown?), icon, variant
 
     def post(self, request, *args, **kwargs):
         form = self.get_form()
@@ -3913,6 +3681,82 @@ class InvoiceView(CohivaAdminViewMixin, TemplateView):
                 resp["Content-Disposition"] = "attachment; filename=%s" % output_filename
                 return resp
         return self.get(self.request)
+
+
+class InvoiceBatchView(CohivaAdminViewMixin, TemplateView):
+    title = "Mietzinsrechnung erstellen"
+    permission_required = (
+        "geno.canview_billing",
+        "geno.transaction",
+        "geno.transaction_invoice",
+        "geno.add_invoice",
+        "geno.view_rentalunit",
+    )
+    action = "create"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["response"] = self.process()
+        return context
+
+    def process(self, action="create", key=None, key_type=None):
+        if action not in ("create", "download"):
+            return [{"info": f"Ungültige Aktion: {action}"}]
+
+        ret = []
+        if action == "download":
+            if key_type != "contract":
+                raise RuntimeError("invoice(): Key type %s not implemented yet!" % key_type)
+            ## Just download PDF of invoices for this contract
+            download_only = key
+            dry_run = True
+        else:
+            download_only = None
+            if self.request.GET.get("dry_run") == "False":
+                dry_run = False
+            else:
+                dry_run = True
+
+        today = datetime.date.today()
+        reference_date = datetime.date(today.year, today.month, 1)
+        if self.request.GET.get("date", "") == "last_month":
+            if today.month == 1:
+                reference_date = datetime.date(today.year - 1, 12, 1)
+            else:
+                reference_date = datetime.date(today.year, today.month - 1, 1)
+        elif self.request.GET.get("date", "") == "next_month":
+            if today.month == 12:
+                reference_date = datetime.date(today.year + 1, 1, 1)
+            else:
+                reference_date = datetime.date(today.year, today.month + 1, 1)
+        elif len(self.request.GET.get("date", "")) == 10:
+            reference_date = datetime.datetime.strptime(
+                self.request.GET.get("date"), "%Y-%m-%d"
+            ).date()
+
+        ret.append(
+            {
+                "info": "Optionen:",
+                "objects": ["Dry-run: %s" % dry_run, "Referenzdatum: %s" % reference_date],
+            }
+        )
+
+        invoices = create_invoices(
+            dry_run, reference_date, self.request.GET.get("single_contract", None), download_only
+        )
+        if isinstance(invoices, str):
+            pdf_file = open("/tmp/%s" % invoices, "rb")
+            resp = FileResponse(pdf_file, content_type="application/pdf")
+            resp["Content-Disposition"] = "attachment; filename=%s" % invoices
+            return resp
+        if dry_run:
+            invoices.append(
+                "DRY-RUN: Zum effektiv ausführen, hier klicken: "
+                '<a href="?dry_run=False&date=%s">AUSFÜHREN</a>.'
+                % self.request.GET.get("date", "")
+            )
+        ret.append({"info": "GnuCash Rechnungen erstellen:", "objects": invoices})
+        return ret
 
 
 class ResidentListView(CohivaAdminViewMixin, TemplateView):

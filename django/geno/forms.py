@@ -58,6 +58,7 @@ class TransactionForm(forms.Form):
     name = select2.fields.ModelChoiceField(
         queryset=Address.objects.filter(active=True), model=None, name=None
     )
+    name.widget.attrs.update({"style": "width: 30em;"})
     date = forms.DateField(label="Datum", widget=forms.TextInput(attrs={"class": "datepicker"}))
     amount = forms.DecimalField(label="Betrag", decimal_places=2, required=False, help_text="")
     note = forms.CharField(label="Kommentar", required=False, help_text="(optional)")

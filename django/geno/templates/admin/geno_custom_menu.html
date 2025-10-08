@@ -24,35 +24,6 @@
           <td></td>
         </tr>
          {% endif %}
-         {% if perms.geno.transaction %}
-        <tr>
-          <th>Zahlungen erfassen</th>
-          <td>
-            <ul class="menulist">
-          {% if perms.geno.transaction_invoice and perms.geno.add_invoice %}
-            <li><a href="/geno/transaction_upload">Bankauszug hochladen (camt.053/054)</a>
-            {% if DEMO %}
-                <a href="/geno/transaction_testdata">DEMO-Zahlungsdatei erzeugen</a>
-            {% endif %}</li>
-            <li><a href="/geno/transaction_invoice">Zahlung einer Rechnung manuell erfassen</a></li>
-          {% endif %}
-            <li><a href="/geno/transaction">Zahlung ohne Rechnung manuell erfassen</a></li>
-            </ul>
-          </td>
-        </tr>
-          {% if perms.geno.transaction_invoice and perms.geno.add_invoice %}
-        <tr>
-          <th><a href="/geno/invoice">Rechnungen erstellen</a></th>
-          <td>Manuell eine Rechnung erstellen/verschicken</td>
-        </tr>
-             {% if perms.geno.view_rentalunit %}
-        <tr>
-          <th><a href="/geno/invoice/form/">Mietzinsrechnungen versenden/buchen</a></th>
-          <td></td>
-        </tr>
-             {% endif %}
-          {% endif %} {# transaction_invoice #}
-         {% endif %} {# transaction #}
         {% endif %} {# canview_billing #}
     </table>
 </div>
@@ -63,46 +34,12 @@
     <table>
     <caption>Admin</caption>
         {% if perms.geno.canview_member_mailinglists %}
-
-        <tr>
-          <th><a href="/geno/member/check_mailinglists">Mailinglists überprüfen</a></th>
-          <td></td>
-        </tr>
         <tr>
           <th><a href="/geno/export/addresses_carddav">Adressen nach CardDAV exportieren</a></th>
           <td><a href="/geno/export/addresses_carddav?delete=yes">! DELETE+EXPORT !</a></td>
         </tr>
         {% endif %}
-        {% if perms.geno.send_mail %}
-        <tr>
-          <th><a href="/geno/member/send_mail">Dokumente/Mailings erstellen/versenden</a></th>
-          <td></td>
-        </tr>
-         {% if perms.geno.send_mail_rental %}
-        <tr>
-          <th><a href="/geno/member/send_mail/contract">Versand an Mieter*innen</a></th>
-          <td></td>
-        </tr>
-         {% endif %}
-         {% if perms.geno.send_newmembers %}
-        <tr>
-          <th><a href="/geno/member/confirm/memberletter">Neubeitritte bestätigen</a></th>
-          <td><a href="/geno/member/confirm/memberfinanz">Finanzbrief</a></td>
-        </tr>
-         {% endif %} {# send_newmembers #}
-        {% endif %} {# send_mail #}
         {% if perms.geno.canview_share and perms.geno.canview_billing %}
-         {% if perms.geno.confirm_share %}
-        <tr>
-          <th><a href="/geno/share/confirm">Einzahlungen Beteiligung bestätigen (Briefe erstellen)</a></th>
-          <td></td>
-        </tr>
-
-        <tr>
-          <th><a href="/geno/share/duedate_reminder">Erinnerung für bald fällige Darlehen</a></th>
-          <td></td>
-        </tr>
-         {% endif %} {# confirm_share #}
 
          {% if perms.geno.share_interest_statments %}
         <tr>

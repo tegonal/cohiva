@@ -1535,7 +1535,6 @@ class Contract(GenoBase):
                 "rental_objects",
                 "Kann Mieter-/Objektespiegel erstellen und Mietobjekt-Dokumente erstellen",
             ),
-            ("send_mail_rental", "Kann Versand an Mieter*innen erstellen"),
         )
 
 

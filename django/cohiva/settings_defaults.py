@@ -4,6 +4,7 @@ Django default settings for Cohiva.
 To change settings, overwrite them in settings.py or settings_production.py
 """
 
+import datetime
 import locale
 from pathlib import Path
 from urllib.parse import quote
@@ -595,6 +596,8 @@ GENO_CHECK_MAILINGLISTS = {
 GENO_ADDRESSES_WITH_APARTMENT_NUMBER = []
 
 GENO_TRANSACTION_MEMBERFEE_STARTYEAR = 2022
+GENO_MEMBER_LETTER_CUTOFF_DATE = datetime.date(2020, 1, 1)
+GENO_SHARE_LETTER_CUTOFF_DATE = datetime.date(2018, 7, 1)
 GENO_GNUCASH_ACC_POST = "1010.1"
 
 GENO_MEMBER_FLAGS = {
@@ -743,7 +746,7 @@ COHIVA_ADMIN_NAVIGATION = [
                 "icon": "manufacturing",
                 "items": [
                     {"type": "model", "value": "geno.GenericAttribute"},
-                    {"type": "view", "value": "geno:check_mailinglists"},
+                    {"type": "view", "value": "geno:check-mailinglists"},
                     {"type": "view", "value": "geno:export_carddav"},
                     {"type": "model", "value": "portal.TenantAdmin"},
                     {"type": "model", "value": "geno.Building"},
@@ -774,6 +777,19 @@ COHIVA_ADMIN_NAVIGATION = [
                 ],
             },
             {
+                "type": "tabgroup",
+                "name": "Dokumente erzeugen",
+                "items": [
+                    {
+                        "type": "view",
+                        "name": "Bestätigung Neubeitritte",
+                        "value": "geno:member-confirmation-letter",
+                        "icon": "print",
+                    },
+                    {"type": "view", "name": "Zusatzbrief", "value": "geno:member-finance-letter"},
+                ],
+            },
+            {
                 "type": "subgroup",
                 "name": _("Erweitert"),
                 "icon": "manufacturing",
@@ -792,6 +808,10 @@ COHIVA_ADMIN_NAVIGATION = [
         ],
     },
     {
+        "name": _("Gemeinschaft"),
+        "items": [],
+    },
+    {
         "name": _("Inkasso"),
         "items": [
             {"type": "view", "value": "geno:debtor-list", "icon": "account_balance"},
@@ -799,8 +819,11 @@ COHIVA_ADMIN_NAVIGATION = [
             {
                 "type": "tabgroup",
                 "items": [
-                    {"type": "view", "value": "geno:transaction-upload", "icon": "money"},
-                    {"type": "view", "value": "geno:transaction-testdata"},
+                    {
+                        "type": "view",
+                        "value": "geno:transaction-upload",
+                        "icon": "payments",
+                    },
                     {"type": "view", "value": "geno:transaction-invoice"},
                     {"type": "view", "value": "geno:transaction-manual"},
                 ],
@@ -821,10 +844,24 @@ COHIVA_ADMIN_NAVIGATION = [
         "name": _("Finanzierung"),
         "items": [
             {"type": "view", "value": "geno:share_overview", "icon": "finance"},
-            {"type": "view", "value": "geno:create_invoice_manual", "icon": "invoice"},
-            {"type": "view", "value": "geno:create_invoice_rent", "icon": "invoice_house"},
-            {"type": "view", "value": "geno:debitors", "icon": "accounts"},
             {"type": "model", "value": "geno.Share", "icon": "request_page"},
+            {
+                "type": "tabgroup",
+                "name": "Dokumente erzeugen",
+                "items": [
+                    {
+                        "type": "view",
+                        "name": "Bestätigung Einzahlungen",
+                        "value": "geno:share-confirmation-letter",
+                        "icon": "print",
+                    },
+                    {
+                        "type": "view",
+                        "name": "Erinnerung bald fällige Darlehen",
+                        "value": "geno:share-reminder-letter",
+                    },
+                ],
+            },
             {
                 "type": "subgroup",
                 "name": _("Erweitert"),
@@ -834,6 +871,16 @@ COHIVA_ADMIN_NAVIGATION = [
                 ],
             },
         ],
+    },
+    {
+        "name": _("Dokumente & Kommunikation"),
+        "items": [
+            {"type": "view", "value": "geno:mail-wizard-start", "icon": "mail"},
+        ],
+    },
+    {
+        "name": _("System"),
+        "items": [],
     },
 ]
 

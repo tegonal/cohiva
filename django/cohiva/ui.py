@@ -46,7 +46,7 @@ class NavGroup:
 
     def add_subgroup(self, obj, tabs=False):
         subgroup = NavGroup(
-            obj.get("name", "Subgroup"),
+            obj.get("name", None),
             depth=self._depth + 1,
             icon=obj.get("icon", None),
             tabs=tabs,
@@ -66,8 +66,13 @@ class NavGroup:
 
     def generate_unfold_menuitem(self, request):  # Subgroup
         if self._tabs and len(self._items):
-            ## For tab groups we take the first tab as the menu item
-            return self._items[0].generate_unfold_menuitem(request)
+            ## For tab groups we take the first tab as default for the menu item
+            ret = self._items[0].generate_unfold_menuitem(request)
+            if self._name:
+                ret["title"] = self._name
+            if self._icon:
+                ret["icon"] = self._icon
+            return ret
         ret = {
             "title": self._name,
             "link": None,
@@ -147,6 +152,8 @@ class MenuItem:
 
     def get_permission(self, request):
         if self._permission:
+            if isinstance(self._permission, (list, tuple)):
+                return request.user.has_perms(self._permission)
             return request.user.has_perm(self._permission)
         return False
 

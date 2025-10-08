@@ -36,14 +36,15 @@
 
 {% if form_action %}
 <h2>{{info}}</h2>
-<script type="text/javascript" src="/admin/jsi18n/"></script>
 <form action="{{ form_action }}" method="post">
     {% csrf_token %}
+    <div class="aligned border border-base-200 mb-8 rounded-default pt-3 pb-3 px-3 shadow-sm dark:border-base-800 legacyform">
     <table>
     {{ form.as_table }}
-    </table>
     <tr><td><input type="submit" /></td></tr>
-
+    </table>
+    </div>
+    
 <script type="text/javascript">
     /* Show/hide fields */
 
@@ -87,7 +88,7 @@
 
     django.jQuery(function( $ ) {
         $('#id_base_dataset').change( function() {
-            if (this.value == 'active_members') {
+            if (this.value === 'active_members') {
                 for (const id of member_filters) {
                     $(id).parent().parent().show(100);
                 }
@@ -96,7 +97,7 @@
                     $(id).parent().parent().hide(100);
                 }
             }
-            if (this.value == 'renters') {
+            if (this.value === 'renters') {
                 for (const id of renter_filters) {
                     $(id).parent().parent().show(100);
                 }
@@ -105,7 +106,7 @@
                     $(id).parent().parent().hide(100);
                 }
             }
-            if (this.value == 'shares') {
+            if (this.value === 'shares') {
                 for (const id of share_filters) {
                     $(id).parent().parent().show(100);
                 }
@@ -114,7 +115,7 @@
                     $(id).parent().parent().hide(100);
                 }
             }
-            if (this.value == 'addresses') {
+            if (this.value === 'addresses') {
                 for (const id of address_filters) {
                     $(id).parent().parent().show(100);
                 }
@@ -128,7 +129,7 @@
 
     django.jQuery(function( $ ) {
         $('#id_filter_invoice').change( function() {
-            if (this.value == 'none') {
+            if (this.value === 'none') {
                 for (const id of invoice_filters) {
                     $(id).parent().parent().hide(100);
                 }
@@ -142,27 +143,28 @@
 
     django.jQuery( document ).ready(function( $ ) {
         //console.log($('#id_base_dataset').val());
-        if ($('#id_base_dataset').val() != 'active_members') {
+        const base_dataset = $('#id_base_dataset').val();
+        if (base_dataset !== 'active_members') {
             for (const id of member_filters) {
                 $(id).parent().parent().hide();
             }
         }
-        if ($('#id_base_dataset').val() != 'renters') {
+        if (base_dataset !== 'renters') {
             for (const id of renter_filters) {
                 $(id).parent().parent().hide();
             }
         }
-        if ($('#id_base_dataset').val() != 'shares') {
+        if (base_dataset !== 'shares') {
             for (const id of share_filters) {
                 $(id).parent().parent().hide();
             }
         }
-        if ($('#id_base_dataset').val() != 'addresses') {
+        if (base_dataset !== 'addresses') {
             for (const id of address_filters) {
                 $(id).parent().parent().hide();
             }
         }
-        if ($('#id_filter_invoice').val() == 'none') {
+        if ($('#id_filter_invoice').val() === 'none') {
             for (const id of invoice_filters) {
                 $(id).parent().parent().hide(100);
             }
@@ -237,14 +239,13 @@
 </ul>
 </div>
 <script>
-var coll = document.getElementsByClassName("collapsible");
-var i;
+const coll = document.getElementsByClassName("collapsible");
 
-for (i = 0; i < coll.length; i++) {
+for (let i = 0; i < coll.length; i++) {
   coll[i].addEventListener("click", function() {
     console.log(this);
     this.classList.toggle("active");
-    var log_content = this.nextElementSibling;
+    const log_content = this.nextElementSibling;
     if (log_content.style.display === "block") {
       log_content.style.display = "none";
     } else {
@@ -259,4 +260,4 @@ for (i = 0; i < coll.length; i++) {
 </div>
 {% endif %}  {# show_results #}
 
-{% endblock content %}
+{% endblock custom_content %}

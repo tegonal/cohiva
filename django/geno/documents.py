@@ -1,12 +1,15 @@
 import datetime
 import io
+import json
 import logging
 import os
 import re
 import time
+import zipfile
 from decimal import Decimal
 from zipfile import ZipFile
 
+from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.http import HttpResponse
@@ -21,6 +24,7 @@ from geno.models import (
     Address,
     ContentTemplate,
     Contract,
+    Document,
     DocumentType,
     GenericAttribute,
     InvoiceCategory,
@@ -29,6 +33,8 @@ from geno.models import (
     MemberAttributeType,
     Share,
     ShareType,
+    get_active_contracts,
+    get_active_shares,
 )
 from geno.shares import get_share_statement_data
 from geno.utils import fill_template_pod, nformat, odt2pdf, remove_temp_files, sanitize_filename
@@ -840,3 +846,302 @@ def send_member_mail_process(data):
         result = process.get_status_report()
     process.cleanup()
     return result
+
+
+def create_documents(default_doctype, objects=None, options=None):
+    ret = []
+    zipcount = 0
+    zipfile_content = []
+    makezip = options.get("makezip", False)
+
+    try:
+        default_doctype_obj = DocumentType.objects.get(name=default_doctype)
+    except DocumentType.DoesNotExist:
+        return [
+            {
+                "info": 'FEHLER: Dokumenttyp "%s" existiert nicht. Bitte zuerst erstellen.'
+                % default_doctype
+            }
+        ]
+
+    if not options:
+        options = {"beschreibung": default_doctype_obj.description}
+
+    if not objects:
+        if default_doctype == "contract_check":
+            objects = []
+            for c in get_active_contracts():
+                for ru in c.rental_units.all():
+                    if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
+                        objects.append({"obj": c})
+                        break
+        else:
+            return [{"info": 'Keine Objekte gefunden (Dokumenttyp "%s").' % default_doctype}]
+
+    filenames = []
+    for o in objects:
+        zipcount += 1
+        objects = []
+        if "info" in o:
+            objects.append(o["info"])
+        ret.append({"info": str(o["obj"]), "objects": objects})
+        if makezip:
+            if "doctype" in o:
+                doctype = o["doctype"]
+                doctype_obj = DocumentType.objects.get(name=doctype)
+            else:
+                doctype = default_doctype
+                doctype_obj = default_doctype_obj
+            ## Create document
+            if "extra_context" in o:
+                data = get_context_data(doctype, o["obj"].pk, o["extra_context"])
+            else:
+                data = get_context_data(doctype, o["obj"].pk, {})
+            filename = fill_template_pod(
+                doctype_obj.template.file.path,
+                context_format(data["context"]),
+                output_format="odt",
+            )
+            if not filename:
+                raise RuntimeError("Could not fill template")
+            output_filename = data["visible_filename"]
+            counter = 1
+            while output_filename in filenames:
+                counter += 1
+                output_filename = "%s_%s%s" % (
+                    data["visible_filename"][0:-4],
+                    counter,
+                    data["visible_filename"][-4:],
+                )
+            zipfile_content.append({"file": filename, "filename": output_filename})
+            filenames.append(output_filename)
+            if "content_object" in data:
+                ## Attach document data to object
+                d = Document(
+                    name=output_filename,
+                    doctype=doctype_obj,
+                    data=json.dumps(data["context"]),
+                    content_object=data["content_object"],
+                )
+                d.save()
+
+    if makezip:
+        ## Build ZIP-file from list of files
+        file_like_object = io.BytesIO()
+        zipfile_ob = zipfile.ZipFile(file_like_object, "w")
+        for f in zipfile_content:
+            # print "%s -> %s_%s" % (f['file'], f['member'].name.name,f['member'].name.first_name)
+            zipfile_ob.write(f["file"], f["filename"])
+        zipfile_ob.close()
+        resp = HttpResponse(
+            file_like_object.getvalue(), content_type="application/x-zip-compressed"
+        )
+        resp["Content-Disposition"] = "attachment; filename=%s" % "output.zip"
+        return resp
+
+    if zipcount > 0:
+        link_text = "%s erstellen und herunterladen" % options["beschreibung"]
+        link_url = options.get("link_url", "")
+        ret.append(
+            {
+                "info": "Dokumente:",
+                "objects": [
+                    '<a href="%s?makezip=yes">%s (%d LibreOffice Dokumente in ZIP)</a>'
+                    % (link_url, link_text, zipcount)
+                ],
+            }
+        )
+    else:
+        ret.append({"info": "Keine zu erstellenden Dokumente gefunden."})
+
+    return ret
+
+
+def get_context_data(doctype, obj_id, extra_context):
+    c = extra_context
+    filename_prefix = {
+        "memberletter": "Brief_Bestätigung_Mitgliedschaft",
+        "memberfinanz": "Brief_Finanzielle_Unterstützung",
+        "memberfee": "Brief_Einforderung_Mitgliederbeitrag",
+        "memberfeereminder": "Brief_Einforderung_Mitgliederbeitrag_Reminder",
+        "shareconfirm": "Brief_Bestätigung_Anteilscheine",
+        "shareconfirm_req": "Brief_Bestätigung_Einforderung",
+        #'shareconfirm_reqpart': "Brief_Bestätigung_Einforderung_Rate",
+        "loanreminder": "Brief_Erinnerung_Darlehen",
+        "statement": "Kontoauszug",
+        "mailing": "Brief_Mitglieder",
+        "contract": "Vertrag",
+        "contract_letter": "Vertrag_Begleitbrief",
+        "contract_check": "Formular_Überprüfung_Belegung_Fahrzeuge",
+    }
+
+    filename_ext = ".odt"
+    if doctype[0:6] == "member":
+        obj = Member.objects.get(pk=obj_id)
+        adr = obj.name
+        c["datum_eintritt"] = obj.date_join.strftime("%d.%m.%Y")
+    elif doctype[0:5] == "share":
+        obj = Share.objects.get(pk=obj_id)
+        adr = obj.name
+
+        if Share.objects.filter(name=adr).filter(share_type=obj.share_type).count() == 1:
+            c["is_first_share"] = True
+        else:
+            c["is_first_share"] = False
+
+        try:
+            stype_share = ShareType.objects.get(name="Anteilschein")
+        except ShareType.DoesNotExist:
+            stype_share = "Nonexistent"
+        try:
+            stype_loan_noint = ShareType.objects.get(name="Darlehen zinslos")
+        except ShareType.DoesNotExist:
+            stype_loan_noint = "Nonexistent"
+        try:
+            stype_loan_int = ShareType.objects.get(name="Darlehen verzinst")
+        except ShareType.DoesNotExist:
+            stype_loan_int = "Nonexistent"
+        try:
+            stype_loan_special = ShareType.objects.get(name="Darlehen spezial")
+        except ShareType.DoesNotExist:
+            stype_loan_special = "Nonexistent"
+        try:
+            stype_deposit = ShareType.objects.get(name="Depositenkasse")
+        except ShareType.DoesNotExist:
+            stype_deposit = "Nonexistent"
+
+        if obj.date_due:
+            duedate = obj.date_due
+        elif obj.duration:
+            duedate = obj.date + relativedelta(years=obj.duration)
+        else:
+            duedate = None
+        if duedate:
+            duedate_text = " (Fälligkeit: %s)" % duedate.strftime("%d.%m.%Y")
+        else:
+            duedate_text = ""
+
+        c["betrag_text_zusatz"] = None
+        if obj.share_type == stype_share:
+            if hasattr(adr, "member"):
+                c["datum_eintritt"] = adr.member.date_join.strftime("%d.%m.%Y")
+            else:
+                c["datum_eintritt"] = None
+            if c["datum_eintritt"] and c["is_first_share"]:
+                c["betreff"] = "Bestätigung Anteilscheine/Mitgliedschaft"
+            else:
+                c["betreff"] = "Bestätigung Anteilscheine"
+            if obj.quantity == 1:
+                c["betrag_text"] = "1 Anteilschein zu CHF %s" % (nformat(obj.value))
+            else:
+                c["betrag_text"] = "%s Anteilscheine zu CHF %s in Summe CHF %s" % (
+                    nformat(obj.quantity, 0),
+                    nformat(obj.value),
+                    nformat(obj.quantity * obj.value),
+                )
+            if obj.is_pension_fund:
+                c["betrag_text"] = "%s (aus Mitteln der beruflichen Vorsorge)" % (c["betrag_text"])
+                c["bvg"] = True
+            else:
+                c["bvg"] = False
+            count = 0
+            amount = 0
+            for s in get_active_shares().filter(name=obj.name).filter(share_type=stype_share):
+                count += s.quantity
+                amount += s.quantity * s.value
+            if count == 1:
+                c["total_anzahl"] = "1 Anteilschein"
+            else:
+                c["total_anzahl"] = "%s Anteilscheine" % (nformat(count, 0))
+            c["total_summe"] = "%s" % (nformat(amount))
+        elif obj.share_type == stype_loan_noint:
+            c["betrag_text"] = "Zinsloses Darlehen von CHF %s%s" % (
+                nformat(obj.value, 2),
+                duedate_text,
+            )
+        elif obj.share_type == stype_loan_int:
+            c["betrag_text"] = "Darlehen von CHF %s%s" % (
+                nformat(obj.value, 2),
+                duedate_text,
+            )
+            c["betrag_text_zusatz"] = "Aktueller Zinssatz: %s%%" % (nformat(obj.interest(), 2))
+        elif obj.share_type == stype_deposit:
+            c["betrag_text"] = "Einlage in die Depositenkasse von CHF %s" % (nformat(obj.value, 2))
+            c["betrag_text_zusatz"] = "Aktueller Zinssatz: %s%%" % (nformat(obj.interest(), 2))
+        elif obj.share_type == stype_loan_special:
+            c["betrag_text"] = "Darlehen von CHF %s%s" % (
+                nformat(obj.value, 2),
+                duedate_text,
+            )
+            c["betrag_text_zusatz"] = "Zinssatz: %s%% (gemäss Darlehensvertrag)" % (
+                nformat(obj.interest(), 2)
+            )
+        else:
+            c["betrag_text"] = "%s von CHF %s" % (
+                obj.share_type.name,
+                nformat(obj.value, 2),
+            )
+
+        c["datum_zahlung"] = obj.date.strftime("%d.%m.%Y")
+    elif doctype == "statement" or doctype == "mailing" or doctype == "loanreminder":
+        obj = Address.objects.get(pk=obj_id)
+        adr = obj
+    elif doctype[0:8] == "contract":
+        obj = Contract.objects.get(pk=obj_id)
+        adr = obj.get_contact_address()
+        # adr = obj.person
+        c["mietobjekt"] = ", ".join([str(ru) for ru in obj.rental_units.all()])
+        c["mindestbelegung"] = " + ".join(
+            [str(int(ru.min_occupancy)) for ru in obj.rental_units.filter(min_occupancy__gt=0)]
+        )
+        c["bewohnende"] = []
+        duplicate_check = []
+        for tenant in obj.contractors.exclude(ignore_in_lists=True):
+            dup_id = f"{tenant.name}{tenant.first_name}"
+            if dup_id not in duplicate_check:
+                c["bewohnende"].append({"name": tenant.name, "vorname": tenant.first_name})
+                duplicate_check.append(dup_id)
+        for child in obj.children.exclude(name__ignore_in_lists=True):
+            dup_id = f"{child.name.name}{child.name.first_name}"
+            if dup_id not in duplicate_check:
+                c["bewohnende"].append({"name": child.name.name, "vorname": child.name.first_name})
+                duplicate_check.append(dup_id)
+        # c['area'] = "%s" % (nformat(obj.area,0))
+        # c['netto'] = "%s" % (nformat(obj.rent_total-obj.nk,2))
+        # c['nk'] = "%s" % (nformat(obj.nk,2))
+        # c['rent_total'] = "%s" % (nformat(obj.rent_total,2))
+        # c['depot'] = "%s" % (nformat(obj.depot,2))
+        # c['begin'] = obj.date.strftime("%d.%m.%Y")
+    else:
+        raise RuntimeError("Doctype not implemented.")
+
+    adr_filename_str = ""
+    if adr:
+        c.update(adr.get_context())
+        adr_filename_str = adr.get_filename_str()
+    if "filename_tag" in c:
+        filename_tag = "_%s" % c["filename_tag"]
+    else:
+        filename_tag = ""
+    if c["roomnr"]:
+        adr_filename_str = "%s_%s" % (c["roomnr"], adr_filename_str)
+    filename = "%s_%s%s%s" % (
+        filename_prefix[doctype],
+        adr_filename_str,
+        filename_tag,
+        filename_ext,
+    )
+
+    return {
+        "content_object": obj,
+        "visible_filename": filename.replace(" ", "").replace("+", "-").replace("/", "-"),
+        "context": c,
+    }
+
+
+def context_format(context, output_format="odt"):
+    # for k,v in context.items():
+    #    if output_format == 'odt':
+    #        if isinstance(context[k], basestring):
+    #            context[k] = mark_safe(v.replace('\n', '<text:line-break />'))
+    return context
