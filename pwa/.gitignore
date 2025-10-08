@@ -2,18 +2,22 @@
 .thumbs.db
 node_modules
 
-# Local config or generated files
+# Local config or overlay files
 /src-pwa/manifest.json
 /public/favicon.ico
 /public/icons
 /public/twitter-card.png
 /public/og-image.png
 /src/assets/logo.svg
+src/assets/logo-dark.svg
 /src/assets/icon.svg
 /src/css/app.scss
+/src/css/quasar.variables.scss
 /src/css/override.scss
 /src/css/webfonts.scss
 /src/css/fonts
+pwa-meta.ts
+pwa-meta-tags.html
 
 # Quasar core related directories
 .quasar

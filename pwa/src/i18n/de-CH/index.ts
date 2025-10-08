@@ -102,6 +102,7 @@ export default {
       cloud: 'Cloud',
       depot8: 'Depot8',
       manual: 'Handbuch',
+      pwaInstall: 'PWA Installation testen',
       repair: 'Reparaturmeldung',
       reservation: 'Reservation',
     },
@@ -109,6 +110,9 @@ export default {
       general: 'Es ist ein Fehler aufgetreten.',
       invalidToken: 'Ungültiges Token',
       missingCredentials: 'Anmeldedaten fehlen.',
+    },
+    hints: {
+      devModeOnly: 'Dieser Button wird nur im Entwicklungsmodus angezeigt',
     },
     messages: {
       testMode:
@@ -138,6 +142,10 @@ export default {
     navigation: {
       links: 'Links',
       settings: 'Einstellungen',
+    },
+    pwaInstall: {
+      devModeOnly: 'Nur im Entwicklungsmodus',
+      label: 'PWA Installation testen',
     },
     user: {
       loggedInAs: 'Angemeldet als',

@@ -12,8 +12,9 @@ import { defineConfig } from '#q-app/wrappers'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { settings } from './config/settings'
-import theme from './config/theme.js'
+import { pwaMetaTags } from './tenant-config/overlay/pwa-meta'
+import { settings } from './tenant-config/settings'
+import theme from './tenant-config/theme.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -42,6 +43,15 @@ export default defineConfig((ctx) => ({
         : 'https://' + settings.prodHostname + '.' + settings.domain + '/',
       OAUTH_CLIENT_ID: settings.oauthClientId,
       TEST_MODE: ctx.dev,
+    },
+
+    // Configure Vue to treat pwa-install as a custom element
+    viteVuePluginOptions: {
+      template: {
+        compilerOptions: {
+          isCustomElement: (tag) => tag === 'pwa-install',
+        },
+      },
     },
 
     extendViteConf(viteConf) {
@@ -98,60 +108,32 @@ export default defineConfig((ctx) => ({
             ssr: ctx.modeName === 'ssr',
           },
         ],
-      ]
+        // Custom plugin to inject raw HTML into index.html
+        {
+          name: 'inject-pwa-meta',
+          transformIndexHtml: {
+            order: 'post',
+            handler(html: string) {
+              // Replace escaped HTML entities in the entire <head> section
+              // Quasar's EJS processing escapes the pwaMetaTags HTML
+              const headMatch = html.match(/<head>([\s\S]*?)<\/head>/)
 
-      // Image optimization plugin (only in production builds)
-      if (ctx.prod) {
-        plugins.push([
-          'vite-plugin-imagemin',
-          {
-            // Skip GIF optimization (usually not needed for PWA)
-            gifsicle: false,
-            // Optimize JPEG files
-            mozjpeg: {
-              progressive: true,
-              quality: 85,
-            },
-            // Optimize PNG files
-            optipng: {
-              optimizationLevel: 7,
-            },
-            // Optimize SVG files
-            svgo: {
-              plugins: [
-                {
-                  name: 'preset-default',
-                  params: {
-                    overrides: {
-                      cleanupIds: {
-                        minify: false, // Keep IDs readable for debugging
-                      },
-                      removeDimensions: false, // Keep width/height
-                      removeViewBox: false, // Keep viewBox for responsive SVGs
-                    },
-                  },
-                },
-                {
-                  active: true,
-                  name: 'removeComments',
-                },
-                {
-                  active: true,
-                  name: 'removeTitle',
-                },
-                {
-                  active: true,
-                  name: 'removeDesc',
-                },
-              ],
-            },
-            // Optimize WebP files
-            webp: {
-              quality: 85,
+              if (headMatch && headMatch[1]) {
+                const unescapedHead = headMatch[1]
+                  .replaceAll('&lt;', '<')
+                  .replaceAll('&gt;', '>')
+                  .replaceAll('&quot;', '"')
+                  .replaceAll('&#39;', "'")
+                  .replaceAll('&amp;', '&')
+
+                html = html.replace(headMatch[1], unescapedHead)
+              }
+
+              return html
             },
           },
-        ])
-      }
+        },
+      ]
 
       return plugins
     })(),
@@ -268,9 +250,11 @@ export default defineConfig((ctx) => ({
   htmlVariables: {
     appBasename: settings.appBasename,
     backgroundColor: theme.backgroundColor,
+    darkThemeColor: theme.dark,
     productDescription:
       settings.siteDescription || `${settings.siteName} Progressive Web App`,
     productName: settings.siteName,
+    pwaMetaTags,
     siteDescription: settings.siteDescription,
     siteName: settings.siteName,
     siteNickname: settings.siteNickname,

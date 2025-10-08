@@ -39,7 +39,7 @@ export default defineComponent({
 import DevOverlay from 'components/DevOverlay.vue'
 import LanguageSwitcher from 'components/LanguageSwitcher.vue'
 
-defineProps({ subpageTitleKey: String })
+defineProps<{ subpageTitleKey: string }>()
 </script>
 
 <style lang="scss" scoped></style>

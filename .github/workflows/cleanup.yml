@@ -27,11 +27,17 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.13"
+      - name: Install Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
       - name: Setup environment
         run: |
           python -m pip install --upgrade pip
           pip install ruff==0.12.10
           ln -s website_example ./django/website
+          corepack enable
+          ( cd pwa && yarn install )
       - name: Cleanup code
         run: ./scripts/cleanup-on-push-to-main.sh
       - name: Create Pull Request if necessary

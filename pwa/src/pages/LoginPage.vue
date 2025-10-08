@@ -86,7 +86,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useThemedLogo } from 'src/composables/use-themed-logo'
 import { useAuthStore } from 'stores/auth-store'
 
-import { settings } from '../../config/settings'
+import { settings } from '../../tenant-config/settings'
 
 // Theme-aware logo
 const { logoPath } = useThemedLogo()

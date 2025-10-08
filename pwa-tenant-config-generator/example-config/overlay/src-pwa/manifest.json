@@ -1,0 +1,55 @@
+{
+  "background_color": "#FFFFFF",
+  "description": "Cohiva Demo - Verwaltung für Wohngenossenschaften",
+  "display": "standalone",
+  "icons": [
+    {
+      "purpose": "any",
+      "sizes": "128x128",
+      "src": "icons/manifest-icon-128.png",
+      "type": "image/png"
+    },
+    {
+      "purpose": "any",
+      "sizes": "192x192",
+      "src": "icons/manifest-icon-192.png",
+      "type": "image/png"
+    },
+    {
+      "purpose": "any",
+      "sizes": "256x256",
+      "src": "icons/manifest-icon-256.png",
+      "type": "image/png"
+    },
+    {
+      "purpose": "any",
+      "sizes": "384x384",
+      "src": "icons/manifest-icon-384.png",
+      "type": "image/png"
+    },
+    {
+      "purpose": "any",
+      "sizes": "512x512",
+      "src": "icons/manifest-icon-512.png",
+      "type": "image/png"
+    },
+    {
+      "purpose": "maskable",
+      "sizes": "192x192",
+      "src": "icons/manifest-icon-192.maskable.png",
+      "type": "image/png"
+    },
+    {
+      "purpose": "maskable",
+      "sizes": "512x512",
+      "src": "icons/manifest-icon-512.maskable.png",
+      "type": "image/png"
+    }
+  ],
+  "id": "/cohiva/",
+  "name": "Cohiva Demo",
+  "orientation": "portrait",
+  "short_name": "Cohiva",
+  "start_url": "/",
+  "theme_color": "#2563EB"
+}
