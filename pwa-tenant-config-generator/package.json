@@ -19,6 +19,7 @@
     "prettier:fix": "prettier --write \"**/*.{js,ts,mjs,cjs,scss,css,html,md,json,yml,yaml}\"",
     "prettier": "prettier --check \"**/*.{js,ts,mjs,cjs,scss,css,html,md,json,yml,yaml}\"",
     "type-check": "tsc --noEmit",
+    "up": "yarn upgrade-interactive",
     "check": "yarn type-check && yarn lint:fix && yarn prettier:fix",
     "self-update": "yarn set version stable && yarn"
   },
@@ -26,24 +27,24 @@
     "node": "^24"
   },
   "dependencies": {
-    "fs-extra": "^11.2.0",
+    "fs-extra": "^11.3.2",
     "pwa-asset-generator": "^8.1.2",
     "sharp": "^0.34.4",
     "svgo": "^4.0.0",
-    "zod": "^4.1.11"
+    "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@eslint/js": "^9.19.0",
+    "@eslint/js": "^9.37.0",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^24.5.2",
-    "@typescript-eslint/eslint-plugin": "^8.20.0",
-    "@typescript-eslint/parser": "^8.20.0",
-    "eslint": "^9.19.0",
-    "eslint-plugin-perfectionist": "^4.6.0",
-    "globals": "^15.14.0",
-    "prettier": "^3.5.1",
-    "tsx": "^4.20.5",
-    "typescript": "~5.9.2"
+    "@types/node": "^24.7.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.0",
+    "@typescript-eslint/parser": "^8.46.0",
+    "eslint": "^9.37.0",
+    "eslint-plugin-perfectionist": "^4.15.1",
+    "globals": "^15.15.0",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.6",
+    "typescript": "~5.9.3"
   },
   "packageManager": "yarn@4.10.3"
 }
