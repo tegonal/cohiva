@@ -3986,8 +3986,6 @@ def rental_unit_list_units(request, export_xls=True):
     ]
 
     rentalUnits = RentalUnit.objects.filter(active=True)
-    if "Liegenschaften":
-        rentalUnits
 
     for ru in rentalUnits:
         obj = lambda: None
