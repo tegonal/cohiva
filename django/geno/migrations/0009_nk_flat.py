@@ -4,9 +4,8 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('geno', '0008_migrate_emonitor2import'),
+        ("geno", "0008_migrate_emonitor2import"),
     ]
 
     operations = [
