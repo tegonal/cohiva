@@ -79,7 +79,7 @@ class DummyBook:
         return DummyAccount()
 
 
-def create_invoices(dry_run=True, reference_date=None, single_contract=None, download_only=None):
+def create_invoices(dry_run=True, reference_date=None, single_contract=None, buildingIds=None, download_only=None):
     messages = []
     book = get_book(messages)
     if not book:
@@ -95,6 +95,9 @@ def create_invoices(dry_run=True, reference_date=None, single_contract=None, dow
         contracts = Contract.objects.filter(id=download_only)
     else:
         contracts = Contract.objects.filter(state="unterzeichnet")
+
+    if buildingIds:
+        contracts = contracts.filter(rental_units__building__in=buildingIds).distinct()
 
     invoice_category = InvoiceCategory.objects.get(
         reference_id=10

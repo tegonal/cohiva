@@ -68,6 +68,7 @@ from .forms import (
     MemberMailActionForm,
     MemberMailForm,
     MemberMailSelectForm,
+    SendInvoicesForm,
     TransactionForm,
     TransactionFormInvoice,
     TransactionUploadFileForm,
@@ -1450,7 +1451,9 @@ def invoice(request, action="create", key=None, key_type=None, consolidate=True)
 
         today = datetime.date.today()
         reference_date = datetime.date(today.year, today.month, 1)
-        if request.GET.get("date", "") == "last_month":
+        if request.GET.get("date", "") == "this_month":
+            pass # NOOP this is the default
+        elif request.GET.get("date", "") == "last_month":
             if today.month == 1:
                 reference_date = datetime.date(today.year - 1, 12, 1)
             else:
@@ -1470,8 +1473,9 @@ def invoice(request, action="create", key=None, key_type=None, consolidate=True)
             }
         )
 
+        buildingIds = [int(x) for x in request.GET.get("buildings[]", "").split(",") if x.strip()]
         invoices = create_invoices(
-            dry_run, reference_date, request.GET.get("single_contract", None), download_only
+            dry_run, reference_date, request.GET.get("single_contract", None), buildingIds, download_only
         )
         if isinstance(invoices, str):
             pdf_file = open("/tmp/%s" % invoices, "rb")
@@ -1479,9 +1483,10 @@ def invoice(request, action="create", key=None, key_type=None, consolidate=True)
             resp["Content-Disposition"] = "attachment; filename=%s" % invoices
             return resp
         if dry_run:
+            urltmpl = '<a href="?dry_run=False&date={date}&buildings[]={buildings}">AUSFÜHREN</a>.'
             invoices.append(
-                "DRY-RUN: Zum effektiv ausführen, hier klicken: "
-                '<a href="?dry_run=False&date=%s">AUSFÜHREN</a>.' % request.GET.get("date", "")
+                "DRY-RUN: Zum effektiv ausführen, hier klicken: " +
+                urltmpl.format(date=request.GET.get("date", ""), buildings=request.GET.get("buildings[]", ""))
             )
         ret.append({"info": "GnuCash Rechnungen erstellen:", "objects": invoices})
         return render(
@@ -4279,6 +4284,26 @@ def odt2pdf_form(request):
         },
     )
 
+@login_required
+def invoice_form(request):
+    initial = {}
+    form = SendInvoicesForm(request.GET or None, initial=initial)
+    if request.method == "GET":
+        if form.is_valid():
+            buildings = form.cleaned_data['buildings']
+            date = request.GET.get("date")
+            return HttpResponseRedirect("/geno/invoice/auto?date=" + date + "&buildings[]=" + ",".join([str(b) for b in buildings]))
+    return render(
+        request,
+        "geno/invoice_form.html",
+        {
+            "response": None,
+            "title": "Mietzinsrechnungen versenden/buchen",
+            "info": "für ausgewählte Zeiträume",
+            "form": form,
+            "form_action": "/geno/invoice/auto",
+        },
+    )
 
 @login_required
 def webstamp_form(request):
