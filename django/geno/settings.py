@@ -57,6 +57,7 @@ GNUCASH_ACC_STROM = getattr(
     settings, "GENO_GNUCASH_ACC_STROM", "2302"
 )  # Strompauschalen -> NK-Pauschalzahlungen
 GNUCASH_ACC_NK = getattr(settings, "GENO_GNUCASH_ACC_NK", "2301")  # NK-Akonto
+GNUCASH_ACC_NK_FLAT = getattr(settings, "GENO_GNUCASH_ACC_NK_FLAT", "2301")  # NK-Pauschal
 GNUCASH_ACC_NK_RECEIVABLE = getattr(
     settings, "GENO_GNUCASH_ACC_NK_RECEIVABLE", "1104"
 )  # Forderungen>Nebenkosten
