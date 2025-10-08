@@ -12,7 +12,7 @@
       />
 
       <q-input
-        v-model="date_start"
+        v-model="date_start_input"
         @update:model-value="formUpdated('date_start')"
         class="col-xs-6 q-col-gutter-xs col-md-3"
         :class="{ hidden: !reservationType }"
@@ -349,8 +349,8 @@
 </template>
 
 <script setup lang="ts">
-import { settings } from 'app/config/settings'
-import { onMounted, ref } from 'vue'
+import { settings } from 'app/tenant-config/settings'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
@@ -374,7 +374,8 @@ function formUpdated(what: string): void {
       time_end.value = current_type.default_time_end.substring(0, 5)
     } else {
       if (what == 'date_start' || (date_start.value && !date_end.value)) {
-        date_end.value = date_start.value
+        date_end.value =
+          typeof date_start.value === 'string' ? date_start.value : null
       }
       if (what == 'type') {
         time_start.value = current_type.default_time_start.substring(0, 5)
@@ -504,8 +505,8 @@ function reservationSearch() {
     typeof dateFromValue === 'object' &&
     'from' in dateFromValue
   ) {
-    dateFromValue = dateFromValue.from
     dateToValue = dateFromValue.to
+    dateFromValue = dateFromValue.from
   }
 
   console.log(
@@ -583,8 +584,8 @@ function submitReservation() {
     typeof dateFromValue === 'object' &&
     'from' in dateFromValue
   ) {
-    dateFromValue = dateFromValue.from
     dateToValue = dateFromValue.to
+    dateFromValue = dateFromValue.from
   }
 
   api
@@ -682,6 +683,14 @@ const selectedRoom = ref<null | Room>(null)
 const apiError = ref('')
 
 const hasLinks = settings.reservationLinks.links.length > 0
+
+// Computed property to ensure date_start is always string | null for inputs
+const date_start_input = computed({
+  get: () => (typeof date_start.value === 'string' ? date_start.value : null),
+  set: (val: null | string) => {
+    date_start.value = val
+  },
+})
 
 // Dialogs
 const confirmReservation = ref(false)

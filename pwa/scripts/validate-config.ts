@@ -8,9 +8,9 @@
 import { existsSync } from 'fs'
 import { resolve } from 'path'
 
-import { validateSettings, validateTheme } from '../config/schemas'
+import { validateSettings, validateTheme } from '../tenant-config/schemas'
 
-const CONFIG_DIR = resolve(process.cwd(), 'config')
+const CONFIG_DIR = resolve(process.cwd(), 'tenant-config')
 const SETTINGS_PATH = resolve(CONFIG_DIR, 'settings.ts')
 // Try TypeScript theme first, fall back to JavaScript
 const THEME_TS_PATH = resolve(CONFIG_DIR, 'theme.ts')
@@ -32,20 +32,44 @@ function log(message: string, color: keyof typeof colors = 'reset') {
 }
 
 function logError(message: string) {
-  console.error(`${colors.red}❌ ${message}${colors.reset}`)
+  console.error(`${colors.red}[validate] ${message}${colors.reset}`)
 }
 
 function logInfo(message: string) {
-  log(`ℹ️  ${message}`, 'cyan')
+  log(`[validate] ${message}`, 'cyan')
 }
 
 function logSuccess(message: string) {
-  log(`✅ ${message}`, 'green')
+  log(`[validate] ${message}`, 'green')
 }
 
 async function main() {
-  log('🔍 Validating configuration files...', 'blue')
-  log('='.repeat(50), 'blue')
+  log('[validate] Validating configuration files...', 'blue')
+  log('[validate] ' + '='.repeat(50), 'blue')
+
+  // Check if overlay directory exists
+  const OVERLAY_DIR = resolve(CONFIG_DIR, 'overlay')
+  if (!existsSync(OVERLAY_DIR)) {
+    log('[validate] ' + '='.repeat(50), 'red')
+    logError('Configuration not generated!')
+    log('')
+    log('[validate] The tenant-config/overlay/ directory is missing.', 'yellow')
+    log(
+      '[validate] This means the config has not been generated yet.',
+      'yellow'
+    )
+    log('')
+    log('[validate] To fix this, run:', 'cyan')
+    log('[validate]   yarn setup:dev-config', 'cyan')
+    log('')
+    log('[validate] Or for a custom tenant config:', 'cyan')
+    log(
+      '[validate]   tsx scripts/setup-dev-config.ts --config-dir path/to/config',
+      'cyan'
+    )
+    log('')
+    process.exit(1)
+  }
 
   try {
     // Validate both config files
@@ -60,43 +84,46 @@ async function main() {
     // Check that theme colors are consistent
     if (theme.themeColor !== theme.primary) {
       log(
-        `⚠️  Warning: themeColor (${theme.themeColor}) differs from primary color (${theme.primary})`,
+        `[validate] Warning: themeColor (${theme.themeColor}) differs from primary color (${theme.primary})`,
         'yellow'
       )
     }
 
     // Check that hostnames are valid
     if (settings.testHostname === settings.prodHostname) {
-      log('⚠️  Warning: testHostname and prodHostname are the same', 'yellow')
+      log(
+        '[validate] Warning: testHostname and prodHostname are the same',
+        'yellow'
+      )
     }
 
     // Check OAuth client ID format
     if (settings.oauthClientId.length < 20) {
-      log('⚠️  Warning: oauthClientId seems unusually short', 'yellow')
+      log('[validate] Warning: oauthClientId seems unusually short', 'yellow')
     }
 
-    log('='.repeat(50), 'green')
+    log('[validate] ' + '='.repeat(50), 'green')
     logSuccess('All configuration files are valid!')
     log('')
-    log('Configuration summary:', 'cyan')
-    log(`  Site: ${settings.siteName}`, 'cyan')
-    log(`  Domain: ${settings.domain}`, 'cyan')
+    log('[validate] Configuration summary:', 'cyan')
+    log(`[validate]   Site: ${settings.siteName}`, 'cyan')
+    log(`[validate]   Domain: ${settings.domain}`, 'cyan')
     log(
-      `  Theme: Primary=${theme.primary}, Secondary=${theme.secondary}`,
+      `[validate]   Theme: Primary=${theme.primary}, Secondary=${theme.secondary}`,
       'cyan'
     )
-    log(`  OAuth: Client ID configured`, 'cyan')
+    log(`[validate]   OAuth: Client ID configured`, 'cyan')
     log('')
 
     process.exit(0)
   } catch {
-    log('='.repeat(50), 'red')
+    log('[validate] ' + '='.repeat(50), 'red')
     logError('Configuration validation failed!')
     log('')
-    log('Please fix the errors above before building.', 'yellow')
-    log('Check the example files for reference:', 'yellow')
-    log('  - settings_example.js', 'yellow')
-    log('  - theme_example.js', 'yellow')
+    log('[validate] Please fix the errors above before building.', 'yellow')
+    log('[validate] Check the example files for reference:', 'yellow')
+    log('[validate]   - settings.ts', 'yellow')
+    log('[validate]   - theme.ts', 'yellow')
     log('')
     process.exit(1)
   }
@@ -161,6 +188,6 @@ async function validateThemeFile() {
 
 // Run validation
 main().catch((error) => {
-  console.error('Unexpected error:', error)
+  console.error('[validate] Unexpected error:', error)
   process.exit(1)
 })

@@ -1,5 +1,5 @@
 import { defineBoot } from '#q-app/wrappers'
-import { settings } from 'app/config/settings'
+import { settings } from 'app/tenant-config/settings'
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 
 import { useAuthStore } from 'stores/auth-store'
