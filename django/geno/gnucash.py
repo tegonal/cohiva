@@ -79,7 +79,9 @@ class DummyBook:
         return DummyAccount()
 
 
-def create_invoices(dry_run=True, reference_date=None, single_contract=None, building_ids=None, download_only=None):
+def create_invoices(
+    dry_run=True, reference_date=None, single_contract=None, building_ids=None, download_only=None
+):
     messages = []
     book = get_book(messages)
     if not book:

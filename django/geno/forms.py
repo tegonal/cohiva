@@ -247,6 +247,19 @@ class MemberMailForm(forms.Form):
         help_text="Leer = Beliebig",
         widget=forms.TextInput(attrs={"class": "datepicker"}),
     )
+    include_subcontracts = forms.BooleanField(
+        label="Unterverträge einbeziehen",
+        required=False,
+    )
+
+    buildingList = Building.objects.filter(active=True).order_by("name")
+    buildingMapping = [(b.id, b.name) for b in buildingList]
+    filter_building = forms.MultipleChoiceField(
+        label="Mit Vertrag in Liegenschaft(en)",
+        required=False,
+        widget=forms.SelectMultiple(attrs={"size": 5}),
+        choices=buildingMapping,
+    )
 
 
 class MemberMailSelectForm(forms.Form):
@@ -652,21 +665,25 @@ def process_registration_forms(request, selector="internal"):
             )
     return form_data
 
+
 class SendInvoicesForm(forms.Form):
     buildingList = Building.objects.filter(active=True).order_by("name")
     buildingMapping = [(b.id, b.name) for b in buildingList]
     buildings = forms.MultipleChoiceField(
         label="Liegenschaft(en)",
         required=False,
-        widget=forms.SelectMultiple(attrs={'size': 5}),
-        choices=buildingMapping
+        widget=forms.SelectMultiple(attrs={"size": 5}),
+        choices=buildingMapping,
     )
     SCOPE_CHOICES = [
-        ('next_month', 'bis Ende nächsten Monat'),
-        ('this_month', 'nur bis aktueller Monat'),
-        ('last_month', 'nur bis letzten Monat'),
+        ("next_month", "bis Ende nächsten Monat"),
+        ("this_month", "nur bis aktueller Monat"),
+        ("last_month", "nur bis letzten Monat"),
     ]
-    date = forms.ChoiceField(widget=forms.RadioSelect, choices=SCOPE_CHOICES, label="Rechnungen für Zeitraum")
+    date = forms.ChoiceField(
+        widget=forms.RadioSelect, choices=SCOPE_CHOICES, label="Rechnungen für Zeitraum"
+    )
+
 
 class TransactionUploadFileForm(forms.Form):
     file = forms.FileField(required=False)

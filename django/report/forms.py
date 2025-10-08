@@ -138,7 +138,9 @@ class ReportConfigForm(forms.Form):
                 buildingList = Building.objects.filter(active=True).order_by("name")
                 buildingMapping = [(b.id, b.name) for b in buildingList]
                 self.fields[field_name] = forms.MultipleChoiceField(
-                    required=False, label=field.name, help_text=field.description,
+                    required=False,
+                    label=field.name,
+                    help_text=field.description,
                     widget=forms.SelectMultiple(attrs={"size": 5}),
                     choices=buildingMapping,
                 )

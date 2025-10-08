@@ -3020,7 +3020,7 @@ class NebenkostenReportGenerator(ReportGenerator):
         "Ausgabe:QR-Rechnungen": False,
         "Strom:Korrekturen": {},
         "Strom:Tarif:Korrekturen": {},
-        "Liegenschaften": []
+        "Liegenschaften": [],
     }
 
     def __init__(self, report, dry_run, output_root, *args, **kwargs):
