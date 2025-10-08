@@ -7,7 +7,7 @@ from geno.tests import data as geno_testdata
 
 
 def create_nk_data(cls):
-    geno_testdata.create_rentalunits(cls)
+    geno_testdata.create_rentalunits(cls, 3)
     create_contracts(cls)
     create_measurement_data(cls)
     create_templates(cls)

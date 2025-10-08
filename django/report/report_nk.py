@@ -29,7 +29,7 @@ from appy.pod.renderer import Renderer
 from django.conf import settings
 
 from cohiva.utils.pdf import PdfGenerator
-from geno.models import Invoice, InvoiceCategory
+from geno.models import Invoice, InvoiceCategory, RentalUnit
 from geno.utils import JSONDecoderDatetime, JSONEncoderDatetime
 from report.models import ReportOutput
 
@@ -887,15 +887,10 @@ def import_from_api():
                 ]
 
     ## Get RentalUnits
-    response = get_from_api("/geno/rentalunit/")
-    if "count" not in response:
-        if "detail" in response:
-            raise RuntimeError("import_from_api() failed: %s" % response["detail"])
-        else:
-            raise RuntimeError("import_from_api() failed: %s" % response)
-
-    if response["next"] or response["previous"]:
-        raise RuntimeError("API returned multiple pages but pagination is not implemented yet!")
+    response = RentalUnit.objects.filter(active=True).order_by("name")
+    if nk.config["Liegenschaften"]:
+        building_ids = [int(x) for x in json.loads(nk.config["Liegenschaften"].replace("'", '"'))]
+        response = response.filter(building__in=building_ids)
 
     ru_section = {
         "Wohnung": "Wohnen",
@@ -909,42 +904,42 @@ def import_from_api():
         "Lager": "Lager",
         "Hobby": "Gewerbe",
     }
-    for ru in response["results"]:
-        section = ru_section[ru["rental_type"]]
+    for ru in response:
+        section = ru_section[ru.rental_type]
         allgemein = False
         ## Gästerzimmer, Dachküche, Teeküche nicht mehr allgemein (Entscheid Finko/VW 25.10.22)
         # if ru['label'] in ("Gästezimmer", "Dachküche", "Teeküche","Einstellhalle Auto","Einstellhalle Velo"):
-        if ru["label"] in ("Dachküche",):
+        if ru.label in ("Dachküche",):
             section = "Wohnen"
-        elif ru["label"] in (
+        elif ru.label in (
             "Teeküche",
             "Lückenraum Holliger rechts",
             "Lückenraum Holliger links",
             "Quartierraum Holliger",
         ):
             section = "Gewerbe"
-        elif ru["label"] in ("Lagerraum", "Lagerabteil"):
+        elif ru.label in ("Lagerraum", "Lagerabteil"):
             section = "Lager"
-        elif ru["rental_type"] in ("Parkplatz", "Gemeinschaftsräume/Diverses"):
+        elif ru.rental_type in ("Parkplatz", "Gemeinschaftsräume/Diverses"):
             allgemein = True
 
-        if ru["label"]:
-            label = "%s %s" % (ru["label"], ru["name"])  # , ru['label'])
+        if ru.label:
+            label = "%s %s" % (ru.label, ru.name)  # , ru['label'])
         else:
-            label = "%s %s" % (ru["rental_type"], ru["name"])
+            label = "%s %s" % (ru.rental_type, ru.name)
 
         akonto = 0
         strom_pauschal = 0
         rent_net = 0
         for mw in nk.monthly_weights["default"]:
-            if ru["rent_total"]:
-                rent_net += mw * float(ru["rent_total"])
-            if ru["nk"]:
-                akonto += mw * float(ru["nk"])
-                rent_net -= mw * float(ru["nk"])
-            if ru["nk_electricity"]:
-                strom_pauschal += mw * float(ru["nk_electricity"])
-                rent_net -= mw * float(ru["nk_electricity"])
+            if ru.rent_total:
+                rent_net += mw * float(ru.rent_total)
+            if ru.nk:
+                akonto += mw * float(ru.nk)
+                rent_net -= mw * float(ru.nk)
+            if ru.nk_electricity:
+                strom_pauschal += mw * float(ru.nk_electricity)
+                rent_net -= mw * float(ru.nk_electricity)
         if allgemein:
             area_weight = 0
             volume_weight = 0
@@ -953,34 +948,34 @@ def import_from_api():
             rent_net = 0
         else:
             try:
-                area_weight = float(ru["area"])
-                if ru["volume"]:
-                    volume_weight = float(ru["volume"])
+                area_weight = float(ru.area)
+                if ru.volume:
+                    volume_weight = float(ru.volume)
                 else:
                     nk.log.append("WARNING: Unit %s has no volume." % (label))
                     nk.add_warning("Kein Volumen definiert", label)
                     volume_weight = 0
-                if ru["min_occupancy"]:
-                    min_occupancy = float(ru["min_occupancy"])
+                if ru.min_occupancy:
+                    min_occupancy = float(ru.min_occupancy)
                 else:
                     min_occupancy = 0
-                if ru["rooms"]:
-                    rooms = float(ru["rooms"])
+                if ru.rooms:
+                    rooms = float(ru.rooms)
                 else:
                     rooms = 0
             except TypeError as e:
                 nk.log.append(ru)
                 raise RuntimeError(
                     "ERROR: %s for %s (area=%s, volume=%s, min_occupancy=%s, rooms=%s)"
-                    % (e, ru["name"], ru["area"], ru["volume"], ru["min_occupancy"], ru["rooms"])
+                    % (e, ru.name, ru.area, ru.volume, ru.min_occupancy, ru.rooms)
                 )
 
-        ru_contracts = rental_unit_contracts.get(ru["id"], [])
+        ru_contracts = rental_unit_contracts.get(ru.id, [])
         if section:
             nk.objects.append(
                 {
-                    "id": ru["id"],
-                    "name": ru["name"],
+                    "id": ru.id,
+                    "name": ru.name,
                     "label": label,
                     "section": section,
                     "area": area_weight,
@@ -3025,6 +3020,7 @@ class NebenkostenReportGenerator(ReportGenerator):
         "Ausgabe:QR-Rechnungen": False,
         "Strom:Korrekturen": {},
         "Strom:Tarif:Korrekturen": {},
+        "Liegenschaften": []
     }
 
     def __init__(self, report, dry_run, output_root, *args, **kwargs):

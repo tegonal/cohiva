@@ -1473,9 +1473,9 @@ def invoice(request, action="create", key=None, key_type=None, consolidate=True)
             }
         )
 
-        buildingIds = [int(x) for x in request.GET.get("buildings[]", "").split(",") if x.strip()]
+        building_ids = [int(x) for x in request.GET.get("buildings[]", "").split(",") if x.strip()]
         invoices = create_invoices(
-            dry_run, reference_date, request.GET.get("single_contract", None), buildingIds, download_only
+            dry_run, reference_date, request.GET.get("single_contract", None), building_ids, download_only
         )
         if isinstance(invoices, str):
             pdf_file = open("/tmp/%s" % invoices, "rb")
@@ -3970,7 +3970,11 @@ def rental_unit_list_units(request, export_xls=True):
         "comment",
     ]
 
-    for ru in RentalUnit.objects.filter(active=True):
+    rentalUnits = RentalUnit.objects.filter(active=True)
+    if "Liegenschaften":
+        rentalUnits
+
+    for ru in rentalUnits:
         obj = lambda: None
         obj._fields = data_fields
         if ru.label:
