@@ -199,7 +199,7 @@ def create_invoices(dry_run=True, reference_date=None, single_contract=None, dow
                 if not ru.depot:
                     ru.depot = Decimal(0.0)
                 sum_depot += ru.depot
-                sum_rent_total += ru.rent_total if ru.rent_total else 0.0
+                sum_rent_total += ru.rent_total if ru.rent_total else Decimal(0.0)
                 sum_nk += ru.nk
                 sum_nk_electricity += ru.nk_electricity
                 sum_rent_net += ru.rent_netto

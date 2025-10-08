@@ -2,6 +2,7 @@ import datetime
 import logging
 import math
 import uuid
+from decimal import Decimal
 
 import select2.fields
 from django.conf import settings
@@ -1305,8 +1306,8 @@ class RentalUnit(GenoBase):
         """
         return (
             self.rent_netto
-            + (self.nk if self.nk else 0)
-            + (self.nk_electricity if self.nk_electricity else 0)
+            + (self.nk if self.nk else Decimal(0.0))
+            + (self.nk_electricity if self.nk_electricity else Decimal(0.0))
         )
 
     def str_short(self):
