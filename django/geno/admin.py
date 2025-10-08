@@ -74,6 +74,13 @@ class GenoBaseAdmin(admin.ModelAdmin, ExportXlsMixin):
                 if setting_name in settings.COHIVA_ADMIN_FIELDS[module_name]:
                     setattr(self, attr, settings.COHIVA_ADMIN_FIELDS[module_name][setting_name])
 
+    def changelist_view(self, request, extra_context=None):
+        # default filter: active=1 -> True
+        if self.model and "active" in (f.name for f in self.model._meta.get_fields()) and "active__exact" not in request.GET:
+            q = request.GET.copy()
+            q["active__exact"] = '1'
+            request.GET = q
+        return super().changelist_view(request, extra_context=extra_context)
 
 def set_title_mr(modeladmin, request, queryset):
     queryset.update(title="Herr")
@@ -174,7 +181,6 @@ class AddressAdmin(GenoBaseAdmin):
     ]
     search_fields = my_search_fields
     actions = GenoBaseAdmin.actions + [set_title_mr, set_title_mrs]
-
 
 admin.site.register(Address, AddressAdmin)
 
