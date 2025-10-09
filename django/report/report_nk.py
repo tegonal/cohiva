@@ -497,11 +497,15 @@ def add_calculated_weights():
     for o in nk.objects:
         if o["name"] == "0000":
             messung_objname = "_allgemein"
+        elif o["name"] == "9998":
+            messung_objname = "_pauschal_nk"
         elif o["name"] == "9999":
-            messung_objname = "_lager_strom"
+            messung_objname = "_pauschal_strom"
         else:
             messung_objname = o["name"]
-            ## Add Strom pauschal to akonto of special object for Lager-Strom
+            ## Add NK pauschal to akonto of special object for Pauschal-NK
+            nk.objects[nk.object_indices["9998"]]["akonto_obj"] += o["nk_pauschal_obj"]
+            ## Add Strom pauschal to akonto of special object for Pauschal-Strom
             nk.objects[nk.object_indices["9999"]]["akonto_obj"] += o["strom_pauschal_obj"]
         if messung_objname in nk.object_messung and sum(
             nk.object_messung[messung_objname]["warmwasser"]
@@ -929,6 +933,7 @@ def import_from_api():
             label = "%s %s" % (ru.rental_type, ru.name)
 
         akonto = 0
+        nk_pauschal = 0
         strom_pauschal = 0
         rent_net = 0
         for mw in nk.monthly_weights["default"]:
@@ -936,10 +941,10 @@ def import_from_api():
                 rent_net += mw * float(ru.rent_total)
             if ru.nk:
                 akonto += mw * float(ru.nk)
-                rent_net -= mw * float(ru.nk)
+            if ru.nk_flat:
+                nk_pauschal += mw * float(ru.nk_flat)
             if ru.nk_electricity:
                 strom_pauschal += mw * float(ru.nk_electricity)
-                rent_net -= mw * float(ru.nk_electricity)
         if allgemein:
             area_weight = 0
             volume_weight = 0
@@ -984,6 +989,7 @@ def import_from_api():
                     "rooms": rooms,
                     "allgemein": allgemein,
                     "akonto_obj": akonto,
+                    "nk_pauschal_obj": nk_pauschal,
                     "strom_pauschal_obj": strom_pauschal,
                     "rent_net": rent_net,
                     "costs": {},
@@ -1334,7 +1340,7 @@ def plot(spec):
         },
     }
     for o in nk.objects:
-        if o["name"] in ("0000", "9999"):
+        if o["name"] in ("0000", "9998", "9999"):
             continue
         obj_relative_key = o[spec["relative_key"]]
         if not obj_relative_key:
@@ -1691,7 +1697,7 @@ def add_admin_fee():
 
     for obj in nk.objects:
         o = obj["name"]
-        if o in ("0000", "9999"):
+        if o in ("0000", "9998", "9999"):
             continue
         for cost in nk.costs:
             tot["cost_split"]["objects"][o]["annual"]["amount"] += cost["cost_split"]["objects"][
@@ -1754,7 +1760,7 @@ def assign_to_contracts():
     monthly_weights_sum = sum(nk.monthly_weights["default"])
     ## Assign costs for every object and month to a contract or to 'owner' (Genossenschaft) or 'empty' (Leerstand)
     for o in nk.objects:
-        if o["name"] in ("0000", "9999"):
+        if o["name"] in ("0000", "9998", "9999"):
             ## Skip special objects
             continue
         nk.log.append("+++ Object: %s" % o["name"])
@@ -1868,6 +1874,7 @@ def assign_to_contracts():
                     "rent_net": 0,
                     "akonto_obj": 0,
                     "akonto_obj_billing": 0,
+                    "nk_pauschal_obj": 0,
                     "strom_pauschal_obj": 0,
                     "area": o["area"],
                     "volume": o["volume"],
@@ -1962,6 +1969,9 @@ def assign_to_contracts():
             )
             nk.contracts[c_id]["all_objects"]["akonto_obj"] += (
                 o["akonto_obj"] / monthly_weights_sum * nk.monthly_weights["default"][idx]
+            )
+            obj_data["unit"]["nk_pauschal_obj"] += (
+                o["nk_pauschal_obj"] / monthly_weights_sum * nk.monthly_weights["default"][idx]
             )
             obj_data["unit"]["strom_pauschal_obj"] += (
                 o["strom_pauschal_obj"] / monthly_weights_sum * nk.monthly_weights["default"][idx]
@@ -3049,6 +3059,21 @@ class NebenkostenReportGenerator(ReportGenerator):
                 "rooms": 0,
                 "allgemein": False,
                 "akonto_obj": 0,
+                "nk_pauschal_obj": 0,
+                "strom_pauschal_obj": 0,
+                "rent_net": 0,
+                "costs": {},
+            },
+            {
+                "name": "9998",
+                "section": "Lager",
+                "area": 0,
+                "volume": 0,
+                "min_occupancy": 0,
+                "rooms": 0,
+                "allgemein": False,
+                "akonto_obj": 0,
+                "nk_pauschal_obj": 0,
                 "strom_pauschal_obj": 0,
                 "rent_net": 0,
                 "costs": {},
@@ -3062,6 +3087,7 @@ class NebenkostenReportGenerator(ReportGenerator):
                 "rooms": 0,
                 "allgemein": False,
                 "akonto_obj": 0,
+                "nk_pauschal_obj": 0,
                 "strom_pauschal_obj": 0,
                 "rent_net": 0,
                 "costs": {},

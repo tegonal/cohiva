@@ -51,18 +51,21 @@ The `tenant-config/` directory is gitignored - configs are deployment-specific a
 ### Development Modes
 
 **`yarn dev` - Standard Mode**
+
 - Uses `example-config` from `pwa-tenant-config-generator`
 - Generates config once at startup (if not already present)
 - Config changes require restarting dev server
 - Best for: Quick development with default config
 
 **`yarn dev:tenant <path>` - Custom Tenant Mode**
+
 - Uses specified tenant config directory (e.g., `../pwa-tenant-config-generator/tenant-configs/my-tenant`)
 - Watches config files for changes and auto-regenerates
 - Dev server automatically picks up config updates
 - Best for: Developing/testing specific tenant configurations
 
 Both modes:
+
 1. Generate PWA assets (icons, manifests, meta tags)
 2. Copy config to `tenant-config/`
 3. Apply overlay files to project root

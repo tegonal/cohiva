@@ -184,6 +184,7 @@ def create_invoices(
             sum_rent_total = 0
             sum_rent_net = 0
             sum_nk = 0
+            sum_nk_flat = 0
             sum_nk_electricity = 0
             ru_list = []
             rent_info = []
@@ -199,6 +200,8 @@ def create_invoices(
                     ru.rent_netto = Decimal(0.0)
                 if not ru.nk:
                     ru.nk = Decimal(0.0)
+                if not ru.nk_flat:
+                    ru.nk_flat = Decimal(0.0)
                 if not ru.nk_electricity:
                     ru.nk_electricity = Decimal(0.0)
                 if not ru.depot:
@@ -206,15 +209,16 @@ def create_invoices(
                 sum_depot += ru.depot
                 sum_rent_total += ru.rent_total if ru.rent_total else Decimal(0.0)
                 sum_nk += ru.nk
+                sum_nk_flat += ru.nk_flat
                 sum_nk_electricity += ru.nk_electricity
                 sum_rent_net += ru.rent_netto
-                if ru.rent_netto or ru.nk:
+                if ru.rent_netto or ru.nk or ru.nk_flat:
                     rent_info.append(
                         {
                             "text": ru.str_short(),
                             "net": ru.rent_netto,
-                            "nk": ru.nk,
-                            "total": ru.rent_netto + ru.nk,
+                            "nk": ru.nk + ru.nk_flat,
+                            "total": ru.rent_netto + ru.nk + ru.nk_flat,
                         }
                     )
                 if ru.nk_electricity:
@@ -272,6 +276,33 @@ def create_invoices(
                     invoice_value = sum_nk * factor
                     r = add_invoice(
                         "nk",
+                        invoice_category,
+                        description,
+                        invoice_date,
+                        invoice_value,
+                        book=book,
+                        contract=billing_contract,
+                        year=year,
+                        month=month,
+                        is_additional=is_additional_invoice,
+                        dry_run=dry_run,
+                    )
+                    if not isinstance(r, str):
+                        messages.append(
+                            "Montasrechnung hinzugefügt: %s für %s."
+                            % (description, billing_contract_info)
+                        )
+
+                if sum_nk_flat > 0.0:
+                    description = "Nebenkosten pauschal %02d.%d für %s%s" % (
+                        month,
+                        year,
+                        "/".join(ru_list),
+                        factor_txt,
+                    )
+                    invoice_value = sum_nk_flat * factor
+                    r = add_invoice(
+                        "nk_flat",
                         invoice_category,
                         description,
                         invoice_date,
@@ -496,6 +527,8 @@ def get_income_account(book, invoice_category, kind):
         return book.accounts(code=geno_settings.GNUCASH_ACC_INVOICE_INCOME_PARKING)
     elif kind == "nk":
         return book.accounts(code=geno_settings.GNUCASH_ACC_NK)
+    elif kind == "nk_flat":
+        return book.accounts(code=geno_settings.GNUCASH_ACC_NK_FLAT)
     elif kind == "rent_reduction":
         return book.accounts(code=geno_settings.GNUCASH_ACC_RENTREDUCTION)
     elif kind == "mietdepot":
