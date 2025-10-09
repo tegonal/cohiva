@@ -89,6 +89,7 @@ REPORT_FIELDTYPE_CHOICES = (
     ("list_12months_float", "Dezimalzahlen, 12 Monatswerte"),
     ("file", "Datei"),
     ("json", "JSON-Daten"),
+    ("buildingIds", "Liegenschaften"),
 )
 
 

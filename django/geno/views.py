@@ -68,6 +68,7 @@ from .forms import (
     MemberMailActionForm,
     MemberMailForm,
     MemberMailSelectForm,
+    SendInvoicesForm,
     TransactionForm,
     TransactionFormInvoice,
     TransactionUploadFileForm,
@@ -1450,7 +1451,9 @@ def invoice(request, action="create", key=None, key_type=None, consolidate=True)
 
         today = datetime.date.today()
         reference_date = datetime.date(today.year, today.month, 1)
-        if request.GET.get("date", "") == "last_month":
+        if request.GET.get("date", "") == "this_month":
+            pass  # NOOP this is the default
+        elif request.GET.get("date", "") == "last_month":
             if today.month == 1:
                 reference_date = datetime.date(today.year - 1, 12, 1)
             else:
@@ -1470,8 +1473,13 @@ def invoice(request, action="create", key=None, key_type=None, consolidate=True)
             }
         )
 
+        building_ids = [int(x) for x in request.GET.get("buildings[]", "").split(",") if x.strip()]
         invoices = create_invoices(
-            dry_run, reference_date, request.GET.get("single_contract", None), download_only
+            dry_run,
+            reference_date,
+            request.GET.get("single_contract", None),
+            building_ids,
+            download_only,
         )
         if isinstance(invoices, str):
             pdf_file = open("/tmp/%s" % invoices, "rb")
@@ -1479,9 +1487,12 @@ def invoice(request, action="create", key=None, key_type=None, consolidate=True)
             resp["Content-Disposition"] = "attachment; filename=%s" % invoices
             return resp
         if dry_run:
+            urltmpl = '<a href="?dry_run=False&date={date}&buildings[]={buildings}">AUSFÜHREN</a>.'
             invoices.append(
                 "DRY-RUN: Zum effektiv ausführen, hier klicken: "
-                '<a href="?dry_run=False&date=%s">AUSFÜHREN</a>.' % request.GET.get("date", "")
+                + urltmpl.format(
+                    date=request.GET.get("date", ""), buildings=request.GET.get("buildings[]", "")
+                )
             )
         ret.append({"info": "GnuCash Rechnungen erstellen:", "objects": invoices})
         return render(
@@ -2959,7 +2970,16 @@ def run_maintenance_tasks(request):
 
 def send_member_mail_filter_rental(form, member_list):
     adr_list = []
-    for contract in get_active_contracts():
+    contracts = get_active_contracts(
+        include_subcontracts=form.cleaned_data["include_subcontracts"]
+        if form.cleaned_data["include_subcontracts"]
+        else False
+    )
+    if form.cleaned_data["filter_building"]:
+        contracts = contracts.filter(
+            rental_units__building__in=form.cleaned_data["filter_building"]
+        ).distinct()
+    for contract in contracts:
         rental = []
         for ru in contract.rental_units.all():
             if (
@@ -3968,7 +3988,9 @@ def rental_unit_list_units(request, export_xls=True):
         "comment",
     ]
 
-    for ru in RentalUnit.objects.filter(active=True):
+    rentalUnits = RentalUnit.objects.filter(active=True)
+
+    for ru in rentalUnits:
         obj = lambda: None
         obj._fields = data_fields
         if ru.label:
@@ -4280,6 +4302,33 @@ def odt2pdf_form(request):
             "info": "LibreOffice Datei (.odt) hochladen",
             "form": form,
             "form_action": "/geno/odt2pdf/",
+        },
+    )
+
+
+@login_required
+def invoice_form(request):
+    initial = {}
+    form = SendInvoicesForm(request.GET or None, initial=initial)
+    if request.method == "GET":
+        if form.is_valid():
+            buildings = form.cleaned_data["buildings"]
+            date = request.GET.get("date")
+            return HttpResponseRedirect(
+                "/geno/invoice/auto?date="
+                + date
+                + "&buildings[]="
+                + ",".join([str(b) for b in buildings])
+            )
+    return render(
+        request,
+        "geno/invoice_form.html",
+        {
+            "response": None,
+            "title": "Mietzinsrechnungen versenden/buchen",
+            "info": "für ausgewählte Zeiträume",
+            "form": form,
+            "form_action": "/geno/invoice/auto",
         },
     )
 

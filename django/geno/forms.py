@@ -13,6 +13,7 @@ from geno.utils import send_error_mail
 
 from .models import (
     Address,
+    Building,
     ContentTemplate,
     GenericAttribute,
     Invoice,
@@ -245,6 +246,16 @@ class MemberMailForm(forms.Form):
         required=False,
         help_text="Leer = Beliebig",
         widget=forms.TextInput(attrs={"class": "datepicker"}),
+    )
+    include_subcontracts = forms.BooleanField(
+        label="Unterverträge einbeziehen",
+        required=False,
+    )
+
+    filter_building = forms.ModelMultipleChoiceField(
+        label="Mit Vertrag in Liegenschaft(en)",
+        required=False,
+        queryset=Building.objects.filter(active=True).order_by("name"),
     )
 
 
@@ -650,6 +661,25 @@ def process_registration_forms(request, selector="internal"):
                 }
             )
     return form_data
+
+
+class SendInvoicesForm(forms.Form):
+    buildingList = Building.objects.filter(active=True).order_by("name")
+    buildingMapping = [(b.id, b.name) for b in buildingList]
+    buildings = forms.MultipleChoiceField(
+        label="Liegenschaft(en)",
+        required=False,
+        widget=forms.SelectMultiple(attrs={"size": 5}),
+        choices=buildingMapping,
+    )
+    SCOPE_CHOICES = [
+        ("next_month", "bis Ende nächsten Monat"),
+        ("this_month", "nur bis aktueller Monat"),
+        ("last_month", "nur bis letzten Monat"),
+    ]
+    date = forms.ChoiceField(
+        widget=forms.RadioSelect, choices=SCOPE_CHOICES, label="Rechnungen für Zeitraum"
+    )
 
 
 class TransactionUploadFileForm(forms.Form):
