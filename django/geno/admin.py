@@ -170,6 +170,7 @@ class AddressAdmin(GenoBaseAdmin):
         "email",
         "email2",
         "occupation",
+        "bankaccount",
         "comment",
     ]
     search_fields = my_search_fields

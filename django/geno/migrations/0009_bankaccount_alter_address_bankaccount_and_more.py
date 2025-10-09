@@ -10,7 +10,7 @@ def migrate_bank_accounts(apps, schema_editor):
     bank_account = apps.get_model('geno', 'BankAccount')
 
     # Migrate address
-    for add in address.objects.all():
+    for add in address.objects.exclude(bank_account=""):
         bankaccount_string = add.bankaccount
         iban_parsed = parse_iban_field(bankaccount_string)
         if iban_parsed[0] == 'valid_iban_with_bank':
@@ -28,7 +28,7 @@ def migrate_bank_accounts(apps, schema_editor):
         add.save()
 
     # Migrate contract
-    for cont in contract.objects.all():
+    for cont in contract.objects.exclude(bank_account=""):
         bankaccount_string = cont.bankaccount
         iban_parsed = parse_iban_field(bankaccount_string)
         if iban_parsed[0] == "valid_iban_with_bank":
@@ -100,7 +100,7 @@ def parse_iban_field(value):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('geno', '0003_shareattatchbuilding'),
+        ('geno', '0008_migrate_emonitor2import'),
     ]
     operations = [
         migrations.CreateModel(
