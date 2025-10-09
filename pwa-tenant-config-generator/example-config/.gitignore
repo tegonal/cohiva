@@ -1,0 +1,5 @@
+# Temporary files only - overlay/ is committed for CI/CD
+*.tmp
+*.backup
+.DS_Store
+.temp-*

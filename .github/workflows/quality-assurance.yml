@@ -25,10 +25,17 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.13"
+      - name: Install Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
       - name: Setup environment
         run: |
           python -m pip install --upgrade pip
           pip install ruff==0.12.10
           ln -s website_example ./django/website
+          corepack enable
+          ( cd pwa && yarn install )
+          ( cd pwa && yarn setup:ci-config )
       - name: before-pr.sh
         run: ./scripts/before-pr.sh

@@ -1,4 +1,4 @@
-import { settings } from 'app/config/settings'
+import { settings } from 'app/tenant-config/settings'
 import {
   OidcMetadata,
   User,

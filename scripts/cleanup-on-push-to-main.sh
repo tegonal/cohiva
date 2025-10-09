@@ -29,10 +29,27 @@ fi
 
 sourceOnce "$dir_of_tegonal_scripts/utility/log.sh"
 
+function cleanupPython() {
+	(
+		cd "$projectDir"
+		ruff check --fix-only
+		ruff format
+		logSuccess "Cleaned up Python code"
+	)
+}
+
+function cleanupPWA() {
+	(
+		cd "$projectDir/pwa"
+		yarn lint:fix
+		yarn prettier:fix
+		logSuccess "Cleaned up PWA code"
+	)
+}
+
 function cleanupOnPushToMain() {
-	ruff check --fix-only
-	ruff format
-	logSuccess "cleaned up python code"
+	cleanupPython && \
+	cleanupPWA
 }
 
 ${__SOURCED__:+return}

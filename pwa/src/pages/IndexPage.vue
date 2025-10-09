@@ -126,7 +126,7 @@ import { useThemedLogo } from 'src/composables/use-themed-logo'
 import { useAuthStore } from 'stores/auth-store'
 import { useMainStore } from 'stores/main-store'
 
-import { settings } from '../../config/settings'
+import { settings } from '../../tenant-config/settings'
 
 const buttonClass = 'col-xs-6 col-sm-4 col-md-3 q-pa-md'
 
