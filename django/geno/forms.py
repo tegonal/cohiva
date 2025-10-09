@@ -252,13 +252,10 @@ class MemberMailForm(forms.Form):
         required=False,
     )
 
-    buildingList = Building.objects.filter(active=True).order_by("name")
-    buildingMapping = [(b.id, b.name) for b in buildingList]
-    filter_building = forms.MultipleChoiceField(
+    filter_building = forms.ModelMultipleChoiceField(
         label="Mit Vertrag in Liegenschaft(en)",
         required=False,
-        widget=forms.SelectMultiple(attrs={"size": 5}),
-        choices=buildingMapping,
+        queryset=Building.objects.filter(active=True).order_by("name"),
     )
 
 
