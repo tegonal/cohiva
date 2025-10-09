@@ -53,6 +53,7 @@ def copy_objects(modeladmin, request, queryset):
 
 copy_objects.short_description = "Ausgewählte Objekte kopieren"
 
+
 ## Base admin class
 class GenoBaseAdmin(admin.ModelAdmin, ExportXlsMixin):
     model = None
@@ -175,6 +176,7 @@ class AddressAdmin(GenoBaseAdmin):
     ]
     search_fields = my_search_fields
     actions = GenoBaseAdmin.actions + [set_title_mr, set_title_mrs]
+
 
 admin.site.register(Address, AddressAdmin)
 
@@ -731,7 +733,10 @@ class DocumentAdmin(GenoBaseAdmin):
     list_filter = ["doctype", "ts_created", "ts_modified", "content_type"]
     search_fields = my_search_fields
 
+
 admin.site.register(Document, DocumentAdmin)
+
+
 class BankAccountForm(forms.ModelForm):
     class Meta:
         model = BankAccount
@@ -744,6 +749,7 @@ class BankAccountForm(forms.ModelForm):
         if not iban_util.is_valid(value):
             raise forms.ValidationError("Invalid IBAN format.")
         return value
+
 
 class BankAccountAdmin(GenoBaseAdmin):
     model = BankAccount
@@ -758,15 +764,14 @@ class BankAccountAdmin(GenoBaseAdmin):
         "kontoinhaber",
         "comment",
         "ts_created",
-        "ts_modified"
+        "ts_modified",
     ]
-    my_search_fields = [
-        "iban",
-        "finanzinstitut"
-    ]
+    my_search_fields = ["iban", "finanzinstitut"]
     search_fields = my_search_fields
 
+
 admin.site.register(BankAccount, BankAccountAdmin)
+
 
 class RegistrationAdmin(GenoBaseAdmin):
     model = Registration
@@ -1024,7 +1029,6 @@ class ContractAdmin(GenoBaseAdmin):
     form = ContractAdminModelForm
     fields = [
         "main_contract",
-
         "contractors",
         "main_contact",
         "rental_units",

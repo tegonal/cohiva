@@ -176,6 +176,7 @@ class GenoBase(models.Model):
     class Meta:
         abstract = True
 
+
 class BankAccount(GenoBase):
     iban = models.CharField("IBAN", max_length=34, blank=True)
     finanzinstitut = models.CharField("Finanzinstitut", max_length=100, blank=True)
@@ -192,6 +193,7 @@ class BankAccount(GenoBase):
             return iban
         else:
             return "Kein Konto angegeben"
+
 
 class Address(GenoBase):
     TITLE_CHOICES = (
@@ -1429,7 +1431,7 @@ class Contract(GenoBase):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        help_text="Bankverbindung der Person/Organisation"
+        help_text="Bankverbindung der Person/Organisation",
     )
 
     ## Reverse relation to Documents
