@@ -515,8 +515,8 @@ def create_buildings(cls, count=2):
         cls.buildings.append(Building.objects.create(name=f"Musterweg {i + 1}"))
 
 
-def create_rentalunits(cls):
-    create_buildings(cls)
+def create_rentalunits(cls, buildingCount=2):
+    create_buildings(cls, buildingCount)
 
     cls.rentalunits = []
     cls.rentalunits.append(

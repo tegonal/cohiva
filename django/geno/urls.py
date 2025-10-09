@@ -42,6 +42,7 @@ urlpatterns = [
     path("transaction_testdata/", geno_views.transaction_testdata),
     path("transaction_invoice/", geno_views.transaction_invoice),
     path("invoice/", geno_views.invoice_manual),
+    path("invoice/form/", geno_views.invoice_form),
     path("invoice/auto/", geno_views.invoice),
     re_path(
         r"^invoice/download/(?P<key_type>[a-z_-]+)/(?P<key>[0-9]+)/?$",

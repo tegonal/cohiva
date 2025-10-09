@@ -15,6 +15,8 @@ from django.forms.widgets import Textarea
 # from filer.fields.file import AdminFileFormField, FilerFileField, AdminFileWidget
 from filer.models.filemodels import File as FilerFile
 
+from geno.models import Building
+
 from .models import ReportInputField
 
 # class FilerFileWidget(AdminFileWidget):
@@ -132,6 +134,16 @@ class ReportConfigForm(forms.Form):
                     model=None,
                 )
                 self.fields[field_name].widget.attrs.update({"style": "width: 750px;"})
+            elif field.field_type == "buildingIds":
+                buildingList = Building.objects.filter(active=True).order_by("name")
+                buildingMapping = [(b.id, b.name) for b in buildingList]
+                self.fields[field_name] = forms.MultipleChoiceField(
+                    required=False,
+                    label=field.name,
+                    help_text=field.description,
+                    widget=forms.SelectMultiple(attrs={"size": 5}),
+                    choices=buildingMapping,
+                )
             else:
                 self.fields[field_name] = forms.CharField(
                     required=False, label=field.name, help_text=field.description
