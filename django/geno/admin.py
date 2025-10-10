@@ -1071,6 +1071,18 @@ class ContractAdmin(GenoBaseAdmin):
         contract_set_startdate_nextmonth,
     ]
     filter_horizontal = ["contractors", "children", "rental_units"]
+    actions_list = [
+        "contract_report",
+    ]
+
+    @action(
+        description=_("Report Pflichtanteile/Belegung"),
+        permissions=["geno.rental_contracts", "geno.canview_share"],
+        icon="download",
+        # variant=ActionVariant.PRIMARY,
+    )
+    def contract_report(self, request):
+        return redirect(reverse("geno:contract-report"))
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         extra_context = extra_context or {}

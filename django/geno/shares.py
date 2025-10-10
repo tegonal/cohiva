@@ -5,6 +5,7 @@ import datetime
 from decimal import ROUND_HALF_UP, Decimal
 
 from dateutil.relativedelta import relativedelta
+from django.conf import settings
 from django.db.models import Q
 
 from .models import RentalUnit, Share, ShareType, get_active_contracts, get_active_shares
@@ -88,7 +89,7 @@ def get_share_statement_data(adr, year, enddate=None):
         statement_data["s_shares_bvg"] = inter["bvg_amount"][0]
         if statement_data["s_shares_bvg"] > 0:
             statement_data["sect_bvg"] = True
-        if statement_data["n_shares"] > 5:
+        if statement_data["n_shares"] > settings.GENO_SMALL_NUMBER_OF_SHARES_CUTOFF:
             statement_data["thankyou"] = True
     if inter["end_amount"][1]:
         ## Zinslose Darlehen

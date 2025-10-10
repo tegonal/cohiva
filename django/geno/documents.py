@@ -33,7 +33,6 @@ from geno.models import (
     MemberAttributeType,
     Share,
     ShareType,
-    get_active_contracts,
     get_active_shares,
 )
 from geno.shares import get_share_statement_data
@@ -868,15 +867,7 @@ def create_documents(default_doctype, objects=None, options=None):
         options = {"beschreibung": default_doctype_obj.description}
 
     if not objects:
-        if default_doctype == "contract_check":
-            objects = []
-            for c in get_active_contracts():
-                for ru in c.rental_units.all():
-                    if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
-                        objects.append({"obj": c})
-                        break
-        else:
-            return [{"info": 'Keine Objekte gefunden (Dokumenttyp "%s").' % default_doctype}]
+        return [{"info": 'Keine Objekte gefunden (Dokumenttyp "%s").' % default_doctype}]
 
     filenames = []
     for o in objects:

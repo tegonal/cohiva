@@ -69,12 +69,14 @@ from .forms import (
     MemberMailActionForm,
     MemberMailForm,
     MemberMailSelectForm,
+    ShareStatementForm,
     TransactionForm,
     TransactionFormInvoice,
     TransactionUploadFileForm,
     TransactionUploadProcessForm,
     WebstampForm,
     process_registration_forms,
+    SendInvoicesForm,
 )
 from .gnucash import (
     add_invoice,
@@ -148,7 +150,7 @@ def unauthorized(request):
         "response": [{"info": "Sie haben keine Berechtigung für diese Aktion."}],
         "title": "Keine Berechtigung",
     }
-    return render(request, "geno/messages.html", c)
+    return render(request, "geno/default.html", c)
 
 
 @login_required
@@ -198,7 +200,7 @@ def import_generic(request, what):
         else:
             raise Http404("Ungültige Adresse")
     c = {"response": ret, "title": title}
-    return render(request, "geno/messages.html", c)
+    return render(request, "geno/default.html", c)
 
 
 def export_generic(request, what):
@@ -209,7 +211,7 @@ def export_generic(request, what):
         title = "ADIT Gegensprechanlage exportieren"
         return export_adit_file()
     c = {"response": ret, "title": title}
-    return render(request, "geno/messages.html", c)
+    return render(request, "geno/default.html", c)
 
 
 @login_required
@@ -253,7 +255,7 @@ def documents(request, doctype, obj_id, action):
     ret = [
         {"info": "ERROR: %s" % error},
     ]
-    return render(request, "geno/messages.html", {"response": ret, "title": "Document error"})
+    return render(request, "geno/default.html", {"response": ret, "title": "Document error"})
 
 
 class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
@@ -1194,7 +1196,7 @@ def check_payments(request):
                 warn.append("Neustes Dokument: %s" % doc[0])
             ret.append({"info": str(member), "objects": warn})
 
-    return render(request, "geno/messages.html", {"response": ret, "title": "Check Zahlungen"})
+    return render(request, "geno/default.html", {"response": ret, "title": "Check Zahlungen"})
 
 
 class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
@@ -1204,23 +1206,22 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
         super().__init__(*args, **kwargs)
         self.error_message = ""
         self.result = []
-        self.objects = self.get_objects()
-        self.options = self.get_options()
 
     def get_objects(self):
         return []
 
     def get_options(self):
-        return {}
+        return {"beschreibung": "Dokumente"}
 
     def get(self, request, *args, **kwargs):
         if not self.doctype:
             self.error_message = "Dokumententyp fehlt!"
         else:
-            self.options["makezip"] = request.GET.get("makezip", "") == "yes"
-            if not self.options.get("link_url", None):
-                self.options["link_url"] = request.path
-            self.result = create_documents(self.doctype, self.objects, self.options)
+            options = self.get_options()
+            options["makezip"] = request.GET.get("makezip", "") == "yes"
+            if not options.get("link_url", None):
+                options["link_url"] = request.path
+            self.result = create_documents(self.doctype, self.get_objects(), options)
             if isinstance(self.result, HttpResponse):
                 return self.result
         return super().get(request, *args, **kwargs)
@@ -1231,7 +1232,7 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
             context["response"] = [{"info": self.error_message}]
         else:
             context["response"] = self.result
-        context["title"] = "Dokumente erzeugen - %s" % self.options.get("beschreibung", "")
+        context["title"] = "Dokumente erzeugen - %s" % self.get_options().get("beschreibung", "")
         return context
 
 
@@ -2038,107 +2039,149 @@ def share_mailing(request):
     return create_documents_deprecated(request, "mailing", objects, options)
 
 
-## TODO: Refactor to ClassBased view
-@login_required
-def share_statement(request, date="previous_year", address=None):
-    if not request.user.has_perm("geno.canview_share") or not request.user.has_perm(
-        "geno.canview_billing"
-    ):
-        return unauthorized(request)
-
-    year_current = datetime.datetime.now().year
-    if not date or date == "previous_year":
-        year = year_current - 1
-        enddate = datetime.date(year, 12, 31)
-    elif date == "current_year":
-        year = year_current
-        enddate = datetime.date(year, 12, 31)
-    else:
-        enddate = datetime.datetime.strptime(date, "%Y-%m-%d").date()
-        year = int(enddate.year)
-
-    ## List all shares for one address
-    # ret = []
-    objects = []
-    options = {"link_url": "/geno/share/statement/%s" % (enddate.strftime("%Y-%m-%d"))}
-    checksum_interest_pay = 0
-    checksum_interest_tax = 0
-    checksum_count = 0
-    skip_count = 0
-    # for adr in Address.objects.filter(active=True).order_by('name'):
-    if address:
-        addresses = Address.objects.filter(pk=address)
-        options["link_url"] = "%s/%s" % (options["link_url"], address)
-    else:
-        addresses = Address.objects
-        ## TEST:
-        # addresses = Address.objects.filter(Q(name='Test')|Q(first_name='Test'))
-    for adr in addresses.filter(active=True).order_by("name"):
-        # print("#### %s %s" % (adr.organization,adr.name))
-        # shares = []
-        try:
-            statement_data = get_share_statement_data(adr, year, enddate)
-        except Exception as e:
-            messages.error(request, "FEHLER beim Erstellen des Kontoauszugs: %s" % str(e))
-            return HttpResponseRedirect("/admin/")
-
-        if statement_data["sect_interest"]:
-            checksum_interest_tax += statement_data["s_tax"]
-            checksum_interest_pay += statement_data["s_pay"]
-        statement_data["s_tax"] = nformat(statement_data["s_tax"])
-        statement_data["s_pay"] = nformat(statement_data["s_pay"])
-
-        info = (
-            "%s/%s, Darlehen(zinsl.): %s, Darlehen: %s, Depositen: %s/%s, "
-            "VSt: %s, ZinsAuszahlung: %s, Zeilen: %d, %s + %s"
-            % (
-                statement_data["n_shares"],
-                statement_data["s_shares"],
-                statement_data["s_loan_no"],
-                statement_data["s_loan"],
-                statement_data["dep_start"],
-                statement_data["dep_end"],
-                statement_data["s_tax"],
-                statement_data["s_pay"],
-                statement_data["line_count"],
-                statement_data["loan_no_duedates"],
-                statement_data["loan_duedates"],
-            )
-        )
-        # if statement_data['sect_loan'] or statement_data['sect_deposit']: ## TEST
-        # if statement_data['loan_int'] or statement_data['sect_deposit']: ## TEST
-        if (
-            statement_data["sect_shares"]
-            or statement_data["sect_loan"]
-            or statement_data["sect_deposit"]
-        ):
-            if not statement_data["thankyou"]:
-                skip_count += 1
-            else:
-                checksum_count += 1
-                objects.append(
-                    {
-                        "obj": adr,
-                        "info": "%d: %s" % (checksum_count, info),
-                        "extra_context": statement_data,
-                    }
-                )
-
-    options["beschreibung"] = (
-        "Kontoauszüge %s [Anzahl=%d, VSt=%s, ZinsAuszahlung=%s, Anzahl ignoriert=%d]"
-        % (
-            year,
-            checksum_count,
-            nformat(checksum_interest_tax),
-            nformat(checksum_interest_pay),
-            skip_count,
-        )
+class ShareStatementView(DocumentGeneratorView):
+    permission_required = (
+        "geno.canview_share",
+        "geno.canview_billing",
+        "geno.share_interest_statements",
     )
-    return create_documents_deprecated(request, "statement", objects, options)
+    doctype = "statement"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.enddate = None
+        self.address_id = None
+        self.extra_description_info = ""
+
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
+        self.enddate = self.get_enddate(self.kwargs.get("date", "previous_year"))
+        self.address_id = self.kwargs.get("address", None)
+
+    def get_options(self):
+        options = {
+            "link_url": "/geno/share/statement/%s" % (self.enddate.strftime("%Y-%m-%d")),
+            "beschreibung": f"Kontoauszüge {self.enddate.year}{self.extra_description_info}",
+        }
+        if self.address_id:
+            options["link_url"] = "%s/%s" % (options["link_url"], self.address_id)
+        return options
+
+    @staticmethod
+    def get_enddate(date):
+        year_current = datetime.datetime.now().year
+        if date == "previous_year":
+            return datetime.date(year_current - 1, 12, 31)
+        if date == "current_year":
+            return datetime.date(year_current, 12, 31)
+        try:
+            return datetime.datetime.strptime(date, "%Y-%m-%d").date()
+        except ValueError:
+            return None
+
+    def get_objects(self, date="previous_year"):
+        objects = []
+        checksum_interest_pay = 0
+        checksum_interest_tax = 0
+        checksum_count = 0
+        skip_count = 0
+        if self.address_id:
+            addresses = Address.objects.filter(pk=self.address_id)
+        else:
+            addresses = Address.objects
+        for adr in addresses.filter(active=True).order_by("name"):
+            try:
+                statement_data = get_share_statement_data(adr, self.enddate.year, self.enddate)
+            except Exception as e:
+                self.error_message = "FEHLER beim Erstellen des Kontoauszugs: %s" % str(e)
+                return objects
+
+            if statement_data["sect_interest"]:
+                checksum_interest_tax += statement_data["s_tax"]
+                checksum_interest_pay += statement_data["s_pay"]
+            statement_data["s_tax"] = nformat(statement_data["s_tax"])
+            statement_data["s_pay"] = nformat(statement_data["s_pay"])
+
+            info = (
+                "%s/%s, Darlehen(zinsl.): %s, Darlehen: %s, Depositen: %s/%s, "
+                "VSt: %s, ZinsAuszahlung: %s, Zeilen: %d, %s + %s"
+                % (
+                    statement_data["n_shares"],
+                    statement_data["s_shares"],
+                    statement_data["s_loan_no"],
+                    statement_data["s_loan"],
+                    statement_data["dep_start"],
+                    statement_data["dep_end"],
+                    statement_data["s_tax"],
+                    statement_data["s_pay"],
+                    statement_data["line_count"],
+                    statement_data["loan_no_duedates"],
+                    statement_data["loan_duedates"],
+                )
+            )
+            if (
+                statement_data["sect_shares"]
+                or statement_data["sect_loan"]
+                or statement_data["sect_deposit"]
+            ):
+                if not statement_data["thankyou"]:
+                    ## Skip if max. GENO_SMALL_NUMBER_OF_SHARES_CUTOFF shares and no loan etc.
+                    skip_count += 1
+                else:
+                    checksum_count += 1
+                    objects.append(
+                        {
+                            "obj": adr,
+                            "info": "%d: %s" % (checksum_count, info),
+                            "extra_context": statement_data,
+                        }
+                    )
+            self.extra_description_info = (
+                " [Anzahl=%d, VSt=%s, ZinsAuszahlung=%s, Anzahl ignoriert=%d]"
+                % (
+                    checksum_count,
+                    nformat(checksum_interest_tax),
+                    nformat(checksum_interest_pay),
+                    skip_count,
+                )
+            )
+        return objects
+
+
+class ShareStatementFormView(CohivaAdminViewMixin, FormView):
+    form_class = ShareStatementForm
+    title = "Kontoauszüge"
+    permission_required = (
+        "geno.canview_share",
+        "geno.canview_billing",
+        "geno.share_interest_statements",
+    )
+
+    def get_initial(self):
+        initial = super().get_initial()
+        initial["date"] = datetime.date(datetime.datetime.now().year - 1, 12, 31)
+        return initial
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["submit_title"] = "Dokumente erstellen"
+        if getattr(settings, "GENO_SMALL_NUMBER_OF_SHARES_CUTOFF", 0) > 0:
+            context["help_text"] = (
+                "Es werden nur Kontoauszüge erstellt, falls mehr als "
+                f"{settings.GENO_SMALL_NUMBER_OF_SHARES_CUTOFF} Anteilsscheine "
+                "oder andere Beteiligungen wie Darlehen/Depositen vorhanden sind."
+            )
+        return context
+
+    def form_valid(self, form):
+        self.success_url = reverse(
+            "geno:share-statement", args=[form.cleaned_data.get("date").strftime("%Y-%m-%d")]
+        )
+        return super().form_valid(form)
 
 
 @login_required
-def share_check(request, year="previous", address=None):
+def contract_report(request, year="previous", address=None):
     if not request.user.has_perm("geno.canview_share") or not request.user.has_perm(
         "geno.canview_billing"
     ):
@@ -2160,6 +2203,20 @@ def share_check(request, year="previous", address=None):
         "Details",
     ]
     return export_data_to_xls(report, header=header)
+
+
+class ContractCheckFormsView(DocumentGeneratorView):
+    permission_required = ("geno.canview_share", "geno.rental_contracts")
+    doctype = "contract_check"
+    title = "Formulare «Überprüfung Belegung/Fahrzeuge»"
+
+    def get_objects(self):
+        objects = []
+        for c in get_active_contracts():
+            for ru in c.rental_units.all():
+                if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
+                    objects.append({"obj": c})
+        return objects
 
 
 ## TODO: Refactor to ClassBased view
@@ -2285,7 +2342,7 @@ def create_documents_deprecated(request, default_doctype, objects=None, options=
     except DocumentType.DoesNotExist:
         return render(
             request,
-            "geno/messages.html",
+            "geno/default.html",
             {
                 "response": [
                     {
@@ -2311,7 +2368,7 @@ def create_documents_deprecated(request, default_doctype, objects=None, options=
         else:
             return render(
                 request,
-                "geno/messages.html",
+                "geno/default.html",
                 {
                     "response": [
                         {"info": 'Keine Objekte gefunden (Dokumenttyp "%s").' % default_doctype}
@@ -2398,7 +2455,7 @@ def create_documents_deprecated(request, default_doctype, objects=None, options=
 
     return render(
         request,
-        "geno/messages.html",
+        "geno/default.html",
         {"response": ret, "title": "Dokumente erzeugen - %s" % options["beschreibung"]},
     )
 
@@ -2415,7 +2472,7 @@ class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
     def check_mailinglists(self):
         if not hasattr(settings, "MAILMAN_API") or not settings.MAILMAN_API.get("password", None):
             return [{"info": "FEHLER: Mailman-API ist nicht konfiguriert."}]
-            # return render(request, 'geno/messages.html', { 'response': [{'info': 'FEHLER: Mailman-API ist nicht konfiguriert.'}], 'title': 'Check Mailinglisten'})
+            # return render(request, 'geno/default.html', { 'response': [{'info': 'FEHLER: Mailman-API ist nicht konfiguriert.'}], 'title': 'Check Mailinglisten'})
 
         mailman_client = mailmanclient.Client(
             settings.MAILMAN_API["url"],
@@ -2652,7 +2709,7 @@ class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
             }
         )
         ret.append({"info": "Mailman warnings:", "objects": ml_warnings})
-        # return render(request, "geno/messages.html", {"response": ret, "title": "Check Mailinglisten"})
+        # return render(request, "geno/default.html", {"response": ret, "title": "Check Mailinglisten"})
         return ret
 
 
@@ -2666,7 +2723,7 @@ def run_maintenance_tasks(request):
     # ret.append({'info': 'Creating new users:', 'objects': create_users()})
 
     return render(
-        request, "geno/messages.html", {"response": ret, "title": "Run maintenance tasks"}
+        request, "geno/default.html", {"response": ret, "title": "Run maintenance tasks"}
     )
 
 
@@ -3908,7 +3965,7 @@ def rental_unit_list_tenants(request, export_xls=True):
 
     return render(
         request,
-        "geno/messages.html",
+        "geno/default.html",
         {"response": ret, "title": "Mieter*innenspiegel (WORK IN PROGRESS!)"},
     )
 
@@ -4045,7 +4102,7 @@ def rental_unit_list_units(request, export_xls=True):
 
     return render(
         request,
-        "geno/messages.html",
+        "geno/default.html",
         {"response": ret, "title": "Mietobjektespiegel (WORK IN PROGRESS!)"},
     )
 
@@ -4073,7 +4130,7 @@ def rental_unit_list_create_documents(request, doc="mailbox"):
         ret.append({"info": f"FEHLER: Dokumenttyp {doc} nicht gefunden."})
         return render(
             request,
-            "geno/messages.html",
+            "geno/default.html",
             {
                 "response": ret,
                 "title": "Mietobjekt-Dokumente erzeugen - %s" % options["beschreibung"],
@@ -4193,7 +4250,7 @@ def rental_unit_list_create_documents(request, doc="mailbox"):
 
     return render(
         request,
-        "geno/messages.html",
+        "geno/default.html",
         {"response": ret, "title": "Mietobjekt-Dokumente erzeugen - %s" % options["beschreibung"]},
     )
 
@@ -4208,7 +4265,7 @@ def check_portal_users(request):
     ret = [
         {"info": "Benutzer ohne Login-Erlaubnis", "objects": users},
     ]
-    return render(request, "geno/messages.html", {"response": ret, "title": "Benutzer überprüfen"})
+    return render(request, "geno/default.html", {"response": ret, "title": "Benutzer überprüfen"})
 
 
 @login_required
@@ -4217,47 +4274,191 @@ def check_duplicate_invoices(request):
         {"info": "Rechnungs-Duplikate", "objects": get_duplicate_invoices()},
     ]
     return render(
-        request, "geno/messages.html", {"response": ret, "title": "Rechnungen überprüfen"}
+        request, "geno/default.html", {"response": ret, "title": "Rechnungen überprüfen"}
     )
 
 
-@login_required
-def odt2pdf_form(request):
-    initial = {}
-    form = TransactionUploadFileForm(request.POST or None, request.FILES, initial=initial)
-    if request.method == "POST":
-        if form.is_valid():
-            tmpdir = "/tmp/odt2pdf"
-            if not os.path.isdir(tmpdir):
-                os.mkdir(tmpdir)
+class Odt2PdfView(CohivaAdminViewMixin, FormView):
+    title = "ODT in PDF umwandeln"
+    form_class = TransactionUploadFileForm
+    # "geno/upload_form.html",
+    permission_required = ("geno.tools_odt2pdf",)
+    tmpdir = "/tmp/odt2pdf"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "form_title": "LibreOffice Datei (.odt) hochladen um in ein PDF umzuwandeln",
+            }
+        )
+        return context
+
+    def form_valid(self, form):
+        if not os.path.isdir(self.tmpdir):
+            os.mkdir(self.tmpdir)
+        tmp_file = tempfile.NamedTemporaryFile(
+            suffix=".odt", prefix="django_odt2pdf_input_", dir=self.tmpdir, delete=False
+        )
+        with open(tmp_file.name, "wb+") as destination:
+            for chunk in self.request.FILES["file"].chunks():
+                destination.write(chunk)
+        # resp = HttpResponse(odt2pdf(tmp_file.name), content_type = "application/pdf")
+        pdf_file_path = odt2pdf(tmp_file.name, self.request.user.get_username())
+        pdf_file = open(pdf_file_path, "rb")
+        pdf_file_name = self.request.FILES["file"].name[0:-4]
+        resp = FileResponse(pdf_file, content_type="application/pdf")
+        resp["Content-Disposition"] = "attachment; filename=%s.pdf" % pdf_file_name
+        if os.path.isfile(tmp_file.name):
+            os.remove(tmp_file.name)
+        if os.path.isfile(pdf_file_path):
+            os.remove(pdf_file_path)
+        return resp
+
+
+class WebstampView(CohivaAdminViewMixin, FormView):
+    title = "PDFs frankieren"
+    form_class = WebstampForm
+    permission_required = ("geno.tools_webstmap",)
+    tmpdir = "/tmp/webstamp"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.result = []
+        self.download_file_url = None
+
+    def get_initial(self):
+        return {"stamp_type": "A-STANDARD-ENV"}
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["stamps_available"] = self.get_available_webstamps()
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "response": self.result,
+                "form_title": (
+                    "PDF Dateien hochladen. Die erste Seite wird frankiert (Fenster-Couvert links)"
+                ),
+                "download_file_url": self.download_file_url,
+            }
+        )
+        return context
+
+    def get(self, request, *args, **kwargs):
+        if request.GET.get("download", None):
+            return self.send_file(request.GET.get("download"))
+        return super().get(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        self.result = self.add_webstamps(
+            form.cleaned_data["files"], form.cleaned_data["stamp_type"]
+        )
+        if isinstance(self.result, str):
+            self.download_file_url = (
+                f"{reverse('geno:webstamp')}?download={os.path.basename(self.result)}"
+            )
+        return self.get(self.request)
+
+    def send_file(self, tmp_file_name):
+        tmp_file_path = os.path.normpath(os.path.join(self.tmpdir, tmp_file_name))
+        if not tmp_file_path.startswith(self.tmpdir):
+            raise PermissionDenied()
+        if os.path.isfile(tmp_file_path):
+            pdf_file_name = "PDF_frankiert"
+            resp = FileResponse(open(tmp_file_path, "rb"), content_type="application/pdf")
+            resp["Content-Disposition"] = "attachment; filename=%s.pdf" % pdf_file_name
+            os.remove(tmp_file_path)
+            return resp
+        else:
+            raise Http404(f"File {tmp_file_name} not found.")
+
+    # TODO: Refactor: Move this to a utility class
+    def get_available_webstamps(self):
+        stamp_names = {
+            "A-GROSS-ENV": "A-Post Grossbrief (C4, bis 500g)",
+            "A-GROSS-SCHWER-ENV": "A-Post Grossbrief schwer (C4, 500-1000g)",
+            "A-STANDARD-ENV": "A-Post Standardbrief (bis C5, 100g)",
+            "B-STANDARD-ENV": "B-Post Standardbrief (bis C5, 100g)",
+            "ECONOMY-EURO1-50g-ENV": "Europa Economy (bis C5, 50g)",
+        }
+        cmd_out = subprocess.run(["/usr/local/bin/webstamp"], stdout=subprocess.PIPE)
+        type_list = False
+        stamps = {}
+        pattern = re.compile(r"^\s+- (?P<type>\S+)\s+\((?P<num>\d+) available")
+        for line in cmd_out.stdout.decode("utf-8").splitlines():
+            # print(line)
+            if line == "   stamp types:":
+                type_list = True
+            elif type_list:
+                m = pattern.search(line)
+                if m.group("type") and m.group("num"):
+                    stamp_type = m.group("type")
+                    stamp_name = stamp_names.get(stamp_type, stamp_type)
+                    stamps[stamp_type] = "%s: %d verfügbar" % (stamp_name, int(m.group("num")))
+        return stamps
+
+    # TODO: Refactor: Move this to a utitlity class
+    def add_webstamps(self, files, stamp_type):
+        ret = []
+        if not os.path.isdir(self.tmpdir):
+            os.mkdir(self.tmpdir)
+        tmp_files = []
+        for f in files:
             tmp_file = tempfile.NamedTemporaryFile(
-                suffix=".odt", prefix="django_odt2pdf_input_", dir=tmpdir, delete=False
+                suffix=".pdf", prefix="django_webstamp_input_", dir=self.tmpdir, delete=False
             )
             with open(tmp_file.name, "wb+") as destination:
-                for chunk in request.FILES["file"].chunks():
+                for chunk in f.chunks():
                     destination.write(chunk)
-            # resp = HttpResponse(odt2pdf(tmp_file.name), content_type = "application/pdf")
-            pdf_file_path = odt2pdf(tmp_file.name, request.user.get_username())
-            pdf_file = open(pdf_file_path, "rb")
-            pdf_file_name = request.FILES["file"].name[0:-4]
-            resp = FileResponse(pdf_file, content_type="application/pdf")
-            resp["Content-Disposition"] = "attachment; filename=%s.pdf" % pdf_file_name
-            if os.path.isfile(tmp_file.name):
-                os.remove(tmp_file.name)
-            if os.path.isfile(pdf_file_path):
-                os.remove(pdf_file_path)
-            return resp
-    return render(
-        request,
-        "geno/upload_form.html",
-        {
-            "response": None,
-            "title": "ODT in PDF umwandeln",
-            "info": "LibreOffice Datei (.odt) hochladen",
-            "form": form,
-            "form_action": "/geno/odt2pdf/",
-        },
-    )
+            tmp_files.append(tmp_file.name)
+        cmd_out = subprocess.run(
+            ["/usr/local/bin/webstamp", "-t", stamp_type] + tmp_files, stdout=subprocess.PIPE
+        )
+        ret.append(
+            {
+                "info": "Webstamp output:",
+                "objects": ["<pre>%s</pre>" % cmd_out.stdout.decode("utf-8")],
+            }
+        )
+        ## Check if output files are there
+        success = True
+        for f in tmp_files:
+            outfile = f[0:-4] + "_stamp.pdf"
+            if os.path.isfile(outfile):
+                os.rename(outfile, f)
+            else:
+                return ret
+
+        ## Concatenate stamped PDFs and return one PDF with all pages.
+        tmp_file = tempfile.NamedTemporaryFile(
+            suffix=".pdf", prefix="django_webstamp_output_", dir=self.tmpdir, delete=False
+        )
+        pdfcat_out = subprocess.run(
+            ["pdftk"] + tmp_files + ["cat", "output", tmp_file.name],
+            stdout=subprocess.PIPE,
+        )
+        # print(pdfcat_out.stdout.decode('utf-8'))
+        ret.append(
+            {
+                "info": "PDFtk output:",
+                "objects": ["<pre>%s</pre>" % pdfcat_out.stdout.decode("utf-8")],
+            }
+        )
+        for f in tmp_files:
+            os.remove(f)
+        if os.path.isfile(tmp_file.name):
+            return tmp_file.name
+        return ret
+
+
+class SysadminView(CohivaAdminViewMixin, TemplateView):
+    template_name = "geno/sysadmin_overview.html"
+    permission_required = ("geno.sysadmin",)
+    title = "Übersicht"
 
 
 @login_required
@@ -4283,125 +4484,6 @@ def invoice_form(request):
             "info": "für ausgewählte Zeiträume",
             "form": form,
             "form_action": "/geno/invoice/auto",
-        },
-    )
-
-
-@login_required
-def webstamp_form(request):
-    ret = []
-    download_redirect = None
-    ## Get available stamps
-    stamp_names = {
-        "A-GROSS-ENV": "A-Post Grossbrief (C4, bis 500g)",
-        "A-GROSS-SCHWER-ENV": "A-Post Grossbrief schwer (C4, 500-1000g)",
-        "A-STANDARD-ENV": "A-Post Standardbrief (bis C5, 100g)",
-        "B-STANDARD-ENV": "B-Post Standardbrief (bis C5, 100g)",
-        "ECONOMY-EURO1-50g-ENV": "Europa Economy (bis C5, 50g)",
-    }
-    initial = {"stamp_type": "A-STANDARD-ENV"}
-    cmd_out = subprocess.run(["/usr/local/bin/webstamp"], stdout=subprocess.PIPE)
-    tmpdir = "/tmp/webstamp"
-    type_list = False
-    stamps = {}
-    pattern = re.compile(r"^\s+- (?P<type>\S+)\s+\((?P<num>\d+) available")
-    for line in cmd_out.stdout.decode("utf-8").splitlines():
-        # print(line)
-        if line == "   stamp types:":
-            type_list = True
-        elif type_list:
-            m = pattern.search(line)
-            if m.group("type") and m.group("num"):
-                stamp_type = m.group("type")
-                stamp_name = stamp_names.get(stamp_type, stamp_type)
-                stamps[stamp_type] = "%s: %d verfügbar" % (stamp_name, int(m.group("num")))
-
-    if request.method == "GET" and request.GET.get("get_download"):
-        download_redirect = "/geno/webstamp/?download=%s" % request.GET.get("get_download")
-    elif request.method == "GET" and request.GET.get("download"):
-        tmp_file_name = request.GET.get("download")
-        tmp_file_path = os.path.normpath(os.path.join(tmpdir, tmp_file_name))
-        if not tmp_file_path.startswith(tmpdir):
-            raise PermissionDenied()
-        if os.path.isfile(tmp_file_path):
-            pdf_file_name = "PDF_frankiert"
-            resp = FileResponse(open(tmp_file_path, "rb"), content_type="application/pdf")
-            resp["Content-Disposition"] = "attachment; filename=%s.pdf" % pdf_file_name
-            os.remove(tmp_file_path)
-            return resp
-        else:
-            raise Http404(f"File {tmp_file_name} not found.")
-    if request.method == "POST":
-        form = WebstampForm(request.POST, request.FILES, initial=initial, stamps_available=stamps)
-        if form.is_valid():
-            if not os.path.isdir(tmpdir):
-                os.mkdir(tmpdir)
-            tmp_files = []
-            files = form.cleaned_data["files"]
-            for f in files:
-                tmp_file = tempfile.NamedTemporaryFile(
-                    suffix=".pdf", prefix="django_webstamp_input_", dir=tmpdir, delete=False
-                )
-                with open(tmp_file.name, "wb+") as destination:
-                    for chunk in f.chunks():
-                        destination.write(chunk)
-                tmp_files.append(tmp_file.name)
-            stamp_type = form.cleaned_data["stamp_type"]
-            cmd_out = subprocess.run(
-                ["/usr/local/bin/webstamp", "-t", stamp_type] + tmp_files, stdout=subprocess.PIPE
-            )
-            # print(cmd_out.stdout.decode('utf-8'))
-            ret.append(
-                {
-                    "info": "Webstamp output:",
-                    "objects": ["<pre>%s</pre>" % cmd_out.stdout.decode("utf-8")],
-                }
-            )
-            ## Check if output files are there
-            success = True
-            for f in tmp_files:
-                outfile = f[0:-4] + "_stamp.pdf"
-                if os.path.isfile(outfile):
-                    os.rename(outfile, f)
-                else:
-                    success = False
-                    break
-            if success:
-                ## Concatenate stamped PDFs and return one PDF with all pages.
-                tmp_file = tempfile.NamedTemporaryFile(
-                    suffix=".pdf", prefix="django_webstamp_output_", dir=tmpdir, delete=False
-                )
-                pdfcat_out = subprocess.run(
-                    ["pdftk"] + tmp_files + ["cat", "output", tmp_file.name],
-                    stdout=subprocess.PIPE,
-                )
-                # print(pdfcat_out.stdout.decode('utf-8'))
-                ret.append(
-                    {
-                        "info": "PDFtk output:",
-                        "objects": ["<pre>%s</pre>" % pdfcat_out.stdout.decode("utf-8")],
-                    }
-                )
-                for f in tmp_files:
-                    os.remove(f)
-                if os.path.isfile(tmp_file.name):
-                    return redirect(
-                        "/geno/webstamp/?get_download=%s" % os.path.basename(tmp_file.name)
-                    )
-    else:
-        form = WebstampForm(initial=initial, stamps_available=stamps)
-    return render(
-        request,
-        "geno/generic_upload.html",
-        {
-            "response": ret,
-            "title": "PDFs frankieren",
-            "info": (
-                "PDF Dateien hochladen. Die erste Seite wird frankiert (Fenster-Couvert links)"
-            ),
-            "form": form,
-            "form_action": "/geno/webstamp/",
-            "download_redirect": download_redirect,
         },
     )
 
@@ -4487,7 +4569,7 @@ def oauth_client_test(request, action="start"):
             print("Forgeting token.")
             del request.session["test_oauth_token"]
         return oauth_client_test(request, action="login")
-    return render(request, "geno/messages.html", {"response": ret, "title": "Oauth Client Test"})
+    return render(request, "geno/default.html", {"response": ret, "title": "Oauth Client Test"})
 
 
 def preview_template(request):

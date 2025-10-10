@@ -7,7 +7,7 @@ from django.utils.decorators import classonlymethod
 
 class CohivaAdminViewMixin:
     title = "Cohiva Administration"
-    template_name = "geno/messages.html"
+    template_name = "geno/default.html"
     model_admin = None
     actions = []  # title, path, items (for dropdown), method_name (for dropdown?), icon, variant, permission_required
     action = None

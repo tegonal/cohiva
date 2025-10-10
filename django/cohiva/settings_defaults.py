@@ -596,8 +596,15 @@ GENO_CHECK_MAILINGLISTS = {
 GENO_ADDRESSES_WITH_APARTMENT_NUMBER = []
 
 GENO_TRANSACTION_MEMBERFEE_STARTYEAR = 2022
+
+# Don't create letters for members or shares before those dates
 GENO_MEMBER_LETTER_CUTOFF_DATE = datetime.date(2020, 1, 1)
 GENO_SHARE_LETTER_CUTOFF_DATE = datetime.date(2018, 7, 1)
+
+# When creating statements, treat persons differently if they own only up to this
+# number of shares (and they have no loans etc).
+GENO_SMALL_NUMBER_OF_SHARES_CUTOFF = 5
+
 GENO_GNUCASH_ACC_POST = "1010.1"
 
 GENO_MEMBER_FLAGS = {
@@ -805,11 +812,60 @@ COHIVA_ADMIN_NAVIGATION = [
             {"type": "view", "value": "geno:resident-list", "icon": "list"},
             {"type": "model", "value": "geno.RentalUnit", "icon": "house"},
             {"type": "model", "value": "geno.Contract", "icon": "contract"},
+            {
+                "type": "tabgroup",
+                "name": "Dokumente erzeugen",
+                "items": [
+                    {
+                        "type": "view",
+                        "value": "geno:contract-check-forms",
+                        "icon": "print",
+                    },
+                ],
+            },
+            {
+                "type": "model",
+                "value": "reservation.Report",
+                "icon": "home_repair_service",
+                "name": "Reparaturmeldungen",
+            },
+            {
+                "type": "subgroup",
+                "name": _("Erweitert"),
+                "icon": "manufacturing",
+                "items": [
+                    {"type": "model", "value": "reservation.ReportCategory"},
+                    {"type": "model", "value": "reservation.ReportType"},
+                    {"type": "model", "value": "reservation.ReportPicture"},
+                    {"type": "model", "value": "reservation.ReportLogEntry"},
+                ],
+            },
         ],
     },
     {
         "name": _("Gemeinschaft"),
-        "items": [],
+        "items": [
+            {"type": "model", "value": "reservation.Reservation", "icon": "calendar_clock"},
+            {
+                "type": "tabgroup",
+                "items": [
+                    {"type": "model", "value": "geno.Registration", "icon": "how_to_reg"},
+                    {"type": "model", "value": "geno.RegistrationEvent"},
+                    {"type": "model", "value": "geno.RegistrationSlot"},
+                ],
+            },
+            {
+                "type": "subgroup",
+                "name": _("Erweitert"),
+                "icon": "manufacturing",
+                "items": [
+                    {"type": "model", "value": "reservation.ReservationType"},
+                    {"type": "model", "value": "reservation.ReservationUsageType"},
+                    {"type": "model", "value": "reservation.ReservationPrice"},
+                    {"type": "model", "value": "reservation.ReservationObject"},
+                ],
+            },
+        ],
     },
     {
         "name": _("Inkasso"),
@@ -861,6 +917,7 @@ COHIVA_ADMIN_NAVIGATION = [
                         "name": "Erinnerung bald fällige Darlehen",
                         "value": "geno:share-reminder-letter",
                     },
+                    {"type": "view", "value": "geno:share-statement-form"},
                 ],
             },
             {
@@ -877,11 +934,39 @@ COHIVA_ADMIN_NAVIGATION = [
         "name": _("Dokumente & Kommunikation"),
         "items": [
             {"type": "view", "value": "geno:mail-wizard-start", "icon": "mail"},
+            {"type": "view", "value": "geno:webstamp", "icon": "local_post_office"},
+            {"type": "model", "value": "geno.Document", "icon": "docs"},
+            {"type": "model", "value": "geno.ContentTemplate", "icon": "file_copy"},
+            {"type": "model", "value": "filer.Folder", "icon": "folder_open"},
+            {
+                "type": "subgroup",
+                "name": _("Erweitert"),
+                "icon": "manufacturing",
+                "items": [
+                    {"type": "view", "value": "geno:odt2pdf"},
+                    {"type": "model", "value": "geno.DocumentType"},
+                    {"type": "model", "value": "geno.ContentTemplateOptionType"},
+                    {"type": "model", "value": "geno.ContentTemplateOption"},
+                    {"type": "model", "value": "filer.FolderPermission"},
+                    {"type": "model", "value": "filer.ThumbnailOption"},
+                ],
+            },
         ],
     },
     {
-        "name": _("System"),
-        "items": [],
+        "name": _("Systemadministration"),
+        "items": [
+            {"type": "view", "value": "geno:sysadmin-overview", "icon": "admin_panel_settings"},
+            {
+                "type": "tabgroup",
+                "name": "Authentifizierung",
+                "items": [
+                    {"type": "model", "value": "auth.User", "icon": "badge"},
+                    {"type": "model", "value": "auth.Group"},
+                ],
+            },
+            {"type": "model", "value": "geno.LookupTable", "icon": "table_chart"},
+        ],
     },
 ]
 
@@ -892,7 +977,7 @@ UNFOLD = {
     "SITE_HEADER": "Cohiva",
     "SITE_DROPDOWN": [
         {
-            "icon": "diamond",
+            "icon": "globe",
             "title": _("Cohiva Website"),
             "link": "https://cohiva.ch",
         },

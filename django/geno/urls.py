@@ -20,11 +20,21 @@ urlpatterns = [
         geno_views.ShareReminderLetterView.as_view(),
         name="share-reminder-letter",
     ),
-    re_path(
-        r"^share/statement/(?P<date>[a-z0-9_-]+)/(?P<address>[0-9]+)/?$",
-        geno_views.share_statement,
+    path(
+        "share/statement/<str:date>/<int:address>/",
+        geno_views.ShareStatementView.as_view(),
+        name="share-statement-for-address",
     ),
-    re_path(r"^share/statement/(?P<date>[a-z0-9_-]+)/?$", geno_views.share_statement),
+    path(
+        "share/statement/<str:date>/",
+        geno_views.ShareStatementView.as_view(),
+        name="share-statement",
+    ),
+    path(
+        "share/statement/",
+        geno_views.ShareStatementFormView.as_view(),
+        name="share-statement-form",
+    ),
     path("share/mailing/", geno_views.share_mailing),
     path("share/interest/", geno_views.ShareInterestView.as_view(), name="share-interest"),
     path(
@@ -37,7 +47,6 @@ urlpatterns = [
         geno_views.ShareInterestView.as_view(action="create_transactions"),
         name="share-interest-create-transactions",
     ),
-    path("share/check/", geno_views.share_check),
     path("member/overview/", geno_views.MemberOverviewView.as_view(), name="member_overview"),
     path("member/overview/plot/", geno_views.member_overview_plot),
     path("member/list/", geno_views.member_list),
@@ -107,10 +116,11 @@ urlpatterns = [
     path("contract/create/", geno_views.create_contracts),
     path("contract/create_letter/", geno_views.create_contracts, {"letter": True}),
     path(
-        "contract/create_documents/check/",
-        geno_views.create_documents_deprecated,
-        {"default_doctype": "contract_check"},
+        "contract/check_forms/",
+        geno_views.ContractCheckFormsView.as_view(),
+        name="contract-check-forms",
     ),
+    path("contract/report/", geno_views.contract_report, name="contract-report"),
     path("rental/resident_list", geno_views.ResidentListView.as_view(), name="resident-list"),
     path("rental/tenants/", geno_views.rental_unit_list_tenants, name="resident-list-tenants"),
     path("rental/units/", geno_views.rental_unit_list_units, name="resident-list-units"),
@@ -120,11 +130,12 @@ urlpatterns = [
     path(
         "rental/units/protocol/", geno_views.rental_unit_list_create_documents, {"doc": "protocol"}
     ),
-    path("odt2pdf/", geno_views.odt2pdf_form),
-    path("webstamp/", geno_views.webstamp_form),
+    path("odt2pdf/", geno_views.Odt2PdfView.as_view(), name="odt2pdf"),
+    path("webstamp/", geno_views.WebstampView.as_view(), name="webstamp"),
     path("oauth_client/", geno_views.oauth_client_test, {"action": "start"}),
     path("oauth_client/login", geno_views.oauth_client_test, {"action": "login"}),
     path("oauth_client/callback/", geno_views.oauth_client_test, {"action": "callback"}),
     path("oauth_client/test/", geno_views.oauth_client_test, {"action": "access"}),
     path("preview/", geno_views.preview_template),
+    path("sysadmin/overview/", geno_views.SysadminView.as_view(), name="sysadmin-overview"),
 ]

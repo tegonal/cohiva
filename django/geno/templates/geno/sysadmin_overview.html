@@ -1,0 +1,71 @@
+{% extends "geno/base.html" %}
+{% load unfold %}
+
+{% block custom_content %}
+<div class="grid grid-cols-3">
+
+{% component "unfold/components/card.html" with class="mr-3" title="Legacy Views" footer="Alte oder noch nicht migrierte Views" %}
+<ul class="">
+{% if perms.geno.canview_member or perms.geno.canview_member_overview %}
+  {% if perms.geno.canview_member %}
+    <li class="mb-2 hover:text-primary-600 dark:hover:text-primary-500"><a href="/geno/member/list">Mitgliederliste</a></li>
+  {% endif %}
+{% endif %}
+
+{% if perms.geno.canview_share_overview %}
+  {% if perms.geno.canview_billing %}
+    {% if perms.geno.check_payments %}
+      <li class="mb-2 hover:text-primary-600 dark:hover:text-primary-500"><a href="/geno/member/check_payments">Zahlungen Mitgliedschaft überprüfen</a></li>
+    {% endif %}
+  {% endif %} {# canview_billing #}
+{% endif %}
+
+{% if perms.geno.canview_member_mailinglists or perms.geno.canview_billing or perms.geno.send_mail %}
+  {% if perms.geno.canview_member_mailinglists %}
+    <li class="mb-2 hover:text-primary-600 dark:hover:text-primary-500"><a href="/geno/export/addresses_carddav">Adressen nach CardDAV exportieren</a></li>
+    <li class="mb-2 hover:text-primary-600 dark:hover:text-primary-500"><a href="/geno/export/addresses_carddav?delete=yes">CardDAV export mit DELETE+EXPORT!</a></li>
+  {% endif %}
+  {% if perms.geno.canview_share and perms.geno.canview_billing %}
+    {% if perms.geno.rental_contracts %}
+      <li class="mb-2 hover:text-primary-600 dark:hover:text-primary-500"><a href="/geno/contract/create">Mietverträge erstellen</a></li>
+      <li class="mb-2 hover:text-primary-600 dark:hover:text-primary-500"><a href="/geno/contract/create_letter">Begleitbriefe erstellen</a></li>
+    {% endif %} {# rental_contracts #}
+    {% if perms.geno.share_mailing %}
+      <li class="mb-2 hover:text-primary-600 dark:hover:text-primary-500"><a href="/geno/share/mailing">Mailing zu Beteiligungen erstellen</a></li>
+    {% endif %} {# share_mailing #}
+  {% endif %} {# canview_share AND canview_billing #}
+{% endif %} {# canview_member_mailinglists OR canview_billing OR send_mail #}
+</ul>
+{% endcomponent %}
+
+{% if perms.geno.admin_maintenance %}
+{% component "unfold/components/card.html" with class="mr-3" title="Maintenance" %}
+<ul class="">
+  <li class="mb-2 hover:text-primary-600 dark:hover:text-primary-500"><a href="/geno/maintenance">Run maintenance tasks</a></li>
+  {% if 'portal' in FEATURES %}
+    <li class="mb-2 hover:text-primary-600 dark:hover:text-primary-500"><a href="/geno/maintenance/check_portal_users">Portal-User überprüfen</a></li>
+  {% endif %}
+    <li class="mb-2 hover:text-primary-600 dark:hover:text-primary-500"><a href="/geno/maintenance/check_duplicate_invoices">Doppelte Rechnungen/Zahlungen suchen</a> (momentan nur Duplikate bei Transaktions-IDs)</li>
+</ul>
+{% endcomponent %}
+{% endif %} {# admin_maintenance #}
+
+{% if perms.geno.admin_import %}
+{% component "unfold/components/card.html" with class="" title="Import" %}
+<ul class="">
+  <li class="mb-2 hover:text-primary-600 dark:hover:text-primary-500"><a href="/geno/import/members">Mitgliederliste importieren</a> (csv)</li>
+  <li class="mb-2 hover:text-primary-600 dark:hover:text-primary-500"><a href="/geno/import/address">Adressen importieren/aktualisieren</a> (csv)</li>
+  <li class="mb-2 hover:text-primary-600 dark:hover:text-primary-500"><a href="/geno/import/gewerbe">Gewerbeflächen importieren</a> (csv)</li>
+  <li class="mb-2 hover:text-primary-600 dark:hover:text-primary-500"><a href="/geno/import/rentalunits">Mietobjekte aus eMonitor importieren/aktualisieren</a> (csv)</li>
+  <li class="mb-2 hover:text-primary-600 dark:hover:text-primary-500"><a href="/geno/import/emonitorcontracts">Zuweisungen aus eMonitor importieren/aktualisieren</a> (csv)</li>
+  <li class="mb-2 hover:text-primary-600 dark:hover:text-primary-500"><a href="/geno/import/emonitoraddresses">Adressen/Vertragsparteien aus eMonitor importieren/aktualisieren</a> (csv)</li>
+  <li class="mb-2 hover:text-primary-600 dark:hover:text-primary-500"><a href="/geno/import/emonitorchildren">Kinder aus eMonitor importieren/aktualisieren</a> (csv)</li>
+  <li class="mb-2 hover:text-primary-600 dark:hover:text-primary-500"><a href="/geno/import/keller">Mieterkeller importieren/aktualisieren</a> (csv)</li>
+  <li class="mb-2 hover:text-primary-600 dark:hover:text-primary-500"><a href="/geno/import/contracts">Verträge importieren/aktualisieren</a> (csv)</li>
+  <li class="mb-2 hover:text-primary-600 dark:hover:text-primary-500"><a href="/geno/import/codes">Codes importieren</a> (csv)</li>
+  <li class="mb-2 hover:text-primary-600 dark:hover:text-primary-500"><a href="/geno/import/adit_serial">ADIT Seriennummern importieren</a> (xlsm)</li>
+</ul>
+{% endcomponent %}
+{% endif %}
+
+{% endblock %}

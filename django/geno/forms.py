@@ -854,3 +854,12 @@ class InvoiceFilterForm(forms.Form):
         for ic in InvoiceCategory.objects.filter(active=True):
             self.fields["category_filter"].choices.append((ic.id, str(ic)))
             self.fields["category_filter"].widget.choices.append((ic.id, str(ic)))
+
+
+class ShareStatementForm(forms.Form):
+    date_widget = forms.TextInput(attrs={"class": "datepicker"})
+    date = forms.DateField(
+        label="Kontoauszug per",
+        required=True,
+        widget=date_widget,
+    )
