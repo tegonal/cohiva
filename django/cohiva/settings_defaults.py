@@ -845,6 +845,7 @@ COHIVA_ADMIN_NAVIGATION = [
         "items": [
             {"type": "view", "value": "geno:share_overview", "icon": "finance"},
             {"type": "model", "value": "geno.Share", "icon": "request_page"},
+            {"type": "view", "value": "geno:share-interest", "icon": "percent"},
             {
                 "type": "tabgroup",
                 "name": "Dokumente erzeugen",

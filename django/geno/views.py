@@ -1204,13 +1204,8 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
         super().__init__(*args, **kwargs)
         self.error_message = ""
         self.result = []
-        if not self.doctype:
-            self.doctype = self.get_doctype()
         self.objects = self.get_objects()
         self.options = self.get_options()
-
-    def get_doctype(self):
-        return None
 
     def get_objects(self):
         return []
@@ -1434,493 +1429,494 @@ class ShareReminderLetterView(DocumentGeneratorView):
         }
 
 
-## TODO: Refactor to ClassBased view
-@login_required
-def share_interest_transactions(request):
-    if (
-        not request.user.has_perm("geno.canview_share")
-        or not request.user.has_perm("geno.canview_billing")
-        or not request.user.has_perm("geno.transaction")
-    ):
-        return unauthorized(request)
-
-    year_current = datetime.datetime.now().year
-    year = year_current - 1
-
-    stype_deposit = ShareType.objects.get(name="Depositenkasse")
-
-    ret = []
-
-    ## Try to guess if transactions have already been made
-    count = (
-        Share.objects.filter(is_interest_credit=True)
-        .filter(date=datetime.date(year, 12, 31))
-        .count()
+class ShareInterestView(CohivaAdminViewMixin, TemplateView):
+    title = "Zinsabrechung"
+    permission_required = (
+        "geno.canview_share",
+        "geno.canview_billing",
+        "geno.share_interest_statements",
     )
-    if count:
-        ret.append(
-            {
-                "info": "FEHLER: Es sieht so aus als ob die Zinsbuchungen schon ausgeführt "
-                "wurden (%d Zins-Beteiligungen gefunden). Bitte überprüfen!" % count
-            }
-        )
-
-    ## Open GnuCash book
-    try:
-        messages = []
-        book = get_book(messages)
-        if not book:
-            raise Exception(messages[-1])
-        acc_zins_darlehen = book.accounts(
-            code=geno_settings.GNUCASH_ACC_INTEREST_LOAN
-        )  ## Zinsaufwand Darlehen
-        # print acc_zins_darlehen
-        acc_zins_depositen = book.accounts(
-            code=geno_settings.GNUCASH_ACC_INTEREST_DEPOSIT
-        )  ## Zinsaufwand Depositenkasse
-        # print acc_zins_depositen
-        acc_verbindl_geno = book.accounts(
-            code=geno_settings.GNUCASH_ACC_SHARES_INTEREST
-        )  ## Verbindlichkeiten aus Finanzierung
-        # print acc_verbindl_geno
-        acc_verbindl_tax = book.accounts(
-            code=geno_settings.GNUCASH_ACC_SHARES_INTEREST_TAX
-        )  ## Verbindlichkeiten aus Verrechnungssteuer
-        # print acc_verbindl_tax
-        acc_depositen = book.accounts(
-            code=geno_settings.GNUCASH_ACC_SHARES_DEPOSIT
-        )  ## Depositenkasse
-        # print acc_depositen
-    except Exception as e:
-        with contextlib.suppress(builtins.BaseException):
-            book.close()
-        ret.append(
-            {
-                "info": "FEHLER: Konnte GnuCash DB nicht öffnen oder Konten nicht finden! %s"
-                % str(e)
-            }
-        )
-        return render(
-            request,
-            "geno/messages.html",
-            {"response": ret, "title": "Zinsabrechnung %d buchen" % year},
-        )
-
-    ## Create transactions
-    new_shares = []
-    for adr in Address.objects.filter(active=True).order_by("name"):
-        obj = []
-        try:
-            interest = share_interest_calc(adr, year)
-        except Exception as e:
-            ret.append({"info": "FEHLER bei der Zinsberechnung: %s" % str(e)})
-            ret.append({"info": "Verarbeitung abgebrochen. Keine Änderungen gespeichert."})
-            return render(
-                request,
-                "geno/messages.html",
-                {"response": ret, "title": "Zinsabrechnung %d buchen" % year},
-            )
-        if interest["total"][2] > 0:
-            ## Darlehen normal
-            interest_rate = interest["dates"][2][0]["interest_rate"]
-            try:
-                info = "Zinsgutschrift Darlehen: %s" % nformat(interest["total"][2])
-                if interest["tax"][2] > 0:
-                    info += " (VSt. %s -> Netto %s)" % (
-                        nformat(interest["tax"][2]),
-                        nformat(interest["pay"][2]),
-                    )
-                obj.append(info)
-                if settings.GNUCASH:
-                    t = Transaction(
-                        post_date=datetime.date(year, 12, 31),
-                        enter_date=datetime.datetime.now(),
-                        currency=book.currencies(mnemonic="CHF"),
-                        description="Zins %s%% auf Darlehen %d %s"
-                        % (nformat(interest_rate), year, adr),
-                    )
-                    Split(
-                        account=acc_zins_darlehen,
-                        value=interest["total"][2],
-                        memo="",
-                        transaction=t,
-                    )
-                    Split(
-                        account=acc_verbindl_geno,
-                        value=-interest["pay"][2],
-                        memo="",
-                        transaction=t,
-                    )
-                    if interest["tax"][2] > 0:
-                        Split(
-                            account=acc_verbindl_tax,
-                            value=-interest["tax"][2],
-                            memo="",
-                            transaction=t,
-                        )
-            except Exception as e:
-                with contextlib.suppress(builtins.BaseException):
-                    book.close()
-                obj.append(str(e))
-                ret.append(
-                    {
-                        "info": "%s: FEHLER: Konnte Transaktion nicht erstellen!" % adr,
-                        "objects": obj,
-                    }
-                )
-                ret.append({"info": "Verarbeitung abgebrochen. Keine Änderungen gespeichert."})
-                return render(
-                    request,
-                    "geno/messages.html",
-                    {"response": ret, "title": "Zinsabrechnung %d buchen" % year},
-                )
-
-        if interest["total"][4] > 0:
-            ## Darlehen spezial
-            interest_rate = interest["dates"][4][0]["interest_rate"]
-            try:
-                info = "Zinsgutschrift Darlehen: %s" % nformat(interest["total"][4])
-                if interest["tax"][4] > 0:
-                    info += " (VSt. %s -> Netto %s)" % (
-                        nformat(interest["tax"][4]),
-                        nformat(interest["pay"][4]),
-                    )
-                obj.append(info)
-                if settings.GNUCASH:
-                    t = Transaction(
-                        post_date=datetime.date(year, 12, 31),
-                        enter_date=datetime.datetime.now(),
-                        currency=book.currencies(mnemonic="CHF"),
-                        description="Zins %s%% auf Darlehen %d %s"
-                        % (nformat(interest_rate), year, adr),
-                    )
-                    Split(
-                        account=acc_zins_darlehen,
-                        value=interest["total"][4],
-                        memo="",
-                        transaction=t,
-                    )
-                    Split(
-                        account=acc_verbindl_geno,
-                        value=-interest["pay"][4],
-                        memo="",
-                        transaction=t,
-                    )
-                    if interest["tax"][4] > 0:
-                        Split(
-                            account=acc_verbindl_tax,
-                            value=-interest["tax"][4],
-                            memo="",
-                            transaction=t,
-                        )
-            except Exception as e:
-                with contextlib.suppress(builtins.BaseException):
-                    book.close()
-                obj.append(str(e))
-                ret.append(
-                    {
-                        "info": "%s: FEHLER: Konnte Transaktion nicht erstellen!" % adr,
-                        "objects": obj,
-                    }
-                )
-                ret.append({"info": "Verarbeitung abgebrochen. Keine Änderungen gespeichert."})
-                return render(
-                    request,
-                    "geno/messages.html",
-                    {"response": ret, "title": "Zinsabrechnung %d buchen" % year},
-                )
-
-        if interest["total"][3] > 0:
-            ## Depositenkasse
-            interest_rate = interest["dates"][3][0]["interest_rate"]
-            try:
-                info = "Zinsgutschrift Depositenkasse: %s" % nformat(interest["total"][3])
-                if interest["tax"][3] > 0:
-                    info += " (VSt. %s -> Netto %s)" % (
-                        nformat(interest["tax"][3]),
-                        nformat(interest["pay"][3]),
-                    )
-                obj.append(info)
-                if settings.GNUCASH:
-                    t = Transaction(
-                        post_date=datetime.date(year, 12, 31),
-                        enter_date=datetime.datetime.now(),
-                        currency=book.currencies(mnemonic="CHF"),
-                        description="Zins %s%% auf Depositenkasse %d %s"
-                        % (nformat(interest_rate), year, adr),
-                    )
-                    Split(
-                        account=acc_zins_depositen,
-                        value=interest["total"][3],
-                        memo="",
-                        transaction=t,
-                    )
-                    Split(account=acc_depositen, value=-interest["pay"][3], memo="", transaction=t)
-                    if interest["tax"][3] > 0:
-                        Split(
-                            account=acc_verbindl_tax,
-                            value=-interest["tax"][3],
-                            memo="",
-                            transaction=t,
-                        )
-            except Exception as e:
-                with contextlib.suppress(builtins.BaseException):
-                    book.close()
-                obj.append(str(e))
-                ret.append(
-                    {
-                        "info": "%s: FEHLER: Konnte Transaktion nicht erstellen!" % adr,
-                        "objects": obj,
-                    }
-                )
-                ret.append({"info": "Verarbeitung abgebrochen. Keine Änderungen gespeichert."})
-                return render(
-                    request,
-                    "geno/messages.html",
-                    {"response": ret, "title": "Zinsabrechnung %d buchen" % year},
-                )
-
-            try:
-                new_shares.append(
-                    Share(
-                        name=adr,
-                        share_type=stype_deposit,
-                        date=datetime.date(year, 12, 31),
-                        quantity=1,
-                        value=interest["pay"][3],
-                        is_interest_credit=True,
-                        state="bezahlt",
-                        note="Bruttozinsen %s%% Depositenkasse %d"
-                        % (nformat(interest_rate), year),
-                    )
-                )
-                obj.append(
-                    "Erzeuge Zins-Beteiligung Depositenkasse (%s, %s)"
-                    % (nformat(interest["pay"][3]), nformat(interest_rate))
-                )
-            except Exception as e:
-                with contextlib.suppress(builtins.BaseException):
-                    book.close()
-                obj.append(str(e))
-                ret.append(
-                    {
-                        "info": "%s: FEHLER: Konnte Zins-Beteiligung nicht erstellen!" % adr,
-                        "objects": obj,
-                    }
-                )
-                ret.append({"info": "Verarbeitung abgebrochen. Keine Änderungen gespeichert."})
-                return render(
-                    request,
-                    "geno/messages.html",
-                    {"response": ret, "title": "Zinsabrechnung %d buchen" % year},
-                )
-        if obj:
-            ret.append({"info": str(adr), "objects": obj})
-
-    ## Commit transactions
-    try:
-        book.save()
-    except Exception as e:
-        ret.append(
-            {
-                "info": "FEHLER BEIM SPEICHERN: Konnte GnuCash Transaktionen nicht speichen! %s"
-                % str(e)
-            }
-        )
-        return render(
-            request,
-            "geno/messages.html",
-            {"response": ret, "title": "Zinsabrechnung %d buchen" % year},
-        )
-    ret.append({"info": "GnuCash Transaktionen GESPEICHERT!"})
-
-    try:
-        for s in new_shares:
-            s.save()
-    except Exception as e:
-        ret.append(
-            {
-                "info": "FEHLER BEIM SPEICHERN: Konnte Zins-Beteiligungen nicht speichen! %s"
-                % str(e)
-            }
-        )
-        return render(
-            request,
-            "geno/messages.html",
-            {"response": ret, "title": "Zinsabrechnung %d buchen" % year},
-        )
-    ret.append({"info": "Zins-Beteiligungen GESPEICHERT!"})
-
-    try:
-        book.close()
-    except Exception as e:
-        ret.append(
-            {
-                "info": "WARNUNG: Konnte GnuCash Buchhaltung nicht ordnungsgemäss schliessen! %s"
-                % str(e)
-            }
-        )
-
-    return render(
-        request,
-        "geno/messages.html",
-        {"response": ret, "title": "Zinsabrechnung %d buchen" % year},
-    )
-
-
-@login_required
-def share_interest_download(request):
-    if not request.user.has_perm("geno.canview_share") or not request.user.has_perm(
-        "geno.canview_billing"
-    ):
-        return unauthorized(request)
-
-    year_current = datetime.datetime.now().year
-    year = year_current - 1
-
-    if request.GET.get("darlehen", "") == "yes":
-        opt_darlehen = True
-        output_tag = "Darlehenszins"
-    else:
-        opt_darlehen = False
-        output_tag = "Zinsabrechnung"
-
-    ## Spreadsheet
-    import openpyxl
-    from openpyxl.styles import Font
-
-    response = HttpResponse(
-        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-    response["Content-Disposition"] = "attachment; filename=%s_%s_%d.xlsx" % (
-        settings.GENO_FILENAME_STR,
-        output_tag,
-        year,
-    )
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "%s %s %s" % (settings.GENO_FILENAME_STR, output_tag, year)
-    ## Header
-    columns = [
-        ("A", "Name", 30),
-        ("B", "Typ", 20),
-        ("C", "Datum", 25),
-        ("D", "Saldo CHF", 12),
-        ("E", "Tage", 8),
-        ("F", "Satz", 8),
-        ("G", "Bruttozins", 12),
-        ("H", "Zins Total", 12),
-        ("I", "Steuerfrei", 12),
-        ("J", "VSt. 35%", 12),
-        ("K", "Gutschrift", 12),
+    actions = [
+        {
+            "title": "Zinsabrechnung herunterladen",
+            "icon": "download",
+            "items": [
+                {
+                    "title": "Vorjahr",
+                    "path": reverse_lazy("geno:share-interest-download"),
+                    "permission_required": permission_required,
+                },
+                {
+                    "title": "Vorjahr, nur Darlehen",
+                    "path": (reverse_lazy("geno:share-interest-download"), "?darlehen=yes"),
+                    "permission_required": permission_required,
+                },
+            ],
+        },
+        {
+            "title": "Zinsen per 31.12. des Vorjahres buchen",
+            "path": reverse_lazy("geno:share-interest-create-transactions"),
+            "icon": "manufacturing",
+            "variant": ActionVariant.DANGER,
+            "permission_required": permission_required + ("geno.transaction",),
+        },
     ]
-    row_num = 0
-    for col_num in range(len(columns)):
-        c = ws.cell(row=row_num + 1, column=col_num + 1)
-        c.value = columns[col_num][1]
-        c.font = Font(bold=True)
-        # set column width
-        ws.column_dimensions[columns[col_num][0]].width = columns[col_num][2]
-    row_num += 2
 
-    sum_interest = 0
-    sum_interest_notax = 0
-    sum_interest_tax = 0
-    sum_interest_pay = 0
-    count = 0
-    for adr in Address.objects.filter(active=True).order_by("name"):
-        try:
-            interest = share_interest_calc(adr, year)
-        except Exception as e:
-            messages.error(request, "FEHLER bei der Zinsberechnung: %s" % str(e))
-            return HttpResponseRedirect("/admin/")
-        darlehen_spezial = ""
-        if opt_darlehen:
-            ## Only sum of Darlehen
-            total = interest["total"][2] + interest["total"][4]
-            tax = interest["tax"][2] + interest["tax"][4]
-            pay = interest["pay"][2] + interest["pay"][4]
-            if interest["total"][4] > 0:
-                darlehen_spezial = "/SPEZIAL"
+    def get(self, request, *args, **kwargs):
+        if self.action == "download":
+            return self.download()
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.action == "create_transactions" and self.request.user.has_perm("geno.transaction"):
+            context["response"] = self.create_interest_transactions()
+            # "title": "Zinsabrechnung %d buchen" % year
         else:
-            ## All
-            total = interest["total_alltypes"]
-            tax = interest["tax_alltypes"]
-            pay = interest["pay_alltypes"]
+            context["response"] = [{"info": "Bitte wähle eine Aktion."}]
+        return context
 
-        if total > 0:
-            if total == pay:
-                notax = pay
+    # TODO: Refactor: move business logic to shares.py or even shares_interest.py or similar
+    #                 and split it into functions, removing duplicate code.
+    def create_interest_transactions(self):
+        year_current = datetime.datetime.now().year
+        year = year_current - 1
+        stype_deposit = ShareType.objects.get(name="Depositenkasse")
+        ret = []
+
+        ## Try to guess if transactions have already been made
+        count = (
+            Share.objects.filter(is_interest_credit=True)
+            .filter(date=datetime.date(year, 12, 31))
+            .count()
+        )
+        if count:
+            ret.append(
+                {
+                    "info": "FEHLER: Es sieht so aus als ob die Zinsbuchungen schon ausgeführt "
+                    "wurden (%d Zins-Beteiligungen gefunden). Bitte überprüfen!" % count
+                }
+            )
+
+        ## Open GnuCash book
+        try:
+            gnc_messages = []
+            book = get_book(gnc_messages)
+            if not book:
+                raise Exception(gnc_messages[-1])
+            acc_zins_darlehen = book.accounts(
+                code=geno_settings.GNUCASH_ACC_INTEREST_LOAN
+            )  ## Zinsaufwand Darlehen
+            # print acc_zins_darlehen
+            acc_zins_depositen = book.accounts(
+                code=geno_settings.GNUCASH_ACC_INTEREST_DEPOSIT
+            )  ## Zinsaufwand Depositenkasse
+            # print acc_zins_depositen
+            acc_verbindl_geno = book.accounts(
+                code=geno_settings.GNUCASH_ACC_SHARES_INTEREST
+            )  ## Verbindlichkeiten aus Finanzierung
+            # print acc_verbindl_geno
+            acc_verbindl_tax = book.accounts(
+                code=geno_settings.GNUCASH_ACC_SHARES_INTEREST_TAX
+            )  ## Verbindlichkeiten aus Verrechnungssteuer
+            # print acc_verbindl_tax
+            acc_depositen = book.accounts(
+                code=geno_settings.GNUCASH_ACC_SHARES_DEPOSIT
+            )  ## Depositenkasse
+            # print acc_depositen
+        except Exception as e:
+            with contextlib.suppress(builtins.BaseException):
+                book.close()
+            ret.append(
+                {
+                    "info": "FEHLER: Konnte GnuCash DB nicht öffnen oder Konten nicht finden! %s"
+                    % str(e)
+                }
+            )
+            return ret
+
+        ## Create transactions
+        new_shares = []
+        for adr in Address.objects.filter(active=True).order_by("name"):
+            obj = []
+            try:
+                interest = share_interest_calc(adr, year)
+            except Exception as e:
+                ret.append({"info": "FEHLER bei der Zinsberechnung: %s" % str(e)})
+                ret.append({"info": "Verarbeitung abgebrochen. Keine Änderungen gespeichert."})
+                return ret
+            if interest["total"][2] > 0:
+                ## Darlehen normal
+                interest_rate = interest["dates"][2][0]["interest_rate"]
+                try:
+                    info = "Zinsgutschrift Darlehen: %s" % nformat(interest["total"][2])
+                    if interest["tax"][2] > 0:
+                        info += " (VSt. %s -> Netto %s)" % (
+                            nformat(interest["tax"][2]),
+                            nformat(interest["pay"][2]),
+                        )
+                    obj.append(info)
+                    if settings.GNUCASH:
+                        t = Transaction(
+                            post_date=datetime.date(year, 12, 31),
+                            enter_date=datetime.datetime.now(),
+                            currency=book.currencies(mnemonic="CHF"),
+                            description="Zins %s%% auf Darlehen %d %s"
+                            % (nformat(interest_rate), year, adr),
+                        )
+                        Split(
+                            account=acc_zins_darlehen,
+                            value=interest["total"][2],
+                            memo="",
+                            transaction=t,
+                        )
+                        Split(
+                            account=acc_verbindl_geno,
+                            value=-interest["pay"][2],
+                            memo="",
+                            transaction=t,
+                        )
+                        if interest["tax"][2] > 0:
+                            Split(
+                                account=acc_verbindl_tax,
+                                value=-interest["tax"][2],
+                                memo="",
+                                transaction=t,
+                            )
+                except Exception as e:
+                    with contextlib.suppress(builtins.BaseException):
+                        book.close()
+                    obj.append(str(e))
+                    ret.append(
+                        {
+                            "info": "%s: FEHLER: Konnte Transaktion nicht erstellen!" % adr,
+                            "objects": obj,
+                        }
+                    )
+                    ret.append({"info": "Verarbeitung abgebrochen. Keine Änderungen gespeichert."})
+                    return ret
+
+            if interest["total"][4] > 0:
+                ## Darlehen spezial
+                interest_rate = interest["dates"][4][0]["interest_rate"]
+                try:
+                    info = "Zinsgutschrift Darlehen: %s" % nformat(interest["total"][4])
+                    if interest["tax"][4] > 0:
+                        info += " (VSt. %s -> Netto %s)" % (
+                            nformat(interest["tax"][4]),
+                            nformat(interest["pay"][4]),
+                        )
+                    obj.append(info)
+                    if settings.GNUCASH:
+                        t = Transaction(
+                            post_date=datetime.date(year, 12, 31),
+                            enter_date=datetime.datetime.now(),
+                            currency=book.currencies(mnemonic="CHF"),
+                            description="Zins %s%% auf Darlehen %d %s"
+                            % (nformat(interest_rate), year, adr),
+                        )
+                        Split(
+                            account=acc_zins_darlehen,
+                            value=interest["total"][4],
+                            memo="",
+                            transaction=t,
+                        )
+                        Split(
+                            account=acc_verbindl_geno,
+                            value=-interest["pay"][4],
+                            memo="",
+                            transaction=t,
+                        )
+                        if interest["tax"][4] > 0:
+                            Split(
+                                account=acc_verbindl_tax,
+                                value=-interest["tax"][4],
+                                memo="",
+                                transaction=t,
+                            )
+                except Exception as e:
+                    with contextlib.suppress(builtins.BaseException):
+                        book.close()
+                    obj.append(str(e))
+                    ret.append(
+                        {
+                            "info": "%s: FEHLER: Konnte Transaktion nicht erstellen!" % adr,
+                            "objects": obj,
+                        }
+                    )
+                    ret.append({"info": "Verarbeitung abgebrochen. Keine Änderungen gespeichert."})
+                    return ret
+
+            if interest["total"][3] > 0:
+                ## Depositenkasse
+                interest_rate = interest["dates"][3][0]["interest_rate"]
+                try:
+                    info = "Zinsgutschrift Depositenkasse: %s" % nformat(interest["total"][3])
+                    if interest["tax"][3] > 0:
+                        info += " (VSt. %s -> Netto %s)" % (
+                            nformat(interest["tax"][3]),
+                            nformat(interest["pay"][3]),
+                        )
+                    obj.append(info)
+                    if settings.GNUCASH:
+                        t = Transaction(
+                            post_date=datetime.date(year, 12, 31),
+                            enter_date=datetime.datetime.now(),
+                            currency=book.currencies(mnemonic="CHF"),
+                            description="Zins %s%% auf Depositenkasse %d %s"
+                            % (nformat(interest_rate), year, adr),
+                        )
+                        Split(
+                            account=acc_zins_depositen,
+                            value=interest["total"][3],
+                            memo="",
+                            transaction=t,
+                        )
+                        Split(
+                            account=acc_depositen,
+                            value=-interest["pay"][3],
+                            memo="",
+                            transaction=t,
+                        )
+                        if interest["tax"][3] > 0:
+                            Split(
+                                account=acc_verbindl_tax,
+                                value=-interest["tax"][3],
+                                memo="",
+                                transaction=t,
+                            )
+                except Exception as e:
+                    with contextlib.suppress(builtins.BaseException):
+                        book.close()
+                    obj.append(str(e))
+                    ret.append(
+                        {
+                            "info": "%s: FEHLER: Konnte Transaktion nicht erstellen!" % adr,
+                            "objects": obj,
+                        }
+                    )
+                    ret.append({"info": "Verarbeitung abgebrochen. Keine Änderungen gespeichert."})
+                    return ret
+
+                try:
+                    new_shares.append(
+                        Share(
+                            name=adr,
+                            share_type=stype_deposit,
+                            date=datetime.date(year, 12, 31),
+                            quantity=1,
+                            value=interest["pay"][3],
+                            is_interest_credit=True,
+                            state="bezahlt",
+                            note="Bruttozinsen %s%% Depositenkasse %d"
+                            % (nformat(interest_rate), year),
+                        )
+                    )
+                    obj.append(
+                        "Erzeuge Zins-Beteiligung Depositenkasse (%s, %s)"
+                        % (nformat(interest["pay"][3]), nformat(interest_rate))
+                    )
+                except Exception as e:
+                    with contextlib.suppress(builtins.BaseException):
+                        book.close()
+                    obj.append(str(e))
+                    ret.append(
+                        {
+                            "info": "%s: FEHLER: Konnte Zins-Beteiligung nicht erstellen!" % adr,
+                            "objects": obj,
+                        }
+                    )
+                    ret.append({"info": "Verarbeitung abgebrochen. Keine Änderungen gespeichert."})
+                    return ret
+            if obj:
+                ret.append({"info": str(adr), "objects": obj})
+
+        ## Commit transactions
+        try:
+            book.save()
+        except Exception as e:
+            ret.append(
+                {
+                    "info": "FEHLER BEIM SPEICHERN: Konnte GnuCash Transaktionen nicht speichen! %s"
+                    % str(e)
+                }
+            )
+            return ret
+        ret.append({"info": "GnuCash Transaktionen GESPEICHERT!"})
+
+        try:
+            for s in new_shares:
+                s.save()
+        except Exception as e:
+            ret.append(
+                {
+                    "info": "FEHLER BEIM SPEICHERN: Konnte Zins-Beteiligungen nicht speichen! %s"
+                    % str(e)
+                }
+            )
+            return ret
+        ret.append({"info": "Zins-Beteiligungen GESPEICHERT!"})
+
+        try:
+            book.close()
+        except Exception as e:
+            ret.append(
+                {
+                    "info": "WARNUNG: Konnte GnuCash Buchhaltung nicht ordnungsgemäss schliessen! %s"
+                    % str(e)
+                }
+            )
+        return ret
+
+    # TODO: Refactor: move business logic to shares.py or even shares_interest.py or similar
+    #                 and split it into functions, removing duplicate code.
+    def download(self):
+        year_current = datetime.datetime.now().year
+        year = year_current - 1
+
+        if self.request.GET.get("darlehen", "") == "yes":
+            opt_darlehen = True
+            output_tag = "Darlehenszins"
+        else:
+            opt_darlehen = False
+            output_tag = "Zinsabrechnung"
+
+        ## Spreadsheet
+        import openpyxl
+        from openpyxl.styles import Font
+
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response["Content-Disposition"] = "attachment; filename=%s_%s_%d.xlsx" % (
+            settings.GENO_FILENAME_STR,
+            output_tag,
+            year,
+        )
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "%s %s %s" % (settings.GENO_FILENAME_STR, output_tag, year)
+        ## Header
+        columns = [
+            ("A", "Name", 30),
+            ("B", "Typ", 20),
+            ("C", "Datum", 25),
+            ("D", "Saldo CHF", 12),
+            ("E", "Tage", 8),
+            ("F", "Satz", 8),
+            ("G", "Bruttozins", 12),
+            ("H", "Zins Total", 12),
+            ("I", "Steuerfrei", 12),
+            ("J", "VSt. 35%", 12),
+            ("K", "Gutschrift", 12),
+        ]
+        row_num = 0
+        for col_num in range(len(columns)):
+            c = ws.cell(row=row_num + 1, column=col_num + 1)
+            c.value = columns[col_num][1]
+            c.font = Font(bold=True)
+            # set column width
+            ws.column_dimensions[columns[col_num][0]].width = columns[col_num][2]
+        row_num += 2
+
+        sum_interest = 0
+        sum_interest_notax = 0
+        sum_interest_tax = 0
+        sum_interest_pay = 0
+        count = 0
+        for adr in Address.objects.filter(active=True).order_by("name"):
+            try:
+                interest = share_interest_calc(adr, year)
+            except Exception as e:
+                messages.error(self.request, "FEHLER bei der Zinsberechnung: %s" % str(e))
+                return HttpResponseRedirect(reverse("geno:share-interest"))
+            darlehen_spezial = ""
+            if opt_darlehen:
+                ## Only sum of Darlehen
+                total = interest["total"][2] + interest["total"][4]
+                tax = interest["tax"][2] + interest["tax"][4]
+                pay = interest["pay"][2] + interest["pay"][4]
+                if interest["total"][4] > 0:
+                    darlehen_spezial = "/SPEZIAL"
             else:
-                notax = 0
-            row = [
-                str(adr),
-                "TOTAL%s" % darlehen_spezial,
-                "",
-                "",
-                "",
-                "",
-                "",
-                total,
-                notax,
-                tax,
-                pay,
-            ]
-            for col_num in range(len(row)):
-                c = ws.cell(row=row_num + 1, column=col_num + 1)
-                c.value = row[col_num]
-                if not opt_darlehen:
-                    c.font = Font(bold=True)
-            row_num += 1
-            sum_interest += total
-            sum_interest_notax += notax
-            sum_interest_tax += tax
-            sum_interest_pay += pay
-            count += 1
+                ## All
+                total = interest["total_alltypes"]
+                tax = interest["tax_alltypes"]
+                pay = interest["pay_alltypes"]
 
-        if total > 0 and not opt_darlehen:
-            for date_list in interest["dates"]:
-                for d in date_list:
-                    row = [
-                        "",
-                        str(d["type"]),
-                        "%s - %s"
-                        % (d["start"].strftime("%d.%m.%Y"), d["end"].strftime("%d.%m.%Y")),
-                        d["amount"],
-                        d["days"],
-                        d["interest_rate"],
-                        d["interest"],
-                    ]
-                    for col_num in range(len(row)):
-                        c = ws.cell(row=row_num + 1, column=col_num + 1)
-                        c.value = row[col_num]
-                        # c.font = Font(bold = True)
-                    row_num += 1
-            row_num += 1
+            if total > 0:
+                if total == pay:
+                    notax = pay
+                else:
+                    notax = 0
+                row = [
+                    str(adr),
+                    "TOTAL%s" % darlehen_spezial,
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    total,
+                    notax,
+                    tax,
+                    pay,
+                ]
+                for col_num in range(len(row)):
+                    c = ws.cell(row=row_num + 1, column=col_num + 1)
+                    c.value = row[col_num]
+                    if not opt_darlehen:
+                        c.font = Font(bold=True)
+                row_num += 1
+                sum_interest += total
+                sum_interest_notax += notax
+                sum_interest_tax += tax
+                sum_interest_pay += pay
+                count += 1
 
-    ## Sum
-    row_num += 1
-    row = [
-        "Anzahl/Summe:",
-        count,
-        "",
-        "",
-        "",
-        "",
-        "",
-        sum_interest,
-        sum_interest_notax,
-        sum_interest_tax,
-        sum_interest_pay,
-    ]
-    for col_num in range(len(row)):
-        c = ws.cell(row=row_num + 1, column=col_num + 1)
-        c.value = row[col_num]
-        c.font = Font(bold=True)
-    row_num += 1
+            if total > 0 and not opt_darlehen:
+                for date_list in interest["dates"]:
+                    for d in date_list:
+                        row = [
+                            "",
+                            str(d["type"]),
+                            "%s - %s"
+                            % (d["start"].strftime("%d.%m.%Y"), d["end"].strftime("%d.%m.%Y")),
+                            d["amount"],
+                            d["days"],
+                            d["interest_rate"],
+                            d["interest"],
+                        ]
+                        for col_num in range(len(row)):
+                            c = ws.cell(row=row_num + 1, column=col_num + 1)
+                            c.value = row[col_num]
+                            # c.font = Font(bold = True)
+                        row_num += 1
+                row_num += 1
 
-    wb.save(response)
-    return response
+        ## Sum
+        row_num += 1
+        row = [
+            "Anzahl/Summe:",
+            count,
+            "",
+            "",
+            "",
+            "",
+            "",
+            sum_interest,
+            sum_interest_notax,
+            sum_interest_tax,
+            sum_interest_pay,
+        ]
+        for col_num in range(len(row)):
+            c = ws.cell(row=row_num + 1, column=col_num + 1)
+            c.value = row[col_num]
+            c.font = Font(bold=True)
+        row_num += 1
+
+        wb.save(response)
+        return response
 
 
 @login_required
@@ -3071,7 +3067,10 @@ class TransactionUploadView(CohivaAdminViewMixin, FormView):
     actions = []  ## title, path, items (for dropdown), method_name (for dropdown?), icon, variant
     if settings.DEMO:
         actions.append(
-            {"title": "DEMO-Zahlungsdatei erzeugen", "path": "/geno/transaction_upload/testdata"}
+            {
+                "title": "DEMO-Zahlungsdatei erzeugen",
+                "path": reverse_lazy("geno:transaction-testdata"),
+            }
         )
 
     def get_context_data(self, **kwargs):
@@ -3479,22 +3478,22 @@ class InvoiceView(CohivaAdminViewMixin, TemplateView):
             "items": [
                 {
                     "title": "Bis nächster Monat",
-                    "path": "/geno/invoice/auto/?date=next_month",
+                    "path": (reverse_lazy("geno:invoice-batch"), "?date=next_month"),
                     "permission_required": ("geno.view_rentalunit",),
                 },
                 {
                     "title": "Bis aktueller Monat",
-                    "path": "/geno/invoice/auto/",
+                    "path": reverse_lazy("geno:invoice-batch"),
                     "permission_required": ("geno.view_rentalunit",),
                 },
                 {
                     "title": "Bis letzten Monat",
-                    "path": "/geno/invoice/auto/?date=last_month",
+                    "path": (reverse_lazy("geno:invoice-batch"), "?date=last_month"),
                     "permission_required": ("geno.view_rentalunit",),
                 },
             ],
         }
-    ]  ## title, path, items (for dropdown), method_name (for dropdown?), icon, variant
+    ]
 
     def post(self, request, *args, **kwargs):
         form = self.get_form()

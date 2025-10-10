@@ -9,7 +9,8 @@ class CohivaAdminViewMixin:
     title = "Cohiva Administration"
     template_name = "geno/messages.html"
     model_admin = None
-    actions = []
+    actions = []  # title, path, items (for dropdown), method_name (for dropdown?), icon, variant, permission_required
+    action = None
 
     def get_context_data(self, **kwargs):
         self.request.current_app = "geno"
@@ -26,7 +27,16 @@ class CohivaAdminViewMixin:
     def get_actions(self):
         if not self.actions or not isinstance(self.actions, (list, tuple)):
             return []
-        return self.get_permitted_actions(copy.deepcopy(self.actions))
+        actions = self.get_permitted_actions(copy.deepcopy(self.actions))
+        return self.resolve_paths(actions)
+
+    def resolve_paths(self, actions):
+        for action in actions:
+            if "path" in action and isinstance(action["path"], (list, tuple)):
+                action["path"] = "".join([str(part) for part in action["path"]])
+            if "items" in action:
+                action["items"] = self.resolve_paths(action["items"])
+        return actions
 
     def get_permitted_actions(self, actions):
         permitted_actions = []

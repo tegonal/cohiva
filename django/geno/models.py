@@ -972,7 +972,7 @@ class Share(GenoBase):
             ("canview_share", "Can view shares"),
             ("canview_share_overview", "Can see share overview"),
             ("confirm_share", "Kann Betiligungen bestätigen"),
-            ("share_interest_statments", "Kann Zins-/Kontoauszüge erstellen und Zinsen anpassen"),
+            ("share_interest_statements", "Kann Zins-/Kontoauszüge erstellen und Zinsen anpassen"),
             ("share_mailing", "Kann Mailing zu Beteiligungen erstellen"),
         )
 
