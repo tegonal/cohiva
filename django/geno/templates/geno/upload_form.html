@@ -44,7 +44,7 @@
 <p><b class="warning">Es wurden keine gültigen {{ item_name }} gefunden.</b></p>
 {% endif %}
 
-{% if import_items.log or true %}
+{% if import_items.log %}
 <button type="button" class="collapsible">Log anzeigen</button>
 <div class="log_content">
 {% for line in import_items.log %}

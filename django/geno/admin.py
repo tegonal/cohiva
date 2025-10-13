@@ -1,5 +1,4 @@
 import datetime
-from stdnum import iban as iban_util
 
 from django import forms
 from django.conf import settings
@@ -8,8 +7,10 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from stdnum import iban as iban_util
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import action
+from unfold.enums import ActionVariant
 
 import geno.settings as geno_settings
 from geno.exporter import ExportXlsMixin
@@ -764,8 +765,14 @@ class BankAccountAdmin(GenoBaseAdmin):
     search_fields = ["iban", "financial_institution"]
     list_filter = ["ts_created", "ts_modified"]
 
+    @admin.display(description="IBAN")
     def iban_display(self, obj):
-        return obj.iban if obj.iban else "(empty)"
+        if obj.iban:
+            return obj.iban
+        elif obj.comment:
+            return f"(leer) [{obj.comment}]"
+        else:
+            return "(leer)"
 
 
 @admin.register(Registration)
@@ -1074,6 +1081,9 @@ class ContractAdmin(GenoBaseAdmin):
     actions_list = [
         "contract_report",
     ]
+    actions_detail = [
+        "add_subcontract",
+    ]
 
     @action(
         description=_("Report Pflichtanteile/Belegung"),
@@ -1084,18 +1094,17 @@ class ContractAdmin(GenoBaseAdmin):
     def contract_report(self, request):
         return redirect(reverse("geno:contract-report"))
 
-    def change_view(self, request, object_id, form_url="", extra_context=None):
-        extra_context = extra_context or {}
-        obj = Contract.objects.get(id=object_id)
-        # only show "Add subcontract" button if this is a main contract
-        extra_context["show_addSubcontract"] = obj.main_contract is None
-        return self.changeform_view(request, object_id, form_url, extra_context)
-
-    def response_change(self, request, obj):
-        if "_addSubcontract" in request.POST:
-            # display add subcontract in admin with main contract preset
-            return HttpResponseRedirect(f"/admin/geno/contract/add/?main_contract={obj.pk}")
-        return super().response_change(request, obj)
+    @action(
+        description=_("Untervertrag hinzufügen"),
+        icon="splitscreen_add",
+        url_path="add-subcontract",
+        permissions=["geno.add_contract"],
+        variant=ActionVariant.PRIMARY,
+    )
+    def add_subcontract(self, request, object_id):
+        return HttpResponseRedirect(
+            reverse("admin:geno_contract_add") + f"?main_contract={object_id}"
+        )
 
 
 # class ResidentListAdmin(GenoBaseAdmin):
@@ -1376,6 +1385,18 @@ class TenantsViewAdmin(GenoBaseAdmin):
     search_fields = my_search_fields
     list_display_links = None
     actions = ["export_as_xls"]
+
+    actions_list = [
+        "download_resident_list_units",
+    ]
+
+    @action(
+        description=_("Mietobjektespiegel"),
+        permissions=["geno.rental_objects"],
+        icon="download",
+    )
+    def download_resident_list_units(self, request):
+        return redirect(reverse("geno:resident-list-units"))
 
     def has_add_permission(self, request):
         return False

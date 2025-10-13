@@ -22,6 +22,7 @@ from django.template import Context
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.encoding import smart_str
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.generic import FormView, TemplateView
 from django_tables2 import RequestConfig
 from oauthlib.oauth2 import TokenExpiredError
@@ -69,6 +70,7 @@ from .forms import (
     MemberMailActionForm,
     MemberMailForm,
     MemberMailSelectForm,
+    SendInvoicesForm,
     ShareStatementForm,
     TransactionForm,
     TransactionFormInvoice,
@@ -76,7 +78,6 @@ from .forms import (
     TransactionUploadProcessForm,
     WebstampForm,
     process_registration_forms,
-    SendInvoicesForm,
 )
 from .gnucash import (
     add_invoice,
@@ -109,6 +110,7 @@ from .importer import (
 )
 from .models import (
     Address,
+    Building,
     Contract,
     Document,
     DocumentType,
@@ -970,7 +972,9 @@ class DebtorView(CohivaAdminViewMixin, TemplateView):
     def get(self, request, *args, **kwargs):
         if "invoice_filter" not in request.session or request.GET.get("reset_filter", "0") == "1":
             request.session["invoice_filter"] = {"category_filter": "_all"}
-            if request.GET.get("reset_filter", "0") == "1":
+            if request.GET.get("reset_filter", "0") == "1" and url_has_allowed_host_and_scheme(
+                request.path, allowed_hosts=None
+            ):
                 ## Reload to get rid of get request argument
                 return HttpResponseRedirect(request.path)
         return super().get(request, *args, **kwargs)
@@ -1039,101 +1043,6 @@ class DebtorView(CohivaAdminViewMixin, TemplateView):
             "invoice_table": True,
             "breadcrumbs": [{"name": "Debitoren", "href": "/geno/debtor/"}],
         }
-
-
-class InvoiceBatchView(CohivaAdminViewMixin, TemplateView):
-    title = "Mietzinsrechnung erstellen"
-    permission_required = (
-        "geno.canview_billing",
-        "geno.transaction",
-        "geno.transaction_invoice",
-        "geno.add_invoice",
-    )
-    template_name = "geno/table.html"
-    action = "overview"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["form"] = self.get_form()
-        if self.action == "overview":
-            context.update(self.debtor_list())
-        elif self.action == "detail":
-            context.update(self.debtor_detail(self.kwargs["key_type"], self.kwargs["key"]))
-        return context
-
-
-@login_required
-def invoice(request, action="create", key=None, key_type=None, consolidate=True):
-    if not request.user.has_perm("geno.transaction"):
-        return unauthorized(request)
-
-    if action in ("create", "download"):
-        ret = []
-
-        if action == "download":
-            if key_type != "contract":
-                raise RuntimeError("invoice(): Key type %s not implemented yet!" % key_type)
-            ## Just download PDF of invoices for this contract
-            download_only = key
-            dry_run = True
-        else:
-            download_only = None
-            if request.GET.get("dry_run") == "False":
-                dry_run = False
-            else:
-                dry_run = True
-
-        today = datetime.date.today()
-        reference_date = datetime.date(today.year, today.month, 1)
-        if request.GET.get("date", "") == "this_month":
-            pass  # NOOP this is the default
-        elif request.GET.get("date", "") == "last_month":
-            if today.month == 1:
-                reference_date = datetime.date(today.year - 1, 12, 1)
-            else:
-                reference_date = datetime.date(today.year, today.month - 1, 1)
-        elif request.GET.get("date", "") == "next_month":
-            if today.month == 12:
-                reference_date = datetime.date(today.year + 1, 1, 1)
-            else:
-                reference_date = datetime.date(today.year, today.month + 1, 1)
-        elif len(request.GET.get("date", "")) == 10:
-            reference_date = datetime.datetime.strptime(request.GET.get("date"), "%Y-%m-%d").date()
-
-        ret.append(
-            {
-                "info": "Optionen:",
-                "objects": ["Dry-run: %s" % dry_run, "Referenzdatum: %s" % reference_date],
-            }
-        )
-
-        building_ids = [int(x) for x in request.GET.get("buildings[]", "").split(",") if x.strip()]
-        invoices = create_invoices(
-            dry_run,
-            reference_date,
-            request.GET.get("single_contract", None),
-            building_ids,
-            download_only,
-        )
-        if isinstance(invoices, str):
-            pdf_file = open("/tmp/%s" % invoices, "rb")
-            resp = FileResponse(pdf_file, content_type="application/pdf")
-            resp["Content-Disposition"] = "attachment; filename=%s" % invoices
-            return resp
-        if dry_run:
-            urltmpl = '<a href="?dry_run=False&date={date}&buildings[]={buildings}">AUSFÜHREN</a>.'
-            invoices.append(
-                "DRY-RUN: Zum effektiv ausführen, hier klicken: "
-                + urltmpl.format(
-                    date=request.GET.get("date", ""), buildings=request.GET.get("buildings[]", "")
-                )
-            )
-        ret.append({"info": "GnuCash Rechnungen erstellen:", "objects": invoices})
-        return render(
-            request, "geno/messages.html", {"response": ret, "title": "Rechnungen erstellen"}
-        )
-    else:
-        raise RuntimeError("Invoice action %s not implemented." % action)
 
 
 ## TODO: Refactor to ClassBased view
@@ -1219,7 +1128,9 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
         else:
             options = self.get_options()
             options["makezip"] = request.GET.get("makezip", "") == "yes"
-            if not options.get("link_url", None):
+            if not options.get("link_url", None) and url_has_allowed_host_and_scheme(
+                request.path, allowed_hosts=None
+            ):
                 options["link_url"] = request.path
             self.result = create_documents(self.doctype, self.get_objects(), options)
             if isinstance(self.result, HttpResponse):
@@ -2440,7 +2351,10 @@ def create_documents_deprecated(request, default_doctype, objects=None, options=
 
     if zipcount > 0:
         link_text = "%s erstellen und herunterladen" % options["beschreibung"]
-        link_url = options.get("link_url", request.path)
+        if url_has_allowed_host_and_scheme(request.path, allowed_hosts=None):
+            link_url = options.get("link_url", request.path)
+        else:
+            link_url = options.get("link_url", "")
         ret.append(
             {
                 "info": "Dokumente:",
@@ -3518,7 +3432,7 @@ def transaction_testdata(request):
     return response
 
 
-class InvoiceView(CohivaAdminViewMixin, TemplateView):
+class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
     title = "Rechnung erstellen"
     permission_required = (
         "geno.canview_billing",
@@ -3528,34 +3442,35 @@ class InvoiceView(CohivaAdminViewMixin, TemplateView):
     )
     template_name = "geno/invoice_manual.html"
     error_flag = False
-    actions = [
-        {
-            "title": "Mietzins-Rechnungen erstellen",
-            "variant": ActionVariant.PRIMARY,
-            "items": [
-                {
-                    "title": "Bis nächster Monat",
-                    "path": (reverse_lazy("geno:invoice-batch"), "?date=next_month"),
-                    "permission_required": ("geno.view_rentalunit",),
-                },
-                {
-                    "title": "Bis aktueller Monat",
-                    "path": reverse_lazy("geno:invoice-batch"),
-                    "permission_required": ("geno.view_rentalunit",),
-                },
-                {
-                    "title": "Bis letzten Monat",
-                    "path": (reverse_lazy("geno:invoice-batch"), "?date=last_month"),
-                    "permission_required": ("geno.view_rentalunit",),
-                },
-            ],
-        }
-    ]
+    #    actions = [
+    #        {
+    #            "title": "Mietzins-Rechnungen erstellen",
+    #            "variant": ActionVariant.PRIMARY,
+    #            "items": [
+    #                {
+    #                    "title": "Bis nächster Monat",
+    #                    "path": (reverse_lazy("geno:invoice-batch-generate"), "?date=next_month"),
+    #                    "permission_required": ("geno.view_rentalunit",),
+    #                },
+    #                {
+    #                    "title": "Bis aktueller Monat",
+    #                    "path": reverse_lazy("geno:invoice-batch-gernerate"),
+    #                    "permission_required": ("geno.view_rentalunit",),
+    #                },
+    #                {
+    #                    "title": "Bis letzten Monat",
+    #                    "path": (reverse_lazy("geno:invoice-batch-generate"), "?date=last_month"),
+    #                    "permission_required": ("geno.view_rentalunit",),
+    #                },
+    #            ],
+    #        }
+    #    ]
 
     def post(self, request, *args, **kwargs):
         form = self.get_form()
         formset = self.get_formset()
         if form.is_valid() and formset.is_valid():
+            print("Form valid")
             ret = self.process(form, formset)
             if isinstance(ret, FileResponse):
                 return ret
@@ -3565,7 +3480,6 @@ class InvoiceView(CohivaAdminViewMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context["form"] = self.get_form()
         context["formset"] = self.get_formset()
-        context["form_action"] = "/geno/invoice/"
         context["error_flag"] = self.error_flag
         return context
 
@@ -3577,11 +3491,11 @@ class InvoiceView(CohivaAdminViewMixin, TemplateView):
         return form
 
     def get_formset(self):
-        InvoiceFormset = formset_factory(ManualInvoiceLineForm, extra=0)
+        invoice_formset_class = formset_factory(ManualInvoiceLineForm, extra=0)
         if self.request.method == "POST":
-            formset = InvoiceFormset(self.request.POST, self.request.FILES)
+            formset = invoice_formset_class(self.request.POST, self.request.FILES)
         else:
-            formset = InvoiceFormset(
+            formset = invoice_formset_class(
                 initial=[
                     {"date": datetime.date.today()},
                     {"date": datetime.date.today()},
@@ -3613,6 +3527,7 @@ class InvoiceView(CohivaAdminViewMixin, TemplateView):
                         "Bitte eingeben oder Betrag löschen.",
                     )
                     self.error_flag = True
+                    print("ERROR")
                     break
                 line["date"] = line["date"].strftime("%d.%m.%Y")
                 line["total"] = nformat(line["amount"])
@@ -3622,6 +3537,7 @@ class InvoiceView(CohivaAdminViewMixin, TemplateView):
                 comment.append("%s CHF %s" % (line["text"], line["total"]))
 
         if not lines_count:
+            print("Error")
             messages.error(
                 self.request,
                 "Keine Rechnungspositionen eingegeben! Bitte mindestens eine Zeile ausfüllen.",
@@ -3732,6 +3648,7 @@ class InvoiceView(CohivaAdminViewMixin, TemplateView):
                     )
                     self.error_flag = True
             else:
+                print("Output")
                 pdf_file = open("/tmp/%s" % output_filename, "rb")
                 resp = FileResponse(pdf_file, content_type="application/pdf")
                 resp["Content-Disposition"] = "attachment; filename=%s" % output_filename
@@ -3739,7 +3656,39 @@ class InvoiceView(CohivaAdminViewMixin, TemplateView):
         return self.get(self.request)
 
 
-class InvoiceBatchView(CohivaAdminViewMixin, TemplateView):
+class InvoiceBatchView(CohivaAdminViewMixin, FormView):
+    title = "Mietzinsrechnungen erstellen"
+    permission_required = (
+        "geno.canview_billing",
+        "geno.transaction",
+        "geno.transaction_invoice",
+        "geno.add_invoice",
+        "geno.view_rentalunit",
+    )
+    form_class = SendInvoicesForm
+
+    def get_context_data(self, **kwargs):
+        return super().get_context_data(
+            **kwargs,
+            submit_title="Mietzinsrechnungen versenden/buchen",
+        )
+
+    def get_initial(self):
+        return {
+            "date": "next_month",
+            "buildings": [b.id for b in Building.objects.filter(active=True)],
+        }
+
+    def form_valid(self, form):
+        buildings = form.cleaned_data["buildings"]
+        date = form.cleaned_data["date"]
+        return HttpResponseRedirect(
+            f"{reverse('geno:invoice-batch-generate')}?date={date}&buildings[]="
+            + ",".join([str(b) for b in buildings])
+        )
+
+
+class InvoiceBatchGenerateView(CohivaAdminViewMixin, TemplateView):
     title = "Mietzinsrechnung erstellen"
     permission_required = (
         "geno.canview_billing",
@@ -3750,9 +3699,23 @@ class InvoiceBatchView(CohivaAdminViewMixin, TemplateView):
     )
     action = "create"
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.result = None
+
+    def get(self, request, *args, **kwargs):
+        self.result = self.process(
+            action=self.action,
+            key=self.kwargs.get("key", None),
+            key_type=self.kwargs.get("key_type", None),
+        )
+        if isinstance(self.result, FileResponse):
+            return self.result
+        return super().get(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["response"] = self.process()
+        context["response"] = self.result
         return context
 
     def process(self, action="create", key=None, key_type=None):
@@ -3775,7 +3738,9 @@ class InvoiceBatchView(CohivaAdminViewMixin, TemplateView):
 
         today = datetime.date.today()
         reference_date = datetime.date(today.year, today.month, 1)
-        if self.request.GET.get("date", "") == "last_month":
+        if self.request.GET.get("date", "") == "this_month":
+            pass  # NOOP this is the default
+        elif self.request.GET.get("date", "") == "last_month":
             if today.month == 1:
                 reference_date = datetime.date(today.year - 1, 12, 1)
             else:
@@ -3797,8 +3762,15 @@ class InvoiceBatchView(CohivaAdminViewMixin, TemplateView):
             }
         )
 
+        building_ids = [
+            int(x) for x in self.request.GET.get("buildings[]", "").split(",") if x.strip()
+        ]
         invoices = create_invoices(
-            dry_run, reference_date, self.request.GET.get("single_contract", None), download_only
+            dry_run,
+            reference_date,
+            self.request.GET.get("single_contract", None),
+            building_ids,
+            download_only,
         )
         if isinstance(invoices, str):
             pdf_file = open("/tmp/%s" % invoices, "rb")
@@ -3806,305 +3778,157 @@ class InvoiceBatchView(CohivaAdminViewMixin, TemplateView):
             resp["Content-Disposition"] = "attachment; filename=%s" % invoices
             return resp
         if dry_run:
+            urltmpl = '<a href="?dry_run=False&date={date}&buildings[]={buildings}">AUSFÜHREN</a>.'
             invoices.append(
                 "DRY-RUN: Zum effektiv ausführen, hier klicken: "
-                '<a href="?dry_run=False&date=%s">AUSFÜHREN</a>.'
-                % self.request.GET.get("date", "")
+                + urltmpl.format(
+                    date=self.request.GET.get("date", ""),
+                    buildings=self.request.GET.get("buildings[]", ""),
+                )
             )
         ret.append({"info": "GnuCash Rechnungen erstellen:", "objects": invoices})
         return ret
 
 
-class ResidentListView(CohivaAdminViewMixin, TemplateView):
-    title = "Mieter:innenspiegel"
+class ResidentUnitListView(CohivaAdminViewMixin, TemplateView):
+    title = "Mietobjektespiegel"
     permission_required = "geno.rental_objects"
-    # model_admin = ResidentListAdmin
 
-    def get_context_data(self, **kwargs):
-        # admin_instance = ResidentListAdmin(model=Contract, admin_site=admin.site)
-        context = super().get_context_data(**kwargs)
-        context["response"] = [
-            {
-                "info": "TODO: Add list of residents and action to download.",
-                "objects": [
-                    '<a href="/geno/rental/tenants" class="text-primary-600">Mieter*innenspiegel</a> (eine Zeile pro Person und Mietobjekt)',
-                    '<a href="/geno/rental/units" class="text-primary-600">Mietobjektespiegel</a> (eine Zeile pro Mietobjekt)',
-                ],
-            }
+    def get(self, *args, **kwargs):
+        return self.generate_resident_unit_list()
+
+    def generate_resident_unit_list(self):
+        data = []
+        data_fields = [
+            ("building", "Liegenschaft"),
+            ("ru_name", "Bezeichnung"),
+            ("ru_type", "Typ"),
+            ("ru_floor", "Stockwerk"),
+            ("ru_area", "Fläche (m2)"),
+            ("ru_area_add", "Zusatzfläche (m2)"),
+            ("ru_height", "Raumhöhe (m)"),
+            ("ru_rooms", "Anzahl Zimmer"),
+            ("ru_occ", "Min. Belegung"),
+            ("n_adults", "Erwachsene"),
+            ("n_children", "Anzahl Kinder"),
+            ("ru_rent_netto", "Nettomiete"),
+            ("ru_rent_total", "Bruttomiete"),
+            ("ru_nk", "NK akonto"),
+            ("ru_nk_flat", "NK pauschal"),
+            ("ru_nk_electricity", "NK Strom"),
+            ("name", "Name Mieter:in 1"),
+            ("first_name", "Vorname Mieter:in 1"),
+            ("email", "Email Mieter:in 1"),
+            ("name2", "Name Mieter:in 2"),
+            ("first_name2", "Vorname Mieter:in 2"),
+            ("other_names", "Weitere Mieter:innen"),
+            ("children", "Kinder"),
+            ("contract_date", "Vertragsbeginn"),
+            ("comment", "Bemerkungen"),
         ]
-        return context
 
+        rentalUnits = RentalUnit.objects.filter(active=True)
 
-@login_required
-def rental_unit_list_tenants(request, export_xls=True):
-    bewohnende = []
-    bewohnende_mit_kinder_in_wohnung = []
-    data = []
-    include_subcontracts = request.GET.get("include_subcontracts", False)
-    data_fields = [
-        "ru_name",
-        "ru_type",
-        "ru_floor",
-        "ru_rooms",
-        "ru_area",
-        "organization",
-        "name",
-        "first_name",
-        "title",
-        "email",
-        "child",
-        "child_age",
-        "child_presence",
-        "date_birth",
-        "city",
-        "street",
-        "tel1",
-        "tel2",
-        "hometown",
-        "occupation",
-        "membership_date",
-        "import_id",
-    ]
-    for c in get_active_contracts(include_subcontracts=include_subcontracts):
-        is_wohnen = False
-        for ru in c.rental_units.all():
-            if ru.rental_type not in ("Gewerbe", "Lager", "Hobby"):
-                is_wohnen = True
-                break
-        if c.children.exists():
-            is_kinder = True
-        else:
-            is_kinder = False
-        if is_wohnen:
-            for adr in c.contractors.all():
-                if adr not in bewohnende:
-                    bewohnende.append(adr.email)
-                if is_kinder and adr not in bewohnende_mit_kinder_in_wohnung:
-                    bewohnende_mit_kinder_in_wohnung.append(adr.email)
+        for ru in rentalUnits:
+            obj = lambda: None
+            obj._fields = list(map(lambda x: x[0], data_fields))
+            obj.building = ru.building.name
+            if ru.label:
+                obj.ru_name = "%s %s" % (ru.name, ru.label)
+            else:
+                obj.ru_name = "%s %s" % (ru.name, ru.rental_type)
+            obj.ru_type = ru.rental_type
+            obj.ru_floor = ru.floor
 
-        ## Create data objects
-        for ru in c.rental_units.all():
-            for adr in c.contractors.all():
-                obj = lambda: None
-                obj._fields = data_fields
-                obj.ru_name = ru.name
-                obj.ru_type = ru.rental_type
-                obj.ru_floor = ru.floor
-                obj.ru_rooms = ru.rooms
-                obj.ru_area = ru.area
-                obj.organization = adr.organization
-                obj.name = adr.name
-                obj.first_name = adr.first_name
-                obj.title = adr.title
-                obj.email = adr.email
-                obj.child = False
-                obj.child_age = None
-                obj.child_presence = None
-                obj.date_birth = adr.date_birth
-                obj.city = adr.city
-                obj.street = adr.street
-                obj.tel1 = adr.telephone
-                obj.tel2 = adr.mobile
-                obj.hometown = adr.hometown
-                obj.occupation = adr.occupation
-                obj.import_id = adr.import_id
-                try:
-                    obj.membership_date = Member.objects.get(name=adr).date_join.strftime(
-                        "%d.%m.%Y"
+            # obj.ru_label = ru.label
+            obj.ru_area = ru.area
+            obj.ru_area_add = ru.area_add
+            obj.ru_height = ru.height
+            obj.ru_rooms = ru.rooms
+            obj.ru_occ = ru.min_occupancy
+            obj.n_adults = 0
+            obj.n_children = 0
+            obj.ru_nk = ru.nk
+            obj.ru_nk_flat = ru.nk_flat
+            obj.ru_nk_electricity = ru.nk_electricity
+            obj.ru_rent_netto = ru.rent_netto
+            obj.ru_rent_total = ru.rent_total
+
+            ## Default values
+            obj.name = "(Leerstand)"
+            obj.first_name = ""
+            obj.email = ""
+            obj.name2 = ""
+            obj.first_name2 = ""
+            obj.contract_date = ""
+            obj.comment = ""
+            other_names = []
+            children = []
+            comments = []
+
+            contracts = get_active_contracts().filter(rental_units__id__exact=ru.id)
+            n_contracts = contracts.count()
+            if n_contracts > 0:
+                if n_contracts > 1:
+                    comments.append("ACHTUNG: MEHR ALS 1 VERTRAG!")
+                    print("WARNING: Rental unit %s has %d contracts!" % (ru, n_contracts))
+                    logger.warning("Rental unit %s has %d contracts!" % (ru, n_contracts))
+                count = 0
+                contract = contracts.first()
+                if contract.main_contact:
+                    if contract.main_contact.organization:
+                        obj.name = contract.main_contact.organization
+                        obj.first_name = "%s %s" % (
+                            contract.main_contact.first_name,
+                            contract.main_contact.name,
+                        )
+                    else:
+                        obj.name = contract.main_contact.name
+                        obj.first_name = contract.main_contact.first_name
+                    obj.email = contract.main_contact.email
+                    count += 1
+                for adr in contract.contractors.all():
+                    if adr == contract.main_contact:
+                        continue
+                    if adr.organization:
+                        str_name = adr.organization
+                        str_first_name = "%s %s" % (adr.first_name, adr.name)
+                        str_full_name = "%s/%s %s" % (adr.organization, adr.first_name, adr.name)
+                    else:
+                        str_name = adr.name
+                        str_first_name = adr.first_name
+                        str_full_name = "%s %s" % (adr.first_name, adr.name)
+                    if count == 0:
+                        obj.name = str_name
+                        obj.first_name = str_first_name
+                        obj.email = adr.email
+                    elif count == 1:
+                        obj.name2 = str_name
+                        obj.first_name2 = str_first_name
+                    else:
+                        other_names.append(str_full_name)
+                    count += 1
+                obj.n_adults = count
+                obj.contract_date = contract.date.strftime("%d.%m.%Y")
+
+                for child in contracts.first().children.all():
+                    children.append(
+                        "%s %s (%s)" % (child.name.first_name, child.name.name, child.age())
                     )
-                except Member.DoesNotExist:
-                    obj.membership_date = None
-                if len("%s %s" % (obj.name, obj.first_name)) > 32:
-                    print("WARNING: Name longer than 32 chars: %s %s" % (obj.name, obj.first_name))
-                    logger.warning("Name longer than 32 chars: %s %s" % (obj.name, obj.first_name))
 
-                data.append(obj)
-            for child in c.children.all():
-                obj = lambda: None
-                obj._fields = data_fields
-                obj.ru_name = ru.name
-                obj.ru_type = ru.rental_type
-                obj.ru_floor = ru.floor
-                obj.ru_rooms = ru.rooms
-                obj.ru_area = ru.area
-                obj.organization = child.name.organization
-                obj.name = child.name.name
-                obj.first_name = child.name.first_name
-                obj.title = child.name.title
-                obj.email = child.name.email
-                obj.child = True
-                obj.child_age = child.age()
-                obj.child_presence = child.presence
-                obj.date_birth = child.name.date_birth
-                obj.city = child.name.city
-                obj.street = child.name.street
-                obj.tel1 = child.name.telephone
-                obj.tel2 = child.name.mobile
-                obj.hometown = child.name.hometown
-                obj.occupation = child.name.occupation
-                obj.import_id = child.import_id
-                obj.membership_date = None
-                if len("%s %s" % (obj.name, obj.first_name)) > 32:
-                    logger.warning("Name longer than 32 chars: %s %s" % (obj.name, obj.first_name))
-                data.append(obj)
+            obj.other_names = ", ".join(other_names)
+            obj.children = ", ".join(children)
+            obj.n_children = len(children)
+            obj.comment = ", ".join(comments)
 
-    if export_xls:
+            data.append(obj)
+
         return export_data_to_xls(
-            data, title="Bewohnendenspiegel", header={}, filename_suffix="bewohnendenspiegel"
+            data,
+            title="Mietobjektespiegel",
+            header=dict(data_fields),
+            filename_suffix="mietobjektespiegel",
         )
-
-    ret = []
-    ret.append({"info": "Bewohnende (%d)" % len(bewohnende), "objects": bewohnende})
-    ret.append(
-        {
-            "info": "Bewohnende in Wohnungen mit Kinder (%d)"
-            % len(bewohnende_mit_kinder_in_wohnung),
-            "objects": bewohnende_mit_kinder_in_wohnung,
-        }
-    )
-
-    return render(
-        request,
-        "geno/default.html",
-        {"response": ret, "title": "Mieter*innenspiegel (WORK IN PROGRESS!)"},
-    )
-
-
-@login_required
-def rental_unit_list_units(request, export_xls=True):
-    data = []
-    data_fields = [
-        "ru_name",
-        "ru_type",
-        "ru_floor",
-        "ru_area",
-        "ru_area_add",
-        "ru_height",
-        "ru_rooms",
-        "ru_occ",
-        "n_adults",
-        "n_children",
-        "ru_nk",
-        "ru_nk_flat",
-        "ru_nk_electricity",
-        "ru_rent_netto",
-        "name",
-        "first_name",
-        "email",
-        "name2",
-        "first_name2",
-        "other_names",
-        "children",
-        "contract_date",
-        "comment",
-    ]
-
-    rentalUnits = RentalUnit.objects.filter(active=True)
-
-    for ru in rentalUnits:
-        obj = lambda: None
-        obj._fields = data_fields
-        if ru.label:
-            obj.ru_name = "%s %s" % (ru.name, ru.label)
-        else:
-            obj.ru_name = "%s %s" % (ru.name, ru.rental_type)
-        obj.ru_type = ru.rental_type
-        obj.ru_floor = ru.floor
-
-        # obj.ru_label = ru.label
-        obj.ru_area = ru.area
-        obj.ru_area_add = ru.area_add
-        obj.ru_height = ru.height
-        obj.ru_rooms = ru.rooms
-        obj.ru_occ = ru.min_occupancy
-        obj.n_adults = 0
-        obj.n_children = 0
-        obj.ru_nk = ru.nk
-        obj.ru_nk_flat = ru.nk_flat
-        obj.ru_nk_electricity = ru.nk_electricity
-        obj.ru_rent_netto = ru.rent_netto
-
-        ## Default values
-        obj.name = "(Leerstand)"
-        obj.first_name = ""
-        obj.email = ""
-        obj.name2 = ""
-        obj.first_name2 = ""
-        obj.contract_date = ""
-        obj.comment = ""
-        other_names = []
-        children = []
-        comments = []
-
-        contracts = get_active_contracts().filter(rental_units__id__exact=ru.id)
-        n_contracts = contracts.count()
-        if n_contracts > 0:
-            if n_contracts > 1:
-                comments.append("ACHTUNG: MEHR ALS 1 VERTRAG!")
-                print("WARNING: Rental unit %s has %d contracts!" % (ru, n_contracts))
-                logger.warning("Rental unit %s has %d contracts!" % (ru, n_contracts))
-            count = 0
-            contract = contracts.first()
-            if contract.main_contact:
-                if contract.main_contact.organization:
-                    obj.name = contract.main_contact.organization
-                    obj.first_name = "%s %s" % (
-                        contract.main_contact.first_name,
-                        contract.main_contact.name,
-                    )
-                else:
-                    obj.name = contract.main_contact.name
-                    obj.first_name = contract.main_contact.first_name
-                obj.email = contract.main_contact.email
-                count += 1
-            for adr in contract.contractors.all():
-                if adr == contract.main_contact:
-                    continue
-                if adr.organization:
-                    str_name = adr.organization
-                    str_first_name = "%s %s" % (adr.first_name, adr.name)
-                    str_full_name = "%s/%s %s" % (adr.organization, adr.first_name, adr.name)
-                else:
-                    str_name = adr.name
-                    str_first_name = adr.first_name
-                    str_full_name = "%s %s" % (adr.first_name, adr.name)
-                if count == 0:
-                    obj.name = str_name
-                    obj.first_name = str_first_name
-                    obj.email = adr.email
-                elif count == 1:
-                    obj.name2 = str_name
-                    obj.first_name2 = str_first_name
-                else:
-                    other_names.append(str_full_name)
-                count += 1
-            obj.n_adults = count
-            obj.contract_date = contract.date.strftime("%d.%m.%Y")
-
-            for child in contracts.first().children.all():
-                children.append(
-                    "%s %s (%s)" % (child.name.first_name, child.name.name, child.age())
-                )
-
-        obj.other_names = ", ".join(other_names)
-        obj.children = ", ".join(children)
-        obj.n_children = len(children)
-        obj.comment = ", ".join(comments)
-
-        data.append(obj)
-
-    if export_xls:
-        return export_data_to_xls(
-            data, title="Bewohnendenspiegel", header={}, filename_suffix="bewohnendenspiegel"
-        )
-
-    ret = []
-
-    return render(
-        request,
-        "geno/default.html",
-        {"response": ret, "title": "Mietobjektespiegel (WORK IN PROGRESS!)"},
-    )
 
 
 @login_required
@@ -4458,33 +4282,6 @@ class SysadminView(CohivaAdminViewMixin, TemplateView):
     template_name = "geno/sysadmin_overview.html"
     permission_required = ("geno.sysadmin",)
     title = "Übersicht"
-
-
-@login_required
-def invoice_form(request):
-    initial = {}
-    form = SendInvoicesForm(request.GET or None, initial=initial)
-    if request.method == "GET":
-        if form.is_valid():
-            buildings = form.cleaned_data["buildings"]
-            date = request.GET.get("date")
-            return HttpResponseRedirect(
-                "/geno/invoice/auto?date="
-                + date
-                + "&buildings[]="
-                + ",".join([str(b) for b in buildings])
-            )
-    return render(
-        request,
-        "geno/invoice_form.html",
-        {
-            "response": None,
-            "title": "Mietzinsrechnungen versenden/buchen",
-            "info": "für ausgewählte Zeiträume",
-            "form": form,
-            "form_action": "/geno/invoice/auto",
-        },
-    )
 
 
 def oauth_client_test(request, action="start"):

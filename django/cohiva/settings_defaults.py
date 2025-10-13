@@ -753,6 +753,7 @@ COHIVA_ADMIN_NAVIGATION = [
                 "icon": "manufacturing",
                 "items": [
                     {"type": "model", "value": "geno.GenericAttribute"},
+                    {"type": "model", "value": "geno.BankAccount"},
                     {"type": "view", "value": "geno:check-mailinglists"},
                     {"type": "view", "value": "geno:export_carddav"},
                     {"type": "model", "value": "portal.TenantAdmin"},
@@ -809,7 +810,7 @@ COHIVA_ADMIN_NAVIGATION = [
     {
         "name": _("Vermietung"),
         "items": [
-            {"type": "view", "value": "geno:resident-list", "icon": "list"},
+            {"type": "model", "value": "geno.TenantsView", "icon": "list"},
             {"type": "model", "value": "geno.RentalUnit", "icon": "house"},
             {"type": "model", "value": "geno.Contract", "icon": "contract"},
             {
@@ -893,7 +894,14 @@ COHIVA_ADMIN_NAVIGATION = [
         "name": _("Inkasso"),
         "items": [
             {"type": "view", "value": "geno:debtor-list", "icon": "account_balance"},
-            {"type": "view", "value": "geno:invoice-manual", "icon": "checkbook"},
+            {
+                "type": "tabgroup",
+                "name": "Rechnungen erstellen",
+                "items": [
+                    {"type": "view", "value": "geno:invoice-manual", "icon": "checkbook"},
+                    {"type": "view", "value": "geno:invoice-batch"},
+                ],
+            },
             {
                 "type": "tabgroup",
                 "items": [
@@ -906,7 +914,6 @@ COHIVA_ADMIN_NAVIGATION = [
                     {"type": "view", "value": "geno:transaction-manual"},
                 ],
             },
-            {"type": "view", "value": "geno:create_invoice_rent", "icon": "invoice_house"},
             {
                 "type": "subgroup",
                 "name": _("Erweitert"),

@@ -1,5 +1,6 @@
 from django.apps import apps as django_apps
 from django.conf import settings
+from django.urls import reverse
 
 import geno.tests.data as geno_testdata
 
@@ -24,13 +25,13 @@ class GenoViewsTest(GenoAdminTestCase):
             # ADDED BELOW 'share/overview/plot/',
             "share/export/",
             "share/confirm/",
-            "share/statement/current_year/1/",
-            "share/statement/current_year/",
+            reverse("geno:share-statement-form"),
+            reverse("geno:share-statement", args=["current_year"]),
+            reverse("geno:share-statement-for-address", args=["current_year", 1]),
             "share/mailing/",
             "share/interest/download/",
             "share/interest/transactions/",
             #'share/interest/adjust/',
-            "share/check/",
             "share/duedate_reminder/",
             "member/overview/",
             # ADDED BELOW 'member/overview/plot/',
@@ -38,27 +39,28 @@ class GenoViewsTest(GenoAdminTestCase):
             "member/list_admin/",
             # TODO 'member/check_mailinglists/',
             "member/check_payments/",
-            "member/send_mail/",
-            # NEEDS SESSION'member/send_mail/select/',
-            "member/send_mail/action/",
-            "member/send_mail/contract/",
+            reverse("geno:mail-wizard-start"),
+            # NEEDS SESSION reverse("geno:mail-wizard-select"),
+            reverse("geno:mail-wizard-action"),
             "member/confirm/memberletter/",
             "address/export/",
             "maintenance/",
             # ADDED BELOW 'maintenance/check_portal_users/',
             "transaction/",
-            "transaction_upload/",
-            "transaction_upload/process/",
-            "transaction_testdata/",
-            "transaction_invoice/",
-            "invoice/",
-            "invoice/auto/",
-            "invoice/download/contract/1/",
-            "debtor/",
+            reverse("geno:transaction-upload"),
+            reverse("geno:transaction-process"),
+            reverse("geno:transaction-testdata"),
+            reverse("geno:transaction-invoice"),
+            reverse("geno:invoice-manual"),
+            reverse("geno:invoice-batch"),
+            reverse("geno:invoice-batch-generate"),
+            reverse("geno:invoice-download", args=["contract", 1]),
+            reverse("geno:debtor-list"),
             # TODO: NEEDS DATA'debtor/detail/contract/1/',
             # TODO: OLD CODE'contract/create/',
             # TODO: OLD CODE'contract/create_letter/',
-            "contract/create_documents/check/",
+            reverse("geno:contract-check-forms"),
+            reverse("geno:contract-report"),
             "rental/units/",
             "rental/units/mailbox/",
             "rental/units/protocol/",
@@ -69,6 +71,7 @@ class GenoViewsTest(GenoAdminTestCase):
             #'oauth_client/callback/',
             #'oauth_client/test/',
             "preview/",
+            reverse("geno:sysadmin-overview"),
         ]
         if hasattr(settings, "SHARE_PLOT") and settings.SHARE_PLOT:
             paths += [
@@ -80,7 +83,9 @@ class GenoViewsTest(GenoAdminTestCase):
                 "maintenance/check_portal_users/",
             ]
         for path in paths:
-            response = self.client.get(f"/geno/{path}")
+            if not path.startswith("/geno/"):
+                path = f"/geno/{path}"
+            response = self.client.get(path)
             if response.status_code != 200:
-                print(f"FAILED PATH: /geno/{path} [{response.status_code}]")
+                print(f"FAILED PATH: {path} [{response.status_code}]")
             self.assertEqual(response.status_code, 200)

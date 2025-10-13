@@ -39,7 +39,7 @@ logger = logging.getLogger("access_portal")
 
 ## Abstract base class
 class GenoBase(models.Model):
-    comment = models.CharField("Comment", max_length=500, blank=True)
+    comment = models.CharField("Kommentar", max_length=500, blank=True)
     ts_created = models.DateTimeField("Erstellt", auto_now_add=True)
     ts_modified = models.DateTimeField("Geändert", auto_now=True)
 
@@ -188,8 +188,14 @@ class BankAccount(GenoBase):
             return account_holders
         elif iban:
             return iban
+        elif self.comment:
+            return f"Ohne IBAN / {self.comment}"
         else:
             return "Kein Konto angegeben"
+
+    class Meta:
+        verbose_name = "Bankkonto"
+        verbose_name_plural = "Bankkonten"
 
 
 class Address(GenoBase):
@@ -1341,14 +1347,13 @@ class RentalUnit(GenoBase):
 
 
 class Contract(GenoBase):
-    main_contract = select2.fields.ForeignKey(
+    main_contract = models.ForeignKey(
         "self",
         verbose_name="Hauptvertrag",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
         related_name="sub_contract",
-        overlay="Untervertrag",
     )
     contractors = models.ManyToManyField(
         Address, verbose_name="Vertragspartner", related_name="address_contracts"
@@ -1858,21 +1863,17 @@ class TenantsView(GenoBase):
     p_membership_date = models.DateField("Mieter*in Mitglied seit", null=True, blank=True)
     c_issubcontract = models.BooleanField("Ist Untervertrag", default=False)
 
-    building = select2.fields.ForeignKey(
-        "Building", verbose_name="Liegenschaft", on_delete=models.CASCADE
-    )
-    rental_unit = select2.fields.ForeignKey(
+    building = models.ForeignKey("Building", verbose_name="Liegenschaft", on_delete=models.CASCADE)
+    rental_unit = models.ForeignKey(
         "RentalUnit", verbose_name="Mietobjekt", on_delete=models.CASCADE
     )
-    contract = select2.fields.ForeignKey(
-        Contract, verbose_name="Vertrag", on_delete=models.CASCADE
-    )
+    contract = models.ForeignKey(Contract, verbose_name="Vertrag", on_delete=models.CASCADE)
 
     class Meta:
         db_table = "geno_TenantsView"
         managed = False
-        verbose_name = "Mieter*innenspiegel"
-        verbose_name_plural = "Mieter*innen"
+        verbose_name = "Mieter:innenspiegel"
+        verbose_name_plural = "Mieter:innenspiegel"
         ordering = ["bu_name", "ru_name"]
         constraints = [
             models.UniqueConstraint(

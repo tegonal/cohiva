@@ -51,7 +51,7 @@
 {% endblock %}
 
 {% block custom_content %}
-<form action="{{ form_action }}" method="post">
+<form {% if form_action %}action="{{ form_action }}"{% endif %} method="post">
   {% csrf_token %}
   <div class="aligned border border-base-200 mb-8 rounded-default pt-3 px-3 shadow-sm dark:border-base-800 legacyform">
     {{ form.as_p }}

@@ -15,7 +15,9 @@ class TransactionEditForm(forms.ModelForm):
     class Meta:
         model = Transaction
         fields = ["account", "date", "amount", "description"]
-        widgets = {"date": forms.TextInput(attrs={"class": "datepicker"})}
+        widgets = {
+            "date": forms.DateTimeInput(format="%d.%m.%Y %H:%M", attrs={"class": "datepicker"})
+        }
 
 
 class TransactionFilterForm(forms.Form):

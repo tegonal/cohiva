@@ -285,6 +285,8 @@ class AccountInformationMixin:
         context = super().get_context_data(**kwargs)
         context["is_admin"] = self.is_admin
         context["base_url"] = "/credit_accounting"
+        context["site_title"] = settings.GENO_NAME
+        context["vendor_name"] = self.vendor.name
         return context
 
     def get_account_owner(self, owner_id):

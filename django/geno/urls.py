@@ -87,7 +87,11 @@ urlpatterns = [
         geno_views.TransactionUploadView.as_view(),
         name="transaction-upload",
     ),
-    path("transaction_upload/process/", geno_views.transaction_upload_process),
+    path(
+        "transaction_upload/process/",
+        geno_views.transaction_upload_process,
+        name="transaction-process",
+    ),
     path(
         "transaction_upload/testdata/",
         geno_views.transaction_testdata,
@@ -99,12 +103,17 @@ urlpatterns = [
         name="transaction-invoice",
     ),
     path("transaction/", geno_views.TransactionManualView.as_view(), name="transaction-manual"),
-    path("invoice/", geno_views.InvoiceView.as_view(), name="invoice-manual"),
-    path("invoice/form", geno_views.invoice_form, name="invoice-batch-form"),
-    path("invoice/auto/", geno_views.InvoiceBatchView.as_view(), name="invoice-batch"),
+    path("invoice/manual/", geno_views.InvoiceManualView.as_view(), name="invoice-manual"),
+    # TODO: Maybe combine InvoiceBatchFormView and InvoiceBatchView in one view?
+    path("invoice/batch/", geno_views.InvoiceBatchView.as_view(), name="invoice-batch"),
+    path(
+        "invoice/batch/generate/",
+        geno_views.InvoiceBatchGenerateView.as_view(),
+        name="invoice-batch-generate",
+    ),
     re_path(
         r"^invoice/download/(?P<key_type>[a-z_-]+)/(?P<key>[0-9]+)/?$",
-        geno_views.InvoiceBatchView.as_view(action="download"),
+        geno_views.InvoiceBatchGenerateView.as_view(action="download"),
         name="invoice-download",
     ),
     path("debtor/", geno_views.DebtorView.as_view(action="overview"), name="debtor-list"),
@@ -121,9 +130,7 @@ urlpatterns = [
         name="contract-check-forms",
     ),
     path("contract/report/", geno_views.contract_report, name="contract-report"),
-    path("rental/resident_list", geno_views.ResidentListView.as_view(), name="resident-list"),
-    path("rental/tenants/", geno_views.rental_unit_list_tenants, name="resident-list-tenants"),
-    path("rental/units/", geno_views.rental_unit_list_units, name="resident-list-units"),
+    path("rental/units/", geno_views.ResidentUnitListView.as_view(), name="resident-list-units"),
     path(
         "rental/units/mailbox/", geno_views.rental_unit_list_create_documents, {"doc": "mailbox"}
     ),

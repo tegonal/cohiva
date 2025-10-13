@@ -345,7 +345,7 @@ class PortalAuthTest(PortalTestCase):
             "/portal/login/",
             {"next": "/portal/password_change/", "username": "user.renter", "password": "secret"},
         )
-        self.assertInHTMLResponse("Altes Passwort:", response)
+        self.assertInHTMLResponse('<input type="password" name="old_password"', response, raw=True)
 
     def test_login_with_email(self):
         response = self.client.post(
@@ -356,7 +356,7 @@ class PortalAuthTest(PortalTestCase):
                 "password": "secret",
             },
         )
-        self.assertInHTMLResponse("Altes Passwort:", response)
+        self.assertInHTMLResponse('<input type="password" name="old_password"', response, raw=True)
 
     def test_portal_redirect_primary_to_secondary(self):
         response = self.client.post(

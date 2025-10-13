@@ -1,4 +1,4 @@
-{% extends "unfold/layouts/base.html" %}
+{% extends "admin/base.html" %}
 
 {% load admin_urls i18n unfold admin_list static %}
 
@@ -24,6 +24,12 @@
 <script src="{% static 'geno/js/jquery-ui.js' %}"></script>
 <script src="{% static 'geno/js/datepicker.js' %}"></script>
 {% endblock %}
+
+{% block branding %}
+    {% include "unfold/helpers/site_branding.html" %}
+{% endblock %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
 
 {% block content_title %}
     <h1 class="overflow-hidden leading-5 text-ellipsis text-font-important-light whitespace-nowrap xl:text-base dark:text-font-important-dark">
