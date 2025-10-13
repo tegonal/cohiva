@@ -664,14 +664,6 @@ def process_registration_forms(request, selector="internal"):
 
 
 class SendInvoicesForm(forms.Form):
-    buildingList = Building.objects.filter(active=True).order_by("name")
-    buildingMapping = [(b.id, b.name) for b in buildingList]
-    buildings = forms.MultipleChoiceField(
-        label="Liegenschaft(en)",
-        required=False,
-        widget=forms.SelectMultiple(attrs={"size": 5}),
-        choices=buildingMapping,
-    )
     SCOPE_CHOICES = [
         ("next_month", "bis Ende nächsten Monat"),
         ("this_month", "nur bis aktueller Monat"),
@@ -680,6 +672,17 @@ class SendInvoicesForm(forms.Form):
     date = forms.ChoiceField(
         widget=forms.RadioSelect, choices=SCOPE_CHOICES, label="Rechnungen für Zeitraum"
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        buildingList = Building.objects.filter(active=True).order_by("name")
+        buildingMapping = [(b.id, b.name) for b in buildingList]
+        self.fields["buildings"] = forms.MultipleChoiceField(
+            label="Liegenschaft(en)",
+            required=False,
+            widget=forms.SelectMultiple(attrs={"size": 5}),
+            choices=buildingMapping,
+        )
 
 
 class TransactionUploadFileForm(forms.Form):
