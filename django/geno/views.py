@@ -4425,7 +4425,6 @@ class WebstampView(CohivaAdminViewMixin, FormView):
             }
         )
         ## Check if output files are there
-        success = True
         for f in tmp_files:
             outfile = f[0:-4] + "_stamp.pdf"
             if os.path.isfile(outfile):

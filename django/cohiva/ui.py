@@ -104,6 +104,7 @@ class MenuItem:
     def __init__(self, obj):
         self._type = obj.get("type")
         self._value = obj.get("value")
+        self._app_label = obj.get("app", None)
         self._title = obj.get("name", None)
         self._icon = obj.get("icon", None)
         self._permission = obj.get("permission", None)
@@ -112,7 +113,10 @@ class MenuItem:
     def determine_missing_values(self):
         if self._type == "model":
             if not self._cls:
-                self._cls = apps.get_model(self._value)
+                if self._app_label:
+                    self._cls = apps.get_model(self._app_label, self._value)
+                else:
+                    self._cls = apps.get_model(self._value)
             if not self._permission:
                 self._permission = f"{self._cls._meta.app_label}.view_{self._cls._meta.model_name}"
             if not self._title:
@@ -146,6 +150,8 @@ class MenuItem:
                 link = reverse(self._value)
             except NoReverseMatch:
                 link = ""
+        elif self._type == "link":
+            link = self._value
         else:
             raise ValueError(f"Unknown type: {self._type}")
         return link

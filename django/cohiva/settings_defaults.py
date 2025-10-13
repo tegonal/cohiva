@@ -830,6 +830,15 @@ COHIVA_ADMIN_NAVIGATION = [
                 "name": "Reparaturmeldungen",
             },
             {
+                "type": "tabgroup",
+                "name": "Nebenkostenabrechnung",
+                "items": [
+                    {"type": "model", "value": "report.Report", "icon": "water_heater"},
+                    {"type": "model", "value": "report.ReportInputData"},
+                    {"type": "model", "value": "report.ReportOutput"},
+                ],
+            },
+            {
                 "type": "subgroup",
                 "name": _("Erweitert"),
                 "icon": "manufacturing",
@@ -838,6 +847,8 @@ COHIVA_ADMIN_NAVIGATION = [
                     {"type": "model", "value": "reservation.ReportType"},
                     {"type": "model", "value": "reservation.ReportPicture"},
                     {"type": "model", "value": "reservation.ReportLogEntry"},
+                    {"type": "model", "value": "report.ReportType"},
+                    {"type": "model", "value": "report.ReportInputField"},
                 ],
             },
         ],
@@ -852,6 +863,17 @@ COHIVA_ADMIN_NAVIGATION = [
                     {"type": "model", "value": "geno.Registration", "icon": "how_to_reg"},
                     {"type": "model", "value": "geno.RegistrationEvent"},
                     {"type": "model", "value": "geno.RegistrationSlot"},
+                ],
+            },
+            {
+                "type": "tabgroup",
+                "items": [
+                    {"type": "model", "value": "credit_accounting.Vendor", "icon": "storefront"},
+                    {"type": "model", "value": "credit_accounting.VendorAdmin"},
+                    {"type": "model", "value": "credit_accounting.Transaction"},
+                    {"type": "model", "value": "credit_accounting.Account"},
+                    {"type": "model", "value": "credit_accounting.AccountOwner"},
+                    {"type": "model", "value": "credit_accounting.UserAccountSetting"},
                 ],
             },
             {
@@ -936,7 +958,13 @@ COHIVA_ADMIN_NAVIGATION = [
             {"type": "view", "value": "geno:mail-wizard-start", "icon": "mail"},
             {"type": "view", "value": "geno:webstamp", "icon": "local_post_office"},
             {"type": "model", "value": "geno.Document", "icon": "docs"},
-            {"type": "model", "value": "geno.ContentTemplate", "icon": "file_copy"},
+            {
+                "type": "tabgroup",
+                "items": [
+                    {"type": "model", "value": "geno.ContentTemplate", "icon": "file_copy"},
+                    {"type": "model", "value": "geno.ContentTemplateOption"},
+                ],
+            },
             {"type": "model", "value": "filer.Folder", "icon": "folder_open"},
             {
                 "type": "subgroup",
@@ -946,7 +974,6 @@ COHIVA_ADMIN_NAVIGATION = [
                     {"type": "view", "value": "geno:odt2pdf"},
                     {"type": "model", "value": "geno.DocumentType"},
                     {"type": "model", "value": "geno.ContentTemplateOptionType"},
-                    {"type": "model", "value": "geno.ContentTemplateOption"},
                     {"type": "model", "value": "filer.FolderPermission"},
                     {"type": "model", "value": "filer.ThumbnailOption"},
                 ],
@@ -963,9 +990,44 @@ COHIVA_ADMIN_NAVIGATION = [
                 "items": [
                     {"type": "model", "value": "auth.User", "icon": "badge"},
                     {"type": "model", "value": "auth.Group"},
+                    {"type": "model", "value": "authtoken.TokenProxy"},
+                ],
+            },
+            {
+                "type": "tabgroup",
+                "name": "OAuth2",
+                "items": [
+                    {
+                        "type": "model",
+                        "value": "oauth2_provider.Application",
+                        "icon": "identity_platform",
+                    },
+                    {"type": "model", "value": "oauth2_provider.AccessToken"},
+                    {"type": "model", "value": "oauth2_provider.RefreshToken"},
+                    {"type": "model", "value": "oauth2_provider.IdToken"},
+                    {"type": "model", "value": "oauth2_provider.Grant"},
+                ],
+            },
+            {
+                "type": "tabgroup",
+                "name": "SAML2",
+                "items": [
+                    {
+                        "type": "model",
+                        "value": "djangosaml2idp.ServiceProvider",
+                        "icon": "id_card",
+                    },
+                    {"type": "model", "value": "djangosaml2idp.PersistentId"},
                 ],
             },
             {"type": "model", "value": "geno.LookupTable", "icon": "table_chart"},
+            {
+                "type": "link",
+                "name": "All Models",
+                "value": "/admin/",
+                "permission": "geno.sysadmin",
+                "icon": "list_alt",
+            },
         ],
     },
 ]
