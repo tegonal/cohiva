@@ -4,55 +4,167 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('geno', '0010_bankaccount_alter_address_bankaccount_and_more'),
+        ("geno", "0010_bankaccount_alter_address_bankaccount_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='TenantsView',
+            name="TenantsView",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('comment', models.CharField(blank=True, max_length=500, verbose_name='Comment')),
-                ('ts_created', models.DateTimeField(auto_now_add=True, verbose_name='Erstellt')),
-                ('ts_modified', models.DateTimeField(auto_now=True, verbose_name='Geändert')),
-                ('bu_name', models.CharField(max_length=100, unique=True, verbose_name='Liegenschaft')),
-                ('ru_name', models.CharField(max_length=255, verbose_name='Mietobjekt Nr.')),
-                ('ru_label', models.CharField(blank=True, max_length=50, verbose_name='Mietobjekt Bezeichnung')),
-                ('ru_type', models.CharField(choices=[('Wohnung', 'Wohnung'), ('Grosswohnung', 'Grosswohnung'), ('Jokerzimmer', 'Jokerzimmer'), ('Selbstausbau', 'Selbstausbau'), ('Kellerabteil', 'Kellerabteil'), ('Gewerbe', 'Gewerbefläche'), ('Lager', 'Lagerraum'), ('Hobby', 'Hobbyraum'), ('Gemeinschaft', 'Gemeinschaftsräume/Diverses'), ('Parkplatz', 'Parkplatz')], max_length=50, verbose_name='Mietobjekt Typ')),
-                ('ru_floor', models.CharField(blank=True, max_length=50, verbose_name='Mietobjekt Stockwerk')),
-                ('ru_rooms', models.DecimalField(blank=True, decimal_places=1, max_digits=5, null=True, verbose_name='Mietobjekt Anzahl Zimmer')),
-                ('ru_area', models.DecimalField(blank=True, decimal_places=2, max_digits=10, null=True, verbose_name='Mietobjekt Fläche (m2)')),
-                ('organization', models.CharField(blank=True, max_length=100, verbose_name='Mieter*in Organisation')),
-                ('ad_name', models.CharField(max_length=30, verbose_name='Mieter*in Nachname')),
-                ('ad_first_name', models.CharField(max_length=30, verbose_name='Mieter*in Vorname')),
-                ('ad_title', models.CharField(blank=True, max_length=50, verbose_name='Mieter*in Titel')),
-                ('ad_email', models.CharField(blank=True, max_length=100, verbose_name='Mieter*in Email')),
-                ('c_ischild', models.BooleanField(default=False, verbose_name='Ist Kind')),
-                ('c_age', models.IntegerField(blank=True, null=True, verbose_name='Alter Kind')),
-                ('presence', models.CharField(blank=True, max_length=50, verbose_name='Anwesenheit Kind')),
-                ('ad_date_birth', models.DateField(blank=True, null=True, verbose_name='Mieter*in Geburtsdatum')),
-                ('ad_city', models.CharField(blank=True, max_length=100, verbose_name='Mieter*in Ort')),
-                ('ad_street', models.CharField(blank=True, max_length=100, verbose_name='Mieter*in Strasse')),
-                ('ad_tel1', models.CharField(blank=True, max_length=30, verbose_name='Mieter*in Telefon 1')),
-                ('ad_tel2', models.CharField(blank=True, max_length=30, verbose_name='Mieter*in Telefon 2')),
-                ('p_hometown', models.CharField(blank=True, max_length=100, verbose_name='Mieter*in Heimatort')),
-                ('p_occupation', models.CharField(blank=True, max_length=100, verbose_name='Mieter*in Beruf')),
-                ('p_membership_date', models.DateField(blank=True, null=True, verbose_name='Mieter*in Mitglied seit')),
-                ('c_issubcontract', models.BooleanField(default=False, verbose_name='Ist Untervertrag')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("comment", models.CharField(blank=True, max_length=500, verbose_name="Comment")),
+                ("ts_created", models.DateTimeField(auto_now_add=True, verbose_name="Erstellt")),
+                ("ts_modified", models.DateTimeField(auto_now=True, verbose_name="Geändert")),
+                (
+                    "bu_name",
+                    models.CharField(max_length=100, unique=True, verbose_name="Liegenschaft"),
+                ),
+                ("ru_name", models.CharField(max_length=255, verbose_name="Mietobjekt Nr.")),
+                (
+                    "ru_label",
+                    models.CharField(
+                        blank=True, max_length=50, verbose_name="Mietobjekt Bezeichnung"
+                    ),
+                ),
+                (
+                    "ru_type",
+                    models.CharField(
+                        choices=[
+                            ("Wohnung", "Wohnung"),
+                            ("Grosswohnung", "Grosswohnung"),
+                            ("Jokerzimmer", "Jokerzimmer"),
+                            ("Selbstausbau", "Selbstausbau"),
+                            ("Kellerabteil", "Kellerabteil"),
+                            ("Gewerbe", "Gewerbefläche"),
+                            ("Lager", "Lagerraum"),
+                            ("Hobby", "Hobbyraum"),
+                            ("Gemeinschaft", "Gemeinschaftsräume/Diverses"),
+                            ("Parkplatz", "Parkplatz"),
+                        ],
+                        max_length=50,
+                        verbose_name="Mietobjekt Typ",
+                    ),
+                ),
+                (
+                    "ru_floor",
+                    models.CharField(
+                        blank=True, max_length=50, verbose_name="Mietobjekt Stockwerk"
+                    ),
+                ),
+                (
+                    "ru_rooms",
+                    models.DecimalField(
+                        blank=True,
+                        decimal_places=1,
+                        max_digits=5,
+                        null=True,
+                        verbose_name="Mietobjekt Anzahl Zimmer",
+                    ),
+                ),
+                (
+                    "ru_area",
+                    models.DecimalField(
+                        blank=True,
+                        decimal_places=2,
+                        max_digits=10,
+                        null=True,
+                        verbose_name="Mietobjekt Fläche (m2)",
+                    ),
+                ),
+                (
+                    "organization",
+                    models.CharField(
+                        blank=True, max_length=100, verbose_name="Mieter*in Organisation"
+                    ),
+                ),
+                ("ad_name", models.CharField(max_length=30, verbose_name="Mieter*in Nachname")),
+                (
+                    "ad_first_name",
+                    models.CharField(max_length=30, verbose_name="Mieter*in Vorname"),
+                ),
+                (
+                    "ad_title",
+                    models.CharField(blank=True, max_length=50, verbose_name="Mieter*in Titel"),
+                ),
+                (
+                    "ad_email",
+                    models.CharField(blank=True, max_length=100, verbose_name="Mieter*in Email"),
+                ),
+                ("c_ischild", models.BooleanField(default=False, verbose_name="Ist Kind")),
+                ("c_age", models.IntegerField(blank=True, null=True, verbose_name="Alter Kind")),
+                (
+                    "presence",
+                    models.CharField(blank=True, max_length=50, verbose_name="Anwesenheit Kind"),
+                ),
+                (
+                    "ad_date_birth",
+                    models.DateField(blank=True, null=True, verbose_name="Mieter*in Geburtsdatum"),
+                ),
+                (
+                    "ad_city",
+                    models.CharField(blank=True, max_length=100, verbose_name="Mieter*in Ort"),
+                ),
+                (
+                    "ad_street",
+                    models.CharField(blank=True, max_length=100, verbose_name="Mieter*in Strasse"),
+                ),
+                (
+                    "ad_tel1",
+                    models.CharField(
+                        blank=True, max_length=30, verbose_name="Mieter*in Telefon 1"
+                    ),
+                ),
+                (
+                    "ad_tel2",
+                    models.CharField(
+                        blank=True, max_length=30, verbose_name="Mieter*in Telefon 2"
+                    ),
+                ),
+                (
+                    "p_hometown",
+                    models.CharField(
+                        blank=True, max_length=100, verbose_name="Mieter*in Heimatort"
+                    ),
+                ),
+                (
+                    "p_occupation",
+                    models.CharField(blank=True, max_length=100, verbose_name="Mieter*in Beruf"),
+                ),
+                (
+                    "p_membership_date",
+                    models.DateField(
+                        blank=True, null=True, verbose_name="Mieter*in Mitglied seit"
+                    ),
+                ),
+                (
+                    "c_issubcontract",
+                    models.BooleanField(default=False, verbose_name="Ist Untervertrag"),
+                ),
             ],
             options={
-                'verbose_name': 'Mieter*innenspiegel',
-                'verbose_name_plural': 'Mieter*innen',
-                'db_table': 'geno_TenantsView',
-                'ordering': ['bu_name', 'ru_name'],
-                'managed': False,
+                "verbose_name": "Mieter*innenspiegel",
+                "verbose_name_plural": "Mieter*innen",
+                "db_table": "geno_TenantsView",
+                "ordering": ["bu_name", "ru_name"],
+                "managed": False,
             },
         ),
         migrations.AlterField(
-            model_name='rentalunit',
-            name='import_id',
-            field=models.CharField(blank=True, default=None, max_length=255, null=True, unique=True, verbose_name='Import-ID'),
+            model_name="rentalunit",
+            name="import_id",
+            field=models.CharField(
+                blank=True,
+                default=None,
+                max_length=255,
+                null=True,
+                unique=True,
+                verbose_name="Import-ID",
+            ),
         ),
     ]

@@ -14,7 +14,11 @@ def parse_iban_field(value: str | None):
     iban_part = parts[0]
     bank_name = parts[1] if len(parts) > 1 else None
     if iban_util.is_valid(iban_part):
-        return ("valid_iban_with_bank", iban_part, bank_name) if bank_name else ("valid_iban", iban_part, None)
+        return (
+            ("valid_iban_with_bank", iban_part, bank_name)
+            if bank_name
+            else ("valid_iban", iban_part, None)
+        )
     return "other", value, None
 
 
@@ -30,7 +34,9 @@ def populate_bankaccount_fk(apps, schema_editor):
         else:
             kind, val, bank_name = parse_iban_field(raw)
             if kind == "valid_iban_with_bank":
-                bank, _ = BankAccount.objects.get_or_create(iban=val, financial_institution=bank_name)
+                bank, _ = BankAccount.objects.get_or_create(
+                    iban=val, financial_institution=bank_name
+                )
             elif kind == "valid_iban":
                 bank, _ = BankAccount.objects.get_or_create(iban=val)
             else:
@@ -45,7 +51,9 @@ def populate_bankaccount_fk(apps, schema_editor):
         else:
             kind, val, bank_name = parse_iban_field(raw)
             if kind == "valid_iban_with_bank":
-                bank, _ = BankAccount.objects.get_or_create(iban=val, financial_institution=bank_name)
+                bank, _ = BankAccount.objects.get_or_create(
+                    iban=val, financial_institution=bank_name
+                )
             elif kind == "valid_iban":
                 bank, _ = BankAccount.objects.get_or_create(iban=val)
             else:
@@ -97,17 +105,27 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="BankAccount",
             fields=[
-                ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
                 ("comment", models.CharField(max_length=500, blank=True, verbose_name="Comment")),
                 ("ts_created", models.DateTimeField(auto_now_add=True, verbose_name="Erstellt")),
                 ("ts_modified", models.DateTimeField(auto_now=True, verbose_name="Geändert")),
                 ("iban", models.CharField(max_length=34, blank=True, verbose_name="IBAN")),
-                ("financial_institution", models.CharField(max_length=100, blank=True, verbose_name="Finanzinstitut")),
-                ("account_holders", models.CharField(max_length=100, blank=True, verbose_name="Kontoinhaber")),
+                (
+                    "financial_institution",
+                    models.CharField(max_length=100, blank=True, verbose_name="Finanzinstitut"),
+                ),
+                (
+                    "account_holders",
+                    models.CharField(max_length=100, blank=True, verbose_name="Kontoinhaber"),
+                ),
             ],
             options={"abstract": False},
         ),
-
         migrations.AddField(
             model_name="address",
             name="bankaccount_new",
@@ -132,12 +150,13 @@ class Migration(migrations.Migration):
                 help_text="Bankverbindung der Person/Organisation",
             ),
         ),
-
         migrations.RunPython(populate_bankaccount_fk, reverse_populate_bankaccount_fk),
-
         migrations.RemoveField(model_name="address", name="bankaccount"),
         migrations.RemoveField(model_name="contract", name="bankaccount"),
-
-        migrations.RenameField(model_name="address", old_name="bankaccount_new", new_name="bankaccount"),
-        migrations.RenameField(model_name="contract", old_name="bankaccount_new", new_name="bankaccount"),
+        migrations.RenameField(
+            model_name="address", old_name="bankaccount_new", new_name="bankaccount"
+        ),
+        migrations.RenameField(
+            model_name="contract", old_name="bankaccount_new", new_name="bankaccount"
+        ),
     ]
