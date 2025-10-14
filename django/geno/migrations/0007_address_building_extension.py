@@ -63,7 +63,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="building",
             name="egid",
-            field=models.PositiveIntegerField(null=True, verbose_name="EGID"),
+            field=models.PositiveIntegerField(blank=True, null=True, verbose_name="EGID"),
         ),
         migrations.AddField(
             model_name="building",
@@ -100,11 +100,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="rentalunit",
             name="ewid",
-            field=models.PositiveIntegerField(null=True, verbose_name="EWID"),
+            field=models.PositiveIntegerField(blank=True, null=True, verbose_name="EWID"),
         ),
         migrations.AddField(
             model_name="rentalunit",
             name="internal_nr",
-            field=models.PositiveIntegerField(null=True, verbose_name="Interne-Nummer"),
+            field=models.PositiveIntegerField(blank=True, null=True, verbose_name="Interne-Nummer"),
         ),
     ]

@@ -686,7 +686,7 @@ class Building(GenoBase):
             "(für automatische Zuordnung von Nutzer:innen)."
         ),
     )
-    egid = models.PositiveIntegerField("EGID", null=True)
+    egid = models.PositiveIntegerField("EGID", null=True, blank=True)
     active = models.BooleanField("Aktiv", default=True)
 
     class Meta:
@@ -1290,8 +1290,8 @@ class RentalUnit(GenoBase):
     note = models.CharField("Zusatzinfo", max_length=200, blank=True)
     active = models.BooleanField("Aktiv", default=True)
     status = models.CharField("Status", default="Verfügbar", max_length=100)
-    ewid = models.PositiveIntegerField("EWID", null=True)
-    internal_nr = models.PositiveIntegerField("Interne-Nummer", null=True)
+    ewid = models.PositiveIntegerField("EWID", null=True, blank=True)
+    internal_nr = models.PositiveIntegerField("Interne-Nummer", null=True, blank=True)
     svg_polygon = models.TextField("SVG Polygon", default="", blank=True)
     description = models.TextField("Beschreibung", default="", blank=True)
     adit_serial = models.TextField(
