@@ -178,6 +178,24 @@ class GenoBase(models.Model):
         abstract = True
 
 
+class BankAccount(GenoBase):
+    iban = models.CharField("IBAN", max_length=34, blank=True)
+    financial_institution = models.CharField("Finanzinstitut", max_length=100, blank=True)
+    account_holders = models.CharField("Kontoinhaber", max_length=100, blank=True)
+
+    def __str__(self):
+        account_holders = self.account_holders.strip() if self.account_holders else ""
+        iban = self.iban.strip() if self.iban else ""
+        if account_holders and iban:
+            return f"{account_holders} ({iban})"
+        elif account_holders:
+            return account_holders
+        elif iban:
+            return iban
+        else:
+            return "Kein Konto angegeben"
+
+
 class Address(GenoBase):
     TITLE_CHOICES = (
         ("Herr", "Herr"),
@@ -226,7 +244,14 @@ class Address(GenoBase):
     date_birth = models.DateField("Geburtsdatum", null=True, blank=True)
     hometown = models.CharField("Heimatort", max_length=50, blank=True)
     occupation = models.CharField("Beruf/Ausbildung", max_length=150, blank=True)
-    bankaccount = models.CharField("Kontoverbindung", max_length=150, blank=True)
+    bankaccount = models.ForeignKey(
+        BankAccount,
+        verbose_name="Kontoverbindung",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        help_text="Z.B. für Rückzahlung Nebenkosten",
+    )
     interest_action = models.CharField(
         "Standard-Zinsvergütung",
         max_length=100,
@@ -1409,8 +1434,13 @@ class Contract(GenoBase):
         on_delete=models.SET_NULL,
         related_name="contract_billing_contracts",
     )
-    bankaccount = models.CharField(
-        "Kontoverbindung", max_length=150, blank=True, help_text="Z.B. für Rückzahlung Nebenkosten"
+    bankaccount = models.ForeignKey(
+        BankAccount,
+        verbose_name="Kontoverbindung",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        help_text="Bankverbindung der Person/Organisation",
     )
 
     ## Reverse relation to Documents

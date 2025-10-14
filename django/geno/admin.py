@@ -4,11 +4,13 @@ from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
 from django.http import HttpResponseRedirect
+from stdnum import iban as iban_util
 
 import geno.settings as geno_settings
 from geno.exporter import ExportXlsMixin
 from geno.models import (
     Address,
+    BankAccount,
     Building,
     Child,
     ContentTemplate,
@@ -735,6 +737,42 @@ class DocumentAdmin(GenoBaseAdmin):
 admin.site.register(Document, DocumentAdmin)
 
 
+class BankAccountForm(forms.ModelForm):
+    class Meta:
+        model = BankAccount
+        fields = "__all__"
+
+    def clean_iban(self):
+        value = self.cleaned_data.get("iban")
+        if not value:
+            return value
+        if not iban_util.is_valid(value):
+            raise forms.ValidationError("Invalid IBAN format.")
+        return value
+
+
+class BankAccountAdmin(GenoBaseAdmin):
+    model = BankAccount
+    form = BankAccountForm
+
+    def iban_display(self, obj):
+        return obj.iban if obj.iban else "(empty)"
+
+    list_display = [
+        "iban_display",
+        "financial_institution",
+        "account_holders",
+        "comment",
+        "ts_created",
+        "ts_modified",
+    ]
+    my_search_fields = ["iban", "financial_institution"]
+    search_fields = my_search_fields
+
+
+admin.site.register(BankAccount, BankAccountAdmin)
+
+
 class RegistrationAdmin(GenoBaseAdmin):
     model = Registration
     fields = [
@@ -1015,7 +1053,13 @@ class ContractAdmin(GenoBaseAdmin):
         "links",
         "backlinks",
     ]
-    readonly_fields = ["ts_created", "ts_modified", "object_actions", "links", "backlinks"]
+    readonly_fields = [
+        "ts_created",
+        "ts_modified",
+        "object_actions",
+        "links",
+        "backlinks",
+    ]
     list_display = ["__str__", "state", "date", "date_end", "note", "comment"]
     my_search_fields = [
         "contractors__name",
