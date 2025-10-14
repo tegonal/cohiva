@@ -760,13 +760,13 @@ class BankAccountAdmin(GenoBaseAdmin):
 
     list_display = [
         "iban_display",
-        "finanzinstitut",
-        "kontoinhaber",
+        "financial_institution",
+        "account_holders",
         "comment",
         "ts_created",
         "ts_modified",
     ]
-    my_search_fields = ["iban", "finanzinstitut"]
+    my_search_fields = ["iban", "financial_institution"]
     search_fields = my_search_fields
 
 

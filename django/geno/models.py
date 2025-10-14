@@ -179,16 +179,16 @@ class GenoBase(models.Model):
 
 class BankAccount(GenoBase):
     iban = models.CharField("IBAN", max_length=34, blank=True)
-    finanzinstitut = models.CharField("Finanzinstitut", max_length=100, blank=True)
-    kontoinhaber = models.CharField("Kontoinhaber", max_length=100, blank=True)
+    financial_institution = models.CharField("Finanzinstitut", max_length=100, blank=True)
+    account_holders = models.CharField("Kontoinhaber", max_length=100, blank=True)
 
     def __str__(self):
-        kontoinhaber = self.kontoinhaber.strip() if self.kontoinhaber else ""
+        account_holders = self.account_holders.strip() if self.account_holders else ""
         iban = self.iban.strip() if self.iban else ""
-        if kontoinhaber and iban:
-            return f"{kontoinhaber} ({iban})"
-        elif kontoinhaber:
-            return kontoinhaber
+        if account_holders and iban:
+            return f"{account_holders} ({iban})"
+        elif account_holders:
+            return account_holders
         elif iban:
             return iban
         else:
