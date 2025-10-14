@@ -19,6 +19,8 @@ class Table:
 class CompareCSV:
     """Compare a test CVS file with a table to a reference file"""
 
+    valid_empty_values = ("", "[empty]", "NULL")
+
     def __init__(self, test_file, reference_file):
         self._files = {"test": test_file, "ref": reference_file}
         self._table = Table(header={}, rownames={}, data={})
@@ -89,6 +91,8 @@ class CompareCSV:
                 self._result.append(f"Row only in ref: {ref[i]}")
             elif i >= len(ref):
                 self._result.append(f"Row only in test: {test[i]}")
+            elif ref[i] in self.valid_empty_values and test[i] in self.valid_empty_values:
+                continue
             elif ref[i] != test[i]:
                 self._result.append(f"Rows differ: test={test[i]}, ref={ref[i]}")
         # print(test, "\n======")
@@ -107,6 +111,8 @@ class CompareCSV:
                     testval = test[i][j]
                 except IndexError:
                     testval = ""
+                if refval in self.valid_empty_values and testval in self.valid_empty_values:
+                    continue
                 if refval != testval:
                     rowname = self._table.rownames["ref"][i]
                     header = self._table.header["ref"][j]

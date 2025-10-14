@@ -6,7 +6,7 @@
 {% block extraheader %}
 {{ block.super }}
 
-<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+<script src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
 <script>
   /* All rows selector */
   $(document).ready(function() {
@@ -16,7 +16,7 @@
             console.log($(this).is(':checked'));*/
             $( 'table.tenant-admin input[name="selection"]' ).prop('checked', $(this).is(':checked'));
         });
-    };  
+    };
   });
 </script>
 {% endblock %}
@@ -47,8 +47,8 @@ von {{ form.date_from }} bis {{ form.date_to }}
 <br><br>
 <input type="submit" name="show" value="Suchen/Anzeigen" />
 <input type="submit" name="consolidate" value="Rechnungen konsolidieren" />
-<a href="?reset_filter=1">Filter zurücksetzen</a> | 
-<a href="/geno/invoice/overview">Zur Übersicht</a>
+<a href="?reset_filter=1">Filter zurücksetzen</a> |
+<a href="/geno/debtor/">Zur Übersicht</a>
 <br>
 <br>
 {% else %}

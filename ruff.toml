@@ -1,0 +1,9 @@
+# Work around a problem in the pyCharm ruff plugin, when the pyCharm project root
+# is not the python namespace root (./django).
+extend = "./django/pyproject.toml"
+cache-dir = "./django/.ruff_cache"
+src = [ "./django" ]
+exclude = [
+   "django/NON_PUBLIC",
+   "django/geno/python-sepa",  ## third party code
+]

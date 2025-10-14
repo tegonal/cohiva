@@ -115,6 +115,8 @@ class TransactionCreateView(AccountInformationMixin, CreateView):
 
     def post(self, request, *args, **kwargs):
         form = self.get_form()
+        print(request.POST.get("date", "KEIN DATUM"))
+        print(form.errors)
         if form.is_valid():
             self.object = form.save()
             self.object.name = "Manuelle Buchung"

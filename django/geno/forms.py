@@ -58,6 +58,7 @@ class TransactionForm(forms.Form):
     name = select2.fields.ModelChoiceField(
         queryset=Address.objects.filter(active=True), model=None, name=None
     )
+    name.widget.attrs.update({"style": "width: 30em;"})
     date = forms.DateField(label="Datum", widget=forms.TextInput(attrs={"class": "datepicker"}))
     amount = forms.DecimalField(label="Betrag", decimal_places=2, required=False, help_text="")
     note = forms.CharField(label="Kommentar", required=False, help_text="(optional)")
@@ -763,6 +764,7 @@ class ManualInvoiceForm(forms.Form):
         name=None,
         model=None,
     )
+    address.widget.attrs.update({"style": "width: 30em;"})
     extra_text = forms.CharField(
         label="Zusatztext", help_text="(optional)", widget=forms.Textarea, required=False
     )
@@ -852,3 +854,12 @@ class InvoiceFilterForm(forms.Form):
         for ic in InvoiceCategory.objects.filter(active=True):
             self.fields["category_filter"].choices.append((ic.id, str(ic)))
             self.fields["category_filter"].widget.choices.append((ic.id, str(ic)))
+
+
+class ShareStatementForm(forms.Form):
+    date_widget = forms.TextInput(attrs={"class": "datepicker"})
+    date = forms.DateField(
+        label="Kontoauszug per",
+        required=True,
+        widget=date_widget,
+    )

@@ -226,7 +226,7 @@ def unauthorized(request):
         "response": [{"info": "Sie haben keine Berechtigung für diese Aktion."}],
         "title": "Keine Berechtigung",
     }
-    return render(request, "geno/messages.html", c)
+    return render(request, "geno/default.html", c)
 
 
 @login_required
