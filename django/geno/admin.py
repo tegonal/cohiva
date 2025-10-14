@@ -52,6 +52,49 @@ def copy_objects(modeladmin, request, queryset):
 copy_objects.short_description = "Ausgewählte Objekte kopieren"
 
 
+class ActiveFieldDefaultTrueListFilter(admin.SimpleListFilter):
+    """
+    Filter a boolean field `active`.
+    Default: only True (active) records.
+    When ‘All’ is chosen the URL will contain ?active=all (never removed).
+    """
+
+    title = "active"
+    parameter_name = "active"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("all", "All"),
+            ("true", "Yes"),
+            ("false", "No"),
+        )
+
+    def choices(self, changelist):
+        """
+        Ensure the ‘All’ choice keeps the GET parameter in the URL.
+        """
+        for lookup, title in self.lookup_choices:
+            query = changelist.get_query_string(
+                {self.parameter_name: lookup if lookup != "all" else "all"}
+            )
+            yield {
+                "selected": self.value() == lookup
+                or (self.value() is None and lookup == "true"),
+                "query_string": query,
+                "display": title,
+            }
+
+    def queryset(self, request, queryset):
+        if self.value() is None:  # first hit → default to True
+            return queryset.filter(active=True)
+        if self.value() == "all":
+            return queryset  # no filtering, but keep ?active=all
+        if self.value() == "true":
+            return queryset.filter(active=True)
+        if self.value() == "false":
+            return queryset.filter(active=False)
+
+
 ## Base admin class
 class GenoBaseAdmin(admin.ModelAdmin, ExportXlsMixin):
     model = None
@@ -75,10 +118,13 @@ class GenoBaseAdmin(admin.ModelAdmin, ExportXlsMixin):
                     setattr(self, attr, settings.COHIVA_ADMIN_FIELDS[module_name][setting_name])
 
     def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+
         # default filter: active=1 -> True
-        if self.model and "active" in (f.name for f in self.model._meta.get_fields()) and "active__exact" not in request.GET:
+        if self.model and "active" in (f.name for f in self.model._meta.get_fields()) and "active__exact" not in request.GET and "active__customfilter" not in request.GET:
             q = request.GET.copy()
-            q["active__exact"] = '1'
+            # q["active__exact"] = '1'
+            # q["active__customfilter"] = "1"
             request.GET = q
         return super().changelist_view(request, extra_context=extra_context)
 
@@ -152,7 +198,7 @@ class AddressAdmin(GenoBaseAdmin):
     ]
     list_filter = [
         "title",
-        "active",
+        ActiveFieldDefaultTrueListFilter,
         "formal",
         "paymentslip",
         "interest_action",
@@ -360,7 +406,7 @@ class BuildingAdmin(GenoBaseAdmin):
     ]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "description", "active"]
-    list_filter = ["active"]
+    list_filter = [ActiveFieldDefaultTrueListFilter]
     my_search_fields = ["name", "description", "team"]
     search_fields = my_search_fields
 
@@ -384,7 +430,7 @@ class TenantAdmin(GenoBaseAdmin):
     ]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "building", "key_number", "active"]
-    list_filter = ["building__name", "active"]
+    list_filter = ["building__name", ActiveFieldDefaultTrueListFilter]
     my_search_fields = ["name__name", "name__first_name", "building__name", "key_number", "notes"]
     search_fields = my_search_fields
 
@@ -695,7 +741,7 @@ class DocumentTypeAdmin(GenoBaseAdmin):
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "description", "template", "template_file", "active"]
     list_filter = [
-        "active",
+        ActiveFieldDefaultTrueListFilter,
     ]
     my_search_fields = [
         "name",
@@ -860,7 +906,7 @@ class RegistrationEventAdmin(GenoBaseAdmin):
     list_editable = ["active"]
     my_search_fields = ["name", "description", "confirmation_mail_sender", "comment"]
     list_filter = [
-        "active",
+        ActiveFieldDefaultTrueListFilter,
         "confirmation_mail_sender",
         "publication_type",
         "publication_start",
@@ -933,7 +979,7 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "rentalunit_contracts__contractors__organization",
         "rentalunit_contracts__contractors__first_name",
     ]
-    list_filter = ["rental_type", "rooms", "building__name", "floor", "status", "active"]
+    list_filter = ["rental_type", "rooms", "building__name", "floor", "status", ActiveFieldDefaultTrueListFilter]
     search_fields = my_search_fields
 
 
@@ -1112,7 +1158,7 @@ class InvoiceCategoryAdmin(GenoBaseAdmin):
         "reference_id",
         "comment",
     ]
-    list_filter = ["active", "manual_allowed", "linked_object_type"]
+    list_filter = [ActiveFieldDefaultTrueListFilter, "manual_allowed", "linked_object_type"]
     search_fields = my_search_fields
 
 
@@ -1378,7 +1424,7 @@ class ContentTemplateAdmin(GenoBaseAdmin):
     list_display = ["name", "template_type", "active", "ts_created", "ts_modified"]
     my_search_fields = ["name", "text"]
     list_filter = [
-        "active",
+        ActiveFieldDefaultTrueListFilter,
         "template_type",
         "manual_creation_allowed",
         "template_context",
