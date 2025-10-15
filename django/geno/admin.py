@@ -172,7 +172,6 @@ class AddressAdmin(GenoBaseAdmin):
         "email",
         "email2",
         "occupation",
-        "bankaccount",
         "comment",
     ]
     autocomplete_fields = ["user"]
@@ -1051,7 +1050,6 @@ class ContractAdmin(GenoBaseAdmin):
         "children__name__name",
         "children__name__first_name",
         "rental_units__name",
-        "bankaccount",
         "note",
         "comment",
     ]
