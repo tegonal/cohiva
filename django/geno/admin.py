@@ -1003,7 +1003,9 @@ class ContractAdminModelForm(forms.ModelForm):
         for ru in rental_units.all():
             buildings.add(ru.building)
         if len(buildings) > 1:
-            raise forms.ValidationError("Es dürfen nur Mietobjekte aus derselben Liegenschaft gewählt werden.")
+            raise forms.ValidationError(
+                "Es dürfen nur Mietobjekte aus derselben Liegenschaft gewählt werden."
+            )
         return rental_units
 
 

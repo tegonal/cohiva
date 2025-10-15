@@ -30,6 +30,7 @@ import geno.settings as geno_settings
 ## For PDF merging
 from cohiva.utils.pdf import PdfGenerator
 
+from .helper import build_account
 from .models import (
     Address,
     ContentTemplate,
@@ -480,9 +481,13 @@ def add_payment(date, amount, person, invoice=None, note=None, cash=False):
     if not book:
         return messages[-1]
 
-    receivables = book.accounts(
-        code=geno_settings.GNUCASH_ACC_INVOICE_RECEIVABLE
-    )  ## Debitoren Miete
+    account_nbr = (
+        build_account(geno_settings.GNUCASH_ACC_INVOICE_RECEIVABLE)
+        if invoice and invoice.contract and invoice.contract.rental_units.exists()
+        else geno_settings.GNUCASH_ACC_INVOICE_RECEIVABLE
+    )
+
+    receivables = book.accounts(code=account_nbr)  ## Debitoren Miete
     if cash:
         payment_account = book.accounts(code=geno_settings.GNUCASH_ACC_KASSA)  ## Kasse
     else:
@@ -543,7 +548,11 @@ def get_income_account(book, invoice_category, kind, contract=None):
         return book.accounts(code=geno_settings.GNUCASH_ACC_SPENDE)
     elif kind == "other":
         return book.accounts(code=geno_settings.GNUCASH_ACC_OTHER)
-    elif invoice_category.income_account_building_based and contract and contract.rental_units.exists():
+    elif (
+        invoice_category.income_account_building_based
+        and contract
+        and contract.rental_units.exists()
+    ):
         ## Use first rental unit's building accounting postfix
         ru = contract.rental_units.all().first()
         if ru.building:

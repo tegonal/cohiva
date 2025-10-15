@@ -4,25 +4,34 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('geno', '0012_alter_bankaccount_options_alter_contract_options_and_more'),
+        ("geno", "0012_alter_bankaccount_options_alter_contract_options_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='building',
-            name='accounting_postfix',
-            field=models.PositiveIntegerField(blank=True, null=True, verbose_name='Buchhaltungs-Postfix'),
+            model_name="building",
+            name="accounting_postfix",
+            field=models.PositiveIntegerField(
+                blank=True, null=True, verbose_name="Buchhaltungs-Postfix"
+            ),
         ),
         migrations.AddField(
-            model_name='invoicecategory',
-            name='income_account_building_based',
-            field=models.BooleanField(default=False, help_text='Liegenschafts-Postfix (bspw. 81) wird gentutz um Kontonummer zu bilden. Es resultiert bspw. 300081', verbose_name='Ertragskonto liegenschaftsabhängig'),
+            model_name="invoicecategory",
+            name="income_account_building_based",
+            field=models.BooleanField(
+                default=False,
+                help_text="Liegenschafts-Postfix (bspw. 81) wird gentutz um Kontonummer zu bilden. Es resultiert bspw. 300081",
+                verbose_name="Ertragskonto liegenschaftsabhängig",
+            ),
         ),
         migrations.AddField(
-            model_name='invoicecategory',
-            name='receivables_account_building_based',
-            field=models.BooleanField(default=False, help_text='Liegenschafts-Postfix (bspw. 81) wird gentutz um Kontonummer zu bilden. Es resultiert bspw. 110281', verbose_name='Forderungskonto liegenschaftsabhängig'),
+            model_name="invoicecategory",
+            name="receivables_account_building_based",
+            field=models.BooleanField(
+                default=False,
+                help_text="Liegenschafts-Postfix (bspw. 81) wird gentutz um Kontonummer zu bilden. Es resultiert bspw. 110281",
+                verbose_name="Forderungskonto liegenschaftsabhängig",
+            ),
         ),
     ]
