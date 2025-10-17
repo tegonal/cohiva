@@ -21,7 +21,23 @@ class Navigation:
         self._nav_groups.append(group)
 
     def generate_unfold_navigation(self, request):
-        return [g.generate_unfold_navigation(request) for g in self._nav_groups]
+        nav = [
+            {
+                # "title": "Quicklinks",
+                "items": [
+                    {
+                        "title": "Startseite",
+                        "icon": "dashboard",  # Supported icon set: https://fonts.google.com/icons
+                        "link": reverse("admin:index"),
+                        "items": [],
+                        # "badge": "sample_app.badge_callback",
+                        # "permission": lambda request: request.user.is_superuser,
+                    },
+                ],
+            },
+        ]
+        nav.extend([g.generate_unfold_navigation(request) for g in self._nav_groups])
+        return nav
 
     def generate_unfold_tabs(self, request):
         ret = []

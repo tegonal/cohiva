@@ -1028,13 +1028,13 @@ COHIVA_ADMIN_NAVIGATION = [
                 ],
             },
             {"type": "model", "value": "geno.LookupTable", "icon": "table_chart"},
-            {
-                "type": "link",
-                "name": "All Models",
-                "value": "/admin/",
-                "permission": "geno.sysadmin",
-                "icon": "list_alt",
-            },
+            # {
+            #     "type": "link",
+            #     "name": "All Models",
+            #     "value": "/admin/",
+            #     "permission": "geno.sysadmin",
+            #     "icon": "list_alt",
+            # },
         ],
     },
 ]
@@ -1072,10 +1072,10 @@ UNFOLD = {
     #        },
     #    ],
     #    "SHOW_HISTORY": True, # show/hide "History" button, default: True
-    #    "SHOW_VIEW_ON_SITE": True, # show/hide "View on site" button, default: True
-    #    "SHOW_BACK_BUTTON": False, # show/hide "Back" button on changeform in header, default: False
-    #    "ENVIRONMENT": "sample_app.environment_callback", # environment name in header
-    #    "ENVIRONMENT_TITLE_PREFIX": "sample_app.environment_title_prefix_callback", # environment name prefix in title tag
+    "SHOW_VIEW_ON_SITE": False,  # show/hide "View on site" button, default: True
+    "SHOW_BACK_BUTTON": True,  # show/hide "Back" button on changeform in header, default: False
+    "ENVIRONMENT": lambda _: admin.site.get_environment(),  # environment name in header
+    "ENVIRONMENT_TITLE_PREFIX": lambda _: admin.site.get_environment_title(),  # environment name prefix in title tag
     #    "DASHBOARD_CALLBACK": "sample_app.dashboard_callback",
     #    "THEME": "dark", # Force theme: "dark" or "light". Will disable theme switcher
     #    "LOGIN": {
@@ -1137,7 +1137,7 @@ UNFOLD = {
     "SIDEBAR": {
         "show_search": True,  # Search in applications and models names
         "command_search": False,  # Replace the sidebar search with the command search
-        "show_all_applications": False,  # Dropdown with all applications and models
+        "show_all_applications": lambda request: request.user.is_superuser,  # Menu with all applications and models
         "navigation": lambda request: admin.site.navigation.generate_unfold_navigation(request),
     },
     "TABS": lambda request: admin.site.navigation.generate_unfold_tabs(request),

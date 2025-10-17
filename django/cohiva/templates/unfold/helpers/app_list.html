@@ -154,3 +154,4 @@
         {% include "unfold/helpers/messages/error.html" with error=error_message %}
     </p>
 {% endif %}
+<p class="p-2 text-xs"><a href="https://cohiva.ch/">Cohiva</a> version {{ COHIVA_VERSION }}<br>Config: {{ COHIVA_GENO_ID }}{% if COHIVA_DEBUG %} [TEST]{% endif %}</p>
