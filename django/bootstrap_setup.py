@@ -283,7 +283,7 @@ def check_system_dependencies():
             'libreoffice': 'libreoffice (for document generation)',
         }
 
-        for pkg, name in required.items():
+        for pkg, _name in required.items():
             if not check_brew_package(pkg):
                 missing_packages.append(pkg)
 
@@ -468,9 +468,6 @@ def setup_venv(python_path, venv_path):
 def install_dependencies(venv_path):
     """Install Python dependencies."""
     print_step("Installing Python dependencies...")
-
-    pip_path = venv_path / 'bin' / 'pip'
-    python_path = venv_path / 'bin' / 'python'
 
     if not Path('install_dependencies.sh').exists():
         print_error("install_dependencies.sh not found. Are you in the django directory?")
