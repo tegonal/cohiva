@@ -250,9 +250,9 @@ class QRBill(APIView):
             raise ValidationError("Konnte Buchhaltung nicht öffnen: %s" % messages[-1])
 
         billing_period_end = datetime.strptime(request.data["billing_period_end"], "%Y-%m-%d")
-        fiaccount_nk = build_account(geno_settings.GNUCASH_ACC_NK, self.contract)
+        fiaccount_nk = build_account(geno_settings.GNUCASH_ACC_NK, contract=self.contract)
         fiaccount_nk_receivable = build_account(
-            geno_settings.GNUCASH_ACC_NK_RECEIVABLE, self.contract
+            geno_settings.GNUCASH_ACC_NK_RECEIVABLE, contract=self.contract
         )
         if request.data["total_akonto"] > 0:
             ## Transaction: Forderungen>Nebenkosten [1104] -> Passive Abgenzung>NK-Akonto [2301]
