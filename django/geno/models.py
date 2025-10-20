@@ -1321,7 +1321,7 @@ class RentalUnit(GenoBase):
         Bruttomiete inkl. NK und Strom
         """
         return (
-            self.rent_netto
+            (self.rent_netto if self.rent_netto else Decimal(0.0))
             + (self.nk if self.nk else Decimal(0.0))
             + (self.nk_flat if self.nk_flat else Decimal(0.0))
             + (self.nk_electricity if self.nk_electricity else Decimal(0.0))
