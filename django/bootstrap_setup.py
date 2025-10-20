@@ -556,6 +556,22 @@ def setup_config(install_dir, venv_path):
     # Run setup.py to create directories and keys
     run_command([str(python_path), 'setup.py'], env=env)
 
+    # Uncomment CSRF/Session cookie settings for local development
+    settings_file = Path('cohiva/settings.py')
+    if settings_file.exists():
+        content = settings_file.read_text()
+        # Uncomment the CSRF and session cookie settings for local HTTP development
+        content = content.replace(
+            '# SESSION_COOKIE_SECURE = False',
+            'SESSION_COOKIE_SECURE = False'
+        )
+        content = content.replace(
+            '# CSRF_COOKIE_SECURE = False',
+            'CSRF_COOKIE_SECURE = False'
+        )
+        settings_file.write_text(content)
+        print_info("Enabled local development cookie settings (insecure cookies for HTTP)")
+
     # Create .env file if it doesn't exist
     env_file = Path('.env')
     if not env_file.exists():
@@ -789,6 +805,11 @@ def print_success(venv_path, demo_data_loaded=False):
     if demo_data_loaded:
         print(f"{Colors.GREEN}Demo data loaded!{Colors.NC}")
         print("  You can now explore the system with sample members, contracts, and invoices.")
+        print()
+        print(f"{Colors.YELLOW}⚠ Troubleshooting login issues:{Colors.NC}")
+        print("  - Make sure you're using http://localhost:8000/admin/ (not /portal/)")
+        print("  - Clear browser cookies if you still see CSRF errors")
+        print("  - The dev server must be running for login to work")
         print()
 
     print(f"{Colors.YELLOW}Optional:{Colors.NC}")

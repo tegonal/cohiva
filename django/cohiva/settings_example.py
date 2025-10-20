@@ -8,6 +8,12 @@ from .settings_defaults import *  # noqa: F403
 ## Put your custom test settings here:
 ######################################
 
+## Disable secure cookies for local development over HTTP
+## WARNING: Only enable this for local development! Never use in production!
+## The bootstrap script will automatically uncomment these for you.
+# SESSION_COOKIE_SECURE = False
+# CSRF_COOKIE_SECURE = False
+
 ## Example: Configure outbound SMTP
 # EMAIL_HOST = "mail.example.com"
 # EMAIL_HOST_USER = "smtpuser"
