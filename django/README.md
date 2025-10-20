@@ -58,6 +58,14 @@ The bootstrap script will:
 - See [AUTO_VENV_ACTIVATION.md](AUTO_VENV_ACTIVATION.md) to auto-activate venv when entering the directory
 - See [Development Workflow](#development-workflow) below for daily commands
 
+**Clean up:**
+If you need to start fresh and remove all bootstrap-generated files:
+```bash
+./clean.sh              # Interactive cleanup with confirmation
+./clean.sh --force      # Skip confirmation prompt
+./clean.sh --keep-venv  # Keep the virtual environment
+```
+
 ---
 
 ## Manual Installation

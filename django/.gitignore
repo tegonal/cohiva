@@ -4,13 +4,15 @@ NOT_USED
 *.log
 .idea/*
 /.env
+/.envrc  # direnv auto-activation config
+/.venv-path  # Virtual environment path marker
 /.coverage
 /test-failure.html
 /dump
 /website
 /django-test
 /django-production
-/cohiva/base_config.py
+/cohiva/base_config.py  # Contains generated SITE_SECRET and local config
 /cohiva/settings_production.py
 /cohiva/settings.py
 /cohiva/saml2/private.key

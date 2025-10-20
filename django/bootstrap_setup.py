@@ -534,9 +534,12 @@ def setup_config(install_dir, venv_path):
         )
 
         # Write the updated config
+        # NOTE: base_config.py is git-ignored (see .gitignore line 11), so this secret
+        # is never committed to source control. This is the standard Django pattern for
+        # local development. For production, use environment variables or secret managers.
         base_config.write_text(content)
         print_info(f"INSTALL_DIR set to: {install_dir}")
-        print_info("Generated random SITE_SECRET")
+        print_info("Generated random SITE_SECRET (stored in git-ignored base_config.py)")
 
     # If base_config.py exists but has wrong INSTALL_DIR, update it
     elif base_config.exists():
