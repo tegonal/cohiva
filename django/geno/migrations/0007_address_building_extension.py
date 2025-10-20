@@ -105,6 +105,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="rentalunit",
             name="internal_nr",
-            field=models.PositiveIntegerField(blank=True, null=True, verbose_name="Interne-Nummer"),
+            field=models.PositiveIntegerField(
+                blank=True, null=True, verbose_name="Interne-Nummer"
+            ),
         ),
     ]

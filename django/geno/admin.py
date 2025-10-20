@@ -57,7 +57,9 @@ def copy_objects(modeladmin, request, queryset):
             return
     messages.success(request, f"{count} Objekt(e) kopiert.")
 
+
 copy_objects.short_description = "Ausgewählte Objekte kopieren"
+
 
 class BooleanFieldDefaultTrueListFilter(admin.BooleanFieldListFilter):
     """
@@ -65,6 +67,7 @@ class BooleanFieldDefaultTrueListFilter(admin.BooleanFieldListFilter):
     Default: only True (active) records.
     When ‘All’ is chosen the URL will contain ?active=all (never removed).
     """
+
     def __init__(self, field, request, params, model, model_admin, field_path):
         super().__init__(field, request, params, model, model_admin, field_path)
 
@@ -169,6 +172,7 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
                 setting_name = f"{class_name}.{attr}"
                 if setting_name in settings.COHIVA_ADMIN_FIELDS[module_name]:
                     setattr(self, attr, settings.COHIVA_ADMIN_FIELDS[module_name][setting_name])
+
 
 @admin.display(description="Anrede auf 'Herr' setzen")
 def set_title_mr(modeladmin, request, queryset):
@@ -457,6 +461,7 @@ class BuildingAdmin(GenoBaseAdmin):
     list_filter = [("active", BooleanFieldDefaultTrueListFilter)]
     search_fields = ["name", "description", "team"]
 
+
 @admin.register(Tenant)
 class TenantAdmin(GenoBaseAdmin):
     model = Tenant
@@ -477,6 +482,7 @@ class TenantAdmin(GenoBaseAdmin):
     list_filter = ["building__name", ("active", BooleanFieldDefaultTrueListFilter)]
     search_fields = ["name__name", "name__first_name", "building__name", "key_number", "notes"]
     autocomplete_fields = ["name", "building"]
+
 
 @admin.register(MemberAttributeType)
 class MemberAttributeTypeAdmin(GenoBaseAdmin):
@@ -1047,8 +1053,16 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "rentalunit_contracts__contractors__organization",
         "rentalunit_contracts__contractors__first_name",
     ]
-    list_filter = ["rental_type", "rooms", "building__name", "floor", "status", ("active", BooleanFieldDefaultTrueListFilter)]
+    list_filter = [
+        "rental_type",
+        "rooms",
+        "building__name",
+        "floor",
+        "status",
+        ("active", BooleanFieldDefaultTrueListFilter),
+    ]
     autocomplete_fields = ["building"]
+
 
 @admin.display(description='Als "unterzeichnet" markieren')
 def contract_mark_signed(modeladmin, request, queryset):
@@ -1255,7 +1269,11 @@ class InvoiceCategoryAdmin(GenoBaseAdmin):
         "comment",
     ]
 
-    list_filter = [("active", BooleanFieldDefaultTrueListFilter), "manual_allowed", "linked_object_type"]
+    list_filter = [
+        ("active", BooleanFieldDefaultTrueListFilter),
+        "manual_allowed",
+        "linked_object_type",
+    ]
     autocomplete_fields = ["email_template"]
 
 
