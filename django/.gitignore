@@ -8,6 +8,8 @@ NOT_USED
 /test-failure.html
 /dump
 /website
+/django-test
+/django-production
 /cohiva/base_config.py
 /cohiva/settings_production.py
 /cohiva/settings.py
@@ -31,3 +33,8 @@ NOT_USED
 /portal/templates/portal/portal_page.html
 /portal/templates/portal/secondary.html
 /portal/static
+
+# AI agents
+CLAUDE.md
+/.claude
+/.serena

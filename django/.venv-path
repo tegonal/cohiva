@@ -1,0 +1,3 @@
+# Virtual environment path for shell auto-activation
+# See AUTO_VENV_ACTIVATION.md for setup instructions
+/Users/genox/.venv/cohiva-dev
