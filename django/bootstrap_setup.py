@@ -703,7 +703,72 @@ def create_superuser(venv_path):
     run_command(['./manage.py', 'createsuperuser'], env=env)
 
 
-def print_success(venv_path):
+def load_demo_data(venv_path):
+    """Load demo data into the database."""
+    print_step("Loading demo data...")
+    print()
+
+    # Check if demo data exists
+    demo_data_sql = Path('demo-data/demo-data.sql')
+    if not demo_data_sql.exists():
+        print_warn("Demo data file not found: demo-data/demo-data.sql")
+        print_info("Skipping demo data loading")
+        return False
+
+    print("This will load sample data including:")
+    print("  - Member accounts and contracts")
+    print("  - Invoices and transactions")
+    print("  - Reservation resources")
+    print("  - Document templates")
+    print()
+    print_warn("This will overwrite existing data in the TEST database!")
+    print()
+
+    # Set up environment for venv
+    env = os.environ.copy()
+    env['VIRTUAL_ENV'] = str(venv_path)
+    env['PATH'] = f"{venv_path / 'bin'}:{env['PATH']}"
+
+    try:
+        # Run demo_data_manager.py with --load and --force flags
+        result = run_command(
+            ['python', 'scripts/demo_data_manager.py', '--load', '--force'],
+            env=env,
+            check=False,
+        )
+
+        if result.returncode != 0:
+            print_error("Failed to load demo data")
+            return False
+
+        print_info("Demo data loaded successfully")
+        print()
+
+        # Run migrations to update schema to latest version
+        # The demo data might have old table structures, so we need to apply any new migrations
+        print_step("Applying latest migrations to demo data...")
+        try:
+            run_command(['./manage.py', 'migrate', '--skip-checks'], env=env)
+            print_info("Migrations applied successfully")
+        except subprocess.CalledProcessError:
+            print_warn("Some migrations failed - this can happen with data migrations")
+            print_info("The database should still be usable. If you encounter issues, try:")
+            print_info("  ./manage.py showmigrations  # Check migration status")
+            print_info("  ./manage.py migrate --fake-initial  # Skip initial table creation")
+            print_info("  ./manage.py migrate  # Try completing migrations")
+
+        print()
+        print_warn("Note: You'll need to create a superuser to access the admin interface")
+        print_info("Run: ./manage.py createsuperuser")
+        print()
+        return True
+
+    except Exception as e:
+        print_error(f"Error loading demo data: {e}")
+        return False
+
+
+def print_success(venv_path, demo_data_loaded=False):
     """Print success message."""
     print_header("Setup Complete!")
 
@@ -720,8 +785,15 @@ def print_success(venv_path):
     print("  3. Access the admin interface at:")
     print(f"     {Colors.BLUE}http://localhost:8000/admin/{Colors.NC}")
     print()
+
+    if demo_data_loaded:
+        print(f"{Colors.GREEN}Demo data loaded!{Colors.NC}")
+        print("  You can now explore the system with sample members, contracts, and invoices.")
+        print()
+
     print(f"{Colors.YELLOW}Optional:{Colors.NC}")
-    print("  - Load demo data: ./scripts/demo_data_manager.py --load")
+    if not demo_data_loaded:
+        print("  - Load demo data: ./scripts/demo_data_manager.py --load")
     print("  - Run tests: ./run-tests.sh")
     print()
     print(f"{Colors.GREEN}Quick commands:{Colors.NC}")
@@ -762,6 +834,11 @@ def main():
         action='store_true',
         help='Skip creating superuser',
     )
+    parser.add_argument(
+        '--load-demo-data',
+        action='store_true',
+        help='Load demo data after setup',
+    )
 
     args = parser.parse_args()
 
@@ -782,35 +859,71 @@ def main():
     # Setup auto-activation
     setup_auto_venv(venv_path)
 
-    # Start Docker and run migrations
+    # Start Docker (but defer migrations until we know if demo data will be loaded)
     docker_started = False
     if not args.skip_docker:
         docker_started = start_docker()
-        if docker_started:
-            run_migrations(venv_path)
-        else:
-            print_warn("Skipping database migrations (Docker services not started)")
-            print_info("Run migrations manually after starting Docker:")
+        if not docker_started:
+            print_warn("Docker services not started - skipping database setup")
+            print_info("Start Docker manually and run migrations:")
             print_info("  docker compose -f docker-compose.dev.yml up -d")
             print_info("  ./manage.py migrate")
 
-    # Create superuser (only if Docker started successfully)
-    if not args.skip_superuser and (args.skip_docker or docker_started):
-        print()
-        response = input("Do you want to create a superuser now? (Y/n) ")
-        try:
-            if validate_yes_no_input(response, default='y'):
-                create_superuser(venv_path)
-        except ValidationError as e:
-            print_error(str(e))
-            print_warn("Skipping superuser creation")
+    # Load demo data or run migrations + create superuser (only if Docker started successfully)
+    demo_data_loaded = False
+    if args.skip_docker or docker_started:
+        # Check if demo data should be loaded
+        load_demo = args.load_demo_data
+
+        # If not specified via flag, ask interactively (only if demo data exists)
+        if not load_demo and not args.skip_superuser:
+            demo_data_sql = Path('demo-data/demo-data.sql')
+            if demo_data_sql.exists():
+                print()
+                response = input("Do you want to load demo data now? (y/N) ")
+                try:
+                    load_demo = validate_yes_no_input(response, default='n')
+                except ValidationError as e:
+                    print_error(str(e))
+                    load_demo = False
+
+        # Load demo data if requested (migrations are run inside load_demo_data)
+        if load_demo:
+            demo_data_loaded = load_demo_data(venv_path)
+
+            # If demo data was loaded, we still need to create superuser
+            if demo_data_loaded and not args.skip_superuser:
+                print()
+                response = input("Do you want to create a superuser now? (Y/n) ")
+                try:
+                    if validate_yes_no_input(response, default='y'):
+                        create_superuser(venv_path)
+                except ValidationError as e:
+                    print_error(str(e))
+                    print_warn("Skipping superuser creation")
+
+        # If demo data NOT loaded, run regular migrations first, then offer superuser
+        else:
+            # Run migrations on empty database
+            if docker_started:
+                run_migrations(venv_path)
+
+            if not args.skip_superuser:
+                print()
+                response = input("Do you want to create a superuser now? (Y/n) ")
+                try:
+                    if validate_yes_no_input(response, default='y'):
+                        create_superuser(venv_path)
+                except ValidationError as e:
+                    print_error(str(e))
+                    print_warn("Skipping superuser creation")
     elif not args.skip_superuser and not docker_started:
         print_warn("Skipping superuser creation (database not available)")
         print_info("Create superuser manually after starting Docker:")
         print_info("  ./manage.py createsuperuser")
 
     # Print success message
-    print_success(venv_path)
+    print_success(venv_path, demo_data_loaded)
 
 
 if __name__ == '__main__':

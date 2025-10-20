@@ -317,6 +317,7 @@ main() {
     INSTALL_DIR=""
     SKIP_DOCKER=false
     SKIP_SUPERUSER=false
+    LOAD_DEMO_DATA=false
 
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -336,6 +337,10 @@ main() {
                 SKIP_SUPERUSER=true
                 shift
                 ;;
+            --load-demo-data)
+                LOAD_DEMO_DATA=true
+                shift
+                ;;
             --help)
                 echo "Usage: $0 [OPTIONS]"
                 echo ""
@@ -344,6 +349,7 @@ main() {
                 echo "  --install-dir PATH   Path for Cohiva data directory (default: $DEFAULT_INSTALL_DIR)"
                 echo "  --skip-docker        Skip starting Docker services"
                 echo "  --skip-superuser     Skip creating superuser"
+                echo "  --load-demo-data     Load demo data after setup"
                 echo "  --help               Show this help message"
                 exit 0
                 ;;
@@ -392,6 +398,10 @@ main() {
 
     if [ "$SKIP_SUPERUSER" = true ]; then
         PYTHON_ARGS+=("--skip-superuser")
+    fi
+
+    if [ "$LOAD_DEMO_DATA" = true ]; then
+        PYTHON_ARGS+=("--load-demo-data")
     fi
 
     # Execute Python setup script
