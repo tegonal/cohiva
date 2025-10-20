@@ -2,9 +2,12 @@
 
 ## Install required system packages
 
+Supported Python versions: 3.9 – 3.13
+
 Example for Debian 11 (should work on most Debian/Ubuntu based systems):
 
     sudo apt install build-essential
+    sudo apt install clang
     sudo apt install python3-dev
     sudo apt install python3-venv
     sudo apt install libmariadb-dev   ## or default-libmysqlclient-dev
@@ -179,12 +182,14 @@ Recommendations:
 
  - Install Ruff plugin for code formatting and linting.
    - Enable "Run ruff when the python file is saved" and "Use ruff format for version 0.0.289 and later".
-   - Enable Ruff LSP feature (with LSP4IJ plugin in CE version)
-   - Set config file to `pyproject.toml`
- - Set the Python interpreter to the correct virtual environment (if managed with `install_dependencies.sh`):
+   - Enable Ruff LSP feature (in the CE version of PyCharm you need to install the LSP4IJ plugin first)
+   - DON'T set a config file for ruff. It only works properly with auto-discovery of the config.
+ - Set the Python interpreter to the correct virtual environment:
    - Settings > Python > Interpreter
    - Add Interpreter > Add Local Interpreter
    - Select existing > Type Python > Select `<path to venv>/bin/python3`
+ - Configure Settings > Project Structure:
+   - At least define 'django' as "Source" and "Namespace package" folder. Otherwise resolving packages won't work properly.
 
 ### dumpdata / loaddata
 

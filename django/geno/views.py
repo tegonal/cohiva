@@ -1183,7 +1183,7 @@ class ShareConfirmationLetterView(DocumentGeneratorView):
         "geno.add_document",
         "geno.confirm_share",
         "geno.canview_share",
-        "geno.carview_billing",
+        "geno.canview_billing",
     )
     doctype = "shareconfirm_req"
 
@@ -1226,7 +1226,7 @@ class ShareReminderLetterView(DocumentGeneratorView):
         "geno.add_document",
         "geno.confirm_share",
         "geno.canview_share",
-        "geno.carview_billing",
+        "geno.canview_billing",
     )
     doctype = "loanreminder"
 

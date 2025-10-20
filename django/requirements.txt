@@ -143,7 +143,7 @@ django-taggit==4.0.0
     # via wagtail
 django-treebeard==4.7.1
     # via wagtail
-django-unfold==0.65.0
+django-unfold==0.67.0
     # via -r requirements.in
 djangorestframework==3.16.1
     # via

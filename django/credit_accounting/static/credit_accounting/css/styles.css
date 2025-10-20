@@ -1,0 +1,39 @@
+.select2-container {
+   min-width: 500px;
+}
+
+/* django-tables2 pagination */
+ul.pagination {
+   list-style: none;
+   display: flex;
+   padding: 0;
+}
+
+ul.pagination li {
+   margin: 0 4px;
+}
+
+ul.pagination a {
+   color: black;
+   text-decoration: none;
+   padding: 6px 10px;
+   border: 1px solid #ddd;
+   border-radius: 4px;
+   display: block;
+   transition: background-color 0.3s, color 0.3s;
+}
+
+ul.pagination li.active a {
+   background-color: #ABABAB;
+   color: white;
+   border-color: #ABABAB;
+}
+
+ul.pagination li:not(.active) a:hover {
+   background-color: #ddd;
+}
+
+/* Work around problem with conflicting css in Django admin base.css */
+div.table-container ul.pagination > li {
+   list-style-type: none;
+}
