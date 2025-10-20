@@ -113,6 +113,13 @@ class CompareCSV:
                     testval = ""
                 if refval in self.valid_empty_values and testval in self.valid_empty_values:
                     continue
+                try:
+                    ## Accept rounding errors after the tenth decimal place
+                    refval = round(float(refval), 10)
+                    testval = round(float(testval), 10)
+                except ValueError:
+                    ## Not a float
+                    pass
                 if refval != testval:
                     rowname = self._table.rownames["ref"][i]
                     header = self._table.header["ref"][j]
