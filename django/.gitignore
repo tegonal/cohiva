@@ -12,7 +12,7 @@ NOT_USED
 /website
 /django-test
 /django-production
-/cohiva/base_config.py  # Contains generated SITE_SECRET and local config
+/cohiva/base_config.py
 /cohiva/settings_production.py
 /cohiva/settings.py
 /cohiva/saml2/private.key
