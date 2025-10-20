@@ -90,7 +90,7 @@ class NKReportTest(ReportTestCase):
         # self.add_field("Vorperiode:Bezeichnung", "2022/2023")
         # self.add_field("Vorperiode:Datei", "filer:26", "file")
 
-        self.add_field("Liegenschaften", "['1', '2']")
+        self.add_field("Liegenschaften", f"['{self.buildings[0].id}', '{self.buildings[1].id}']")
 
         self.add_field("Ausgabe:LimitiereVertragsIDs", "", "json")
         # self.add_field("Ausgabe:LimitiereVertragsIDs", "[ 11 ]", "json")

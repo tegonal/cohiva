@@ -35,7 +35,7 @@ def sync_ical_reservations(request):
     except Exception as e:
         ret.append({"info": "ERROR: Could not fetch reservations data: %s" % (e)})
         return render(
-            request, "geno/messages.html", {"response": ret, "title": "Sync reservations iCal"}
+            request, "geno/default.html", {"response": ret, "title": "Sync reservations iCal"}
         )
 
     try:
@@ -43,7 +43,7 @@ def sync_ical_reservations(request):
     except Exception as e:
         ret.append({"info": "ERROR: Could not parse calendar data: %s - %s" % (e, response.text)})
         return render(
-            request, "geno/messages.html", {"response": ret, "title": "Sync reservations iCal"}
+            request, "geno/default.html", {"response": ret, "title": "Sync reservations iCal"}
         )
 
     skip_list = [
@@ -199,7 +199,7 @@ def sync_ical_reservations(request):
     )
 
     return render(
-        request, "geno/messages.html", {"response": ret, "title": "Sync reservations iCal"}
+        request, "geno/default.html", {"response": ret, "title": "Sync reservations iCal"}
     )
 
 
@@ -213,7 +213,7 @@ def send_report_emails(request):
     ret.append({"info": "Sending report emails is disabled."})
 
     return render(
-        request, "geno/messages.html", {"response": ret, "title": "Send ALL Report Emails"}
+        request, "geno/default.html", {"response": ret, "title": "Send ALL Report Emails"}
     )
 
 

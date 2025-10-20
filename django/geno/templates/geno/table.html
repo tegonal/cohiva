@@ -4,33 +4,11 @@
 {% load i18n %}
 
 {% block extrastyle %}
+{{ block.super }}
 <link rel="stylesheet" href="{% static 'django_tables2/themes/paleblue/css/screen.css' %}" />
-
-{# For datepicker UI #}
-<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
-<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-<script>
-  /* Configure datepicker */
-  $(function() {
-    $( ".datepicker" ).datepicker({
-      changeMonth: true,
-      changeYear: true,
-      yearRange: "2010:2030",
-      defaultDate: 0,
-      dateFormat: "dd.mm.yy",
-    });
-  });
-  /* Set focus to name field */
-  $(document).ready(function() {
-    window.onload = function() {
-      $("#id_name").focus();
-    };  
-  }); 
-</script>
 {% endblock %}
 
-{% block content %}
+{% block custom_content %}
 <div id="toolbar">
 
 {% if invoice_table %}
@@ -40,7 +18,7 @@
 <form id="changelist-search" method="get">
 {% endif %}
 
-<div><!-- DIV needed for valid HTML -->
+<div class="aligned border border-base-200 mb-8 rounded-default pt-3 px-3 shadow-sm dark:border-base-800 legacyform">
 <label for="searchbar"><img src="/static/admin/img/search.svg" alt="Search" /></label>
 
 {% if invoice_table %}

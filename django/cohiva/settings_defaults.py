@@ -4,9 +4,13 @@ Django default settings for Cohiva.
 To change settings, overwrite them in settings.py or settings_production.py
 """
 
+import datetime
 import locale
 from pathlib import Path
 from urllib.parse import quote
+
+from django.contrib import admin
+from django.utils.translation import gettext_lazy as _
 
 import cohiva.base_config as cbc
 from cohiva.version import __version__ as COHIVA_VERSION  # noqa: F401
@@ -182,6 +186,16 @@ if "portal" in cbc.FEATURES:
 INSTALLED_APPS = (
     ## Geno must be before admin so we can extend templates
     "geno",
+    ## Unfold
+    "cohiva.apps.CohivaUnfoldConfig",  # before django.contrib.admin
+    "unfold.contrib.filters",  # optional, if special filters are needed
+    "unfold.contrib.forms",  # optional, if special form elements are needed
+    "unfold.contrib.inlines",  # optional, if special inlines are needed
+    # "unfold.contrib.import_export",  # optional, if django-import-export package is used
+    # "unfold.contrib.guardian",  # optional, if django-guardian package is used
+    # "unfold.contrib.simple_history",  # optional, if django-simple-history package is used
+    # "unfold.contrib.location_field",  # optional, if django-location-field package is used
+    # "unfold.contrib.constance",  # optional, if django-constance package is used
     ## Django and third party apps
     "django.contrib.admin",
     "django.contrib.auth",
@@ -287,6 +301,9 @@ TEMPLATES = [
                 "cohiva.context_processors.baseconfig",
                 "geno.context_processors.featurelist",
             ],
+            "libraries": {
+                "cohiva_admin": "cohiva.templatetags.admin",
+            },
         },
     },
 ]
@@ -579,6 +596,15 @@ GENO_CHECK_MAILINGLISTS = {
 GENO_ADDRESSES_WITH_APARTMENT_NUMBER = []
 
 GENO_TRANSACTION_MEMBERFEE_STARTYEAR = 2022
+
+# Don't create letters for members or shares before those dates
+GENO_MEMBER_LETTER_CUTOFF_DATE = datetime.date(2020, 1, 1)
+GENO_SHARE_LETTER_CUTOFF_DATE = datetime.date(2018, 7, 1)
+
+# When creating statements, treat persons differently if they own only up to this
+# number of shares (and they have no loans etc).
+GENO_SMALL_NUMBER_OF_SHARES_CUTOFF = 5
+
 GENO_GNUCASH_ACC_POST = "1010.1"
 
 GENO_MEMBER_FLAGS = {
@@ -708,3 +734,411 @@ WAGTAIL_FRONTEND_LOGIN_URL = LOGIN_URL
 SILENCED_SYSTEM_CHECKS = [
     "models.W036",
 ]
+
+COHIVA_ADMIN_NAVIGATION = [
+    {
+        "name": _("Stammdaten"),
+        "items": [
+            {
+                "type": "model",
+                "value": "geno.Address",
+                "name": _("Adressen/Personen"),
+                "icon": "contact_page",
+            },
+            {"type": "model", "value": "geno.Child", "icon": "child_care"},
+            {"type": "model", "value": "geno.Tenant", "icon": "account_circle"},
+            {
+                "type": "subgroup",
+                "name": _("Erweitert"),
+                "icon": "manufacturing",
+                "items": [
+                    {"type": "model", "value": "geno.GenericAttribute"},
+                    {"type": "model", "value": "geno.BankAccount"},
+                    {"type": "view", "value": "geno:check-mailinglists"},
+                    {"type": "view", "value": "geno:export_carddav"},
+                    {"type": "model", "value": "portal.TenantAdmin"},
+                    {"type": "model", "value": "geno.Building"},
+                ],
+            },
+            {
+                "type": "subgroup",
+                "name": _("Erweiterte Konfiguration"),
+                "icon": "construction",
+                "items": [],
+            },
+        ],
+    },
+    {
+        "name": _("Mitglieder"),
+        "items": [
+            {
+                "type": "view",
+                "value": "geno:member_overview",
+                "permission": "geno.canview_member_overview",
+                "icon": "show_chart",
+            },
+            {
+                "type": "tabgroup",
+                "items": [
+                    {"type": "model", "value": "geno.Member", "icon": "person_check"},
+                    {"type": "model", "value": "geno.MemberAttribute", "icon": "user_attributes"},
+                ],
+            },
+            {
+                "type": "tabgroup",
+                "name": "Dokumente erzeugen",
+                "items": [
+                    {
+                        "type": "view",
+                        "name": "Bestätigung Neubeitritte",
+                        "value": "geno:member-confirmation-letter",
+                        "icon": "print",
+                    },
+                    {"type": "view", "name": "Zusatzbrief", "value": "geno:member-finance-letter"},
+                ],
+            },
+            {
+                "type": "subgroup",
+                "name": _("Erweitert"),
+                "icon": "manufacturing",
+                "items": [
+                    {"type": "model", "value": "geno.MemberAttributeType"},
+                ],
+            },
+        ],
+    },
+    {
+        "name": _("Vermietung"),
+        "items": [
+            {"type": "model", "value": "geno.TenantsView", "icon": "list"},
+            {"type": "model", "value": "geno.RentalUnit", "icon": "house"},
+            {"type": "model", "value": "geno.Contract", "icon": "contract"},
+            {
+                "type": "tabgroup",
+                "name": "Dokumente erzeugen",
+                "items": [
+                    {
+                        "type": "view",
+                        "value": "geno:contract-check-forms",
+                        "icon": "print",
+                    },
+                ],
+            },
+            {
+                "type": "model",
+                "value": "reservation.Report",
+                "icon": "home_repair_service",
+                "name": "Reparaturmeldungen",
+            },
+            {
+                "type": "tabgroup",
+                "name": "Nebenkostenabrechnung",
+                "items": [
+                    {"type": "model", "value": "report.Report", "icon": "water_heater"},
+                    {"type": "model", "value": "report.ReportInputData"},
+                    {"type": "model", "value": "report.ReportOutput"},
+                ],
+            },
+            {
+                "type": "subgroup",
+                "name": _("Erweitert"),
+                "icon": "manufacturing",
+                "items": [
+                    {"type": "model", "value": "reservation.ReportCategory"},
+                    {"type": "model", "value": "reservation.ReportType"},
+                    {"type": "model", "value": "reservation.ReportPicture"},
+                    {"type": "model", "value": "reservation.ReportLogEntry"},
+                    {"type": "model", "value": "report.ReportType"},
+                    {"type": "model", "value": "report.ReportInputField"},
+                ],
+            },
+        ],
+    },
+    {
+        "name": _("Gemeinschaft"),
+        "items": [
+            {"type": "model", "value": "reservation.Reservation", "icon": "calendar_clock"},
+            {
+                "type": "tabgroup",
+                "items": [
+                    {"type": "model", "value": "geno.Registration", "icon": "how_to_reg"},
+                    {"type": "model", "value": "geno.RegistrationEvent"},
+                    {"type": "model", "value": "geno.RegistrationSlot"},
+                ],
+            },
+            {
+                "type": "tabgroup",
+                "items": [
+                    {"type": "model", "value": "credit_accounting.Vendor", "icon": "storefront"},
+                    {"type": "model", "value": "credit_accounting.VendorAdmin"},
+                    {"type": "model", "value": "credit_accounting.Transaction"},
+                    {"type": "model", "value": "credit_accounting.Account"},
+                    {"type": "model", "value": "credit_accounting.AccountOwner"},
+                    {"type": "model", "value": "credit_accounting.UserAccountSetting"},
+                ],
+            },
+            {
+                "type": "subgroup",
+                "name": _("Erweitert"),
+                "icon": "manufacturing",
+                "items": [
+                    {"type": "model", "value": "reservation.ReservationType"},
+                    {"type": "model", "value": "reservation.ReservationUsageType"},
+                    {"type": "model", "value": "reservation.ReservationPrice"},
+                    {"type": "model", "value": "reservation.ReservationObject"},
+                ],
+            },
+        ],
+    },
+    {
+        "name": _("Inkasso"),
+        "items": [
+            {"type": "view", "value": "geno:debtor-list", "icon": "account_balance"},
+            {
+                "type": "tabgroup",
+                "name": "Rechnungen erstellen",
+                "items": [
+                    {"type": "view", "value": "geno:invoice-manual", "icon": "checkbook"},
+                    {"type": "view", "value": "geno:invoice-batch"},
+                ],
+            },
+            {
+                "type": "tabgroup",
+                "items": [
+                    {
+                        "type": "view",
+                        "value": "geno:transaction-upload",
+                        "icon": "payments",
+                    },
+                    {"type": "view", "value": "geno:transaction-invoice"},
+                    {"type": "view", "value": "geno:transaction-manual"},
+                ],
+            },
+            {
+                "type": "subgroup",
+                "name": _("Erweitert"),
+                "icon": "manufacturing",
+                "items": [
+                    {"type": "model", "value": "geno.Invoice"},
+                    {"type": "model", "value": "geno.InvoiceCategory"},
+                ],
+            },
+        ],
+    },
+    {
+        "name": _("Finanzierung"),
+        "items": [
+            {"type": "view", "value": "geno:share_overview", "icon": "finance"},
+            {"type": "model", "value": "geno.Share", "icon": "request_page"},
+            {"type": "view", "value": "geno:share-interest", "icon": "percent"},
+            {
+                "type": "tabgroup",
+                "name": "Dokumente erzeugen",
+                "items": [
+                    {
+                        "type": "view",
+                        "name": "Bestätigung Einzahlungen",
+                        "value": "geno:share-confirmation-letter",
+                        "icon": "print",
+                    },
+                    {
+                        "type": "view",
+                        "name": "Erinnerung bald fällige Darlehen",
+                        "value": "geno:share-reminder-letter",
+                    },
+                    {"type": "view", "value": "geno:share-statement-form"},
+                ],
+            },
+            {
+                "type": "subgroup",
+                "name": _("Erweitert"),
+                "icon": "manufacturing",
+                "items": [
+                    {"type": "model", "value": "geno.ShareType"},
+                ],
+            },
+        ],
+    },
+    {
+        "name": _("Dokumente & Kommunikation"),
+        "items": [
+            {"type": "view", "value": "geno:mail-wizard-start", "icon": "mail"},
+            {"type": "view", "value": "geno:webstamp", "icon": "local_post_office"},
+            {"type": "model", "value": "geno.Document", "icon": "docs"},
+            {
+                "type": "tabgroup",
+                "items": [
+                    {"type": "model", "value": "geno.ContentTemplate", "icon": "file_copy"},
+                    {"type": "model", "value": "geno.ContentTemplateOption"},
+                ],
+            },
+            {"type": "model", "value": "filer.Folder", "icon": "folder_open"},
+            {
+                "type": "subgroup",
+                "name": _("Erweitert"),
+                "icon": "manufacturing",
+                "items": [
+                    {"type": "view", "value": "geno:odt2pdf"},
+                    {"type": "model", "value": "geno.DocumentType"},
+                    {"type": "model", "value": "geno.ContentTemplateOptionType"},
+                    {"type": "model", "value": "filer.FolderPermission"},
+                    {"type": "model", "value": "filer.ThumbnailOption"},
+                ],
+            },
+        ],
+    },
+    {
+        "name": _("Systemadministration"),
+        "items": [
+            {"type": "view", "value": "geno:sysadmin-overview", "icon": "admin_panel_settings"},
+            {
+                "type": "tabgroup",
+                "name": "Authentifizierung",
+                "items": [
+                    {"type": "model", "value": "auth.User", "icon": "badge"},
+                    {"type": "model", "value": "auth.Group"},
+                    {"type": "model", "value": "authtoken.TokenProxy"},
+                ],
+            },
+            {
+                "type": "tabgroup",
+                "name": "OAuth2",
+                "items": [
+                    {
+                        "type": "model",
+                        "value": "oauth2_provider.Application",
+                        "icon": "identity_platform",
+                    },
+                    {"type": "model", "value": "oauth2_provider.AccessToken"},
+                    {"type": "model", "value": "oauth2_provider.RefreshToken"},
+                    {"type": "model", "value": "oauth2_provider.IdToken"},
+                    {"type": "model", "value": "oauth2_provider.Grant"},
+                ],
+            },
+            {
+                "type": "tabgroup",
+                "name": "SAML2",
+                "items": [
+                    {
+                        "type": "model",
+                        "value": "djangosaml2idp.ServiceProvider",
+                        "icon": "id_card",
+                    },
+                    {"type": "model", "value": "djangosaml2idp.PersistentId"},
+                ],
+            },
+            {"type": "model", "value": "geno.LookupTable", "icon": "table_chart"},
+            # {
+            #     "type": "link",
+            #     "name": "All Models",
+            #     "value": "/admin/",
+            #     "permission": "geno.sysadmin",
+            #     "icon": "list_alt",
+            # },
+        ],
+    },
+]
+
+## Unfold UI config
+UNFOLD = {
+    "SITE_TITLE": "Cohiva " + COHIVA_SITE_NICKNAME,
+    "SITE_SUBHEADER": GENO_NAME,
+    "SITE_HEADER": "Cohiva",
+    "SITE_DROPDOWN": [
+        {
+            "icon": "globe",
+            "title": _("Cohiva Website"),
+            "link": "https://cohiva.ch",
+        },
+    ],
+    #    "SITE_URL": "/",
+    #    # "SITE_ICON": lambda request: static("icon.svg"),  # both modes, optimise for 32px height
+    #    "SITE_ICON": {
+    #        "light": lambda request: static("icon-light.svg"),  # light mode
+    #        "dark": lambda request: static("icon-dark.svg"),  # dark mode
+    #    },
+    #    # "SITE_LOGO": lambda request: static("logo.svg"),  # both modes, optimise for 32px height
+    #    "SITE_LOGO": {
+    #        "light": lambda request: static("logo-light.svg"),  # light mode
+    #        "dark": lambda request: static("logo-dark.svg"),  # dark mode
+    #    },
+    "SITE_SYMBOL": "house",  # symbol from icon set
+    #    "SITE_FAVICONS": [
+    #        {
+    #            "rel": "icon",
+    #            "sizes": "32x32",
+    #            "type": "image/svg+xml",
+    #            "href": lambda request: static("favicon.svg"),
+    #        },
+    #    ],
+    #    "SHOW_HISTORY": True, # show/hide "History" button, default: True
+    "SHOW_VIEW_ON_SITE": False,  # show/hide "View on site" button, default: True
+    "SHOW_BACK_BUTTON": True,  # show/hide "Back" button on changeform in header, default: False
+    "ENVIRONMENT": lambda _: admin.site.get_environment(),  # environment name in header
+    "ENVIRONMENT_TITLE_PREFIX": lambda _: admin.site.get_environment_title(),  # environment name prefix in title tag
+    #    "DASHBOARD_CALLBACK": "sample_app.dashboard_callback",
+    #    "THEME": "dark", # Force theme: "dark" or "light". Will disable theme switcher
+    #    "LOGIN": {
+    #        "image": lambda request: static("sample/login-bg.jpg"),
+    #        "redirect_after": lambda request: reverse_lazy("admin:APP_MODEL_changelist"),
+    #    },
+    #    "STYLES": [
+    #        lambda request: static("css/style.css"),
+    #    ],
+    #    "SCRIPTS": [
+    #        lambda request: static("js/script.js"),
+    #    ],
+    #    "BORDER_RADIUS": "6px",
+    #    "COLORS": {
+    #        "base": {
+    #            "50": "249, 250, 251",
+    #            "100": "243, 244, 246",
+    #            "200": "229, 231, 235",
+    #            "300": "209, 213, 219",
+    #            "400": "156, 163, 175",
+    #            "500": "107, 114, 128",
+    #            "600": "75, 85, 99",
+    #            "700": "55, 65, 81",
+    #            "800": "31, 41, 55",
+    #            "900": "17, 24, 39",
+    #            "950": "3, 7, 18",
+    #        },
+    #        "primary": {
+    #            "50": "250, 245, 255",
+    #            "100": "243, 232, 255",
+    #            "200": "233, 213, 255",
+    #            "300": "216, 180, 254",
+    #            "400": "192, 132, 252",
+    #            "500": "168, 85, 247",
+    #            "600": "147, 51, 234",
+    #            "700": "126, 34, 206",
+    #            "800": "107, 33, 168",
+    #            "900": "88, 28, 135",
+    #            "950": "59, 7, 100",
+    #        },
+    #        "font": {
+    #            "subtle-light": "var(--color-base-500)",  # text-base-500
+    #            "subtle-dark": "var(--color-base-400)",  # text-base-400
+    #            "default-light": "var(--color-base-600)",  # text-base-600
+    #            "default-dark": "var(--color-base-300)",  # text-base-300
+    #            "important-light": "var(--color-base-900)",  # text-base-900
+    #            "important-dark": "var(--color-base-100)",  # text-base-100
+    #        },
+    #    },
+    #    "EXTENSIONS": {
+    #        "modeltranslation": {
+    #            "flags": {
+    #                "en": "🇬🇧",
+    #                "fr": "🇫🇷",
+    #                "nl": "🇧🇪",
+    #            },
+    #        },
+    #    },
+    "SIDEBAR": {
+        "show_search": True,  # Search in applications and models names
+        "command_search": False,  # Replace the sidebar search with the command search
+        "show_all_applications": lambda request: request.user.is_superuser,  # Menu with all applications and models
+        "navigation": lambda request: admin.site.navigation.generate_unfold_navigation(request),
+    },
+    "TABS": lambda request: admin.site.navigation.generate_unfold_tabs(request),
+}

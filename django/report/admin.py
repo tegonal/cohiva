@@ -4,6 +4,7 @@ from geno.admin import GenoBaseAdmin
 from report.models import Report, ReportInputData, ReportInputField, ReportOutput, ReportType
 
 
+@admin.register(ReportType)
 class ReportTypeAdmin(GenoBaseAdmin):
     model = ReportType
     fields = [
@@ -18,13 +19,10 @@ class ReportTypeAdmin(GenoBaseAdmin):
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "description", "active"]
     list_filter = ["active"]
-    my_search_fields = ["name", "description", "comment"]
-    search_fields = my_search_fields
+    search_fields = ["name", "description", "comment"]
 
 
-admin.site.register(ReportType, ReportTypeAdmin)
-
-
+@admin.register(Report)
 class ReportAdmin(GenoBaseAdmin):
     model = Report
     fields = [
@@ -49,13 +47,11 @@ class ReportAdmin(GenoBaseAdmin):
     ]
     list_display = ["name", "report_type", "state", "task_id", "comment"]
     list_filter = ["report_type", "state", "ts_created", "ts_modified"]
-    my_search_fields = ["name", "state_info", "task_id", "comment"]
-    search_fields = my_search_fields
+    search_fields = ["name", "state_info", "task_id", "comment"]
+    autocomplete_fields = ["report_type"]
 
 
-admin.site.register(Report, ReportAdmin)
-
-
+@admin.register(ReportInputField)
 class ReportInputFieldAdmin(GenoBaseAdmin):
     model = ReportInputField
     fields = [
@@ -72,13 +68,11 @@ class ReportInputFieldAdmin(GenoBaseAdmin):
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "report_type", "field_type", "active"]
     list_filter = ["report_type", "field_type", "active"]
-    my_search_fields = ["name", "description", "comment"]
-    search_fields = my_search_fields
+    search_fields = ["name", "description", "comment"]
+    autocomplete_fields = ["report_type"]
 
 
-admin.site.register(ReportInputField, ReportInputFieldAdmin)
-
-
+@admin.register(ReportInputData)
 class ReportInputDataAdmin(GenoBaseAdmin):
     model = ReportInputData
     fields = [
@@ -93,13 +87,11 @@ class ReportInputDataAdmin(GenoBaseAdmin):
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "report", "value"]
     list_filter = ["report"]
-    my_search_fields = ["name", "report__name", "value", "comment"]
-    search_fields = my_search_fields
+    search_fields = ["name__name", "report__name", "value", "comment"]
+    autocomplete_fields = ["name", "report"]
 
 
-admin.site.register(ReportInputData, ReportInputDataAdmin)
-
-
+@admin.register(ReportOutput)
 class ReportOutputAdmin(GenoBaseAdmin):
     model = ReportOutput
     fields = [
@@ -117,8 +109,5 @@ class ReportOutputAdmin(GenoBaseAdmin):
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "group", "report", "output_type", "value"]
     list_filter = ["group", "report", "output_type"]
-    my_search_fields = ["name", "report__name", "value", "comment"]
-    search_fields = my_search_fields
-
-
-admin.site.register(ReportOutput, ReportOutputAdmin)
+    search_fields = ["name", "report__name", "value", "comment"]
+    autocomplete_fields = ["report"]

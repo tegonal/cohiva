@@ -1,39 +1,16 @@
 {% extends "geno/base.html" %}
-{% load static %}
-{% load i18n %}
+{% load static i18n unfold %}
 
-{% block extrastyle %}
-<style>
-.error { color: #dd1b1b; }
-.warning { color: #a86815; }
-.success { color: #217721; }
-.collapsible {
-    cursor: pointer;
-    background: #efefef;
-    color: #666666;
-    border: none;
-    border-radius: 4px;
-    padding: 10px;
-}
-.log_content {
-    display:none;
-    color: #666666;
-    border: 1px #c6c6c6 solid;
-    padding: 10px;
-    margin-top: 10px;
-}
-</style>
-{% endblock %}
-
-{% block content %}
-
-{% block content_text %}{% endblock %}
-<p>
+{% block custom_content %}
+<div class="aligned border border-base-200 mb-8 rounded-default pt-3 pb-3 px-3 shadow-sm dark:border-base-800 legacyform">
+    <div class="mb-3">
+    {% block content_text %}{% endblock %}
+    </div>
     <form method="post" enctype="multipart/form-data">{% csrf_token %}
         {{ form.as_p }}
         <input type="submit" value="Speichern">
     </form>
-</p>
+</div>
 
 {% if import_message %}
 <p><b>{{ import_message }}</b></p>
@@ -67,7 +44,7 @@
 <p><b class="warning">Es wurden keine gültigen {{ item_name }} gefunden.</b></p>
 {% endif %}
 
-{% if import_items.log or true %}
+{% if import_items.log %}
 <button type="button" class="collapsible">Log anzeigen</button>
 <div class="log_content">
 {% for line in import_items.log %}

@@ -27,6 +27,7 @@ django-tables2
 django-select2-forms
 django-datetime-widget
 django-email-obfuscator
+django-unfold
 
 ## File manager app
 django-filer

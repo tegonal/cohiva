@@ -4,11 +4,19 @@ from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
 from django.http import HttpResponseRedirect
+from django.shortcuts import redirect
+from django.urls import reverse
+from django.utils.translation import gettext_lazy as _
+from stdnum import iban as iban_util
+from unfold.admin import ModelAdmin, TabularInline
+from unfold.decorators import action
+from unfold.enums import ActionVariant
 
 import geno.settings as geno_settings
 from geno.exporter import ExportXlsMixin
 from geno.models import (
     Address,
+    BankAccount,
     Building,
     Child,
     ContentTemplate,
@@ -35,6 +43,7 @@ from geno.models import (
 )
 
 
+@admin.display(description="Ausgewählte Objekte kopieren")
 def copy_objects(modeladmin, request, queryset):
     count = 0
     for obj in queryset:
@@ -48,9 +57,7 @@ def copy_objects(modeladmin, request, queryset):
             return
     messages.success(request, f"{count} Objekt(e) kopiert.")
 
-
 copy_objects.short_description = "Ausgewählte Objekte kopieren"
-
 
 class BooleanFieldDefaultTrueListFilter(admin.FieldListFilter):
     """
@@ -108,7 +115,7 @@ class BooleanFieldDefaultTrueListFilter(admin.FieldListFilter):
 
 
 ## Base admin class
-class GenoBaseAdmin(admin.ModelAdmin, ExportXlsMixin):
+class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
     model = None
     view_on_site = False
     save_as = True
@@ -140,20 +147,17 @@ class GenoBaseAdmin(admin.ModelAdmin, ExportXlsMixin):
             request.GET = q
         return super().changelist_view(request, extra_context=extra_context)
 
+@admin.display(description="Anrede auf 'Herr' setzen")
 def set_title_mr(modeladmin, request, queryset):
     queryset.update(title="Herr")
 
 
-set_title_mr.short_description = "Anrede auf 'Herr' setzen"
-
-
+@admin.display(description="Anrede auf 'Frau' setzen")
 def set_title_mrs(modeladmin, request, queryset):
     queryset.update(title="Frau")
 
 
-set_title_mrs.short_description = "Anrede auf 'Frau' setzen"
-
-
+@admin.register(Address)
 class AddressAdmin(GenoBaseAdmin):
     model = Address
     fields = [
@@ -221,7 +225,7 @@ class AddressAdmin(GenoBaseAdmin):
         "ts_created",
         "ts_modified",
     ]
-    my_search_fields = [
+    search_fields = [
         "organization",
         "name",
         "first_name",
@@ -234,85 +238,88 @@ class AddressAdmin(GenoBaseAdmin):
         "email",
         "email2",
         "occupation",
-        "bankaccount",
         "comment",
     ]
-    search_fields = my_search_fields
+    autocomplete_fields = ["user"]
     actions = GenoBaseAdmin.actions + [set_title_mr, set_title_mrs]
+    actions_list = [
+        "export_address_list",
+        {
+            "title": _("Weitere Aktionen"),
+            "items": ["export_adit"],
+            # "variant": ActionVariant.PRIMARY,
+        },
+    ]
 
-admin.site.register(Address, AddressAdmin)
+    @action(
+        description=_("Export"),
+        permissions=["geno.canview_member"],
+        icon="download",
+        # variant=ActionVariant.PRIMARY,
+    )
+    def export_address_list(self, request):
+        return redirect(reverse("geno:address_export"))
+
+    @action(
+        description=_("Export ADIT"),
+        permissions=["geno.canview_member", "geno.adit"],
+        icon="doorbell",
+    )
+    def export_adit(self, request):
+        return redirect(reverse("geno:generic-export", args=("adit",)))
 
 
+@admin.display(description="Als '%s' markieren" % geno_settings.MEMBER_FLAGS[1])
 def mark_flag_01(modeladmin, request, queryset):
     queryset.update(flag_01=True)
 
 
-mark_flag_01.short_description = "Als '%s' markieren" % geno_settings.MEMBER_FLAGS[1]
-
-
+@admin.display(description="Markierung '%s' entfernen" % geno_settings.MEMBER_FLAGS[1])
 def unmark_flag_01(modeladmin, request, queryset):
     queryset.update(flag_01=False)
 
 
-unmark_flag_01.short_description = "Markierung '%s' entfernen" % geno_settings.MEMBER_FLAGS[1]
-
-
+@admin.display(description="Als '%s' markieren" % geno_settings.MEMBER_FLAGS[2])
 def mark_flag_02(modeladmin, request, queryset):
     queryset.update(flag_02=True)
 
 
-mark_flag_02.short_description = "Als '%s' markieren" % geno_settings.MEMBER_FLAGS[2]
-
-
+@admin.display(description="Markierung '%s' entfernen" % geno_settings.MEMBER_FLAGS[2])
 def unmark_flag_02(modeladmin, request, queryset):
     queryset.update(flag_02=False)
 
 
-unmark_flag_02.short_description = "Markierung '%s' entfernen" % geno_settings.MEMBER_FLAGS[2]
-
-
+@admin.display(description="Als '%s' markieren" % geno_settings.MEMBER_FLAGS[3])
 def mark_flag_03(modeladmin, request, queryset):
     queryset.update(flag_03=True)
 
 
-mark_flag_03.short_description = "Als '%s' markieren" % geno_settings.MEMBER_FLAGS[3]
-
-
+@admin.display(description="Markierung '%s' entfernen" % geno_settings.MEMBER_FLAGS[3])
 def unmark_flag_03(modeladmin, request, queryset):
     queryset.update(flag_03=False)
 
 
-unmark_flag_03.short_description = "Markierung '%s' entfernen" % geno_settings.MEMBER_FLAGS[3]
-
-
+@admin.display(description="Als '%s' markieren" % geno_settings.MEMBER_FLAGS[4])
 def mark_flag_04(modeladmin, request, queryset):
     queryset.update(flag_04=True)
 
 
-mark_flag_04.short_description = "Als '%s' markieren" % geno_settings.MEMBER_FLAGS[4]
-
-
+@admin.display(description="Markierung '%s' entfernen" % geno_settings.MEMBER_FLAGS[4])
 def unmark_flag_04(modeladmin, request, queryset):
     queryset.update(flag_04=False)
 
 
-unmark_flag_04.short_description = "Markierung '%s' entfernen" % geno_settings.MEMBER_FLAGS[4]
-
-
+@admin.display(description="Als '%s' markieren" % geno_settings.MEMBER_FLAGS[5])
 def mark_flag_05(modeladmin, request, queryset):
     queryset.update(flag_05=True)
 
 
-mark_flag_05.short_description = "Als '%s' markieren" % geno_settings.MEMBER_FLAGS[5]
-
-
+@admin.display(description="Markierung '%s' entfernen" % geno_settings.MEMBER_FLAGS[5])
 def unmark_flag_05(modeladmin, request, queryset):
     queryset.update(flag_05=False)
 
 
-unmark_flag_05.short_description = "Markierung '%s' entfernen" % geno_settings.MEMBER_FLAGS[5]
-
-
+@admin.display(description="Email Versand an ausgewählte Mitglieder")
 def member_send_membermail(modeladmin, request, queryset):
     request.session["members"] = []
     members_processed = []
@@ -325,27 +332,37 @@ def member_send_membermail(modeladmin, request, queryset):
     return HttpResponseRedirect("/geno/member/send_mail/select/")
 
 
-member_send_membermail.short_description = "Email Versand an ausgewählte Mitglieder"
+class MemberAttributeTabularInline(TabularInline):
+    model = MemberAttribute
+    fields = ["date", "value", "attribute_type", "comment"]
+    tab = True
 
 
+@admin.register(Member)
 class MemberAdmin(GenoBaseAdmin):
-    model = Member
-    fields = [
-        "name",
-        "date_join",
-        "date_leave",
-        "flag_01",
-        "flag_02",
-        "flag_03",
-        "flag_04",
-        "flag_05",
-        "notes",
-        "ts_created",
-        "ts_modified",
-        "object_actions",
-        "links",
-        "backlinks",
-    ]
+    inlines = [MemberAttributeTabularInline]  # model = Member
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "name",
+                    "date_join",
+                    "date_leave",
+                ),
+            },
+        ),
+        (
+            "Kategorien",
+            {
+                "fields": ("flag_01", "flag_02", "flag_03", "flag_04", "flag_05"),
+                "classes": ["tab"],
+            },
+        ),
+        ("Zusatzinfos", {"fields": ("notes", "ts_created", "ts_modified"), "classes": ["tab"]}),
+        ("Verknüpfungen", {"fields": ("links", "backlinks"), "classes": ["tab"]}),
+        ("Aktionen", {"fields": ("object_actions",), "classes": ["tab"]}),
+    )
     readonly_fields = ["ts_created", "ts_modified", "object_actions", "links", "backlinks"]
     list_display = ["name", "date_join", "date_leave"]
     list_filter = [
@@ -357,8 +374,8 @@ class MemberAdmin(GenoBaseAdmin):
         "date_join",
         "date_leave",
     ]
-    my_search_fields = ["name__organization", "name__name", "name__first_name", "notes"]
-    search_fields = my_search_fields
+    search_fields = ["name__organization", "name__name", "name__first_name", "notes"]
+    autocomplete_fields = ["name"]
     actions = GenoBaseAdmin.actions + [
         mark_flag_01,
         unmark_flag_01,
@@ -374,9 +391,7 @@ class MemberAdmin(GenoBaseAdmin):
     ]
 
 
-admin.site.register(Member, MemberAdmin)
-
-
+@admin.register(Child)
 class ChildAdmin(GenoBaseAdmin):
     model = Child
     fields = [
@@ -393,13 +408,11 @@ class ChildAdmin(GenoBaseAdmin):
     readonly_fields = ["age", "import_id", "ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "presence", "parents", "age"]
     list_filter = ["presence", "name__active"]
-    my_search_fields = ["name__name", "name__first_name", "parents", "notes"]
-    search_fields = my_search_fields
+    search_fields = ["name__name", "name__first_name", "parents", "notes"]
+    autocomplete_fields = ["name"]
 
 
-admin.site.register(Child, ChildAdmin)
-
-
+@admin.register(Building)
 class BuildingAdmin(GenoBaseAdmin):
     model = Building
     fields = [
@@ -419,13 +432,9 @@ class BuildingAdmin(GenoBaseAdmin):
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "description", "active"]
     list_filter = [("active", BooleanFieldDefaultTrueListFilter)]
-    my_search_fields = ["name", "description", "team"]
-    search_fields = my_search_fields
+    search_fields = ["name", "description", "team"]
 
-
-admin.site.register(Building, BuildingAdmin)
-
-
+@admin.register(Tenant)
 class TenantAdmin(GenoBaseAdmin):
     model = Tenant
     fields = [
@@ -443,45 +452,33 @@ class TenantAdmin(GenoBaseAdmin):
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "building", "key_number", "active"]
     list_filter = ["building__name", ("active", BooleanFieldDefaultTrueListFilter)]
-    my_search_fields = ["name__name", "name__first_name", "building__name", "key_number", "notes"]
-    search_fields = my_search_fields
+    search_fields = ["name__name", "name__first_name", "building__name", "key_number", "notes"]
+    autocomplete_fields = ["name", "building"]
 
-
-admin.site.register(Tenant, TenantAdmin)
-
-
+@admin.register(MemberAttributeType)
 class MemberAttributeTypeAdmin(GenoBaseAdmin):
     model = MemberAttributeType
     fields = ["name", "description"]
     list_display = ["name", "description"]
-    my_search_fields = ["name", "description"]
-    search_fields = my_search_fields
+    search_fields = ["name", "description"]
 
 
-admin.site.register(MemberAttributeType, MemberAttributeTypeAdmin)
-
-
+@admin.display(description='Attribut-Wert auf "Bezahlt" setzen')
 def mark_paid(modeladmin, request, queryset):
     queryset.update(value="Bezahlt", date=datetime.date.today())
 
 
-mark_paid.short_description = 'Attribut-Wert auf "Bezahlt" setzen'
-
-
+@admin.display(description='Attribut-Wert auf "Rechnung geschickt" setzen')
 def mark_billed(modeladmin, request, queryset):
     queryset.update(value="Rechnung geschickt", date=datetime.date.today())
 
 
-mark_billed.short_description = 'Attribut-Wert auf "Rechnung geschickt" setzen'
-
-
+@admin.display(description='Attribut-Wert auf "Mahnung geschickt" setzen')
 def mark_reminder(modeladmin, request, queryset):
     queryset.update(value="Mahnung geschickt", date=datetime.date.today())
 
 
-mark_reminder.short_description = 'Attribut-Wert auf "Mahnung geschickt" setzen'
-
-
+@admin.display(description="Email Versand an ausgewählte Mitglieder")
 def member_attribute_send_membermail(modeladmin, request, queryset):
     request.session["members"] = []
     members_processed = []
@@ -495,9 +492,7 @@ def member_attribute_send_membermail(modeladmin, request, queryset):
     return HttpResponseRedirect("/geno/member/send_mail/select/")
 
 
-member_attribute_send_membermail.short_description = "Email Versand an ausgewählte Mitglieder"
-
-
+@admin.register(MemberAttribute)
 class MemberAttributeAdmin(GenoBaseAdmin):
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "attribute_type":
@@ -528,7 +523,7 @@ class MemberAttributeAdmin(GenoBaseAdmin):
         "member__flag_05",
         "date",
     ]
-    my_search_fields = [
+    search_fields = [
         "member__name__organization",
         "member__name__name",
         "member__name__first_name",
@@ -536,7 +531,7 @@ class MemberAttributeAdmin(GenoBaseAdmin):
         "value",
         "comment",
     ]
-    search_fields = my_search_fields
+    autocomplete_fields = ["member", "attribute_type"]
     actions = GenoBaseAdmin.actions + [
         mark_billed,
         mark_paid,
@@ -545,81 +540,56 @@ class MemberAttributeAdmin(GenoBaseAdmin):
     ]
 
 
-admin.site.register(MemberAttribute, MemberAttributeAdmin)
-
-
+@admin.register(ShareType)
 class ShareTypeAdmin(GenoBaseAdmin):
     model = ShareType
     fields = ["name", "description", "standard_interest"]
     list_display = ["name", "description", "standard_interest"]
     list_filter = ["standard_interest"]
-    my_search_fields = ["name", "description"]
-    search_fields = my_search_fields
+    search_fields = ["name", "description"]
 
 
-admin.site.register(ShareType, ShareTypeAdmin)
-
-
+@admin.display(description='Als "bezahlt" markieren')
 def share_mark_paid(modeladmin, request, queryset):
     queryset.update(state="bezahlt", date=datetime.date.today())
 
 
-share_mark_paid.short_description = 'Als "bezahlt" markieren'
-
-
+@admin.display(description='Als "gefordert" markieren')
 def share_mark_billed(modeladmin, request, queryset):
     queryset.update(state="gefordert", date=datetime.date.today())
 
 
-share_mark_billed.short_description = 'Als "gefordert" markieren'
-
-
+@admin.display(description="Laufzeit löschen")
 def share_delete_duration(modeladmin, request, queryset):
     queryset.update(duration=None)
 
 
-share_delete_duration.short_description = "Laufzeit löschen"
-
-
+@admin.display(description="Laufzeit auf 5 Jahre setzen")
 def share_set_duration5(modeladmin, request, queryset):
     queryset.update(duration=5)
 
 
-share_set_duration5.short_description = "Laufzeit auf 5 Jahre setzen"
-
-
+@admin.display(description="Laufzeit auf 10 Jahre setzen")
 def share_set_duration10(modeladmin, request, queryset):
     queryset.update(duration=10)
 
 
-share_set_duration10.short_description = "Laufzeit auf 10 Jahre setzen"
-
-
+@admin.display(description=("Datum Ende auf 31.12. des Vorjahres (=Jahresende) setzen"))
 def share_set_end_endofyear(modeladmin, request, queryset):
     queryset.update(date_end=datetime.date(datetime.datetime.now().year - 1, 12, 31))
 
 
-share_set_end_endofyear.short_description = (
-    "Datum Ende auf 31.12. des Vorjahres (=Jahresende) setzen"
-)
-
-
+@admin.display(description=("Datum Ende auf 31.12. vor ZWEI Jahren (=Jahresende) setzen"))
 def share_set_end_endofyear2(modeladmin, request, queryset):
     queryset.update(date_end=datetime.date(datetime.datetime.now().year - 2, 12, 31))
 
 
-share_set_end_endofyear2.short_description = (
-    "Datum Ende auf 31.12. vor ZWEI Jahren (=Jahresende) setzen"
-)
-
-
+@admin.display(description="Zinsatz-Modus auf «Standard» setzen.")
 def share_set_interest_mode_standard(modeladmin, request, queryset):
     queryset.update(interest_mode="Standard")
 
 
-share_set_interest_mode_standard.short_description = "Zinsatz-Modus auf «Standard» setzen."
-
-
+@admin.display(description="Email Versand an ausgewählte Mitglieder")
 def share_send_membermail(modeladmin, request, queryset):
     request.session["members"] = []
     members_processed = []
@@ -648,9 +618,7 @@ def share_send_membermail(modeladmin, request, queryset):
     return HttpResponseRedirect("/geno/member/send_mail/select/")
 
 
-share_send_membermail.short_description = "Email Versand an ausgewählte Mitglieder"
-
-
+@admin.register(Share)
 class ShareAdmin(GenoBaseAdmin):
     model = Share
     fields = [
@@ -710,7 +678,7 @@ class ShareAdmin(GenoBaseAdmin):
         "quantity",
         "value",
     ]
-    my_search_fields = [
+    search_fields = [
         "name__organization",
         "name__name",
         "name__first_name",
@@ -719,7 +687,7 @@ class ShareAdmin(GenoBaseAdmin):
         "comment",
         "note",
     ]
-    search_fields = my_search_fields
+    autocomplete_fields = ["name", "share_type", "attached_to_contract", "attached_to_building"]
     actions = GenoBaseAdmin.actions + [
         share_mark_paid,
         share_mark_billed,
@@ -731,11 +699,31 @@ class ShareAdmin(GenoBaseAdmin):
         share_set_interest_mode_standard,
         share_send_membermail,
     ]
+    actions_list = [
+        "export_shares",
+        "export_shares_endofyear",
+    ]
+
+    @action(
+        description=_("Export"),
+        permissions=["geno.canview_share"],
+        icon="download",
+        # variant=ActionVariant.PRIMARY,
+    )
+    def export_shares(self, request):
+        return redirect(reverse("geno:share-export") + "?aggregate=yes")
+
+    @action(
+        description=_("Export per Ende Vorjahr"),
+        permissions=["geno.canview_share"],
+        icon="clock_arrow_down",
+        # variant=ActionVariant.PRIMARY,
+    )
+    def export_shares_endofyear(self, request):
+        return redirect(reverse("geno:share-export") + "?aggregate=yes&jahresende=yes")
 
 
-admin.site.register(Share, ShareAdmin)
-
-
+@admin.register(DocumentType)
 class DocumentTypeAdmin(GenoBaseAdmin):
     model = DocumentType
     fields = [
@@ -755,19 +743,17 @@ class DocumentTypeAdmin(GenoBaseAdmin):
     list_filter = [
         ("active", BooleanFieldDefaultTrueListFilter),
     ]
-    my_search_fields = [
+    search_fields = [
         "name",
         "description",
         "template__name",
         "template__description",
         "template_file",
     ]
-    search_fields = my_search_fields
+    autocomplete_fields = ["template"]
 
 
-admin.site.register(DocumentType, DocumentTypeAdmin)
-
-
+@admin.register(Document)
 class DocumentAdmin(GenoBaseAdmin):
     model = Document
     fields = [
@@ -791,14 +777,68 @@ class DocumentAdmin(GenoBaseAdmin):
         "backlinks",
     ]
     list_display = ["name", "doctype", "content_type", "ts_created", "ts_modified"]
-    my_search_fields = ["name", "comment"]
+    search_fields = ["name", "comment"]
     list_filter = ["doctype", "ts_created", "ts_modified", "content_type"]
-    search_fields = my_search_fields
+    autocomplete_fields = ["doctype"]
 
 
-admin.site.register(Document, DocumentAdmin)
+class BankAccountForm(forms.ModelForm):
+    class Meta:
+        model = BankAccount
+        fields = "__all__"
+
+    def clean_iban(self):
+        value = self.cleaned_data.get("iban")
+        if not value:
+            return value
+        if not iban_util.is_valid(value):
+            raise forms.ValidationError("Invalid IBAN format.")
+        return value
 
 
+@admin.register(BankAccount)
+class BankAccountAdmin(GenoBaseAdmin):
+    model = BankAccount
+    form = BankAccountForm
+    fields = [
+        "iban",
+        "financial_institution",
+        "account_holders",
+        "comment",
+        "ts_created",
+        "ts_modified",
+        "object_actions",
+        "links",
+        "backlinks",
+    ]
+    readonly_fields = [
+        "ts_created",
+        "ts_modified",
+        "object_actions",
+        "links",
+        "backlinks",
+    ]
+    list_display = [
+        "iban_display",
+        "financial_institution",
+        "account_holders",
+        "ts_created",
+        "ts_modified",
+    ]
+    search_fields = ["iban", "financial_institution"]
+    list_filter = ["ts_created", "ts_modified"]
+
+    @admin.display(description="IBAN")
+    def iban_display(self, obj):
+        if obj.iban:
+            return obj.iban
+        elif obj.comment:
+            return f"(leer) [{obj.comment}]"
+        else:
+            return "(leer)"
+
+
+@admin.register(Registration)
 class RegistrationAdmin(GenoBaseAdmin):
     model = Registration
     fields = [
@@ -829,7 +869,7 @@ class RegistrationAdmin(GenoBaseAdmin):
         "ts_modified",
     ]
     ordering = ("-slot__name", "-ts_modified")
-    my_search_fields = ["name", "first_name", "email", "slot__event__name"]
+    search_fields = ["name", "first_name", "email", "slot__event__name"]
     list_filter = [
         "slot__event__active",
         "check1",
@@ -840,12 +880,10 @@ class RegistrationAdmin(GenoBaseAdmin):
         "slot__event",
         "slot",
     ]
-    search_fields = my_search_fields
+    autocomplete_fields = ["slot"]
 
 
-admin.site.register(Registration, RegistrationAdmin)
-
-
+@admin.register(RegistrationSlot)
 class RegistrationSlotAdmin(GenoBaseAdmin):
     model = RegistrationSlot
     fields = [
@@ -863,12 +901,9 @@ class RegistrationSlotAdmin(GenoBaseAdmin):
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "event", "alt_text", "max_places", "is_backup_for"]
     ordering = ("-name",)
-    my_search_fields = ["alt_text", "event__name", "comment"]
+    search_fields = ["alt_text", "event__name", "comment"]
     list_filter = ["event", "max_places"]
-    search_fields = my_search_fields
-
-
-admin.site.register(RegistrationSlot, RegistrationSlotAdmin)
+    autocomplete_fields = ["event", "is_backup_for"]
 
 
 class RegistrationSlotInline(admin.TabularInline):
@@ -885,6 +920,7 @@ class RegistrationSlotInline(admin.TabularInline):
         return field
 
 
+@admin.register(RegistrationEvent)
 class RegistrationEventAdmin(GenoBaseAdmin):
     model = RegistrationEvent
     fields = [
@@ -916,7 +952,7 @@ class RegistrationEventAdmin(GenoBaseAdmin):
     list_display = ["name", "confirmation_mail_sender", "active", "ts_created"]
     ordering = ("-active", "-ts_created")
     list_editable = ["active"]
-    my_search_fields = ["name", "description", "confirmation_mail_sender", "comment"]
+    search_fields = ["name", "description", "confirmation_mail_sender", "comment"]
     list_filter = [
         ("active", BooleanFieldDefaultTrueListFilter),
         "confirmation_mail_sender",
@@ -925,16 +961,13 @@ class RegistrationEventAdmin(GenoBaseAdmin):
         "publication_end",
         "ts_created",
     ]
-    search_fields = my_search_fields
+
     inlines = [RegistrationSlotInline]
 
     def get_form(self, request, obj=None, **kwargs):
         # just save obj reference for future processing in Inline
         request._obj_ = obj
         return super().get_form(request, obj, **kwargs)
-
-
-admin.site.register(RegistrationEvent, RegistrationEventAdmin)
 
 
 @admin.decorators.register(RentalUnit)
@@ -979,7 +1012,7 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "status",
         "comment",
     ]
-    my_search_fields = [
+    search_fields = [
         "name",
         "label",
         "description",
@@ -992,31 +1025,22 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "rentalunit_contracts__contractors__first_name",
     ]
     list_filter = ["rental_type", "rooms", "building__name", "floor", "status", ("active", BooleanFieldDefaultTrueListFilter)]
-    search_fields = my_search_fields
+    autocomplete_fields = ["building"]
 
-
+@admin.display(description='Als "unterzeichnet" markieren')
 def contract_mark_signed(modeladmin, request, queryset):
     queryset.update(state="unterzeichnet")
 
 
-contract_mark_signed.short_description = 'Als "unterzeichnet" markieren'
-
-
+@admin.display(description='Als "angeboten" markieren')
 def contract_mark_offered(modeladmin, request, queryset):
     queryset.update(state="angeboten")
 
 
-contract_mark_offered.short_description = 'Als "angeboten" markieren'
-
-
+@admin.display(description=("Mietbeginn auf 1. des nächsten Monats setzten"))
 def contract_set_startdate_nextmonth(modeladmin, request, queryset):
     new_date = (datetime.date.today().replace(day=1) + datetime.timedelta(days=32)).replace(day=1)
     queryset.update(date=new_date)
-
-
-contract_set_startdate_nextmonth.short_description = (
-    "Mietbeginn auf 1. des nächsten Monats setzten"
-)
 
 
 class ContractAdminModelForm(forms.ModelForm):
@@ -1053,6 +1077,7 @@ class VertragstypFilter(admin.SimpleListFilter):
             return queryset.filter(main_contract__isnull=False)
 
 
+@admin.register(Contract)
 class ContractAdmin(GenoBaseAdmin):
     form = ContractAdminModelForm
     fields = [
@@ -1081,14 +1106,13 @@ class ContractAdmin(GenoBaseAdmin):
     ]
     readonly_fields = ["ts_created", "ts_modified", "object_actions", "links", "backlinks"]
     list_display = ["__str__", "state", "date", "date_end", "note", "comment"]
-    my_search_fields = [
+    search_fields = [
         "contractors__name",
         "contractors__first_name",
         "contractors__organization",
         "children__name__name",
         "children__name__first_name",
         "rental_units__name",
-        "bankaccount",
         "note",
         "comment",
     ]
@@ -1102,38 +1126,75 @@ class ContractAdmin(GenoBaseAdmin):
         "date_end",
         "send_qrbill",
     ]
-    search_fields = my_search_fields
+    autocomplete_fields = [
+        "contractors",
+        "main_contact",
+        "rental_units",
+        "children",
+        "billing_contract",
+    ]
     actions = GenoBaseAdmin.actions + [
         contract_mark_signed,
         contract_mark_offered,
         contract_set_startdate_nextmonth,
     ]
     filter_horizontal = ["contractors", "children", "rental_units"]
+    actions_list = [
+        "contract_report",
+    ]
+    actions_detail = [
+        "add_subcontract",
+    ]
 
-    def change_view(self, request, object_id, form_url="", extra_context=None):
-        extra_context = extra_context or {}
-        obj = Contract.objects.get(id=object_id)
-        # only show "Add subcontract" button if this is a main contract
-        extra_context["show_addSubcontract"] = obj.main_contract is None
-        return self.changeform_view(request, object_id, form_url, extra_context)
+    @action(
+        description=_("Report Pflichtanteile/Belegung"),
+        permissions=["geno.rental_contracts", "geno.canview_share"],
+        icon="download",
+        # variant=ActionVariant.PRIMARY,
+    )
+    def contract_report(self, request):
+        return redirect(reverse("geno:contract-report"))
 
-    def response_change(self, request, obj):
-        if "_addSubcontract" in request.POST:
-            # display add subcontract in admin with main contract preset
-            return HttpResponseRedirect(f"/admin/geno/contract/add/?main_contract={obj.pk}")
-        return super().response_change(request, obj)
+    @action(
+        description=_("Untervertrag hinzufügen"),
+        icon="splitscreen_add",
+        url_path="add-subcontract",
+        permissions=["geno.add_contract"],
+        variant=ActionVariant.PRIMARY,
+    )
+    def add_subcontract(self, request, object_id):
+        return HttpResponseRedirect(
+            reverse("admin:geno_contract_add") + f"?main_contract={object_id}"
+        )
 
 
-admin.site.register(Contract, ContractAdmin)
+# class ResidentListAdmin(GenoBaseAdmin):
+#    model = Contract
+#    actions_list = [
+#        "export_address_list",
+#    ]
+#
+#    @action(
+#        description=_("Export"),
+#        permissions=["geno.canview_member"],
+#        icon="download",
+#        # variant=ActionVariant.PRIMARY,
+#    )
+#    def export_address_list(self, request):
+#        return redirect(reverse("geno:address_export"))
+#
+#    # def get_urls(self):
+#    #    print("get urls")
+#    #    view = self.admin_site.admin_view(ResidentListView.as_view(model_admin=self))
+#    #    return super().get_urls() + [path("resident-list", view, name="resident-list")]
 
 
+@admin.display(description='Als "NICHT konsolidiert" markieren')
 def invoice_revert_consolidation(modeladmin, request, queryset):
     queryset.update(consolidated=False)
 
 
-invoice_revert_consolidation.short_description = 'Als "NICHT konsolidiert" markieren'
-
-
+@admin.register(InvoiceCategory)
 class InvoiceCategoryAdmin(GenoBaseAdmin):
     model = InvoiceCategory
     fields = [
@@ -1162,7 +1223,7 @@ class InvoiceCategoryAdmin(GenoBaseAdmin):
         "manual_allowed",
         "active",
     ]
-    my_search_fields = [
+    search_fields = [
         "name",
         "income_account",
         "receivables_account",
@@ -1170,11 +1231,9 @@ class InvoiceCategoryAdmin(GenoBaseAdmin):
         "reference_id",
         "comment",
     ]
+
     list_filter = [("active", BooleanFieldDefaultTrueListFilter), "manual_allowed", "linked_object_type"]
-    search_fields = my_search_fields
-
-
-admin.site.register(InvoiceCategory, InvoiceCategoryAdmin)
+    autocomplete_fields = ["email_template"]
 
 
 class InvoiceAdminModelForm(forms.ModelForm):
@@ -1196,6 +1255,7 @@ class InvoiceAdminModelForm(forms.ModelForm):
         return self.cleaned_data
 
 
+@admin.register(Invoice)
 class InvoiceAdmin(GenoBaseAdmin):
     model = Invoice
     form = InvoiceAdminModelForm
@@ -1240,7 +1300,7 @@ class InvoiceAdmin(GenoBaseAdmin):
         "date",
         "amount",
     ]
-    my_search_fields = [
+    search_fields = [
         "name",
         "person__first_name",
         "person__name",
@@ -1259,21 +1319,18 @@ class InvoiceAdmin(GenoBaseAdmin):
         "month",
         "is_additional_invoice",
     ]
-    search_fields = my_search_fields
+    autocomplete_fields = ["invoice_category", "person", "contract"]
     actions = GenoBaseAdmin.actions + [invoice_revert_consolidation]
 
+    @admin.display(description="Person/Vertrag")
     def person_or_contract(self, obj):
         if obj.contract:
             return str(obj.contract)
         else:
             return str(obj.person)
 
-    person_or_contract.short_description = "Person/Vertrag"
 
-
-admin.site.register(Invoice, InvoiceAdmin)
-
-
+@admin.register(TenantsView)
 class TenantsViewAdmin(GenoBaseAdmin):
     fields = [
         "bu_name",
@@ -1391,6 +1448,18 @@ class TenantsViewAdmin(GenoBaseAdmin):
     list_display_links = None
     actions = ["export_as_xls"]
 
+    actions_list = [
+        "download_resident_list_units",
+    ]
+
+    @action(
+        description=_("Mietobjektespiegel"),
+        permissions=["geno.rental_objects"],
+        icon="download",
+    )
+    def download_resident_list_units(self, request):
+        return redirect(reverse("geno:resident-list-units"))
+
     def has_add_permission(self, request):
         return False
 
@@ -1403,22 +1472,17 @@ class TenantsViewAdmin(GenoBaseAdmin):
     ordering = ("-bu_name", "-ru_name")
 
 
-admin.site.register(TenantsView, TenantsViewAdmin)
-
-
+@admin.register(LookupTable)
 class LookupTableAdmin(GenoBaseAdmin):
     model = LookupTable
     fields = ["name", "lookup_type", "value", "ts_created", "ts_modified", "links", "backlinks"]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "lookup_type", "value", "ts_modified"]
-    my_search_fields = ["name", "value"]
+    search_fields = ["name", "value"]
     list_filter = ["lookup_type"]
-    search_fields = my_search_fields
 
 
-admin.site.register(LookupTable, LookupTableAdmin)
-
-
+@admin.register(ContentTemplate)
 class ContentTemplateAdmin(GenoBaseAdmin):
     model = ContentTemplate
     fields = [
@@ -1434,7 +1498,7 @@ class ContentTemplateAdmin(GenoBaseAdmin):
     ]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "template_type", "active", "ts_created", "ts_modified"]
-    my_search_fields = ["name", "text"]
+    search_fields = ["name", "text"]
     list_filter = [
         ("active", BooleanFieldDefaultTrueListFilter),
         "template_type",
@@ -1443,42 +1507,35 @@ class ContentTemplateAdmin(GenoBaseAdmin):
         "ts_created",
         "ts_modified",
     ]
-    search_fields = my_search_fields
+    autocomplete_fields = ["template_context"]
     filter_horizontal = ["template_context"]
 
     class Media:
         js = ("geno/js/content_template_admin.js",)
 
 
-admin.site.register(ContentTemplate, ContentTemplateAdmin)
-
-
+@admin.register(ContentTemplateOption)
 class ContentTemplateOptionAdmin(GenoBaseAdmin):
     model = ContentTemplateOption
     fields = ["name", "value", "comment", "ts_created", "ts_modified"]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "value", "comment", "ts_created", "ts_modified"]
-    my_search_fields = ["name", "value", "comment"]
+    search_fields = ["name", "value", "comment"]
     list_filter = ["name", "ts_created", "ts_modified"]
-    search_fields = my_search_fields
+    autocomplete_fields = ["name"]
 
 
-admin.site.register(ContentTemplateOption, ContentTemplateOptionAdmin)
-
-
+@admin.register(ContentTemplateOptionType)
 class ContentTemplateOptionTypeAdmin(GenoBaseAdmin):
     model = ContentTemplateOption
     fields = ["name", "description", "comment", "ts_created", "ts_modified"]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "description", "comment", "ts_created", "ts_modified"]
-    my_search_fields = ["name", "description", "comment"]
+    search_fields = ["name", "description", "comment"]
     list_filter = ["ts_created", "ts_modified"]
-    search_fields = my_search_fields
 
 
-admin.site.register(ContentTemplateOptionType, ContentTemplateOptionTypeAdmin)
-
-
+@admin.register(GenericAttribute)
 class GenericAttributeAdmin(GenoBaseAdmin):
     model = GenericAttribute
     fields = [
@@ -1494,9 +1551,5 @@ class GenericAttributeAdmin(GenoBaseAdmin):
     ]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "value", "date", "content_type", "ts_created", "ts_modified"]
-    my_search_fields = ["name", "comment", "value"]
+    search_fields = ["name", "comment", "value"]
     list_filter = ["name", "ts_created", "ts_modified", "content_type"]
-    search_fields = my_search_fields
-
-
-admin.site.register(GenericAttribute, GenericAttributeAdmin)

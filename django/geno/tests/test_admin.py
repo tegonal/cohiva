@@ -77,61 +77,40 @@ class GenoAdminTest(GenoAdminTestCase):
 
         ## Links (foreign key and m2m)
         response = self.client.get(f"/admin/geno/contract/{contract.id}/change/")
-        expected = f"""<label>Links:</label>
-                       <div class="readonly"><ul>
-                            <li>Adresse: <a href="/admin/geno/address/{adr3.id}">LinkTest, Three</a></li>
-                            <li>Adresse: <a href="/admin/geno/address/{adr2.id}">LinkTest, Two</a>,
-                                         <a href="/admin/geno/address/{adr1.id}">LinkTest, One</a></li>
-                       </ul></div>"""  # noqa: E501
-        self.assertContains(response, expected, html=True)
+        for adr in [adr1, adr2, adr3]:
+            expected = f'<a href="/admin/geno/address/{adr.id}">{adr}</a>'
+            self.assertContains(response, expected, html=True)
 
         ## Links 1:1 key
         response = self.client.get(f"/admin/geno/member/{member.id}/change/")
-        expected = f"""<label>Links:</label>
-                       <div class="readonly"><ul>
-                            <li>Adresse: <a href="/admin/geno/address/{adr1.id}">LinkTest, One</a></li>
-                       </ul></div>"""  # noqa: E501
+        expected = f'<li>Adresse: <a href="/admin/geno/address/{adr1.id}">LinkTest, One</a></li>'
         self.assertContains(response, expected, html=True)
 
         ## Links generic relation (ContentType)
         response = self.client.get(f"/admin/geno/genericattribute/{generic1.id}/change/")
-        expected = f"""<label>Links:</label>
-                       <div class="readonly"><ul>
-                            <li>Adresse: <a href="/admin/geno/address/{adr4.id}">LinkTest, Four</a></li>
-                       </ul></div>"""  # noqa: E501
+        expected = f'<li>Adresse: <a href="/admin/geno/address/{adr4.id}">LinkTest, Four</a></li>'
         self.assertContains(response, expected, html=True)
 
         ## Backlinks
         response = self.client.get(f"/admin/geno/address/{adr1.id}/change/")
-        expected = f"""<label>Backlinks:</label>
-                       <div class="readonly"><ul>
-                            <li>Mitglied: <ul><li><a href="/admin/geno/member/{member.id}">LinkTest, One</a></li></ul></li>
-                            <li>Vertrag: <ul><li><a href="/admin/geno/contract/{contract.id}"> [One LinkTest/Two LinkTest]</a></li></ul></li>
-                       </ul></div>"""  # noqa: E501
+        expected = f'<li>Mitglied: <ul><li><a href="/admin/geno/member/{member.id}">LinkTest, One</a></li></ul></li>'
+        self.assertContains(response, expected, html=True)
+        expected = f'<li>Vertrag: <ul><li><a href="/admin/geno/contract/{contract.id}"> [One LinkTest/Two LinkTest]</a></li></ul></li>'
         self.assertContains(response, expected, html=True)
 
         response = self.client.get(f"/admin/geno/address/{adr2.id}/change/")
-        expected = f"""<label>Backlinks:</label>
-                       <div class="readonly"><ul>
-                            <li>Vertrag: <ul><li><a href="/admin/geno/contract/{contract.id}"> [One LinkTest/Two LinkTest]</a></li></ul></li>
-                       </ul></div>"""  # noqa: E501
+        expected = f'<li>Vertrag: <ul><li><a href="/admin/geno/contract/{contract.id}"> [One LinkTest/Two LinkTest]</a></li></ul></li>'
         self.assertContains(response, expected, html=True)
 
         response = self.client.get(f"/admin/geno/address/{adr3.id}/change/")
-        expected = f"""<label>Backlinks:</label>
-                       <div class="readonly"><ul>
-                            <li>Vertrag: <ul><li><a href="/admin/geno/contract/{contract.id}"> [One LinkTest/Two LinkTest]</a></li></ul></li>
-                       </ul></div>"""  # noqa: E501
+        expected = f'<li>Vertrag: <ul><li><a href="/admin/geno/contract/{contract.id}"> [One LinkTest/Two LinkTest]</a></li></ul></li>'
         self.assertContains(response, expected, html=True)
 
         response = self.client.get(f"/admin/geno/address/{adr4.id}/change/")
-        expected = f"""<label>Backlinks:</label>
-                       <div class="readonly"><ul>
-                            <li>Attribut: <ul>
+        expected = f"""<li>Attribut: <ul>
                                 <li><a href="/admin/geno/genericattribute/{generic2.id}">LinkTest, Four [Generic2 - Test]</a></li>
                                 <li><a href="/admin/geno/genericattribute/{generic1.id}">LinkTest, Four [Generic1 - Test]</a></li>
-                            </ul></li>
-                       </ul></div>"""  # noqa: E501
+                            </ul></li>"""
         self.assertContains(response, expected, html=True)
 
     def test_copy_objects(self):

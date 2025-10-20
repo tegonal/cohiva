@@ -1,7 +1,6 @@
 import logging
 from decimal import Decimal
 
-import select2.fields
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -43,10 +42,8 @@ class Vendor(GenoBase):
 
 
 class VendorAdmin(GenoBase):
-    name = select2.fields.ForeignKey(Address, on_delete=models.CASCADE)
-    vendor = select2.fields.ForeignKey(
-        Vendor, verbose_name="Verkaufsstelle", on_delete=models.CASCADE
-    )
+    name = models.ForeignKey(Address, on_delete=models.CASCADE)
+    vendor = models.ForeignKey(Vendor, verbose_name="Verkaufsstelle", on_delete=models.CASCADE)
     VENDORADMIN_ROLE_CHOICES = (("admin", "Administrator:in"),)
     role = models.CharField(
         "Typ", max_length=50, choices=VENDORADMIN_ROLE_CHOICES, default="admin"
@@ -67,9 +64,7 @@ class VendorAdmin(GenoBase):
 class Account(GenoBase):
     name = models.CharField("Name", max_length=100)
     pin = models.CharField("PIN", max_length=20)
-    vendor = select2.fields.ForeignKey(
-        Vendor, verbose_name="Verkaufsstelle", on_delete=models.CASCADE
-    )
+    vendor = models.ForeignKey(Vendor, verbose_name="Verkaufsstelle", on_delete=models.CASCADE)
     balance = models.DecimalField("Kontostand", max_digits=10, decimal_places=2, default=0.00)
     active = models.BooleanField("Aktiv", default=True)
 
@@ -217,11 +212,11 @@ class Account(GenoBase):
 
 
 class AccountOwner(GenoBase):
-    name = select2.fields.ForeignKey(
+    name = models.ForeignKey(
         Account, verbose_name="Konto", on_delete=models.CASCADE, related_name="account_owners"
     )
     owner_id = models.PositiveIntegerField()
-    owner_type = select2.fields.ForeignKey(
+    owner_type = models.ForeignKey(
         ContentType,
         verbose_name="Verknüpft mit",
         on_delete=models.CASCADE,
@@ -242,7 +237,7 @@ class AccountOwner(GenoBase):
 
 class Transaction(GenoBase):
     name = models.CharField("Buchungstyp", max_length=100, default="Buchung")
-    account = select2.fields.ForeignKey(
+    account = models.ForeignKey(
         Account, verbose_name="Konto", on_delete=models.CASCADE, db_index=True
     )
     amount = models.DecimalField(
@@ -253,7 +248,7 @@ class Transaction(GenoBase):
     )
     date = models.DateTimeField("Datum")
     description = models.CharField("Notiz", max_length=255, blank=True)
-    user = select2.fields.ForeignKey(
+    user = models.ForeignKey(
         User, verbose_name="Benutzer:in", on_delete=models.SET_NULL, null=True
     )
     transaction_id = models.CharField("Transaktions-ID", max_length=150, db_index=True, blank=True)
@@ -323,10 +318,10 @@ class Transaction(GenoBase):
 
 class UserAccountSetting(GenoBase):
     name = models.CharField("Name", max_length=100)
-    account = select2.fields.ForeignKey(
+    account = models.ForeignKey(
         Account, verbose_name="Konto", on_delete=models.CASCADE, db_index=True
     )
-    user = select2.fields.ForeignKey(User, verbose_name="Benutzer:in", on_delete=models.CASCADE)
+    user = models.ForeignKey(User, verbose_name="Benutzer:in", on_delete=models.CASCADE)
     value = models.CharField("Wert", max_length=255)
     active = models.BooleanField("Aktiv", default=True)
 
