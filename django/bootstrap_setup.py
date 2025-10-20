@@ -573,6 +573,22 @@ def setup_config(install_dir, venv_path):
         settings_file.write_text(content)
         print_info("Enabled local development cookie settings (insecure cookies for HTTP)")
 
+    # Uncomment CSRF/Session cookie settings for local development
+    settings_file = Path('cohiva/settings.py')
+    if settings_file.exists():
+        content = settings_file.read_text()
+        # Uncomment the CSRF and session cookie settings for local HTTP development
+        content = content.replace(
+            '# SESSION_COOKIE_SECURE = False',
+            'SESSION_COOKIE_SECURE = False'
+        )
+        content = content.replace(
+            '# CSRF_COOKIE_SECURE = False',
+            'CSRF_COOKIE_SECURE = False'
+        )
+        settings_file.write_text(content)
+        print_info("Enabled local development cookie settings (insecure cookies for HTTP)")
+
     # Create .env file if it doesn't exist
     env_file = Path(".env")
     if not env_file.exists():
