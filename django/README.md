@@ -333,6 +333,8 @@ The installation process uses two scripts:
 - `install_dependencies.sh`: Checks for Python 3.11+ and calls the Python script
 - `install.py`: Python-based installation script that handles all dependency management
 
+**Note:** The Quick Start `./bootstrap.sh` automatically runs `install_dependencies.sh` during initial setup. You only need to run `install_dependencies.sh` manually when updating dependencies after initial setup.
+
 ## Docker Compose for Development
 
 The project includes a `docker-compose.dev.yml` file for local development with containerized services:
