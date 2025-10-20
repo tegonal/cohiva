@@ -40,8 +40,32 @@ services:
       timeout: 5s
       retries: 5
 
+  mailpit:
+    image: docker.io/axllent/mailpit:v1.27
+    container_name: cohiva-dev-mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"   # Web interface
+      - "1025:1025"   # SMTP
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8025/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - mailpit_data:/data
+    environment:
+      TZ: "Europe/Zurich"
+      MP_MAX_MESSAGES: "50000"
+      MP_MAX_AGE: "45d"
+      MP_DATABASE: "/data/mailpit.db"
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+
 volumes:
   mariadb_data:
     name: cohiva-dev-mariadb-data
   redis_data:
     name: cohiva-dev-redis-data
+  mailpit_data:
+    name: cohiva-dev-mailpit-data
