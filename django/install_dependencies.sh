@@ -38,22 +38,40 @@ echo "Running install.py..."
 echo ""
 
 # Parse arguments to handle --yes flag
-INSTALL_PY_ARGS=()
-for arg in "$@"; do
-    case $arg in
+# POSIX-compatible argument parsing (no arrays)
+quote_arg() {
+    # Escape single quotes in the argument and wrap in single quotes
+    printf "'%s'" "$(printf "%s" "$1" | sed "s/'/'\\\\''/g")"
+}
+
+NEW_ARGS=""
+while [ "$#" -gt 0 ]; do
+    case "$1" in
         -y|--yes)
-            INSTALL_PY_ARGS+=("--yes")
+            NEW_ARGS="${NEW_ARGS:+$NEW_ARGS }$(quote_arg --yes)"
+            shift
             ;;
         -e|--environment)
             shift
-            INSTALL_PY_ARGS+=("--environment" "$1")
+            if [ "$#" -eq 0 ]; then
+                echo "ERROR: --environment requires a value." >&2
+                exit 1
+            fi
+            NEW_ARGS="${NEW_ARGS:+$NEW_ARGS }$(quote_arg --environment) $(quote_arg "$1")"
+            shift
             ;;
         *)
-            INSTALL_PY_ARGS+=("$arg")
+            NEW_ARGS="${NEW_ARGS:+$NEW_ARGS }$(quote_arg "$1")"
+            shift
             ;;
     esac
-    shift || true
 done
 
-# Execute the Python installation script with all arguments passed through
-exec $PYTHON_CMD install.py "${INSTALL_PY_ARGS[@]}"
+# Rebuild positional parameters from the quoted list
+if [ -n "$NEW_ARGS" ]; then
+    eval "set -- $NEW_ARGS"
+else
+    set --
+fi
+
+exec "$PYTHON_CMD" install.py "$@"
