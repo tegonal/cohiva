@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: cohiva_django_test
+      # Database is created in init script with correct collation
       MYSQL_USER: cohiva
       MYSQL_PASSWORD: c0H1v4
     ports:
@@ -16,6 +16,8 @@ services:
     command: >
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_unicode_ci
+      --character-set-client-handshake=FALSE
+      --init-connect='SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci'
       --sql-mode=TRADITIONAL,ALLOW_INVALID_DATES
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]

@@ -348,7 +348,7 @@ The installation process uses two scripts:
 The project includes a `docker-compose.dev.yml` file for local development with containerized services:
 
 **Services included:**
-- MariaDB 11.4 with default configuration (`cohiva_django_test` database)
+- MariaDB 11.4 with `utf8mb4_unicode_ci` collation (`cohiva_django_test` database)
 - Redis 7 for Celery broker/backend
 
 **Docker Compose commands:**

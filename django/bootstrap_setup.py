@@ -633,29 +633,46 @@ def start_docker():
         print()
         return False
 
-    return True
-
-    # Wait for services
-    print_step("Waiting for services to be ready...")
+    # Wait for database to be ready
+    print_step("Waiting for database to be ready...")
     import time
-    time.sleep(5)
 
-    timeout = 30
+    # First wait a bit for containers to start
+    time.sleep(3)
+
+    timeout = 60
     elapsed = 0
+    db_ready = False
+
     while elapsed < timeout:
+        # Test actual database connection
         result = run_command(
-            ['docker', 'compose', '-f', 'docker-compose.dev.yml', 'ps'],
+            [
+                'docker', 'exec', 'cohiva-dev-mariadb',
+                'mariadb', '-ucohiva', '-pc0H1v4', '-e', 'SELECT 1;'
+            ],
             capture_output=True,
             check=False,
         )
-        if 'healthy' in result.stdout:
+
+        if result.returncode == 0:
+            db_ready = True
             break
+
         time.sleep(2)
         elapsed += 2
         print('.', end='', flush=True)
 
     print()
-    print_info("Docker services started")
+
+    if not db_ready:
+        print_warn("Database may not be fully ready yet")
+        print_info("You can check status with: docker compose -f docker-compose.dev.yml ps")
+        print_info("Or test connection: docker exec cohiva-dev-mariadb mariadb -ucohiva -pc0H1v4 -e 'SELECT 1;'")
+    else:
+        print_info("Database is ready")
+
+    return db_ready
 
 
 def run_migrations(venv_path):
@@ -667,7 +684,8 @@ def run_migrations(venv_path):
     env['VIRTUAL_ENV'] = str(venv_path)
     env['PATH'] = f"{venv_path / 'bin'}:{env['PATH']}"
 
-    run_command(['./manage.py', 'migrate'], env=env)
+    # Skip checks to avoid issues with admin checks before tables exist
+    run_command(['./manage.py', 'migrate', '--skip-checks'], env=env)
     print_info("Migrations complete")
 
 

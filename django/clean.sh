@@ -62,6 +62,7 @@ while [[ $# -gt 0 ]]; do
             echo "  - Development data directories (django-test/, django-production/)"
             echo "  - Auto-activation files (.venv-path, .envrc)"
             echo "  - Environment file (.env)"
+            echo "  - Docker containers and volumes (MariaDB data, Redis data)"
             echo "  - Virtual environment (unless --keep-venv is used)"
             echo ""
             exit 0
@@ -131,11 +132,11 @@ fi
 print_step "Starting cleanup..."
 echo
 
-# Stop Docker services first
-print_step "Stopping Docker services..."
+# Stop Docker services and remove volumes
+print_step "Stopping Docker services and removing volumes..."
 if [ -f docker-compose.dev.yml ]; then
     docker compose -f docker-compose.dev.yml down -v 2>/dev/null || true
-    print_info "Docker services stopped"
+    print_info "Docker services stopped and volumes removed"
 else
     print_warn "docker-compose.dev.yml not found, skipping Docker cleanup"
 fi
