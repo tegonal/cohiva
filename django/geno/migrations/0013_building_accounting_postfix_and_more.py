@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
             name="income_account_building_based",
             field=models.BooleanField(
                 default=False,
-                help_text="Liegenschafts-Postfix (bspw. 81) wird gentutz um Kontonummer zu bilden. Es resultiert bspw. 300081",
+                help_text="Liegenschafts-Postfix (bspw. 81) wird genutzt um Kontonummer zu bilden. Es resultiert bspw. 300081",
                 verbose_name="Ertragskonto liegenschaftsabhängig",
             ),
         ),
@@ -30,7 +30,7 @@ class Migration(migrations.Migration):
             name="receivables_account_building_based",
             field=models.BooleanField(
                 default=False,
-                help_text="Liegenschafts-Postfix (bspw. 81) wird gentutz um Kontonummer zu bilden. Es resultiert bspw. 110281",
+                help_text="Liegenschafts-Postfix (bspw. 81) wird genutzt um Kontonummer zu bilden. Es resultiert bspw. 110281",
                 verbose_name="Forderungskonto liegenschaftsabhängig",
             ),
         ),

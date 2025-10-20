@@ -1583,7 +1583,7 @@ class InvoiceCategory(GenoBase):
     income_account_building_based = models.BooleanField(
         "Ertragskonto liegenschaftsabhängig",
         default=False,
-        help_text="Liegenschafts-Postfix (bspw. 81) wird gentutz um Kontonummer zu bilden. Es resultiert bspw. 300081",
+        help_text="Liegenschafts-Postfix (bspw. 81) wird genutzt um Kontonummer zu bilden. Es resultiert bspw. 300081",
     )
     receivables_account = models.CharField(
         "Kontonummer Forderungen", max_length=50, default="1102"
@@ -1591,7 +1591,7 @@ class InvoiceCategory(GenoBase):
     receivables_account_building_based = models.BooleanField(
         "Forderungskonto liegenschaftsabhängig",
         default=False,
-        help_text="Liegenschafts-Postfix (bspw. 81) wird gentutz um Kontonummer zu bilden. Es resultiert bspw. 110281",
+        help_text="Liegenschafts-Postfix (bspw. 81) wird genutzt um Kontonummer zu bilden. Es resultiert bspw. 110281",
     )
     manual_allowed = models.BooleanField("Manuelle Rechnungsstellung erlaubt", default=False)
     email_template = models.ForeignKey(
