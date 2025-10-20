@@ -136,17 +136,6 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
                 if setting_name in settings.COHIVA_ADMIN_FIELDS[module_name]:
                     setattr(self, attr, settings.COHIVA_ADMIN_FIELDS[module_name][setting_name])
 
-    def changelist_view(self, request, extra_context=None):
-        extra_context = extra_context or {}
-
-        # default filter: active=1 -> True
-        if self.model and "active" in (f.name for f in self.model._meta.get_fields()) and "active__exact" not in request.GET and "active__customfilter" not in request.GET:
-            q = request.GET.copy()
-            # q["active__exact"] = '1'
-            # q["active__customfilter"] = "1"
-            request.GET = q
-        return super().changelist_view(request, extra_context=extra_context)
-
 @admin.display(description="Anrede auf 'Herr' setzen")
 def set_title_mr(modeladmin, request, queryset):
     queryset.update(title="Herr")
