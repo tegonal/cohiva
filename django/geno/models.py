@@ -28,6 +28,7 @@ from cohiva.utils.settings import (
 )
 from geno.model_fields import LowercaseEmailField
 from geno.utils import (
+    build_account,
     is_member,
     is_renting,
     nformat,
@@ -1608,16 +1609,14 @@ class InvoiceCategory(GenoBase):
         super().clean(*args, **kwargs)
 
     def build_income_account(self, building=None):
-        if self.income_account_building_based and building and building.postfix:
-            postfix = "%03d" % building.accounting_postfix
-            return re.sub(r"(\d+)$", r"\1%s" % building.postfix, self.income_account)
+        if self.income_account_building_based and building:
+            build_account(self.income_account, building=building)
         else:
             return self.income_account
 
     def build_receivables_account(self, building=None):
-        if self.receivables_account_building_based and building and building.postfix:
-            postfix = "%03d" % building.accounting_postfix
-            return re.sub(r"(\d+)$", r"\1%s" % building.postfix, self.receivables_account)
+        if self.receivables_account_building_based and building:
+            build_account(self.receivables_account, building=building)
         else:
             return self.receivables_account
 

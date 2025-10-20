@@ -30,7 +30,6 @@ import geno.settings as geno_settings
 ## For PDF merging
 from cohiva.utils.pdf import PdfGenerator
 
-from .helper import build_account
 from .models import (
     Address,
     ContentTemplate,
@@ -46,6 +45,7 @@ from .models import (
     ShareType,
 )
 from .utils import (
+    build_account,
     ensure_dir_exists,
     fill_template_pod,
     nformat,
@@ -525,29 +525,53 @@ def add_payment(date, amount, person, invoice=None, note=None, cash=False):
 def get_income_account(book, invoice_category, kind, contract=None):
     ## Special income accounts
     if kind == "rent_business":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_INVOICE_INCOME_BUSINESS)
+        return book.accounts(
+            code=build_account(
+                geno_settings.GNUCASH_ACC_INVOICE_INCOME_BUSINESS, contract=contract
+            )
+        )
     elif kind == "rent_other":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_INVOICE_INCOME_OTHER)
+        return book.accounts(
+            code=build_account(geno_settings.GNUCASH_ACC_INVOICE_INCOME_OTHER, contract=contract)
+        )
     elif kind == "rent_parking":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_INVOICE_INCOME_PARKING)
+        return book.accounts(
+            code=build_account(geno_settings.GNUCASH_ACC_INVOICE_INCOME_PARKING, contract=contract)
+        )
     elif kind == "nk":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_NK)
+        return book.accounts(code=build_account(geno_settings.GNUCASH_ACC_NK, contract=contract))
     elif kind == "nk_flat":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_NK_FLAT)
+        return book.accounts(
+            code=build_account(geno_settings.GNUCASH_ACC_NK_FLAT, contract=contract)
+        )
     elif kind == "rent_reduction":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_RENTREDUCTION)
+        return book.accounts(
+            code=build_account(geno_settings.GNUCASH_ACC_RENTREDUCTION, contract=contract)
+        )
     elif kind == "mietdepot":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_MIETDEPOT)
+        return book.accounts(
+            code=build_account(geno_settings.GNUCASH_ACC_MIETDEPOT, contract=contract)
+        )
     elif kind == "schluesseldepot":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_SCHLUESSELDEPOT)
+        return book.accounts(
+            code=build_account(geno_settings.GNUCASH_ACC_SCHLUESSELDEPOT, contract=contract)
+        )
     elif kind == "strom":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_STROM)
+        return book.accounts(
+            code=build_account(geno_settings.GNUCASH_ACC_STROM, contract=contract)
+        )
     elif kind == "kiosk":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_KIOSK)
+        return book.accounts(
+            code=build_account(geno_settings.GNUCASH_ACC_KIOSK, contract=contract)
+        )
     elif kind == "spende":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_SPENDE)
+        return book.accounts(
+            code=build_account(geno_settings.GNUCASH_ACC_SPENDE, contract=contract)
+        )
     elif kind == "other":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_OTHER)
+        return book.accounts(
+            code=build_account(geno_settings.GNUCASH_ACC_OTHER, contract=contract)
+        )
     elif (
         invoice_category.income_account_building_based
         and contract
