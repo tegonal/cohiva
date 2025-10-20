@@ -59,7 +59,7 @@ def copy_objects(modeladmin, request, queryset):
 
 copy_objects.short_description = "Ausgewählte Objekte kopieren"
 
-class BooleanFieldDefaultTrueListFilter(admin.FieldListFilter):
+class BooleanFieldDefaultTrueListFilter(admin.BooleanFieldListFilter):
     """
     Filter a boolean field `active`.
     Default: only True (active) records.
@@ -67,10 +67,42 @@ class BooleanFieldDefaultTrueListFilter(admin.FieldListFilter):
     """
     def __init__(self, field, request, params, model, model_admin, field_path):
         super().__init__(field, request, params, model, model_admin, field_path)
+
+        # Determine the parameter name used in the URL.
+        # Support `field_path` (e.g. parent__active), the field name,
+        # and common variants with '.' vs '__' (e.g. parent.active).
+        candidates = []
+        if field_path:
+            candidates.append(field_path)
         try:
-            if self.used_parameters.get(self.field.name) == "all":
+            candidates.append(self.field.name)
+        except Exception:
+            pass
+
+        # Add common variants
+        variants = set(candidates)
+        for c in list(candidates):
+            variants.add(c.replace(".", "__"))
+            variants.add(c.replace("__", "."))
+        candidates = list(variants)
+
+        lookup_param = None
+        for c in candidates:
+            if c in self.used_parameters:
+                lookup_param = c
+                break
+
+        # Fallback to field_path or field name
+        if lookup_param is None:
+            lookup_param = field_path or getattr(self.field, "name", "")
+
+        self.field.name = lookup_param
+
+        try:
+            val = self.used_parameters.get(self.field.name)
+            if val == "all":
                 self.lookup_val = "all"
-            elif self.used_parameters.get(self.field.name) == "0":
+            elif val == "0":
                 self.lookup_val = "0"
             else:
                 self.lookup_val = "1"
@@ -103,10 +135,12 @@ class BooleanFieldDefaultTrueListFilter(admin.FieldListFilter):
         ]
 
     def queryset(self, request, queryset):
+        # Normalize lookup to Django filter lookup syntax (use `__` separators).
+        lookup = (self.field.name or getattr(self.field, "name", "")).replace(".", "__")
         if self.lookup_val == "1":
-            return queryset.filter(**{self.field.name: True})
+            return queryset.filter(**{lookup: True})
         elif self.lookup_val == "0":
-            return queryset.filter(**{self.field.name: False})
+            return queryset.filter(**{lookup: False})
         else:
             return queryset
 
@@ -396,7 +430,7 @@ class ChildAdmin(GenoBaseAdmin):
     ]
     readonly_fields = ["age", "import_id", "ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "presence", "parents", "age"]
-    list_filter = ["presence", "name__active"]
+    list_filter = ["presence", ("name__active", BooleanFieldDefaultTrueListFilter)]
     search_fields = ["name__name", "name__first_name", "parents", "notes"]
     autocomplete_fields = ["name"]
 
@@ -860,7 +894,7 @@ class RegistrationAdmin(GenoBaseAdmin):
     ordering = ("-slot__name", "-ts_modified")
     search_fields = ["name", "first_name", "email", "slot__event__name"]
     list_filter = [
-        "slot__event__active",
+        ("slot__event__active", BooleanFieldDefaultTrueListFilter),
         "check1",
         "check2",
         "check3",
