@@ -829,13 +829,14 @@ def send_member_mail_process(data):
     process.send_output()
     process.rollback_failed_recipients()
 
-    if data["change_attribute"]:
-        process.update_member_attributes(data["change_attribute"], data["change_attribute_value"])
+    if not is_test:
+        if data["change_attribute"]:
+            process.update_member_attributes(data["change_attribute"], data["change_attribute_value"])
 
-    if data["change_genattribute"]:
-        process.update_generic_attributes(
-            data["change_genattribute"], data["change_genattribute_value"]
-        )
+        if data["change_genattribute"]:
+            process.update_generic_attributes(
+                data["change_genattribute"], data["change_genattribute_value"]
+            )
 
     if data["action"] in ("makezip", "makezip_pdf"):
         result = process.get_zipfile()
