@@ -356,6 +356,7 @@ class BuildingAdmin(GenoBaseAdmin):
         ("city_zipcode", "city_name", "country"),
         "egid",
         ("value_insurance", "value_build"),
+        "accounting_postfix",
         "team",
         "active",
         "ts_created",
@@ -915,7 +916,7 @@ class RentalUnitAdmin(GenoBaseAdmin):
         ("building", "floor"),
         ("area", "area_balcony", "area_add"),
         ("height", "volume"),
-        ("rent_netto", "nk", "nk_flat", "nk_electricity", "rent_total"),
+        ("rent_netto", "nk", "nk_flat", "nk_electricity"),
         ("share", "depot"),
         ("internal_nr", "ewid"),
         "note",
@@ -993,6 +994,18 @@ class ContractAdminModelForm(forms.ModelForm):
                 "Kontaktperson/Hauptmieter*in muss Vertragspartner*in sein."
             )
         return main_contact
+
+    def clean_rental_units(self):
+        # only rental units of same building are allowed
+        rental_units = self.cleaned_data.get("rental_units")
+        buildings = set()
+        for ru in rental_units.all():
+            buildings.add(ru.building)
+        if len(buildings) > 1:
+            raise forms.ValidationError(
+                "Es dürfen nur Mietobjekte aus derselben Liegenschaft gewählt werden."
+            )
+        return rental_units
 
 
 class VertragstypFilter(admin.SimpleListFilter):
@@ -1139,8 +1152,8 @@ class InvoiceCategoryAdmin(GenoBaseAdmin):
         "reference_id",
         "linked_object_type",
         "email_template",
-        "income_account",
-        "receivables_account",
+        ("income_account", "income_account_building_based"),
+        ("receivables_account", "receivables_account_building_based"),
         "note",
         "manual_allowed",
         "active",

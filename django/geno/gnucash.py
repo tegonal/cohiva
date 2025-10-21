@@ -45,6 +45,7 @@ from .models import (
     ShareType,
 )
 from .utils import (
+    build_account,
     ensure_dir_exists,
     fill_template_pod,
     nformat,
@@ -480,9 +481,13 @@ def add_payment(date, amount, person, invoice=None, note=None, cash=False):
     if not book:
         return messages[-1]
 
-    receivables = book.accounts(
-        code=geno_settings.GNUCASH_ACC_INVOICE_RECEIVABLE
-    )  ## Debitoren Miete
+    account_nbr = (
+        build_account(geno_settings.GNUCASH_ACC_INVOICE_RECEIVABLE)
+        if invoice and invoice.contract and invoice.contract.rental_units.exists()
+        else geno_settings.GNUCASH_ACC_INVOICE_RECEIVABLE
+    )
+
+    receivables = book.accounts(code=account_nbr)  ## Debitoren Miete
     if cash:
         payment_account = book.accounts(code=geno_settings.GNUCASH_ACC_KASSA)  ## Kasse
     else:
@@ -517,37 +522,99 @@ def add_payment(date, amount, person, invoice=None, note=None, cash=False):
         return 0
 
 
-def get_income_account(book, invoice_category, kind):
+def get_income_account(book, invoice_category, kind, contract=None):
     ## Special income accounts
     if kind == "rent_business":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_INVOICE_INCOME_BUSINESS)
+        return book.accounts(
+            code=build_account(
+                geno_settings.GNUCASH_ACC_INVOICE_INCOME_BUSINESS, contract=contract
+            )
+        )
     elif kind == "rent_other":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_INVOICE_INCOME_OTHER)
+        return book.accounts(
+            code=build_account(geno_settings.GNUCASH_ACC_INVOICE_INCOME_OTHER, contract=contract)
+        )
     elif kind == "rent_parking":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_INVOICE_INCOME_PARKING)
+        return book.accounts(
+            code=build_account(geno_settings.GNUCASH_ACC_INVOICE_INCOME_PARKING, contract=contract)
+        )
     elif kind == "nk":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_NK)
+        return book.accounts(code=build_account(geno_settings.GNUCASH_ACC_NK, contract=contract))
     elif kind == "nk_flat":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_NK_FLAT)
+        return book.accounts(
+            code=build_account(geno_settings.GNUCASH_ACC_NK_FLAT, contract=contract)
+        )
     elif kind == "rent_reduction":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_RENTREDUCTION)
+        return book.accounts(
+            code=build_account(geno_settings.GNUCASH_ACC_RENTREDUCTION, contract=contract)
+        )
     elif kind == "mietdepot":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_MIETDEPOT)
+        return book.accounts(
+            code=build_account(geno_settings.GNUCASH_ACC_MIETDEPOT, contract=contract)
+        )
     elif kind == "schluesseldepot":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_SCHLUESSELDEPOT)
+        return book.accounts(
+            code=build_account(geno_settings.GNUCASH_ACC_SCHLUESSELDEPOT, contract=contract)
+        )
     elif kind == "strom":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_STROM)
+        return book.accounts(
+            code=build_account(geno_settings.GNUCASH_ACC_STROM, contract=contract)
+        )
     elif kind == "kiosk":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_KIOSK)
+        return book.accounts(
+            code=build_account(geno_settings.GNUCASH_ACC_KIOSK, contract=contract)
+        )
     elif kind == "spende":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_SPENDE)
+        return book.accounts(
+            code=build_account(geno_settings.GNUCASH_ACC_SPENDE, contract=contract)
+        )
     elif kind == "other":
-        return book.accounts(code=geno_settings.GNUCASH_ACC_OTHER)
+        return book.accounts(
+            code=build_account(geno_settings.GNUCASH_ACC_OTHER, contract=contract)
+        )
+    elif (
+        invoice_category.income_account_building_based
+        and contract
+        and contract.rental_units.exists()
+    ):
+        ## Use first rental unit's building accounting postfix
+        ru = contract.rental_units.all().first()
+        if ru.building:
+            return book.accounts(code=invoice_category.build_income_account(ru.building))
+        else:
+            logger.error(
+                "Could not find building for contract %s, using default income account with no postfix %s."
+                % (contract, invoice_category.income_account)
+            )
+            send_error_mail(
+                "get_income_account()",
+                "Could not find building for contract %s, using default income account with no postfix %s."
+                % (contract, invoice_category.income_account),
+            )
     ## Default
     return book.accounts(code=invoice_category.income_account)  ## z.B. Mietertag Wohnungen
 
 
-def get_receivables_account(book, invoice_category):
+def get_receivables_account(book, invoice_category, contract=None):
+    if (
+        invoice_category.receivables_account_building_based
+        and contract
+        and contract.rental_units.exists()
+    ):
+        ## Use first rental unit's building accounting postfix
+        ru = contract.rental_units.all().first()
+        if ru.building:
+            return book.accounts(code=invoice_category.build_receivables_account(ru.building))
+        else:
+            logger.error(
+                "Could not find building for contract %s, using default receivables account with no postfix %s."
+                % (contract, invoice_category.receivables_account)
+            )
+            send_error_mail(
+                "get_receivables_account()",
+                "Could not find building for contract %s, using default receivables account with no postfix %s."
+                % (contract, invoice_category.receivables_account),
+            )
     return book.accounts(code=invoice_category.receivables_account)  ## z.B. Debitoren Miete
 
 
@@ -576,8 +643,8 @@ def add_invoice(
         book = get_book(messages)
         if not book:
             return messages[-1]
-    income_account = get_income_account(book, invoice_category, kind)
-    receivables = get_receivables_account(book, invoice_category)
+    income_account = get_income_account(book, invoice_category, kind, contract)
+    receivables = get_receivables_account(book, invoice_category, contract)
 
     return add_invoice_obj(
         book,

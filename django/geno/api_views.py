@@ -30,7 +30,10 @@ from geno.serializers import (
     RentalUnitSerializer,
     UserSerializer,
 )
-from geno.utils import nformat
+from geno.utils import (
+    build_account,
+    nformat,
+)
 from reservation.api_views import get_capabilities as reservation_capabilities
 
 logger = logging.getLogger("geno")
@@ -112,11 +115,12 @@ class Akonto(APIView):
         akonto_total = 0
         if self.contract_id >= 0:
             contract = Contract.objects.get(id=self.contract_id)
+            fiaccount = build_account(geno_settings.GNUCASH_ACC_NK, contract)
             ## Get payments from contract AND linked contracts in case there are invoices before/after billing contract has been changed!
             for c in Contract.objects.filter(Q(id=contract.id) | Q(billing_contract=contract)):
                 akonto = Invoice.objects.filter(
                     contract=c,
-                    gnc_account=geno_settings.GNUCASH_ACC_NK,
+                    gnc_account=fiaccount,
                     date__gte=self.billing_period_start,
                     date__lte=self.billing_period_end,
                 ).aggregate(Sum("amount"))
@@ -138,7 +142,7 @@ class Akonto(APIView):
     def get_akonto_for_all_contracts(self):
         ## Get invoices for NK-Akonto and NK-Ausserordentlich
         akonto_invoices = Invoice.objects.filter(
-            Q(gnc_account=geno_settings.GNUCASH_ACC_NK)
+            Q(gnc_account__startswith=geno_settings.GNUCASH_ACC_NK)
             | Q(invoice_category=self.invoice_category_nk_ausserordentlich),
             invoice_type="Invoice",
             date__gte=self.billing_period_start,
@@ -183,6 +187,12 @@ class QRBill(APIView):
             -6: {"name": "Leerstand", "account": "4582"},
         }
         super().__init__(**kwargs)
+
+    def get_virtual_contract_account(self, virt_contract_id):
+        acc_prefix = self.get_virtual_contract_account(virt_contract_id)["account"]
+        if self.contract:
+            build_account(acc_prefix, contract=self.contract)
+        return acc_prefix
 
     def get_akonto_qrbill(self, request):
         invoice_category = InvoiceCategory.objects.get(
@@ -240,11 +250,15 @@ class QRBill(APIView):
             raise ValidationError("Konnte Buchhaltung nicht öffnen: %s" % messages[-1])
 
         billing_period_end = datetime.strptime(request.data["billing_period_end"], "%Y-%m-%d")
+        fiaccount_nk = build_account(geno_settings.GNUCASH_ACC_NK, contract=self.contract)
+        fiaccount_nk_receivable = build_account(
+            geno_settings.GNUCASH_ACC_NK_RECEIVABLE, contract=self.contract
+        )
         if request.data["total_akonto"] > 0:
             ## Transaction: Forderungen>Nebenkosten [1104] -> Passive Abgenzung>NK-Akonto [2301]
             description = "NK-Abrechnung Verrechnung Akontozahlungen %s" % (self.contract)
-            account_to = geno_settings.GNUCASH_ACC_NK
-            account_from = geno_settings.GNUCASH_ACC_NK_RECEIVABLE
+            account_to = fiaccount_nk
+            account_from = fiaccount_nk_receivable
             amount = request.data["total_akonto"]
             add_transaction(
                 billing_period_end.date(),
@@ -301,7 +315,7 @@ class QRBill(APIView):
             description = (
                 "NK-Abrechnung %s" % (self.virtual_contracts[request.data["contract_id"]]["name"])
             )
-            account_to = self.virtual_contracts[request.data["contract_id"]]["account"]
+            account_to = self.get_virtual_contract_account(request.data["contract_id"])
             account_from = geno_settings.GNUCASH_ACC_NK_RECEIVABLE
             amount = total_amount
             add_transaction(
