@@ -28,6 +28,7 @@ from cohiva.utils.settings import (
 )
 from geno.model_fields import LowercaseEmailField
 from geno.utils import (
+    build_account,
     is_member,
     is_renting,
     nformat,
@@ -707,7 +708,8 @@ class Building(GenoBase):
             "(für automatische Zuordnung von Nutzer:innen)."
         ),
     )
-    egid = models.PositiveIntegerField("EGID", null=True)
+    accounting_postfix = models.PositiveIntegerField("Buchhaltungs-Postfix", null=True, blank=True)
+    egid = models.PositiveIntegerField("EGID", null=True, blank=True)
     active = models.BooleanField("Aktiv", default=True)
 
     class Meta:
@@ -1299,8 +1301,8 @@ class RentalUnit(GenoBase):
     note = models.CharField("Zusatzinfo", max_length=200, blank=True)
     active = models.BooleanField("Aktiv", default=True)
     status = models.CharField("Status", default="Verfügbar", max_length=100)
-    ewid = models.PositiveIntegerField("EWID", null=True)
-    internal_nr = models.PositiveIntegerField("Interne-Nummer", null=True)
+    ewid = models.PositiveIntegerField("EWID", null=True, blank=True)
+    internal_nr = models.PositiveIntegerField("Interne-Nummer", null=True, blank=True)
     svg_polygon = models.TextField("SVG Polygon", default="", blank=True)
     description = models.TextField("Beschreibung", default="", blank=True)
     adit_serial = models.TextField(
@@ -1321,7 +1323,7 @@ class RentalUnit(GenoBase):
         Bruttomiete inkl. NK und Strom
         """
         return (
-            self.rent_netto
+            (self.rent_netto if self.rent_netto else Decimal(0.0))
             + (self.nk if self.nk else Decimal(0.0))
             + (self.nk_flat if self.nk_flat else Decimal(0.0))
             + (self.nk_electricity if self.nk_electricity else Decimal(0.0))
@@ -1591,8 +1593,18 @@ class InvoiceCategory(GenoBase):
         default="Address",
     )
     income_account = models.CharField("Kontonummer Ertrag", max_length=50, default="3000")
+    income_account_building_based = models.BooleanField(
+        "Ertragskonto liegenschaftsabhängig",
+        default=False,
+        help_text="Liegenschafts-Postfix (bspw. 81) wird genutzt um Kontonummer zu bilden. Es resultiert bspw. 300081",
+    )
     receivables_account = models.CharField(
         "Kontonummer Forderungen", max_length=50, default="1102"
+    )
+    receivables_account_building_based = models.BooleanField(
+        "Forderungskonto liegenschaftsabhängig",
+        default=False,
+        help_text="Liegenschafts-Postfix (bspw. 81) wird genutzt um Kontonummer zu bilden. Es resultiert bspw. 110281",
     )
     manual_allowed = models.BooleanField("Manuelle Rechnungsstellung erlaubt", default=False)
     email_template = models.ForeignKey(
@@ -1608,6 +1620,18 @@ class InvoiceCategory(GenoBase):
         if self.email_template and self.email_template.template_type != "Email":
             raise ValidationError("Die ausgewählte Vorlage ist keine Email-Vorlage.")
         super().clean(*args, **kwargs)
+
+    def build_income_account(self, building=None):
+        if self.income_account_building_based and building:
+            build_account(self.income_account, building=building)
+        else:
+            return self.income_account
+
+    def build_receivables_account(self, building=None):
+        if self.receivables_account_building_based and building:
+            build_account(self.receivables_account, building=building)
+        else:
+            return self.receivables_account
 
     class Meta:
         verbose_name = "Rechnungstyp"
