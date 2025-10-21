@@ -1369,7 +1369,6 @@ class Contract(GenoBase):
     children = models.ManyToManyField(
         Child, verbose_name="Kinder", blank=True, related_name="child_contracts"
     )
-    children_old = models.CharField("Kinder (ALT!)", max_length=200, blank=True)
     rental_units = models.ManyToManyField(
         RentalUnit, verbose_name="Mietobjekt(e)", related_name="rentalunit_contracts"
     )

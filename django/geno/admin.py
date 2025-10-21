@@ -1011,7 +1011,7 @@ class ContractAdmin(GenoBaseAdmin):
         "contractors",
         "main_contact",
         "rental_units",
-        ("children", "children_old"),
+        "children",
         "state",
         ("date", "date_end", "date_since"),
         ("rent_reduction", "rent_reservation"),
