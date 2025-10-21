@@ -348,7 +348,7 @@ class DocumentTemplate:
     def render(self, recipient):
         output = RenderedDocument()
         output.file = self.content_template.file.path
-        filename_tag = sanitize_filename(self.content_template.name)
+        filename_tag = sanitize_filename(self.content_template.name) # use template name as filename tag
         if self.content_template.template_type == "OpenDocument":
             ctx = self.get_context(recipient)
             logger.info(
@@ -365,9 +365,6 @@ class DocumentTemplate:
                 self.content_template.file.path, ctx, output_format="odt"
             )
             self.temp_files.append(output.file)
-            output.filename = (
-                f"{recipient.address.get_filename_str()}_{filename_tag}.{self.output_format}"
-            )
             if not filename_tag:
                 filename_tag = os.path.splitext(os.path.basename(self.content_template.file.path))[
                     0
@@ -375,6 +372,9 @@ class DocumentTemplate:
                 logger.warning(
                     "No filename_tag using default: %s" % self.content_template.file.path
                 )
+            output.filename = (
+                f"{recipient.address.get_filename_str()}_{filename_tag}.{self.output_format}"
+            )
             if self.output_format == "pdf":
                 logger.info(" > odt2pdf(%s) -> %s" % (output.file, output.filename))
                 output.file = odt2pdf(output.file, "send_member_mail")
@@ -400,7 +400,10 @@ class DocumentTemplate:
         else:
             ## Just append
             logger.info(" > appending file without rendering: %s" % (output.file))
-            output.filename = os.path.basename(output.file)
+             # append file ending of output.file to filename_tag
+            if not filename_tag.endswith(os.path.splitext(output.file)[1]):
+                filename_tag += os.path.splitext(output.file)[1]
+            output.filename = filename_tag
         return output
 
     def cleanup(self):
@@ -829,13 +832,16 @@ def send_member_mail_process(data):
     process.send_output()
     process.rollback_failed_recipients()
 
-    if data["change_attribute"]:
-        process.update_member_attributes(data["change_attribute"], data["change_attribute_value"])
+    if not is_test:
+        if data["change_attribute"]:
+            process.update_member_attributes(
+                data["change_attribute"], data["change_attribute_value"]
+            )
 
-    if data["change_genattribute"]:
-        process.update_generic_attributes(
-            data["change_genattribute"], data["change_genattribute_value"]
-        )
+        if data["change_genattribute"]:
+            process.update_generic_attributes(
+                data["change_genattribute"], data["change_genattribute_value"]
+            )
 
     if data["action"] in ("makezip", "makezip_pdf"):
         result = process.get_zipfile()

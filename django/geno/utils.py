@@ -245,3 +245,21 @@ class JSONDecoderDatetime(json.JSONDecoder):
                     except (ValueError, AttributeError):
                         pass
         return json_dict
+
+
+def build_account(account_prefix, building=None, rental_units=None, contract=None):
+    if (
+        building is None
+        and rental_units is None
+        and contract
+        and contract.rental_units
+        and contract.rental_units.all().exists()
+    ):
+        rental_units = contract.rental_units.all()
+    if building is None and rental_units and rental_units.first():
+        building = rental_units.first().building
+    if building and building.accounting_postfix:
+        postfix = "%03d" % building.accounting_postfix
+        return re.sub(r"(\d+)$", r"\1%s" % postfix, account_prefix)
+    else:
+        return account_prefix

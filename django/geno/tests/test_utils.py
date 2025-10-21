@@ -1,7 +1,7 @@
 from django.conf import settings
 
-from geno.models import Address
-from geno.utils import make_username, send_error_mail, send_info_mail
+from geno.models import Address, Building, Contract, RentalUnit
+from geno.utils import build_account, make_username, send_error_mail, send_info_mail
 
 from .base import BaseTestCase
 
@@ -64,3 +64,23 @@ class TestUtils(BaseTestCase):
             suffix += 1
         with self.assertRaisesRegex(RuntimeError, r"^Too many equal usernames"):
             make_username(adr)
+
+    def test_build_account(self):
+        accountPrefix = "1312"
+        self.assertEqual(build_account(accountPrefix), accountPrefix)
+
+        building = Building.objects.create(name="b1", accountPosfix=1)
+        self.assertEqual(build_account(accountPrefix, building=building), "1312001")
+
+        ru1 = RentalUnit.objects.create(name="ru1", building=building)
+        ru2 = RentalUnit.objects.create(name="ru2", building=building)
+        ru_list = [ru1, ru2]
+        self.assertEqual(build_account(accountPrefix, building=building, rental_units=ru_list), "1312001")
+        self.assertEqual(
+            build_account(accountPrefix,rental_units=ru_list), "1312001"
+        )
+
+        contract = Contract.objects.create(name="c", rental_units=ru_list)
+        self.assertEqual(build_account(accountPrefix, building=building, rental_units=ru_list, contract=contract), "1312001")
+        self.assertEqual(build_account(accountPrefix, rental_units=ru_list, contract=contract), "1312001")
+        self.assertEqual(build_account(accountPrefix, contract=contract), "1312001")
