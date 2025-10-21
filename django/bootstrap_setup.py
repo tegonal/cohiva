@@ -16,16 +16,16 @@ from pathlib import Path
 
 class Colors:
     """ANSI color codes for terminal output."""
-    GREEN = '\033[0;32m'
-    YELLOW = '\033[1;33m'
-    RED = '\033[0;31m'
-    BLUE = '\033[0;34m'
-    NC = '\033[0m'  # No Color
+
+    GREEN = "\033[0;32m"
+    YELLOW = "\033[1;33m"
+    RED = "\033[0;31m"
+    BLUE = "\033[0;34m"
+    NC = "\033[0m"  # No Color
 
 
 class ValidationError(Exception):
     """Custom exception for validation errors."""
-    pass
 
 
 def validate_path(path_str, path_type="path"):
@@ -46,7 +46,7 @@ def validate_path(path_str, path_type="path"):
         raise ValidationError(f"{path_type} cannot be empty")
 
     # Check for null bytes (security)
-    if '\0' in path_str:
+    if "\0" in path_str:
         raise ValidationError(f"{path_type} contains invalid null byte")
 
     # Expand user home directory
@@ -61,9 +61,9 @@ def validate_path(path_str, path_type="path"):
     # Check for suspicious patterns
     path_str_normalized = str(path)
     suspicious_patterns = [
-        r'/\.\./',  # Path traversal in middle
-        r'^\.\.$',  # Just ".."
-        r'/\.\.$',  # Ends with ".."
+        r"/\.\./",  # Path traversal in middle
+        r"^\.\.$",  # Just ".."
+        r"/\.\.$",  # Ends with ".."
     ]
 
     for pattern in suspicious_patterns:
@@ -73,17 +73,15 @@ def validate_path(path_str, path_type="path"):
     # For venv and install directories, ensure they're in reasonable locations
     if path_type in ("venv", "install directory"):
         # Check it's not system directories
-        system_dirs = ['/bin', '/sbin', '/usr', '/etc', '/var', '/sys', '/proc', '/dev']
+        system_dirs = ["/bin", "/sbin", "/usr", "/etc", "/var", "/sys", "/proc", "/dev"]
         for sys_dir in system_dirs:
-            if path_str_normalized.startswith(sys_dir + '/') or path_str_normalized == sys_dir:
-                raise ValidationError(
-                    f"{path_type} cannot be in system directory: {sys_dir}"
-                )
+            if path_str_normalized.startswith(sys_dir + "/") or path_str_normalized == sys_dir:
+                raise ValidationError(f"{path_type} cannot be in system directory: {sys_dir}")
 
     return path
 
 
-def validate_yes_no_input(response, default='n'):
+def validate_yes_no_input(response, default="n"):
     """
     Validate yes/no user input.
 
@@ -100,11 +98,11 @@ def validate_yes_no_input(response, default='n'):
     response = response.strip().lower()
 
     # Accept various affirmative responses
-    if response in ('y', 'yes', 'true', '1'):
+    if response in ("y", "yes", "true", "1"):
         return True
 
     # Accept various negative responses
-    if response in ('n', 'no', 'false', '0'):
+    if response in ("n", "no", "false", "0"):
         return False
 
     # Invalid input
@@ -144,7 +142,7 @@ def validate_python_path(python_path):
     # Try to run it to verify it's actually Python
     try:
         result = subprocess.run(
-            [str(path), '--version'],
+            [str(path), "--version"],
             capture_output=True,
             text=True,
             timeout=5,
@@ -154,7 +152,7 @@ def validate_python_path(python_path):
 
         # Check output contains "Python"
         output = result.stdout + result.stderr
-        if 'Python' not in output:
+        if "Python" not in output:
             raise ValidationError(f"Not a valid Python executable: {python_path}")
 
     except subprocess.TimeoutExpired:
@@ -210,7 +208,7 @@ def run_command(cmd, cwd=None, check=True, capture_output=False, env=None):
 def check_command_exists(cmd):
     """Check if a command exists in PATH."""
     result = run_command(
-        ['which', cmd],
+        ["which", cmd],
         check=False,
         capture_output=True,
     )
@@ -220,7 +218,7 @@ def check_command_exists(cmd):
 def check_brew_package(package):
     """Check if a Homebrew package is installed (macOS)."""
     result = run_command(
-        ['brew', 'list', package],
+        ["brew", "list", package],
         check=False,
         capture_output=True,
     )
@@ -230,11 +228,11 @@ def check_brew_package(package):
 def check_apt_package(package):
     """Check if an apt package is installed (Linux)."""
     result = run_command(
-        ['dpkg', '-l', package],
+        ["dpkg", "-l", package],
         check=False,
         capture_output=True,
     )
-    return result.returncode == 0 and 'ii' in result.stdout
+    return result.returncode == 0 and "ii" in result.stdout
 
 
 def check_system_dependencies():
@@ -245,22 +243,24 @@ def check_system_dependencies():
     missing_packages = []
     optional_missing = []
 
-    if os_type == 'Darwin':  # macOS
+    if os_type == "Darwin":  # macOS
         print_info("Detected macOS - checking Homebrew packages...")
 
         # Check if Homebrew is installed
-        if not check_command_exists('brew'):
+        if not check_command_exists("brew"):
             print_warn("Homebrew is not installed")
             print()
             print("Homebrew is recommended for managing dependencies on macOS.")
             print("Install from: https://brew.sh")
             print()
             print("Or run:")
-            print('  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"')
+            print(
+                '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+            )
             print()
             response = input("Continue without Homebrew? (y/N) ")
             try:
-                if not validate_yes_no_input(response, default='n'):
+                if not validate_yes_no_input(response, default="n"):
                     sys.exit(1)
             except ValidationError as e:
                 print_error(str(e))
@@ -269,18 +269,18 @@ def check_system_dependencies():
 
         # Required packages on macOS
         required = {
-            'pkg-config': 'pkg-config',
-            'mariadb-connector-c': 'mariadb-connector-c',
-            'freetype': 'freetype',
-            'jpeg': 'jpeg',
-            'libffi': 'libffi',
-            'xmlsec1': 'xmlsec1',
+            "pkg-config": "pkg-config",
+            "mariadb-connector-c": "mariadb-connector-c",
+            "freetype": "freetype",
+            "jpeg": "jpeg",
+            "libffi": "libffi",
+            "xmlsec1": "xmlsec1",
         }
 
         # Optional packages
         optional = {
-            'poppler': 'poppler (for PDF tests)',
-            'libreoffice': 'libreoffice (for document generation)',
+            "poppler": "poppler (for PDF tests)",
+            "libreoffice": "libreoffice (for document generation)",
         }
 
         for pkg, _name in required.items():
@@ -305,24 +305,24 @@ def check_system_dependencies():
                     print(f"  - {pkg}")
                 print()
                 print("Install optional packages with:")
-                optional_names = [p.split(' - ')[0] for p in optional_missing]
+                optional_names = [p.split(" - ")[0] for p in optional_missing]
                 print(f"  brew install {' '.join(optional_names)}")
                 print()
 
             if missing_packages:
                 response = input("Install missing required packages now? (Y/n) ")
                 try:
-                    if validate_yes_no_input(response, default='y'):
+                    if validate_yes_no_input(response, default="y"):
                         print_step("Installing packages via Homebrew...")
                         try:
-                            run_command(['brew', 'install'] + missing_packages)
+                            run_command(["brew", "install"] + missing_packages)
                             print_info("Packages installed successfully")
                         except subprocess.CalledProcessError:
                             print_error("Failed to install packages")
                             sys.exit(1)
                     else:
                         response = input("Continue without required packages? (y/N) ")
-                        if not validate_yes_no_input(response, default='n'):
+                        if not validate_yes_no_input(response, default="n"):
                             sys.exit(1)
                 except ValidationError as e:
                     print_error(str(e))
@@ -330,13 +330,13 @@ def check_system_dependencies():
         else:
             print_info("All required system dependencies are installed")
 
-    elif os_type == 'Linux':  # Linux
+    elif os_type == "Linux":  # Linux
         print_info("Detected Linux - checking system packages...")
 
         # Detect package manager
-        has_apt = check_command_exists('apt')
-        has_dnf = check_command_exists('dnf')
-        has_pacman = check_command_exists('pacman')
+        has_apt = check_command_exists("apt")
+        has_dnf = check_command_exists("dnf")
+        has_pacman = check_command_exists("pacman")
 
         if not (has_apt or has_dnf or has_pacman):
             print_warn("Could not detect package manager (apt, dnf, or pacman)")
@@ -345,36 +345,36 @@ def check_system_dependencies():
 
         # Required packages (Debian/Ubuntu naming)
         required_apt = [
-            'build-essential',
-            'python3-dev',
-            'python3-venv',
-            'libmariadb-dev',  # or libmysqlclient-dev
-            'libfreetype-dev',
-            'libjpeg-dev',
-            'libffi-dev',
-            'xmlsec1',
+            "build-essential",
+            "python3-dev",
+            "python3-venv",
+            "libmariadb-dev",  # or libmysqlclient-dev
+            "libfreetype-dev",
+            "libjpeg-dev",
+            "libffi-dev",
+            "xmlsec1",
         ]
 
         # Optional packages
         optional_apt = [
-            'poppler-utils',  # for tests
-            'libreoffice-writer',  # for PDF generation
+            "poppler-utils",  # for tests
+            "libreoffice-writer",  # for PDF generation
         ]
 
         # Check locale
         locale_result = run_command(
-            ['locale', '-a'],
+            ["locale", "-a"],
             check=False,
             capture_output=True,
         )
-        has_locale = 'de_CH.utf8' in locale_result.stdout or 'de_CH.UTF-8' in locale_result.stdout
+        has_locale = "de_CH.utf8" in locale_result.stdout or "de_CH.UTF-8" in locale_result.stdout
 
         if has_apt:
             # Check which packages are missing
             for pkg in required_apt:
                 if not check_apt_package(pkg):
                     # Try alternative for MySQL
-                    if pkg == 'libmariadb-dev' and check_apt_package('default-libmysqlclient-dev'):
+                    if pkg == "libmariadb-dev" and check_apt_package("default-libmysqlclient-dev"):
                         continue
                     missing_packages.append(pkg)
 
@@ -387,7 +387,7 @@ def check_system_dependencies():
                     print_warn(f"Missing required packages: {', '.join(missing_packages)}")
                     print()
                     print("Install with:")
-                    print(f"  sudo apt update")
+                    print("  sudo apt update")
                     print(f"  sudo apt install {' '.join(missing_packages)}")
                     print()
 
@@ -409,11 +409,13 @@ def check_system_dependencies():
                 if missing_packages:
                     print()
                     print("Note: You'll need sudo privileges to install system packages.")
-                    print("The script cannot automatically install them on Linux for security reasons.")
+                    print(
+                        "The script cannot automatically install them on Linux for security reasons."
+                    )
                     print()
                     response = input("Continue without required packages? (y/N) ")
                     try:
-                        if not validate_yes_no_input(response, default='n'):
+                        if not validate_yes_no_input(response, default="n"):
                             sys.exit(1)
                     except ValidationError as e:
                         print_error(str(e))
@@ -459,7 +461,7 @@ def setup_venv(python_path, venv_path):
         print_info(f"Virtual environment already exists at: {venv_path}")
     else:
         print_step(f"Creating virtual environment at: {venv_path}")
-        run_command([str(python_path), '-m', 'venv', str(venv_path)])
+        run_command([str(python_path), "-m", "venv", str(venv_path)])
         print_info("Virtual environment created")
 
     return venv_path
@@ -469,17 +471,17 @@ def install_dependencies(venv_path):
     """Install Python dependencies."""
     print_step("Installing Python dependencies...")
 
-    if not Path('install_dependencies.sh').exists():
+    if not Path("install_dependencies.sh").exists():
         print_error("install_dependencies.sh not found. Are you in the django directory?")
         sys.exit(1)
 
     # Run install_dependencies.sh with the venv's Python
     # Pass --yes flag to auto-confirm pip-sync during automated setup
     env = os.environ.copy()
-    env['VIRTUAL_ENV'] = str(venv_path)
-    env['PATH'] = f"{venv_path / 'bin'}:{env['PATH']}"
+    env["VIRTUAL_ENV"] = str(venv_path)
+    env["PATH"] = f"{venv_path / 'bin'}:{env['PATH']}"
 
-    run_command(['./install_dependencies.sh', '--yes'], env=env)
+    run_command(["./install_dependencies.sh", "--yes"], env=env)
     print_info("Dependencies installed")
 
 
@@ -494,15 +496,15 @@ def setup_config(install_dir, venv_path):
         print_error(str(e))
         sys.exit(1)
 
-    python_path = venv_path / 'bin' / 'python'
+    python_path = venv_path / "bin" / "python"
 
     # Set up environment for venv
     env = os.environ.copy()
-    env['VIRTUAL_ENV'] = str(venv_path)
-    env['PATH'] = f"{venv_path / 'bin'}:{env['PATH']}"
+    env["VIRTUAL_ENV"] = str(venv_path)
+    env["PATH"] = f"{venv_path / 'bin'}:{env['PATH']}"
 
-    base_config = Path('cohiva/base_config.py')
-    base_config_example = Path('cohiva/base_config_example.py')
+    base_config = Path("cohiva/base_config.py")
+    base_config_example = Path("cohiva/base_config_example.py")
 
     # Create install directory
     install_dir.mkdir(parents=True, exist_ok=True)
@@ -521,8 +523,11 @@ def setup_config(install_dir, venv_path):
         # Generate random secret key
         # Import here to avoid Django dependency at module level
         result = run_command(
-            [str(python_path), '-c',
-             'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'],
+            [
+                str(python_path),
+                "-c",
+                "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())",
+            ],
             env=env,
             capture_output=True,
         )
@@ -554,28 +559,24 @@ def setup_config(install_dir, venv_path):
             print_info(f"INSTALL_DIR updated to: {install_dir}")
 
     # Run setup.py to create directories and keys
-    run_command([str(python_path), 'setup.py'], env=env)
+    run_command([str(python_path), "setup.py"], env=env)
 
     # Uncomment CSRF/Session cookie settings for local development
-    settings_file = Path('cohiva/settings.py')
+    settings_file = Path("cohiva/settings.py")
     if settings_file.exists():
         content = settings_file.read_text()
         # Uncomment the CSRF and session cookie settings for local HTTP development
         content = content.replace(
-            '# SESSION_COOKIE_SECURE = False',
-            'SESSION_COOKIE_SECURE = False'
+            "# SESSION_COOKIE_SECURE = False", "SESSION_COOKIE_SECURE = False"
         )
-        content = content.replace(
-            '# CSRF_COOKIE_SECURE = False',
-            'CSRF_COOKIE_SECURE = False'
-        )
+        content = content.replace("# CSRF_COOKIE_SECURE = False", "CSRF_COOKIE_SECURE = False")
         settings_file.write_text(content)
         print_info("Enabled local development cookie settings (insecure cookies for HTTP)")
 
     # Create .env file if it doesn't exist
-    env_file = Path('.env')
+    env_file = Path(".env")
     if not env_file.exists():
-        env_example = Path('.env_example')
+        env_example = Path(".env_example")
         if env_example.exists():
             shutil.copy(env_example, env_file)
             print_info("Created .env from .env_example")
@@ -590,12 +591,14 @@ def setup_auto_venv(venv_path):
     """Setup automatic venv activation files (optional)."""
     print_step("Setting up direnv for automatic venv activation...")
     print()
-    print("direnv can automatically activate your virtual environment when you enter the project directory.")
+    print(
+        "direnv can automatically activate your virtual environment when you enter the project directory."
+    )
     print()
 
     response = input("Do you want to set up direnv auto-activation? (y/N) ")
     try:
-        setup_direnv = validate_yes_no_input(response, default='n')
+        setup_direnv = validate_yes_no_input(response, default="n")
     except ValidationError as e:
         print_error(str(e))
         print_info("Skipping direnv setup")
@@ -609,15 +612,14 @@ def setup_auto_venv(venv_path):
     venv_path = Path(venv_path).expanduser()
 
     # Create .venv-path file
-    venv_path_file = Path('.venv-path')
+    venv_path_file = Path(".venv-path")
     venv_path_file.write_text(
-        f"# Virtual environment path for shell auto-activation\n"
-        f"{venv_path}\n"
+        f"# Virtual environment path for shell auto-activation\n{venv_path}\n"
     )
     print_info("Created .venv-path file")
 
     # Check if .envrc already exists
-    envrc_file = Path('.envrc')
+    envrc_file = Path(".envrc")
     if not envrc_file.exists():
         envrc_content = f'''# direnv configuration for Cohiva
 
@@ -654,7 +656,7 @@ def start_docker():
     print_step("Starting Docker services (MariaDB, Redis)...")
 
     result = run_command(
-        ['docker', 'compose', '-f', 'docker-compose.dev.yml', 'up', '-d'],
+        ["docker", "compose", "-f", "docker-compose.dev.yml", "up", "-d"],
         check=False,
     )
 
@@ -685,8 +687,14 @@ def start_docker():
         # Test actual database connection
         result = run_command(
             [
-                'docker', 'exec', 'cohiva-dev-mariadb',
-                'mariadb', '-ucohiva', '-pc0H1v4', '-e', 'SELECT 1;'
+                "docker",
+                "exec",
+                "cohiva-dev-mariadb",
+                "mariadb",
+                "-ucohiva",
+                "-pc0H1v4",
+                "-e",
+                "SELECT 1;",
             ],
             capture_output=True,
             check=False,
@@ -698,14 +706,16 @@ def start_docker():
 
         time.sleep(2)
         elapsed += 2
-        print('.', end='', flush=True)
+        print(".", end="", flush=True)
 
     print()
 
     if not db_ready:
         print_warn("Database may not be fully ready yet")
         print_info("You can check status with: docker compose -f docker-compose.dev.yml ps")
-        print_info("Or test connection: docker exec cohiva-dev-mariadb mariadb -ucohiva -pc0H1v4 -e 'SELECT 1;'")
+        print_info(
+            "Or test connection: docker exec cohiva-dev-mariadb mariadb -ucohiva -pc0H1v4 -e 'SELECT 1;'"
+        )
     else:
         print_info("Database is ready")
 
@@ -718,11 +728,11 @@ def run_migrations(venv_path):
 
     # Set up environment for venv
     env = os.environ.copy()
-    env['VIRTUAL_ENV'] = str(venv_path)
-    env['PATH'] = f"{venv_path / 'bin'}:{env['PATH']}"
+    env["VIRTUAL_ENV"] = str(venv_path)
+    env["PATH"] = f"{venv_path / 'bin'}:{env['PATH']}"
 
     # Skip checks to avoid issues with admin checks before tables exist
-    run_command(['./manage.py', 'migrate', '--skip-checks'], env=env)
+    run_command(["./manage.py", "migrate", "--skip-checks"], env=env)
     print_info("Migrations complete")
 
 
@@ -734,10 +744,10 @@ def create_superuser(venv_path):
 
     # Set up environment for venv
     env = os.environ.copy()
-    env['VIRTUAL_ENV'] = str(venv_path)
-    env['PATH'] = f"{venv_path / 'bin'}:{env['PATH']}"
+    env["VIRTUAL_ENV"] = str(venv_path)
+    env["PATH"] = f"{venv_path / 'bin'}:{env['PATH']}"
 
-    run_command(['./manage.py', 'createsuperuser'], env=env)
+    run_command(["./manage.py", "createsuperuser"], env=env)
 
 
 def load_demo_data(venv_path):
@@ -746,7 +756,7 @@ def load_demo_data(venv_path):
     print()
 
     # Check if demo data exists
-    demo_data_sql = Path('demo-data/demo-data.sql')
+    demo_data_sql = Path("demo-data/demo-data.sql")
     if not demo_data_sql.exists():
         print_warn("Demo data file not found: demo-data/demo-data.sql")
         print_info("Skipping demo data loading")
@@ -763,13 +773,13 @@ def load_demo_data(venv_path):
 
     # Set up environment for venv
     env = os.environ.copy()
-    env['VIRTUAL_ENV'] = str(venv_path)
-    env['PATH'] = f"{venv_path / 'bin'}:{env['PATH']}"
+    env["VIRTUAL_ENV"] = str(venv_path)
+    env["PATH"] = f"{venv_path / 'bin'}:{env['PATH']}"
 
     try:
         # Run demo_data_manager.py with --load and --force flags
         result = run_command(
-            ['python', 'scripts/demo_data_manager.py', '--load', '--force'],
+            ["python", "scripts/demo_data_manager.py", "--load", "--force"],
             env=env,
             check=False,
         )
@@ -785,7 +795,7 @@ def load_demo_data(venv_path):
         # The demo data might have old table structures, so we need to apply any new migrations
         print_step("Applying latest migrations to demo data...")
         try:
-            run_command(['./manage.py', 'migrate', '--skip-checks'], env=env)
+            run_command(["./manage.py", "migrate", "--skip-checks"], env=env)
             print_info("Migrations applied successfully")
         except subprocess.CalledProcessError:
             print_warn("Some migrations failed - this can happen with data migrations")
@@ -848,38 +858,36 @@ def print_success(venv_path, demo_data_loaded=False):
 
 def main():
     """Main setup function."""
-    parser = argparse.ArgumentParser(
-        description='Cohiva development environment setup (Python)'
-    )
+    parser = argparse.ArgumentParser(description="Cohiva development environment setup (Python)")
     parser.add_argument(
-        '--python',
+        "--python",
         required=True,
-        help='Path to Python binary to use',
+        help="Path to Python binary to use",
     )
     parser.add_argument(
-        '--venv',
-        default=os.path.expanduser('~/.venv/cohiva-dev'),
-        help='Path for virtual environment',
+        "--venv",
+        default=os.path.expanduser("~/.venv/cohiva-dev"),
+        help="Path for virtual environment",
     )
     parser.add_argument(
-        '--install-dir',
-        default=os.path.abspath('.'),
-        help='Path for Cohiva data directory (defaults to current directory)',
+        "--install-dir",
+        default=os.path.abspath("."),
+        help="Path for Cohiva data directory (defaults to current directory)",
     )
     parser.add_argument(
-        '--skip-docker',
-        action='store_true',
-        help='Skip starting Docker services',
+        "--skip-docker",
+        action="store_true",
+        help="Skip starting Docker services",
     )
     parser.add_argument(
-        '--skip-superuser',
-        action='store_true',
-        help='Skip creating superuser',
+        "--skip-superuser",
+        action="store_true",
+        help="Skip creating superuser",
     )
     parser.add_argument(
-        '--load-demo-data',
-        action='store_true',
-        help='Load demo data after setup',
+        "--load-demo-data",
+        action="store_true",
+        help="Load demo data after setup",
     )
 
     args = parser.parse_args()
@@ -919,12 +927,12 @@ def main():
 
         # If not specified via flag, ask interactively (only if demo data exists)
         if not load_demo and not args.skip_superuser:
-            demo_data_sql = Path('demo-data/demo-data.sql')
+            demo_data_sql = Path("demo-data/demo-data.sql")
             if demo_data_sql.exists():
                 print()
                 response = input("Do you want to load demo data now? (y/N) ")
                 try:
-                    load_demo = validate_yes_no_input(response, default='n')
+                    load_demo = validate_yes_no_input(response, default="n")
                 except ValidationError as e:
                     print_error(str(e))
                     load_demo = False
@@ -938,7 +946,7 @@ def main():
                 print()
                 response = input("Do you want to create a superuser now? (Y/n) ")
                 try:
-                    if validate_yes_no_input(response, default='y'):
+                    if validate_yes_no_input(response, default="y"):
                         create_superuser(venv_path)
                 except ValidationError as e:
                     print_error(str(e))
@@ -954,7 +962,7 @@ def main():
                 print()
                 response = input("Do you want to create a superuser now? (Y/n) ")
                 try:
-                    if validate_yes_no_input(response, default='y'):
+                    if validate_yes_no_input(response, default="y"):
                         create_superuser(venv_path)
                 except ValidationError as e:
                     print_error(str(e))
@@ -968,7 +976,7 @@ def main():
     print_success(venv_path, demo_data_loaded)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:

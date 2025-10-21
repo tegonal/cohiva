@@ -25,7 +25,9 @@ def check_virtual_env(environment, auto_yes=False):
     if venv:
         print(f"Checking/installing dependencies in virtual environment '{venv}'...")
     elif environment == "docker":
-        print("Checking/installing dependencies on native environment since we are in docker mode...")
+        print(
+            "Checking/installing dependencies on native environment since we are in docker mode..."
+        )
         pip_root_user_mode = "ignore"
         pip_sync_ask = []
     else:
@@ -89,6 +91,7 @@ def remove_old_sepa_packages():
         print(f"Removing {egg_dir}")
         if egg_dir.is_dir():
             import shutil
+
             shutil.rmtree(egg_dir)
         else:
             egg_dir.unlink()
@@ -121,7 +124,7 @@ def install_python_sepa(environment):
 
 def ensure_sepa_in_requirements(requirements_file):
     """Ensure sepa package is listed in requirements.txt."""
-    with open(requirements_file, "r") as f:
+    with open(requirements_file) as f:
         content = f.read()
 
     if "sepa==" not in content.split("\n")[0] if content else True:
@@ -201,9 +204,7 @@ def apply_patches():
 
 def main():
     """Main installation function."""
-    parser = argparse.ArgumentParser(
-        description="Install dependencies for Cohiva Django project"
-    )
+    parser = argparse.ArgumentParser(description="Install dependencies for Cohiva Django project")
     parser.add_argument(
         "-e",
         "--environment",

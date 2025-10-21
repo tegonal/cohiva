@@ -7,7 +7,7 @@ from django.utils.deprecation import RemovedInDjango51Warning
 
 ## Load settings
 from .settings import *  # noqa: F403
-from .settings import DATABASES, GENO_FINANCE_ACCOUNTS, MEDIA_ROOT, SMEDIA_ROOT
+from .settings import GENO_FINANCE_ACCOUNTS, MEDIA_ROOT, SMEDIA_ROOT
 
 ## Redirect (S)MEDIA_ROOT for running tests (files will be deleted by run-tests.sh):
 (head, tail) = os.path.split(MEDIA_ROOT)

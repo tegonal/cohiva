@@ -85,15 +85,9 @@ def save(force=False):
         f" > {s.demodata_dir}/{s.demodata_prefix}.sql"
     )
     run_cmd(cmd, shell=True)
-    cmd = (
-        f"rsync -av --delete {s.media_prod_dir}/ "
-        f"{s.demodata_dir}/media/"
-    )
+    cmd = f"rsync -av --delete {s.media_prod_dir}/ {s.demodata_dir}/media/"
     run_cmd(cmd, shell=True)
-    cmd = (
-        f"rsync -av --delete {s.smedia_prod_dir}/ "
-        f"{s.demodata_dir}/smedia/"
-    )
+    cmd = f"rsync -av --delete {s.smedia_prod_dir}/ {s.demodata_dir}/smedia/"
     run_cmd(cmd, shell=True)
 
 
@@ -114,15 +108,9 @@ def load(force=False):
         f"< {s.demodata_dir}/{s.demodata_prefix}.sql"
     )
     run_cmd(cmd, shell=True)
-    cmd = (
-        f"rsync -av --delete {s.demodata_dir}/media/ "
-        f"{s.media_test_dir}/"
-    )
+    cmd = f"rsync -av --delete {s.demodata_dir}/media/ {s.media_test_dir}/"
     run_cmd(cmd, shell=True)
-    cmd = (
-        f"rsync -av --delete {s.demodata_dir}/smedia/ "
-        f"{s.smedia_test_dir}/"
-    )
+    cmd = f"rsync -av --delete {s.demodata_dir}/smedia/ {s.smedia_test_dir}/"
     run_cmd(cmd, shell=True)
     print()
     print("=" * 60)
@@ -159,15 +147,9 @@ def deploy_to_prod(force=False):
         f"< {s.demodata_dir}/{s.demodata_prefix}.sql"
     )
     run_cmd(cmd, shell=True)
-    cmd = (
-        f"rsync -av --delete {s.demodata_dir}/media/ "
-        f"{s.media_prod_dir}/"
-    )
+    cmd = f"rsync -av --delete {s.demodata_dir}/media/ {s.media_prod_dir}/"
     run_cmd(cmd, shell=True)
-    cmd = (
-        f"rsync -av --delete {s.demodata_dir}/smedia/ "
-        f"{s.smedia_prod_dir}/"
-    )
+    cmd = f"rsync -av --delete {s.demodata_dir}/smedia/ {s.smedia_prod_dir}/"
     run_cmd(cmd, shell=True)
     print(
         "NOTE: You might have to adjust the permissions of the [S]MEDIA files, run migrations"
