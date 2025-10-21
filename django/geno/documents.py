@@ -831,7 +831,9 @@ def send_member_mail_process(data):
 
     if not is_test:
         if data["change_attribute"]:
-            process.update_member_attributes(data["change_attribute"], data["change_attribute_value"])
+            process.update_member_attributes(
+                data["change_attribute"], data["change_attribute_value"]
+            )
 
         if data["change_genattribute"]:
             process.update_generic_attributes(
