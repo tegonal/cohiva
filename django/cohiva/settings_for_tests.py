@@ -21,9 +21,6 @@ print(f"Redirected (S)MEDIA_ROOT to: {MEDIA_ROOT} and {SMEDIA_ROOT}")
 
 COHIVA_REPORT_API_TOKEN = "TEST_DUMMY_TOKEN"
 
-## Required for legacy instances that have the old default 'utf8mb4_unicode_ci' in settings.py
-DATABASES["default"]["OPTIONS"]["collation"] = "utf8mb4_general_ci"
-
 ## Display deprecation warnings only once
 warnings.filterwarnings("once", category=RemovedInDjango51Warning)
 
