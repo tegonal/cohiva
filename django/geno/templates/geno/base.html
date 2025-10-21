@@ -3,50 +3,41 @@
 {% load admin_urls i18n unfold admin_list static %}
 
 {% block extrastyle %}
-<link href="{% static 'geno/css/styles.css' %}" rel="stylesheet">
+  <link href="{% static 'geno/css/styles.css' %}" rel="stylesheet">
 
-{# Django Admin UI stuff that we use in custom views #}
-{#<script src="/admin/jsi18n/"></script>#}
-<script src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
-{#<script src="{% static 'admin/js/calendar.js' %}"></script>#}
-{#<script src="{% static 'admin/js/jquery.init.js' %}"></script>#}
-{#<script src="{% static 'admin/js/admin/DateTimeShortcuts.js' %}"></script>#}
-{#<script src="{% static 'admin/js/core.js' %}"></script>#}
-
-{# Select2 dropdown TODO: Replace with Admin Widget #}
-<link href="{% static 'select2/css/select2.css' %}" type="text/css" media="all" rel="stylesheet">
-<script src="{% static 'select2/js/select2.jquery_ready.js' %}"></script>
-<script src="{% static 'select2/js/select2.jquery_ui_sortable.js' %}"></script>
-<script src="{% static 'select2/js/select2.js' %}"></script>
-
-{# Datepicker TODO: Replace with Admin Date-Widget #}
-<link href="{% static 'geno/css/jquery-ui.css' %}" rel="stylesheet">
-<script src="{% static 'geno/js/jquery-ui.js' %}"></script>
-<script src="{% static 'geno/js/datepicker.js' %}"></script>
+  {# Django Admin UI stuff for Unfold widgets #}
+  <script src="/admin/jsi18n/"></script>
+  <script src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+  <script src="{% static 'admin/js/calendar.js' %}"></script>
+  <script src="{% static 'admin/js/jquery.init.js' %}"></script>
+  <script src="{% static 'admin/js/admin/DateTimeShortcuts.js' %}"></script>
+  <script src="{% static 'admin/js/core.js' %}"></script>
 {% endblock %}
 
 {% block branding %}
-    {% include "unfold/helpers/site_branding.html" %}
+  {% include "unfold/helpers/site_branding.html" %}
 {% endblock %}
 
-{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+{% block title %}
+  {% if subtitle %}{{ subtitle }} |{% endif %}
+  {{ title }} | {{ site_title|default:_("Django site admin") }}
+{% endblock %}
 
 {% block content_title %}
-    <h1 class="overflow-hidden leading-5 text-ellipsis text-font-important-light whitespace-nowrap xl:text-base dark:text-font-important-dark">
+  <h1 class="overflow-hidden leading-5 text-ellipsis text-font-important-light whitespace-nowrap xl:text-base dark:text-font-important-dark">
     {% if title %}
-        {% for item in breadcrumbs %}
-            <a href="{{item.href}}" class="align-middle inline-block leading-5 tracking-tight">
-                {{item.name}}
-            </a>
-            <span class="material-symbols-outlined inline-block align-middle leading-5 mx-2 text-base-400 dark:text-base-500">chevron_right</span>
-        {% endfor %}
-        {{ title }}
+      {% for item in breadcrumbs %}
+        <a href="{{ item.href }}"
+           class="align-middle inline-block leading-5 tracking-tight">{{ item.name }}</a>
+        <span class="material-symbols-outlined inline-block align-middle leading-5 mx-2 text-base-400 dark:text-base-500">chevron_right</span>
+      {% endfor %}
+      {{ title }}
     {% endif %}
-    </h1>
+  </h1>
 {% endblock %}
 
 {% block content %}
-    {% block object-tools %}{% endblock %}
-    {% tab_list "changelist" cohiva_view_name %}
-    {% block custom_content %}{% endblock %}
+  {% block object-tools %}{% endblock %}
+  {% tab_list "changelist" cohiva_view_name %}
+  {% block custom_content %}{% endblock %}
 {% endblock %}

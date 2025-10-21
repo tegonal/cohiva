@@ -1,0 +1,316 @@
+# German translations for Cohiva.
+# Copyright (C) 2025 Tegonal Genossenschaft
+# This file is distributed under the same license as the Cohiva package.
+# Cohiva Development Team, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Cohiva 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-10-21 09:42+0200\n"
+"PO-Revision-Date: 2025-10-21 01:30+0200\n"
+"Last-Translator: Cohiva Development Team\n"
+"Language-Team: German\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Stammdaten"
+msgstr "Stammdaten"
+
+msgid "Adressen/Personen"
+msgstr "Adressen/Personen"
+
+msgid "Erweitert"
+msgstr "Erweitert"
+
+msgid "Erweiterte Konfiguration"
+msgstr "Erweiterte Konfiguration"
+
+msgid "Mitglieder"
+msgstr "Mitglieder"
+
+msgid "Vermietung"
+msgstr "Vermietung"
+
+msgid "Gemeinschaft"
+msgstr "Gemeinschaft"
+
+msgid "Inkasso"
+msgstr "Inkasso"
+
+msgid "Finanzierung"
+msgstr "Finanzierung"
+
+msgid "Dokumente & Kommunikation"
+msgstr "Dokumente & Kommunikation"
+
+msgid "Systemadministration"
+msgstr "Systemadministration"
+
+msgid "Cohiva Website"
+msgstr "Cohiva Website"
+
+msgid "Django site admin"
+msgstr "Django site admin"
+
+msgid "Berechtigung für"
+msgstr "Berechtigung für"
+
+msgid "Die Anwendung benötigt folgende Zugriffsberechtigung:"
+msgstr "Die Anwendung benötigt folgende Zugriffsberechtigung:"
+
+msgid "All applications"
+msgstr "Alle Anwendungen"
+
+msgid "You don't have permission to view or edit anything."
+msgstr "Sie haben keine Berechtigung, etwas anzusehen oder zu bearbeiten."
+
+msgid "Weitere Aktionen"
+msgstr "Weitere Aktionen"
+
+msgid "Export"
+msgstr "Export"
+
+msgid "Export ADIT"
+msgstr "Export ADIT"
+
+msgid "Export per Ende Vorjahr"
+msgstr "Export per Ende Vorjahr"
+
+msgid "Report Pflichtanteile/Belegung"
+msgstr "Report Pflichtanteile/Belegung"
+
+msgid "Untervertrag hinzufügen"
+msgstr "Untervertrag hinzufügen"
+
+msgid "Mietobjektespiegel"
+msgstr "Mietobjektespiegel"
+
+msgid "Expand row"
+msgstr "Zeile erweitern"
+
+msgid "No data"
+msgstr "Keine Daten"
+
+msgid "Suchen/Anzeigen"
+msgstr "Suchen/Anzeigen"
+
+msgid "Rechnungen konsolidieren"
+msgstr "Rechnungen konsolidieren"
+
+msgid "Filter zurücksetzen"
+msgstr "Filter zurücksetzen"
+
+msgid "Zurück zu"
+msgstr "Zurück zu"
+
+msgid "Rechnungspositionen"
+msgstr "Rechnungspositionen"
+
+msgid "Datum"
+msgstr "Datum"
+
+msgid "Beschreibung"
+msgstr "Beschreibung"
+
+msgid "Betrag"
+msgstr "Betrag"
+
+msgid "Weitere Position hinzufügen"
+msgstr "Weitere Position hinzufügen"
+
+msgid "Max."
+msgstr "Max."
+
+msgid "Rechnung erstellen und buchen"
+msgstr "Rechnung erstellen und buchen"
+
+msgid "Per Email verschicken"
+msgstr "Per Email verschicken"
+
+msgid "Vorschau anzeigen (PDF)"
+msgstr "Vorschau anzeigen (PDF)"
+
+msgid "Zahlung erfassen"
+msgstr "Zahlung erfassen"
+
+msgid ""
+"Zahlungsdatei aus dem E-Banking herunterladen und unten auswählen. Es werden "
+"folgende Dateiformate unterstützt:"
+msgstr ""
+"Zahlungsdatei aus dem E-Banking herunterladen und unten auswählen. Es werden "
+"folgende Dateiformate unterstützt:"
+
+msgid "Datei (Endung .xml): Kontoauszug"
+msgstr "Datei (Endung .xml): Kontoauszug"
+
+msgid "Datei (Endung .xml): Belastungs-/Gutschriftanzeigen"
+msgstr "Datei (Endung .xml): Belastungs-/Gutschriftanzeigen"
+
+msgid ""
+"Mehrere Dateien des gleichen Typs können in einer ZIP-Datei zusammengefasst "
+"hochgeladen werden."
+msgstr ""
+"Mehrere Dateien des gleichen Typs können in einer ZIP-Datei zusammengefasst "
+"hochgeladen werden."
+
+#, python-format
+msgid "Es gab %(counter)s Fehler:"
+msgid_plural "Es gab %(counter)s Fehler:"
+msgstr[0] "Es gab %(counter)s Fehler:"
+msgstr[1] "Es gab %(counter)s Fehler:"
+
+#, python-format
+msgid "%(counter)s %(item_name)s wurde ignoriert:"
+msgid_plural "%(counter)s %(item_name)s wurden ignoriert:"
+msgstr[0] "%(counter)s %(item_name)s wurde ignoriert:"
+msgstr[1] "%(counter)s %(item_name)s wurden ignoriert:"
+
+#, python-format
+msgid "%(counter)s %(item_name)s wurde importiert:"
+msgid_plural "%(counter)s %(item_name)s wurden importiert:"
+msgstr[0] "%(counter)s %(item_name)s wurde importiert:"
+msgstr[1] "%(counter)s %(item_name)s wurden importiert:"
+
+#, python-format
+msgid "Es wurden keine gültigen %(item_name)s gefunden."
+msgstr "Es wurden keine gültigen %(item_name)s gefunden."
+
+msgid "Log anzeigen"
+msgstr "Log anzeigen"
+
+msgid "Datei hochladen und verarbeiten"
+msgstr "Datei hochladen und verarbeiten"
+
+# ============================================================================
+# Unfold Admin Theme Translations
+# ============================================================================
+#~ msgid "Choose file to upload"
+#~ msgstr "Datei zum Hochladen auswählen"
+
+#~ msgid "Image preview"
+#~ msgstr "Bildvorschau"
+
+#~ msgid "Filter navigation items"
+#~ msgstr "Navigationselemente filtern"
+
+#~ msgid "History"
+#~ msgstr "Verlauf"
+
+#~ msgid "Home"
+#~ msgstr "Startseite"
+
+#~ msgid "Return to site"
+#~ msgstr "Zur Website zurückkehren"
+
+#~ msgid "Search apps and models..."
+#~ msgstr "Apps und Modelle suchen..."
+
+#~ msgid "View on site"
+#~ msgstr "Auf der Website anzeigen"
+
+#~ msgid "Add row"
+#~ msgstr "Zeile hinzufügen"
+
+#~ msgid "Apply Filters"
+#~ msgstr "Filter anwenden"
+
+#~ msgid "Clear all filters"
+#~ msgstr "Alle Filter löschen"
+
+#~ msgid "Click to download"
+#~ msgstr "Zum Herunterladen klicken"
+
+#~ msgid "Dark"
+#~ msgstr "Dunkel"
+
+#~ msgid "False"
+#~ msgstr "Falsch"
+
+#~ msgid "Filters"
+#~ msgstr "Filter"
+
+#~ msgid "General"
+#~ msgstr "Allgemein"
+
+#~ msgid "Go back"
+#~ msgstr "Zurück"
+
+#~ msgid "Hide counts"
+#~ msgstr "Anzahl ausblenden"
+
+#~ msgid "Light"
+#~ msgstr "Hell"
+
+#~ msgid "Loading more results..."
+#~ msgstr "Weitere Ergebnisse werden geladen..."
+
+#~ msgid "Log in again"
+#~ msgstr "Erneut anmelden"
+
+#~ msgid "More actions"
+#~ msgstr "Weitere Aktionen"
+
+#~ msgid "Next"
+#~ msgstr "Weiter"
+
+#~ msgid "No recent searches"
+#~ msgstr "Keine letzten Suchen"
+
+#~ msgid "No results found"
+#~ msgstr "Keine Ergebnisse gefunden"
+
+#~ msgid "No results matching your query"
+#~ msgstr "Keine Ergebnisse für Ihre Suchanfrage"
+
+#~ msgid "Previous"
+#~ msgstr "Zurück"
+
+#~ msgid "Recent searches"
+#~ msgstr "Letzte Suchen"
+
+#~ msgid "Record picture"
+#~ msgstr "Bild aufnehmen"
+
+#~ msgid "Remove"
+#~ msgstr "Entfernen"
+
+#~ msgid "Reset filters"
+#~ msgstr "Filter zurücksetzen"
+
+#~ msgid "Run"
+#~ msgstr "Ausführen"
+
+#~ msgid "Select all rows"
+#~ msgstr "Alle Zeilen auswählen"
+
+#~ msgid "Show counts"
+#~ msgstr "Anzahl anzeigen"
+
+#~ msgid "System"
+#~ msgstr "System"
+
+#~ msgid "Thanks for spending some quality time with the web site today."
+#~ msgstr "Vielen Dank, dass Sie heute Zeit auf der Website verbracht haben."
+
+#~ msgid ""
+#~ "This page yielded into no results. Create a new item or reset your "
+#~ "filters."
+#~ msgstr ""
+#~ "Diese Seite hat keine Ergebnisse geliefert. Erstellen Sie ein neues "
+#~ "Element oder setzen Sie Ihre Filter zurück."
+
+#~ msgid "True"
+#~ msgstr "Wahr"
+
+#~ msgid "Type to search"
+#~ msgstr "Zum Suchen tippen"
+
+#~ msgid "Unknown"
+#~ msgstr "Unbekannt"
+
+#~ msgid "You have been successfully logged out from the administration"
+#~ msgstr "Sie wurden erfolgreich von der Verwaltung abgemeldet"

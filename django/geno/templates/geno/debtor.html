@@ -1,0 +1,49 @@
+{% extends "geno/base.html" %}
+{% load static i18n unfold crispy_forms_tags %}
+
+{% block custom_content %}
+
+  {# Filter Form using Crispy Forms with Unfold template pack #}
+  {% component "unfold/components/card.html" with class="mb-6" %}
+  {% crispy form "unfold_crispy" %}
+
+  {# Action buttons #}
+  <div class="flex flex-wrap gap-3 mt-6 px-3">
+    {% component "unfold/components/button.html" with submit=1 name="show" %}
+    {% trans "Suchen/Anzeigen" %}
+  {% endcomponent %}
+
+  {% if invoice_table %}
+    {% component "unfold/components/button.html" with submit=1 name="consolidate" %}
+    {% trans "Rechnungen konsolidieren" %}
+  {% endcomponent %}
+{% endif %}
+
+<a href="?reset_filter=1"
+   class="inline-flex items-center px-4 py-2 text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline">
+  {% trans "Filter zurücksetzen" %}
+</a>
+</div>
+{% endcomponent %}
+
+{# Table using custom extended Unfold table component #}
+{% if table_data %}
+  {% component "unfold/components/card.html" %}
+  {% component "geno/components/table.html" with table=table_data card_included=1 striped=1 %}
+{% endcomponent %}
+{% endcomponent %}
+{% endif %}
+
+{# Breadcrumb navigation #}
+{% if breadcrumbs|length %}
+  <div class="mt-5">
+    {% with prev=breadcrumbs|last %}
+      <a href="{{ prev.href }}"
+         class="text-primary-600 dark:text-primary-400 hover:underline">
+        &lt; {% trans "Zurück zu" %} {{ prev.name }}
+      </a>
+    {% endwith %}
+  </div>
+{% endif %}
+
+{% endblock %}

@@ -1,11 +1,126 @@
-{% extends "geno/upload_form.html" %}
+{% extends "geno/base.html" %}
+{% load static i18n unfold crispy_forms_tags %}
 
-{% block content_text %}
-<p>
-Zahlungsdatei aus dem E-Banking herunterladen und unten auswählen. Es werden folgende Dateiformate untersützt:
-<ul>
-<li><b>camt.053</b> Datei (Endung .xml): Kontoauszug</li>
-<li><b>camt.054</b> Datei (Endung .xml): Belastungs-/Gutschriftanzeigen</li>
-</ul>
-Mehrere Dateien des gleichen Typs können in einer <b>ZIP-Datei</b> zusammengefasst hochgeladen werden.
+{% block extrahead %}
+  {{ block.super }}
+  <script src="{% url 'admin:jsi18n' %}"></script>
+  {{ form.media }}
+{% endblock %}
+
+{% block custom_content %}
+
+  {# Main form card #}
+  <form method="post" enctype="multipart/form-data" id="transaction_upload_form">
+    {% csrf_token %}
+
+    {% component "unfold/components/card.html" %}
+    <div class="px-3 py-3">
+      {# Instructions #}
+      <div class="mb-6 text-font-default-light dark:text-font-default-dark">
+        <p class="mb-3">
+          {% trans "Zahlungsdatei aus dem E-Banking herunterladen und unten auswählen. Es werden folgende Dateiformate unterstützt:" %}
+        </p>
+        <ul class="list-disc list-inside ml-4 mb-3">
+          <li><strong>camt.053</strong> {% trans "Datei (Endung .xml): Kontoauszug" %}</li>
+          <li><strong>camt.054</strong> {% trans "Datei (Endung .xml): Belastungs-/Gutschriftanzeigen" %}</li>
+        </ul>
+        <p>
+          {% trans "Mehrere Dateien des gleichen Typs können in einer ZIP-Datei zusammengefasst hochgeladen werden." %}
+        </p>
+      </div>
+
+      {% component "unfold/components/separator.html" %}{% endcomponent %}
+
+      {# File upload field #}
+      {% crispy form "unfold_crispy" %}
+    </div>
+    {% endcomponent %}
+  </form>
+
+  {# Results card - only shown if there are import results #}
+  {% if import_message %}
+    {% component "unfold/components/card.html" with class="mt-6" %}
+    <div class="px-3 py-3">
+      <h3 class="text-font-important-light dark:text-font-important-dark font-semibold mb-4">
+        {{ import_message }}
+      </h3>
+
+      {# Errors #}
+      {% if import_items.errors %}
+        <div class="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-default">
+          <p class="font-semibold text-red-800 dark:text-red-200 mb-2">
+            {% blocktrans count counter=import_items.errors|length %}Es gab {{ counter }} Fehler:{% plural %}Es gab {{ counter }} Fehler:{% endblocktrans %}
+          </p>
+          <ul class="list-disc list-inside ml-4 text-red-700 dark:text-red-300">
+            {% for item in import_items.errors %}
+              <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      {# Skipped items #}
+      {% if import_items.skipped %}
+        <div class="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-default">
+          <p class="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+            {% blocktrans count counter=import_items.skipped|length %}{{ counter }} {{ item_name }} wurde ignoriert:{% plural %}{{ counter }} {{ item_name }} wurden ignoriert:{% endblocktrans %}
+          </p>
+          <ul class="list-disc list-inside ml-4 text-yellow-700 dark:text-yellow-300">
+            {% for item in import_items.skipped %}
+              <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      {# Success items #}
+      {% if import_items.success %}
+        <div class="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-default">
+          <p class="font-semibold text-green-800 dark:text-green-200 mb-2">
+            {% blocktrans count counter=import_items.success|length %}{{ counter }} {{ item_name }} wurde importiert:{% plural %}{{ counter }} {{ item_name }} wurden importiert:{% endblocktrans %}
+          </p>
+          <ul class="list-disc list-inside ml-4 text-green-700 dark:text-green-300">
+            {% for item in import_items.success %}
+              <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% else %}
+        <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-default">
+          <p class="font-semibold text-yellow-800 dark:text-yellow-200">
+            {% blocktrans %}Es wurden keine gültigen {{ item_name }} gefunden.{% endblocktrans %}
+          </p>
+        </div>
+      {% endif %}
+
+      {# Log (collapsible) #}
+      {% if import_items.log %}
+        <details class="mt-4">
+          <summary class="cursor-pointer font-semibold text-font-default-light dark:text-font-default-dark hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+            {% trans "Log anzeigen" %}
+          </summary>
+          <div class="mt-4 p-4 bg-base-50 dark:bg-base-900 border border-base-200 dark:border-base-800 rounded-default">
+            {% for line in import_items.log %}
+              <p class="mb-2 text-sm text-font-default-light dark:text-font-default-dark">
+                {{ line.info }}
+                {% if line.objects %}
+                  <ul class="list-disc list-inside ml-4 mt-1">
+                    {% for o in line.objects %}
+                      <li>{{ o }}</li>
+                    {% endfor %}
+                  </ul>
+                {% endif %}
+              </p>
+            {% endfor %}
+          </div>
+        </details>
+      {% endif %}
+    </div>
+    {% endcomponent %}
+  {% endif %}
+
+{% endblock %}
+
+{% block footer %}
+  {% include "geno/components/form_footer.html" with form_id="transaction_upload_form" button_text=_("Datei hochladen und verarbeiten") %}
 {% endblock %}
