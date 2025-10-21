@@ -75,12 +75,19 @@ class TestUtils(BaseTestCase):
         ru1 = RentalUnit.objects.create(name="ru1", building=building)
         ru2 = RentalUnit.objects.create(name="ru2", building=building)
         ru_list = [ru1, ru2]
-        self.assertEqual(build_account(accountPrefix, building=building, rental_units=ru_list), "1312001")
         self.assertEqual(
-            build_account(accountPrefix,rental_units=ru_list), "1312001"
+            build_account(accountPrefix, building=building, rental_units=ru_list), "1312001"
         )
+        self.assertEqual(build_account(accountPrefix, rental_units=ru_list), "1312001")
 
         contract = Contract.objects.create(name="c", rental_units=ru_list)
-        self.assertEqual(build_account(accountPrefix, building=building, rental_units=ru_list, contract=contract), "1312001")
-        self.assertEqual(build_account(accountPrefix, rental_units=ru_list, contract=contract), "1312001")
+        self.assertEqual(
+            build_account(
+                accountPrefix, building=building, rental_units=ru_list, contract=contract
+            ),
+            "1312001",
+        )
+        self.assertEqual(
+            build_account(accountPrefix, rental_units=ru_list, contract=contract), "1312001"
+        )
         self.assertEqual(build_account(accountPrefix, contract=contract), "1312001")
