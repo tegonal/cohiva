@@ -385,6 +385,44 @@ def create_invoices(
                     sum_rent_net -= contract.rent_reduction
                     sum_rent_total -= contract.rent_reduction
 
+                ## Rent reservation
+                if contract.rent_reservation:
+                    description = "Mietzinsvorbehalt %02d.%d für %s%s" % (
+                        month,
+                        year,
+                        "/".join(ru_list),
+                        factor_txt,
+                    )
+                    invoice_value = -1 * contract.rent_reservation * factor
+                    r = add_invoice(
+                        "rent_reservation",
+                        invoice_category,
+                        description,
+                        invoice_date,
+                        invoice_value,
+                        book=book,
+                        contract=billing_contract,
+                        year=year,
+                        month=month,
+                        is_additional=is_additional_invoice,
+                        dry_run=dry_run,
+                    )
+                    if not isinstance(r, str):
+                        messages.append(
+                            "Montasrechnung hinzugefügt: %s für %s."
+                            % (description, billing_contract_info)
+                        )
+                    rent_info.append(
+                        {
+                            "text": "Mietzinsvorbehalt",
+                            "net": -1 * contract.rent_reservation,
+                            "nk": "",
+                            "total": -1 * contract.rent_reservation,
+                        }
+                    )
+                    sum_rent_net -= contract.rent_reservation
+                    sum_rent_total -= contract.rent_reservation
+
             invoice_title = "Mietzinsrechnung %02d.%d" % (month, year)
             if download_only:
                 (ret, output_filename) = create_qrbill_rent(
@@ -531,6 +569,8 @@ def get_income_account(book, invoice_category, kind):
         return book.accounts(code=geno_settings.GNUCASH_ACC_NK_FLAT)
     elif kind == "rent_reduction":
         return book.accounts(code=geno_settings.GNUCASH_ACC_RENTREDUCTION)
+    elif kind == "rent_reservation":
+        return book.accounts(code=geno_settings.GNUCASH_ACC_RENTRESERVATION)
     elif kind == "mietdepot":
         return book.accounts(code=geno_settings.GNUCASH_ACC_MIETDEPOT)
     elif kind == "schluesseldepot":
