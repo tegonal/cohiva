@@ -587,8 +587,24 @@ def setup_config(install_dir, venv_path):
 
 
 def setup_auto_venv(venv_path):
-    """Setup automatic venv activation files."""
-    print_step("Setting up auto-activation for virtual environment...")
+    """Setup automatic venv activation files (optional)."""
+    print_step("Setting up direnv for automatic venv activation...")
+    print()
+    print("direnv can automatically activate your virtual environment when you enter the project directory.")
+    print()
+
+    response = input("Do you want to set up direnv auto-activation? (y/N) ")
+    try:
+        setup_direnv = validate_yes_no_input(response, default='n')
+    except ValidationError as e:
+        print_error(str(e))
+        print_info("Skipping direnv setup")
+        return
+
+    if not setup_direnv:
+        print_info("Skipping direnv setup")
+        print_info("You can manually set up direnv later if needed")
+        return
 
     venv_path = Path(venv_path).expanduser()
 
@@ -596,7 +612,6 @@ def setup_auto_venv(venv_path):
     venv_path_file = Path('.venv-path')
     venv_path_file.write_text(
         f"# Virtual environment path for shell auto-activation\n"
-        f"# See AUTO_VENV_ACTIVATION.md for setup instructions\n"
         f"{venv_path}\n"
     )
     print_info("Created .venv-path file")
@@ -605,7 +620,6 @@ def setup_auto_venv(venv_path):
     envrc_file = Path('.envrc')
     if not envrc_file.exists():
         envrc_content = f'''# direnv configuration for Cohiva
-# See AUTO_VENV_ACTIVATION.md for setup instructions
 
 # Activate virtual environment
 if [ -d "{venv_path}" ]; then
@@ -623,9 +637,16 @@ dotenv_if_exists
 '''
         envrc_file.write_text(envrc_content)
         print_info("Created .envrc file")
+    else:
+        print_info(".envrc file already exists")
 
     print_info(f"Auto-activation configured for: {venv_path}")
-    print_warn("See AUTO_VENV_ACTIVATION.md for instructions on enabling auto-activation")
+    print()
+    print("Next steps:")
+    print("  1. Install direnv: https://direnv.net/docs/installation.html")
+    print("  2. Hook direnv into your shell: https://direnv.net/docs/hook.html")
+    print("  3. Run: direnv allow")
+    print()
 
 
 def start_docker():

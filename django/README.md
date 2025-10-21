@@ -55,7 +55,7 @@ The bootstrap script will:
 **Access the application:** http://localhost:8000/admin/
 
 **Next steps:**
-- See [AUTO_VENV_ACTIVATION.md](AUTO_VENV_ACTIVATION.md) to auto-activate venv when entering the directory
+- **Tip:** Install [direnv](https://direnv.net/) to automatically activate your venv when entering the project directory
 - See [Development Workflow](#development-workflow) below for daily commands
 
 **Clean up:**
