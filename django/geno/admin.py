@@ -57,6 +57,95 @@ def copy_objects(modeladmin, request, queryset):
             return
     messages.success(request, f"{count} Objekt(e) kopiert.")
 
+class BooleanFieldDefaultTrueListFilter(admin.BooleanFieldListFilter):
+    """
+    Filter a boolean field `active`.
+    Default: only True (active) records.
+    When ‘All’ is chosen the URL will contain ?active=all (never removed).
+    """
+
+    def __init__(self, field, request, params, model, model_admin, field_path):
+        super().__init__(field, request, params, model, model_admin, field_path)
+
+        # Determine the parameter name used in the URL.
+        # Support `field_path` (e.g. parent__active), the field name,
+        # and common variants with '.' vs '__' (e.g. parent.active).
+        candidates = []
+        if field_path:
+            candidates.append(field_path)
+        try:
+            candidates.append(self.field.name)
+        except Exception:
+            pass
+
+        # Add common variants
+        variants = set(candidates)
+        for c in list(candidates):
+            variants.add(c.replace(".", "__"))
+            variants.add(c.replace("__", "."))
+        candidates = list(variants)
+
+        lookup_param = None
+        for c in candidates:
+            if c in self.used_parameters:
+                lookup_param = c
+                break
+
+        # Fallback to field_path or field name
+        if lookup_param is None:
+            lookup_param = field_path or getattr(self.field, "name", "")
+
+        self.field.name = lookup_param
+
+        try:
+            val = self.used_parameters.get(self.field.name)
+            if val == "all":
+                self.lookup_val = "all"
+            elif val == "0":
+                self.lookup_val = "0"
+            else:
+                self.lookup_val = "1"
+        except Exception:
+            self.lookup_val = "1"
+
+    def choices(self, changelist):
+        yield from [
+            {
+                "selected": self.lookup_val == "all",
+                "query_string": changelist.get_query_string(
+                    {self.field.name: "all"}, remove=[self.field.name]
+                ),
+                "display": "Alle",
+            },
+            {
+                "selected": self.lookup_val == "1",
+                "query_string": changelist.get_query_string(
+                    {self.field.name: "1"}, remove=[self.field.name]
+                ),
+                "display": "Aktive",
+            },
+            {
+                "selected": self.lookup_val == "0",
+                "query_string": changelist.get_query_string(
+                    {self.field.name: "0"}, remove=[self.field.name]
+                ),
+                "display": "Inaktive",
+            },
+        ]
+
+    def queryset(self, request, queryset):
+        # Normalize lookup to Django filter lookup syntax (use `__` separators).
+        lookup = (self.field.name or getattr(self.field, "name", "")).replace(".", "__")
+        if self.lookup_val == "1":
+            return queryset.filter(**{lookup: True})
+        elif self.lookup_val == "0":
+            return queryset.filter(**{lookup: False})
+        else:
+            return queryset
+
+    def expected_parameters(self):
+        return [self.field.name]
+
 
 ## Base admin class
 class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
@@ -148,7 +237,7 @@ class AddressAdmin(GenoBaseAdmin):
     ]
     list_filter = [
         "title",
-        "active",
+        ("active", BooleanFieldDefaultTrueListFilter),
         "formal",
         "paymentslip",
         "interest_action",
@@ -341,7 +430,7 @@ class ChildAdmin(GenoBaseAdmin):
     ]
     readonly_fields = ["age", "import_id", "ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "presence", "parents", "age"]
-    list_filter = ["presence", "name__active"]
+    list_filter = ["presence", ("name__active", BooleanFieldDefaultTrueListFilter)]
     search_fields = ["name__name", "name__first_name", "parents", "notes"]
     autocomplete_fields = ["name"]
 
@@ -366,7 +455,7 @@ class BuildingAdmin(GenoBaseAdmin):
     ]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "description", "active"]
-    list_filter = ["active"]
+    list_filter = [("active", BooleanFieldDefaultTrueListFilter)]
     search_fields = ["name", "description", "team"]
 
 
@@ -387,7 +476,7 @@ class TenantAdmin(GenoBaseAdmin):
     ]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "building", "key_number", "active"]
-    list_filter = ["building__name", "active"]
+    list_filter = ["building__name", ("active", BooleanFieldDefaultTrueListFilter)]
     search_fields = ["name__name", "name__first_name", "building__name", "key_number", "notes"]
     autocomplete_fields = ["name", "building"]
 
@@ -678,7 +767,7 @@ class DocumentTypeAdmin(GenoBaseAdmin):
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "description", "template", "template_file", "active"]
     list_filter = [
-        "active",
+        ("active", BooleanFieldDefaultTrueListFilter),
     ]
     search_fields = [
         "name",
@@ -808,7 +897,7 @@ class RegistrationAdmin(GenoBaseAdmin):
     ordering = ("-slot__name", "-ts_modified")
     search_fields = ["name", "first_name", "email", "slot__event__name"]
     list_filter = [
-        "slot__event__active",
+        ("slot__event__active", BooleanFieldDefaultTrueListFilter),
         "check1",
         "check2",
         "check3",
@@ -891,7 +980,7 @@ class RegistrationEventAdmin(GenoBaseAdmin):
     list_editable = ["active"]
     search_fields = ["name", "description", "confirmation_mail_sender", "comment"]
     list_filter = [
-        "active",
+        ("active", BooleanFieldDefaultTrueListFilter),
         "confirmation_mail_sender",
         "publication_type",
         "publication_start",
@@ -961,7 +1050,14 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "rentalunit_contracts__contractors__organization",
         "rentalunit_contracts__contractors__first_name",
     ]
-    list_filter = ["rental_type", "rooms", "building__name", "floor", "status", "active"]
+    list_filter = [
+        "rental_type",
+        "rooms",
+        "building__name",
+        "floor",
+        "status",
+        ("active", BooleanFieldDefaultTrueListFilter),
+    ]
     autocomplete_fields = ["building"]
 
 
@@ -1181,7 +1277,12 @@ class InvoiceCategoryAdmin(GenoBaseAdmin):
         "reference_id",
         "comment",
     ]
-    list_filter = ["active", "manual_allowed", "linked_object_type"]
+
+    list_filter = [
+        ("active", BooleanFieldDefaultTrueListFilter),
+        "manual_allowed",
+        "linked_object_type",
+    ]
     autocomplete_fields = ["email_template"]
 
 
@@ -1449,7 +1550,7 @@ class ContentTemplateAdmin(GenoBaseAdmin):
     list_display = ["name", "template_type", "active", "ts_created", "ts_modified"]
     search_fields = ["name", "text"]
     list_filter = [
-        "active",
+        ("active", BooleanFieldDefaultTrueListFilter),
         "template_type",
         "manual_creation_allowed",
         "template_context",

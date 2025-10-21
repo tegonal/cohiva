@@ -709,7 +709,7 @@ class Building(GenoBase):
         ),
     )
     accounting_postfix = models.PositiveIntegerField("Buchhaltungs-Postfix", null=True, blank=True)
-    egid = models.PositiveIntegerField("EGID", null=True)
+    egid = models.PositiveIntegerField("EGID", null=True, blank=True)
     active = models.BooleanField("Aktiv", default=True)
 
     class Meta:
@@ -1301,8 +1301,8 @@ class RentalUnit(GenoBase):
     note = models.CharField("Zusatzinfo", max_length=200, blank=True)
     active = models.BooleanField("Aktiv", default=True)
     status = models.CharField("Status", default="Verfügbar", max_length=100)
-    ewid = models.PositiveIntegerField("EWID", null=True)
-    internal_nr = models.PositiveIntegerField("Interne-Nummer", null=True)
+    ewid = models.PositiveIntegerField("EWID", null=True, blank=True)
+    internal_nr = models.PositiveIntegerField("Interne-Nummer", null=True, blank=True)
     svg_polygon = models.TextField("SVG Polygon", default="", blank=True)
     description = models.TextField("Beschreibung", default="", blank=True)
     adit_serial = models.TextField(
@@ -1323,7 +1323,7 @@ class RentalUnit(GenoBase):
         Bruttomiete inkl. NK und Strom
         """
         return (
-            self.rent_netto
+            (self.rent_netto if self.rent_netto else Decimal(0.0))
             + (self.nk if self.nk else Decimal(0.0))
             + (self.nk_flat if self.nk_flat else Decimal(0.0))
             + (self.nk_electricity if self.nk_electricity else Decimal(0.0))
