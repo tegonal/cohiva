@@ -57,10 +57,6 @@ def copy_objects(modeladmin, request, queryset):
             return
     messages.success(request, f"{count} Objekt(e) kopiert.")
 
-
-copy_objects.short_description = "Ausgewählte Objekte kopieren"
-
-
 class BooleanFieldDefaultTrueListFilter(admin.BooleanFieldListFilter):
     """
     Filter a boolean field `active`.
