@@ -8,6 +8,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.core.mail import send_mail
 from django.utils import timezone
 from django.utils.safestring import mark_safe
+from django.utils.translation import gettext_lazy as _
 from unfold.widgets import (
     UnfoldAdminDateWidget,
     UnfoldAdminDecimalFieldWidget,
@@ -1020,6 +1021,24 @@ class InvoiceFilterForm(forms.Form):
                 Column("date_to", css_class="mb-4 lg:mb-0"),
                 css_class="grid grid-cols-1 lg:grid-cols-2 gap-4",
             ),
+        )
+
+
+
+class ShareOverviewFilterForm(forms.Form):
+    date = forms.DateField(
+        label=_("Übersicht per Stichtag"),
+        required=False,
+        widget=UnfoldAdminDateWidget(),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_tag = False
+        self.helper.form_class = ""
+        self.helper.layout = Layout(
+            Div("date", css_class="mb-0"),
         )
 
 

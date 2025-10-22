@@ -71,6 +71,7 @@ from .forms import (
     MemberMailForm,
     MemberMailSelectForm,
     SendInvoicesForm,
+    ShareOverviewFilterForm,
     ShareStatementForm,
     TransactionForm,
     TransactionFormInvoice,
@@ -259,39 +260,40 @@ def documents(request, doctype, obj_id, action):
 
 
 class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
-    title = "Übersicht Beteiligungen"  # required: custom page header title
-    permission_required = "geno.canview_share_overview"  # required: tuple of permissions
+    title = "Übersicht Beteiligungen"
+    permission_required = "geno.canview_share_overview"
+    template_name = "geno/share_overview.html"
 
     def get_context_data(self, **kwargs):
-        return super().get_context_data(
-            **kwargs,
-            response=self.share_overview(),
-        )
+        context = super().get_context_data(**kwargs)
 
-    def share_overview(self):
-        ret = []
+        # Parse date from URL parameter
+        reference_date = None
+        if len(self.request.GET.get("date", "")) == 10:
+            try:
+                reference_date = datetime.datetime.strptime(
+                    self.request.GET.get("date"), "%Y-%m-%d"
+                ).date()
+                context["reference_date_str"] = reference_date.strftime("%Y-%m-%d")
+            except ValueError:
+                pass
+
+        # Initialize the filter form - always show today's date as default
+        form_initial = {"date": reference_date if reference_date else datetime.date.today()}
+
+        form = ShareOverviewFilterForm(initial=form_initial)
+        context["form"] = form
+        context["reference_date"] = reference_date
+
+        # Get share type statistics
+        share_stats = []
+        total_value = 0
 
         try:
             stype_AS = ShareType.objects.get(name="Anteilschein")
         except ShareType.DoesNotExist:
             stype_AS = None
 
-        if len(self.request.GET.get("date", "")) == 10:
-            reference_date = datetime.datetime.strptime(
-                self.request.GET.get("date"), "%Y-%m-%d"
-            ).date()
-            ret.append({"info": "Übersicht per %s" % (reference_date.strftime("%Y-%m-%d"))})
-        else:
-            reference_date = None
-            ret.append(
-                {
-                    "info": (
-                        "Übersicht per heute (datum kann mit ?date=YYYY-MM-DD in URL angegeben werden)"
-                    )
-                }
-            )
-
-        total = {"value": 0}
         for share_type in ShareType.objects.all():
             stat = {"quantity": 0, "value": 0, "last_date": None}
             for s in get_active_shares(date=reference_date).filter(share_type=share_type):
@@ -299,39 +301,62 @@ class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
                 stat["value"] += s.quantity * s.value
                 if stat["last_date"] is None or s.date > stat["last_date"]:
                     stat["last_date"] = s.date
-            obj = [
-                "Anzahl: %s" % nformat(stat["quantity"], 0),
-                "Summe CHF: %s" % nformat(stat["value"]),
-                "Letzter Eingang: %s" % stat["last_date"],
-            ]
-            ret.append({"info": share_type, "objects": obj})
-            total["value"] += stat["value"]
-        ret.append({"info": "TOTAL", "objects": ["Summe CHF: %s" % nformat(total["value"])]})
 
+            share_stats.append({
+                "type": str(share_type),
+                "quantity": stat["quantity"],
+                "value": stat["value"],
+                "last_date": stat["last_date"],
+            })
+            total_value += stat["value"]
+
+        context["share_stats"] = share_stats
+        context["total_value"] = total_value
+
+        # Check for non-members with shares (warning)
+        non_members = []
         if not reference_date and self.request.user.has_perm("geno.canview_share") and stype_AS:
-            non_members = []
             for s in get_active_shares(date=reference_date).filter(share_type=stype_AS):
                 try:
                     m = Member.objects.get(name=s.name)
                     if m.date_leave:
-                        non_members.append(
-                            "%s (%d) [ausgetreten %s]"
-                            % (s.name, s.quantity, m.date_leave.strftime("%d.%m.%Y"))
-                        )
+                        non_members.append({
+                            "name": s.name,
+                            "quantity": s.quantity,
+                            "date_leave": m.date_leave,
+                        })
                 except Member.DoesNotExist:
-                    non_members.append("%s (%d)" % (s.name, s.quantity))
-            if non_members:
-                ret.append(
-                    {
-                        "info": "WARNUNG: Nichtmitglieder mit Anteilsscheinen:",
-                        "objects": non_members,
-                    }
-                )
+                    non_members.append({
+                        "name": s.name,
+                        "quantity": s.quantity,
+                        "date_leave": None,
+                    })
 
-        if not reference_date and hasattr(settings, "SHARE_PLOT") and settings.SHARE_PLOT:
-            ret.append({"info": '<img src="/geno/share/overview/plot/" alt="Statistik">'})
+        context["non_members"] = non_members
 
-        return ret
+        # Show plot if enabled and viewing current data (today or no date specified)
+        is_today = (
+            not reference_date or reference_date == datetime.date.today()
+        )
+        context["show_plot"] = (
+            is_today
+            and hasattr(settings, "SHARE_PLOT")
+            and settings.SHARE_PLOT
+        )
+
+        return context
+
+    def post(self, request, *args, **kwargs):
+        form = ShareOverviewFilterForm(request.POST)
+        if form.is_valid():
+            date = form.cleaned_data.get("date")
+            if date:
+                # Redirect with date parameter
+                return redirect(f"{request.path}?date={date.strftime('%Y-%m-%d')}")
+            else:
+                # Redirect without date parameter (show current date)
+                return redirect(request.path)
+        return self.get(request, *args, **kwargs)
 
 
 def member_overview_plot(request):
@@ -2240,18 +2265,109 @@ def contract_report(request, year="previous", address=None):
     return export_data_to_xls(report, header=header)
 
 
-class ContractCheckFormsView(DocumentGeneratorView):
-    permission_required = ("geno.canview_share", "geno.rental_contracts")
-    doctype = "contract_check"
+class ContractCheckFormsView(CohivaAdminViewMixin, TemplateView):
     title = "Formulare «Überprüfung Belegung/Fahrzeuge»"
+    permission_required = ("geno.canview_share", "geno.rental_contracts")
+    template_name = "geno/contract_check_forms.html"
 
-    def get_objects(self):
-        objects = []
-        for c in get_active_contracts():
-            for ru in c.rental_units.all():
-                if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
-                    objects.append({"obj": c})
-        return objects
+    def get(self, request, *args, **kwargs):
+        # Check if documents should be generated
+        generate_docs = request.GET.get("generate", "") == "yes"
+
+        if generate_docs:
+            # Generate documents using the existing document generation system
+            objects = []
+            for c in get_active_contracts():
+                for ru in c.rental_units.all():
+                    if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
+                        objects.append({"obj": c})
+
+            makezip = request.GET.get("makezip", "") == "yes"
+            options = {
+                "beschreibung": "Formulare «Überprüfung Belegung/Fahrzeuge»",
+                "makezip": makezip,
+            }
+            if url_has_allowed_host_and_scheme(request.path, allowed_hosts=None):
+                options["link_url"] = request.path
+
+            result = create_documents("contract_check", objects, options)
+
+            # If result is a file download response (HttpResponse), return it directly
+            if isinstance(result, HttpResponse):
+                return result
+
+            # Otherwise, render the template with the result
+            # This will be handled by get_context_data
+
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Determine if documents were generated
+        generate_docs = self.request.GET.get("generate", "") == "yes"
+
+        if generate_docs:
+            # Generate documents and show results
+            objects = []
+            for c in get_active_contracts():
+                for ru in c.rental_units.all():
+                    if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
+                        objects.append({"obj": c})
+
+            makezip = self.request.GET.get("makezip", "") == "yes"
+            options = {
+                "beschreibung": "Formulare «Überprüfung Belegung/Fahrzeuge»",
+                "makezip": makezip,
+            }
+            if url_has_allowed_host_and_scheme(self.request.path, allowed_hosts=None):
+                options["link_url"] = self.request.path
+
+            result = create_documents("contract_check", objects, options)
+
+            # Only set result if it's not an HttpResponse (those are handled in get())
+            if not isinstance(result, HttpResponse):
+                context["result"] = result
+        else:
+            # Show the form to generate documents with contract overview
+            contracts = []
+            for c in get_active_contracts():
+                for ru in c.rental_units.all():
+                    if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
+                        contracts.append(c)
+                        break
+
+            # Prepare table data
+            headers = ["Vertrag", "Mieter", "Mietobjekte"]
+            rows = []
+
+            for contract in contracts:
+                # Get contractors list
+                contractors = []
+                for c in contract.contractors.all():
+                    if c == contract.main_contact:
+                        contractors.insert(0, str(c))
+                    else:
+                        contractors.append(str(c))
+                contractors_str = " / ".join(contractors) if contractors else "-"
+
+                rental_units = ", ".join(
+                    str(ru) for ru in contract.rental_units.all()
+                    if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz")
+                )
+                rows.append([
+                    str(contract.get_contract_label() or f"Vertrag {contract.pk}"),
+                    contractors_str,
+                    rental_units,
+                ])
+
+            context["table_data"] = {
+                "headers": headers,
+                "rows": rows,
+            }
+            context["contract_count"] = len(contracts)
+
+        return context
 
 
 ## TODO: Refactor to ClassBased view
