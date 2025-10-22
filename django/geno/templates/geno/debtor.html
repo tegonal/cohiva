@@ -32,6 +32,9 @@
   {% component "geno/components/table_with_footer.html" with table=table_data card_included=1 striped=1 %}
 {% endcomponent %}
 {% endcomponent %}
+{% else %}
+{% component "geno/components/empty_state.html" with message=_("Keine Rechnungen gefunden. Passen Sie die Filterkriterien an.") icon="search" %}
+{% endcomponent %}
 {% endif %}
 
 {# Breadcrumb navigation #}

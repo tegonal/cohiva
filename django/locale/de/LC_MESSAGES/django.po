@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Cohiva 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-23 00:24+0200\n"
+"POT-Creation-Date: 2025-10-23 00:42+0200\n"
 "PO-Revision-Date: 2025-10-21 01:30+0200\n"
 "Last-Translator: Cohiva Development Team\n"
 "Language-Team: German\n"
@@ -142,18 +142,22 @@ msgstr "Keine Daten"
 msgid "Ergebnis"
 msgstr ""
 
-#: geno/templates/geno/contract_check_forms.html:61
+#: geno/templates/geno/contract_check_forms.html:47
+msgid "Keine Verträge mit Wohneinheiten gefunden."
+msgstr "Keine Verträge mit Wohneinheiten gefunden."
+
+#: geno/templates/geno/contract_check_forms.html:64
 #: geno/templates/geno/share_confirm.html:38
 #: geno/templates/geno/share_duedate_reminder.html:38
 #: geno/templates/geno/share_statement.html:62
 msgid "Als ZIP-Datei generieren"
 msgstr ""
 
-#: geno/templates/geno/contract_check_forms.html:68
+#: geno/templates/geno/contract_check_forms.html:71
 msgid "Einzelne Dokumente generieren"
 msgstr ""
 
-#: geno/templates/geno/contract_check_forms.html:73
+#: geno/templates/geno/contract_check_forms.html:76
 #, python-format
 msgid ""
 "\n"
@@ -178,7 +182,11 @@ msgstr "Rechnungen konsolidieren"
 msgid "Filter zurücksetzen"
 msgstr "Filter zurücksetzen"
 
-#: geno/templates/geno/debtor.html:43
+#: geno/templates/geno/debtor.html:36
+msgid "Keine Rechnungen gefunden. Passen Sie die Filterkriterien an."
+msgstr "Keine Rechnungen gefunden. Passen Sie die Filterkriterien an."
+
+#: geno/templates/geno/debtor.html:46
 msgid "Zurück zu"
 msgstr "Zurück zu"
 
@@ -273,40 +281,40 @@ msgstr[1] ""
 msgid "Statistik"
 msgstr ""
 
-#: geno/templates/geno/share_overview.html:32
+#: geno/templates/geno/share_overview.html:30
 msgid "Die Statistik ist nur für das aktuelle Datum verfügbar."
 msgstr ""
 
-#: geno/templates/geno/share_overview.html:42
+#: geno/templates/geno/share_overview.html:39
 msgid "Datumsfilter"
 msgstr ""
 
-#: geno/templates/geno/share_overview.html:58
+#: geno/templates/geno/share_overview.html:55
 msgid "Anzahl"
 msgstr ""
 
-#: geno/templates/geno/share_overview.html:62
+#: geno/templates/geno/share_overview.html:59
 msgid "Summe CHF"
 msgstr ""
 
-#: geno/templates/geno/share_overview.html:67
+#: geno/templates/geno/share_overview.html:64
 msgid "Letzter Eingang"
 msgstr ""
 
-#: geno/templates/geno/share_overview.html:80
+#: geno/templates/geno/share_overview.html:77
 msgid "TOTAL"
 msgstr ""
 
-#: geno/templates/geno/share_overview.html:83
+#: geno/templates/geno/share_overview.html:80
 #, python-format
 msgid "CHF %(value)s"
 msgstr ""
 
-#: geno/templates/geno/share_overview.html:93
+#: geno/templates/geno/share_overview.html:90
 msgid "WARNUNG: Nichtmitglieder mit Anteilsscheinen"
 msgstr ""
 
-#: geno/templates/geno/share_overview.html:100
+#: geno/templates/geno/share_overview.html:97
 msgid "ausgetreten"
 msgstr ""
 
@@ -405,312 +413,40 @@ msgstr "Log anzeigen"
 msgid "Datei hochladen und verarbeiten"
 msgstr "Datei hochladen und verarbeiten"
 
-#: geno/views.py:1383 geno/views.py:1531
+#: geno/views.py:1391 geno/views.py:1539
 msgid "Name/Adresse"
 msgstr ""
 
-#: geno/views.py:1383
+#: geno/views.py:1391
 msgid "Details"
 msgstr ""
 
-#: geno/views.py:1531
+#: geno/views.py:1539
 msgid "Darlehen Details"
 msgstr ""
 
-#: geno/views.py:2279
+#: geno/views.py:2287
 #, fuzzy
 #| msgid "Mitglieder"
 msgid "Mitglied"
 msgstr "Mitglieder"
 
-#: geno/views.py:2280
+#: geno/views.py:2288
 msgid "Anteilscheine"
 msgstr ""
 
-#: geno/views.py:2281
+#: geno/views.py:2289
 msgid "Darlehen"
 msgstr ""
 
-#: geno/views.py:2282
+#: geno/views.py:2290
 msgid "Depositen"
 msgstr ""
 
-#: geno/views.py:2283
+#: geno/views.py:2291
 msgid "Verrechnungssteuer"
 msgstr ""
 
-#: geno/views.py:2284
+#: geno/views.py:2292
 msgid "Zinszahlung"
 msgstr ""
-# ==============================================================================
-# Unfold Admin Theme Core Strings
-# ==============================================================================
-
-msgid "Search apps and models..."
-msgstr "Apps und Modelle durchsuchen..."
-
-msgid "Add row"
-msgstr "Zeile hinzufügen"
-
-msgid "Clear all filters"
-msgstr "Alle Filter löschen"
-
-msgid "Click to download"
-msgstr "Zum Herunterladen klicken"
-
-msgid "Filter navigation items"
-msgstr "Navigationselemente filtern"
-
-msgid "Filters"
-msgstr "Filter"
-
-msgid "General"
-msgstr "Allgemein"
-
-msgid "Go back"
-msgstr "Zurück"
-
-msgid "Hide counts"
-msgstr "Anzahlen ausblenden"
-
-msgid "History"
-msgstr "Verlauf"
-
-msgid "Home"
-msgstr "Startseite"
-
-msgid "Image preview"
-msgstr "Bildvorschau"
-
-msgid "Loading more results..."
-msgstr "Weitere Ergebnisse werden geladen..."
-
-msgid "Log in again"
-msgstr "Erneut anmelden"
-
-msgid "Next"
-msgstr "Weiter"
-
-msgid "No recent searches"
-msgstr "Keine aktuellen Suchen"
-
-msgid "No results found"
-msgstr "Keine Ergebnisse gefunden"
-
-msgid "No results matching your query"
-msgstr "Keine Ergebnisse zu Ihrer Suche"
-
-msgid "Previous"
-msgstr "Zurück"
-
-msgid "Recent searches"
-msgstr "Aktuelle Suchen"
-
-msgid "Record picture"
-msgstr "Bild aufnehmen"
-
-msgid "Remove"
-msgstr "Entfernen"
-
-msgid "Reset filters"
-msgstr "Filter zurücksetzen"
-
-msgid "Return to site"
-msgstr "Zur Website zurückkehren"
-
-msgid "Run"
-msgstr "Ausführen"
-
-msgid "Select all rows"
-msgstr "Alle Zeilen auswählen"
-
-msgid "Show counts"
-msgstr "Anzahlen anzeigen"
-
-msgid "Thanks for spending some quality time with the web site today."
-msgstr "Vielen Dank, dass Sie heute Zeit auf der Website verbracht haben."
-
-msgid "This page yielded into no results. Create a new item or reset your filters."
-msgstr "Diese Seite hat keine Ergebnisse erbracht. Erstellen Sie ein neues Element oder setzen Sie Ihre Filter zurück."
-
-msgid "View on site"
-msgstr "Auf der Website anzeigen"
-
-msgid "You have been successfully logged out from the administration"
-msgstr "Sie wurden erfolgreich aus der Administration abgemeldet"
-
-# ==============================================================================
-# Unfold Filters & Forms
-# ==============================================================================
-
-msgid "Select record"
-msgstr "Datensatz auswählen"
-
-msgid "Select action"
-msgstr "Aktion auswählen"
-
-msgid "Save"
-msgstr "Speichern"
-
-msgid "Collapse"
-msgstr "Einklappen"
-
-msgid "Name"
-msgstr "Name"
-
-msgid "Value"
-msgstr "Wert"
-
-msgid "Default"
-msgstr "Standard"
-
-msgid "Code"
-msgstr "Code"
-
-msgid "Modified"
-msgstr "Geändert"
-
-msgid "Reset to default"
-msgstr "Auf Standard zurücksetzen"
-
-msgid "All"
-msgstr "Alle"
-
-msgid "Yes"
-msgstr "Ja"
-
-msgid "No"
-msgstr "Nein"
-
-msgid "From"
-msgstr "Von"
-
-msgid "To"
-msgstr "Bis"
-
-msgid "Date from"
-msgstr "Datum von"
-
-msgid "Time"
-msgstr "Zeit"
-
-msgid "Date to"
-msgstr "Datum bis"
-
-msgid "Not enough data."
-msgstr "Nicht genügend Daten."
-
-msgid "Add new item"
-msgstr "Neues Element hinzufügen"
-
-# ==============================================================================
-# Unfold Rich Text Editor
-# ==============================================================================
-
-msgid "Paragraph"
-msgstr "Absatz"
-
-msgid "Underlined"
-msgstr "Unterstrichen"
-
-msgid "Bold"
-msgstr "Fett"
-
-msgid "Italic"
-msgstr "Kursiv"
-
-msgid "Strike"
-msgstr "Durchgestrichen"
-
-msgid "Undo"
-msgstr "Rückgängig"
-
-msgid "Redo"
-msgstr "Wiederholen"
-
-msgid "Heading %(level)s"
-msgstr "Überschrift %(level)s"
-
-msgid "Subscript"
-msgstr "Tiefgestellt"
-
-msgid "Superscript"
-msgstr "Hochgestellt"
-
-msgid "Bullet list"
-msgstr "Aufzählungsliste"
-
-msgid "Numbered list"
-msgstr "Nummerierte Liste"
-
-msgid "Align left"
-msgstr "Linksbündig"
-
-msgid "Align center"
-msgstr "Zentriert"
-
-msgid "Align right"
-msgstr "Rechtsbündig"
-
-msgid "Quote"
-msgstr "Zitat"
-
-msgid "Inline code"
-msgstr "Inline-Code"
-
-msgid "Code block"
-msgstr "Codeblock"
-
-msgid "Link"
-msgstr "Link"
-
-msgid "Image"
-msgstr "Bild"
-
-msgid "Horizontal rule"
-msgstr "Horizontale Linie"
-
-msgid "Hard break"
-msgstr "Harter Umbruch"
-
-# ==============================================================================
-# Unfold Actions & Widgets
-# ==============================================================================
-
-msgid "Run the selected action"
-msgstr "Ausgewählte Aktion ausführen"
-
-msgid "Click here to select the objects across all pages"
-msgstr "Hier klicken, um Objekte über alle Seiten hinweg auszuwählen"
-
-msgid "Select value"
-msgstr "Wert auswählen"
-
-msgid "Clear"
-msgstr "Löschen"
-
-msgid "Select files"
-msgstr "Dateien auswählen"
-
-msgid "Drop files here to upload"
-msgstr "Dateien hier ablegen zum Hochladen"
-
-msgid "Add another"
-msgstr "Weiteres hinzufügen"
-
-msgid "Delete"
-msgstr "Löschen"
-
-msgid "Show"
-msgstr "Anzeigen"
-
-msgid "Hide"
-msgstr "Ausblenden"
-
-msgid "%(counter)s result"
-msgid_plural "%(counter)s results"
-msgstr[0] "%(counter)s Ergebnis"
-msgstr[1] "%(counter)s Ergebnisse"
-
-msgid "%(full_result_count)s total"
-msgstr "%(full_result_count)s insgesamt"

@@ -4,80 +4,81 @@
 {% load unfold %}
 
 {% block object-tools %}
-{# Override to hide the tab list when there's only one view #}
+  {# Override to hide the tab list when there's only one view #}
 {% endblock %}
 
 {% block custom_content %}
 
-<div class="mb-6">
+  <div class="mb-6">
     <h1 class="text-2xl font-semibold text-font-important-light dark:text-font-important-dark">
-        {{ title }}
+      {{ title }}
     </h1>
-</div>
+  </div>
 
-{% if result %}
+  {% if result %}
     {# Display document generation results #}
     <div class="bg-white border border-base-200 rounded-default p-6 shadow-sm dark:border-base-800 dark:bg-base-900">
-        <h2 class="text-xl font-semibold mb-4 text-font-important-light dark:text-font-important-dark">
-            {% trans "Ergebnis" %}
-        </h2>
-        <ul class="space-y-2">
-            {% for r in result %}
-                <li class="text-font-light dark:text-font-dark">
-                    {{ r.info|safe }}
-                    {% if r.objects %}
-                        <ul class="ml-6 mt-2 space-y-1">
-                            {% for o in r.objects %}
-                                <li class="text-sm">{{ o|safe }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </li>
-            {% endfor %}
-        </ul>
+      <h2 class="text-xl font-semibold mb-4 text-font-important-light dark:text-font-important-dark">
+        {% trans "Ergebnis" %}
+      </h2>
+      <ul class="space-y-2">
+        {% for r in result %}
+          <li class="text-font-light dark:text-font-dark">
+            {{ r.info|safe }}
+            {% if r.objects %}
+              <ul class="ml-6 mt-2 space-y-1">
+                {% for o in r.objects %}<li class="text-sm">{{ o|safe }}</li>{% endfor %}
+              </ul>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
     </div>
+  {% else %}
+    {# Display contracts table using Unfold's official table component #}
+    {% if table_data %}
+      {% component "unfold/components/card.html" %}
+      {% component "unfold/components/table.html" with table=table_data card_included=1 striped=1 %}
+    {% endcomponent %}
+  {% endcomponent %}
 {% else %}
-  {# Display contracts table using Unfold's official table component #}
-  {% if table_data %}
-    {% component "unfold/components/card.html" %}
-    {% component "unfold/components/table.html" with table=table_data card_included=1 striped=1 %}
-  {% endcomponent %}
-  {% endcomponent %}
-  {% endif %}
+  {% component "geno/components/empty_state.html" with message=_("Keine Verträge mit Wohneinheiten gefunden.") icon="description" %}
+{% endcomponent %}
+{% endif %}
 {% endif %}
 
 {% endblock %}
 
 {% block footer %}
-{% if not result %}
-  {# Floating action buttons footer #}
-  <div class="relative lg:sticky lg:bottom-0 z-40">
-    <div class="backdrop-blur-xs bg-white/80 rounded-b-default pb-4 px-4 dark:bg-base-900/80 lg:border-t lg:border-base-200 relative lg:scrollable-top lg:py-0 dark:border-base-800">
-      <div class="flex flex-col-reverse gap-3 items-center mx-auto lg:flex-row-reverse container lg:h-[64px]">
-        {# Primary action - Generate as ZIP #}
-        <a href="?generate=yes&makezip=yes"
-           class="bg-primary-600 block border border-transparent cursor-pointer font-medium px-3 py-2 rounded-default text-white w-full lg:w-auto inline-flex items-center justify-center gap-2">
-          <span class="material-symbols-outlined text-[18px]">folder_zip</span>
-          {% trans "Als ZIP-Datei generieren" %}
-        </a>
+  {% if not result %}
+    {# Floating action buttons footer #}
+    <div class="relative lg:sticky lg:bottom-0 z-40">
+      <div class="backdrop-blur-xs bg-white/80 rounded-b-default pb-4 px-4 dark:bg-base-900/80 lg:border-t lg:border-base-200 relative lg:scrollable-top lg:py-0 dark:border-base-800">
+        <div class="flex flex-col-reverse gap-3 items-center mx-auto lg:flex-row-reverse container lg:h-[64px]">
+          {# Primary action - Generate as ZIP #}
+          <a href="?generate=yes&makezip=yes"
+             class="bg-primary-600 block border border-transparent cursor-pointer font-medium px-3 py-2 rounded-default text-white w-full lg:w-auto inline-flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">folder_zip</span>
+            {% trans "Als ZIP-Datei generieren" %}
+          </a>
 
-        {# Secondary action - Generate individual documents #}
-        <a href="?generate=yes"
-           class="bg-base-200 block border border-base-300 cursor-pointer font-medium px-3 py-2 rounded-default text-font-important-light dark:text-font-important-dark dark:bg-base-800 dark:border-base-700 w-full lg:w-auto inline-flex items-center justify-center gap-2">
-          <span class="material-symbols-outlined text-[18px]">description</span>
-          {% trans "Einzelne Dokumente generieren" %}
-        </a>
+          {# Secondary action - Generate individual documents #}
+          <a href="?generate=yes"
+             class="bg-base-200 block border border-base-300 cursor-pointer font-medium px-3 py-2 rounded-default text-font-important-light dark:text-font-important-dark dark:bg-base-800 dark:border-base-700 w-full lg:w-auto inline-flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">description</span>
+            {% trans "Einzelne Dokumente generieren" %}
+          </a>
 
-        {# Contract count info on the left #}
-        <div class="mr-auto text-sm text-font-light dark:text-font-dark">
-          {% blocktrans count counter=contract_count %}
+          {# Contract count info on the left #}
+          <div class="mr-auto text-sm text-font-light dark:text-font-dark">
+            {% blocktrans count counter=contract_count %}
             Es wird ein Formular für {{ counter }} Vertrag generiert.
           {% plural %}
             Es werden Formulare für {{ counter }} Verträge generiert.
           {% endblocktrans %}
+          </div>
         </div>
       </div>
     </div>
-  </div>
-{% endif %}
+  {% endif %}
 {% endblock %}
