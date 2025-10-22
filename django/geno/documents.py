@@ -15,7 +15,6 @@ from django.core.mail import EmailMultiAlternatives
 from django.http import HttpResponse
 from django.template import Context, Template, loader
 from django.utils.html import escape
-from django.utils.translation import gettext as _
 from html2text import html2text
 
 import geno.settings as geno_settings

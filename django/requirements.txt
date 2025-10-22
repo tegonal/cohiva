@@ -441,3 +441,6 @@ zope-proxy==6.1
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
+
+# Packages added/managed by install.py:
+sepa==0.5.4+mst1
