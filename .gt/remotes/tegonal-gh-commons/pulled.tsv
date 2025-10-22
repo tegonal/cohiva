@@ -3,6 +3,7 @@ tag	file	relativeTarget	tagFilter	hasPlaceholder	sha512
 v4.2.0	src/.github/CODE_OF_CONDUCT.md	../.github/CODE_OF_CONDUCT.md	.*	false	2ab05247219f9816a3be4d76144c647500f2d6044ce917615a726fbd7adcb4f4625772e4ece5bdeca7da9af4ae7d1b03ed96bde2a2a8134afeb1964f0fce3f00
 v4.2.0	src/.github/PULL_REQUEST_TEMPLATE.md	../.github/PULL_REQUEST_TEMPLATE.md	.*	false	9112d1ea1f72ea250cdfe686fc152e63f2e0cdcea9c46935289471d7a3f54c35af8a3f283570f5d863e936c7782939c7b1548cb7d4ccda712bbf9314926f58cb
 v4.2.0	src/.github/Contributor Agreement.txt	../.github/Contributor Agreement.txt	.*	false	0b9a8a954edf302ca5fe0062b7e283d3da06a6bc0631a812663095a78b3a734cefb43b725ae342694d770be75206124c42a1150e168fac33f28aebea0bda35ec
+v4.2.0	src/.github/workflows/cleanup.yml	../.github/workflows/cleanup.yml	.*	true	c01d45a29ce50be8851b6c372eda4b50bff77df8f7189c189bc2231ead89dd564eab211fa3bb6d7afbbfbec499fb7b514b30bb6efe4437a97e041836421cac14
 v4.2.0	src/dotfiles/.editorconfig	../.editorconfig	.*	false	de9f9dcd6ff43b0bf183ddb26cc9fae820eecc9ffbee1797e213e0216c42d73606a231613a7872486bb95413ca417255374b388b0e5118f3730e4689ba3d1502
 v4.2.0	src/dotfiles/.shellcheckrc	../.shellcheckrc	.*	false	70028305482349a30b61d8b8be828ae0a94b2647f13fc54bf339fa8cc37d6406ba551d4f657596c2820bd0ded81f7440ae1759214857a463fa9c71a897be3dfa
 v4.2.0	src/gt/pull-hook-functions.sh	../lib/tegonal-gh-commons/src/gt/pull-hook-functions.sh	.*	false	e89726c87fead32d990867ceece823e0cbab8fc8a73236b45efb2a7b48472569f1ced18c4829135b2fa14f4197a940eaa6e3ece47e6f4b1f40c0ea29f913fed8
