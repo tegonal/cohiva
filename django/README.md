@@ -257,9 +257,10 @@ The `develop.sh` script:
 # Create migrations
 ./manage.py makemigrations
 
-# Run tests
+# Run tests (includes cleanup)
 ./run-tests.sh
-./manage.py test --keepdb  # Faster, keeps test database
+# Note: Edit run-tests.sh to customize which tests to run
+# Don't bypass it with ./manage.py test as it skips cleanup steps
 
 # Load demo data
 ./scripts/demo_data_manager.py --load
