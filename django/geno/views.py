@@ -353,10 +353,18 @@ class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
             date = form.cleaned_data.get("date")
             if date:
                 # Redirect with date parameter
-                return redirect(f"{request.path}?date={date.strftime('%Y-%m-%d')}")
+                target = f"{request.path}?date={date.strftime('%Y-%m-%d')}"
+                if url_has_allowed_host_and_scheme(target, allowed_hosts={request.get_host()}):
+                    return redirect(target)
+                else:
+                    return redirect('/')
             else:
                 # Redirect without date parameter (show current date)
-                return redirect(request.path)
+                target = request.path
+                if url_has_allowed_host_and_scheme(target, allowed_hosts={request.get_host()}):
+                    return redirect(target)
+                else:
+                    return redirect('/')
         return self.get(request, *args, **kwargs)
 
 
