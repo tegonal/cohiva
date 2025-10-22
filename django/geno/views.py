@@ -3813,6 +3813,8 @@ class ResidentUnitListView(CohivaAdminViewMixin, TemplateView):
             ("n_children", "Anzahl Kinder"),
             ("ru_rent_netto", "Nettomiete"),
             ("ru_rent_total", "Bruttomiete"),
+            ("contract_rent_reduction", "Mietzinsreduktion auf Nettomiete"),
+            ("contract_rent_reservation", "Mietzinsvorbehalt auf Nettomiete"),
             ("ru_nk", "NK akonto"),
             ("ru_nk_flat", "NK pauschal"),
             ("ru_nk_electricity", "NK Strom"),
@@ -3910,6 +3912,10 @@ class ResidentUnitListView(CohivaAdminViewMixin, TemplateView):
                     count += 1
                 obj.n_adults = count
                 obj.contract_date = contract.date.strftime("%d.%m.%Y")
+                if contract.rent_reduction:
+                    obj.contract_rent_reduction = contract.rent_reduction
+                if contract.rent_reservation:
+                    obj.contract_rent_reservation = contract.rent_reservation
 
                 for child in contracts.first().children.all():
                     children.append(

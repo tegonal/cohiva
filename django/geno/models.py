@@ -1371,7 +1371,6 @@ class Contract(GenoBase):
     children = models.ManyToManyField(
         Child, verbose_name="Kinder", blank=True, related_name="child_contracts"
     )
-    children_old = models.CharField("Kinder (ALT!)", max_length=200, blank=True)
     rental_units = models.ManyToManyField(
         RentalUnit, verbose_name="Mietobjekt(e)", related_name="rentalunit_contracts"
     )
@@ -1382,6 +1381,13 @@ class Contract(GenoBase):
         ("ungueltig", "ungültig"),
     )
     state = models.CharField("Status", max_length=50, choices=CONTRACT_STATE_CHOICES, blank=True)
+    date_since = models.DateField(
+        "Verhältnis seit",
+        null=True,
+        blank=True,
+        default=None,
+        help_text="Start des Mietverhältnisses (ggf. abweichend vom Vertragsbeginn). Wird in keiner Berechnung verwendet.",
+    )
     date = models.DateField("Datum Beginn")
     date_end = models.DateField("Datum Ende", null=True, blank=True, default=None)
     note = models.CharField("Zusatzinfo", max_length=200, blank=True)
@@ -1390,6 +1396,13 @@ class Contract(GenoBase):
     )
     rent_reduction = models.DecimalField(
         "Mietzinsreduktion Nettomiete (Fr./Monat)",
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+    rent_reservation = models.DecimalField(
+        "Mietzinsvorbehalt Nettomiete (Fr./Monat)",
         max_digits=10,
         decimal_places=2,
         null=True,

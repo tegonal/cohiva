@@ -64,6 +64,9 @@ GNUCASH_ACC_NK_RECEIVABLE = getattr(
 GNUCASH_ACC_RENTREDUCTION = getattr(
     settings, "GENO_GNUCASH_ACC_RENTREDUCTION", "3015"
 )  # Mietzinsausfälle
+GNUCASH_ACC_RENTRESERVATION = getattr(
+    settings, "GENO_GNUCASH_ACC_RENTRESERVATION", "3016"
+)  # Mietzinsvorbehalt
 GNUCASH_ACC_LEERSTAND = getattr(
     settings, "GENO_GNUCASH_ACC_LEERSTAND", "3010"
 )  # Leerstandsverluste
