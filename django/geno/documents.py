@@ -348,7 +348,9 @@ class DocumentTemplate:
     def render(self, recipient):
         output = RenderedDocument()
         output.file = self.content_template.file.path
-        filename_tag = sanitize_filename(self.content_template.name) # use template name as filename tag
+        filename_tag = sanitize_filename(
+            self.content_template.name
+        )  # use template name as filename tag
         if self.content_template.template_type == "OpenDocument":
             ctx = self.get_context(recipient)
             logger.info(
@@ -400,7 +402,7 @@ class DocumentTemplate:
         else:
             ## Just append
             logger.info(" > appending file without rendering: %s" % (output.file))
-             # append file ending of output.file to filename_tag
+            # append file ending of output.file to filename_tag
             if not filename_tag.endswith(os.path.splitext(output.file)[1]):
                 filename_tag += os.path.splitext(output.file)[1]
             output.filename = filename_tag
