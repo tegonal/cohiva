@@ -73,24 +73,21 @@ def save(force=False):
         ):
             print("Abort")
             return
+    # Use docker exec to run mariadb-dump inside the container
+    # This avoids authentication plugin issues with local MySQL/MariaDB clients
     cmd = (
-        f"mysqldump --events --create-options --quote-names --skip-extended-insert "
-        f'-p{s.db_pass} -u{s.db_user} -h{s.db_host} {s.prod_db} | grep -vE "^INSERT INTO '
+        f"docker exec cohiva-dev-mariadb "
+        f"mariadb-dump --events --create-options --quote-names --skip-extended-insert "
+        f'-p{s.db_pass} -u{s.db_user} {s.prod_db} | grep -vE "^INSERT INTO '
         "\\`(oauth2_provider_accesstoken|oauth2_provider_application|"
         "oauth2_provider_refreshtoken|django_session|authtoken_token|auth_user|django_admin_log"
         ')\\` VALUES \\("'
         f" > {s.demodata_dir}/{s.demodata_prefix}.sql"
     )
     run_cmd(cmd, shell=True)
-    cmd = (
-        f"rsync -a --info=NAME --delete --delete-missing-args {s.media_prod_dir}/* "
-        f"{s.demodata_dir}/media"
-    )
+    cmd = f"rsync -av --delete {s.media_prod_dir}/ {s.demodata_dir}/media/"
     run_cmd(cmd, shell=True)
-    cmd = (
-        f"rsync -a --info=NAME --delete --delete-missing-args {s.smedia_prod_dir}/* "
-        f"{s.demodata_dir}/smedia"
-    )
+    cmd = f"rsync -av --delete {s.smedia_prod_dir}/ {s.demodata_dir}/smedia/"
     run_cmd(cmd, shell=True)
 
 
@@ -102,22 +99,35 @@ def load(force=False):
     )
     if not force and not confirm_action():
         return
-    cmd = f"mysql -p{s.db_pass} -u{s.db_user} -h{s.db_host} {s.test_db} < {s.demodata_dir}/{s.demodata_prefix}.sql"
-    run_cmd(cmd, shell=True)
+
+    # Use docker exec to run mariadb client inside the container
+    # This avoids authentication plugin issues with local MySQL/MariaDB clients
     cmd = (
-        f"rsync -a --info=NAME --delete --delete-missing-args {s.demodata_dir}/media/* "
-        f"{s.media_test_dir}"
+        f"docker exec -i cohiva-dev-mariadb "
+        f"mariadb -p{s.db_pass} -u{s.db_user} {s.test_db} "
+        f"< {s.demodata_dir}/{s.demodata_prefix}.sql"
     )
     run_cmd(cmd, shell=True)
-    cmd = (
-        f"rsync -a --info=NAME --delete --delete-missing-args {s.demodata_dir}/smedia/* "
-        f"{s.smedia_test_dir}"
-    )
+    cmd = f"rsync -av --delete {s.demodata_dir}/media/ {s.media_test_dir}/"
     run_cmd(cmd, shell=True)
-    print(
-        "NOTE: You might have to adjust the permissions of the [S]MEDIA files, run migrations"
-        " and create users."
-    )
+    cmd = f"rsync -av --delete {s.demodata_dir}/smedia/ {s.smedia_test_dir}/"
+    run_cmd(cmd, shell=True)
+    print()
+    print("=" * 60)
+    print("Demo data loaded successfully!")
+    print("=" * 60)
+    print()
+    print("IMPORTANT: The demo data may contain old table structures.")
+    print("You MUST run migrations to update to the latest schema:")
+    print()
+    print("    ./manage.py migrate")
+    print()
+    print("Then create a superuser to access the admin:")
+    print()
+    print("    ./manage.py createsuperuser")
+    print()
+    print("You may also need to adjust file permissions for media files.")
+    print()
 
 
 def deploy_to_prod(force=False):
@@ -128,17 +138,18 @@ def deploy_to_prod(force=False):
     )
     if not force and not confirm_action():
         return
-    cmd = f"mysql -p{s.db_pass} -u{s.db_user} -h{s.db_host} {s.prod_db} < {s.demodata_dir}/{s.demodata_prefix}.sql"
-    run_cmd(cmd, shell=True)
+
+    # Use docker exec to run mariadb client inside the container
+    # This avoids authentication plugin issues with local MySQL/MariaDB clients
     cmd = (
-        f"rsync -a --info=NAME --delete --delete-missing-args {s.demodata_dir}/media/* "
-        f"{s.media_prod_dir}"
+        f"docker exec -i cohiva-dev-mariadb "
+        f"mariadb -p{s.db_pass} -u{s.db_user} {s.prod_db} "
+        f"< {s.demodata_dir}/{s.demodata_prefix}.sql"
     )
     run_cmd(cmd, shell=True)
-    cmd = (
-        f"rsync -a --info=NAME --delete --delete-missing-args {s.demodata_dir}/smedia/* "
-        f"{s.smedia_prod_dir}"
-    )
+    cmd = f"rsync -av --delete {s.demodata_dir}/media/ {s.media_prod_dir}/"
+    run_cmd(cmd, shell=True)
+    cmd = f"rsync -av --delete {s.demodata_dir}/smedia/ {s.smedia_prod_dir}/"
     run_cmd(cmd, shell=True)
     print(
         "NOTE: You might have to adjust the permissions of the [S]MEDIA files, run migrations"

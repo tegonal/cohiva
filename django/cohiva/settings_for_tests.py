@@ -7,7 +7,7 @@ from django.utils.deprecation import RemovedInDjango51Warning
 
 ## Load settings
 from .settings import *  # noqa: F403
-from .settings import DATABASES, GENO_FINANCE_ACCOUNTS, MEDIA_ROOT, SMEDIA_ROOT
+from .settings import GENO_FINANCE_ACCOUNTS, MEDIA_ROOT, SMEDIA_ROOT
 
 ## Redirect (S)MEDIA_ROOT for running tests (files will be deleted by run-tests.sh):
 (head, tail) = os.path.split(MEDIA_ROOT)
@@ -20,9 +20,6 @@ print(f"Redirected (S)MEDIA_ROOT to: {MEDIA_ROOT} and {SMEDIA_ROOT}")
 # GNUCASH_IGNORE_SQLALCHEMY_WARNINGS = False
 
 COHIVA_REPORT_API_TOKEN = "TEST_DUMMY_TOKEN"
-
-## Required for legacy instances that have the old default 'utf8mb4_unicode_ci' in settings.py
-DATABASES["default"]["OPTIONS"]["collation"] = "utf8mb4_general_ci"
 
 ## Display deprecation warnings only once
 warnings.filterwarnings("once", category=RemovedInDjango51Warning)

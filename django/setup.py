@@ -11,6 +11,7 @@ except ImportError:
     print(
         "Django does not seem to be installed. Please check that you are in the correct virtual environment."
     )
+    sys.exit(1)
 
 
 def setup():
@@ -84,7 +85,7 @@ def create_missing_dirs():
     for d in dirs:
         if not os.path.exists(d):
             print(f"Creating missing directory {d}")
-            os.mkdir(d)
+            os.makedirs(d, exist_ok=True)
 
 
 def generate_saml2_keys():

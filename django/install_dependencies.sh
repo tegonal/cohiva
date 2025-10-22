@@ -2,81 +2,76 @@
 
 set -e
 
-ENVIRONMENT="local"
-PIP_ROOT_USER_MODE=""
-PIP_SYNC_ASK="--ask"
+# Check if Python 3.11 or higher is available
+echo "Checking Python version..."
 
-# parse arguments for environment (-e or --environment) and service name (-s or --service)
+# Try to find python3 or python command
+PYTHON_CMD=""
+if command -v python3 >/dev/null 2>&1; then
+    PYTHON_CMD="python3"
+elif command -v python >/dev/null 2>&1; then
+    PYTHON_CMD="python"
+else
+    echo "ERROR: Neither python3 nor python command found."
+    echo "Please install Python 3.11 or higher."
+    exit 1
+fi
+
+echo "Using Python command: $PYTHON_CMD"
+
+# Get Python version
+PYTHON_VERSION=$($PYTHON_CMD -c "import sys; print(f'{sys.version_info[0]}.{sys.version_info[1]}')")
+PYTHON_MAJOR=$($PYTHON_CMD -c "import sys; print(sys.version_info[0])")
+PYTHON_MINOR=$($PYTHON_CMD -c "import sys; print(sys.version_info[1])")
+
+echo "Found Python $PYTHON_VERSION"
+
+# Check if version is >= 3.11
+if [ "$PYTHON_MAJOR" -lt 3 ] || { [ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 11 ]; }; then
+    echo "ERROR: Python 3.11 or higher is required."
+    echo "Current version: $PYTHON_VERSION"
+    exit 1
+fi
+
+echo "Python version check passed (>= 3.11)"
+echo "Running install.py..."
+echo ""
+
+# Parse arguments to handle --yes flag
+# POSIX-compatible argument parsing (no arrays)
+quote_arg() {
+    # Escape single quotes in the argument and wrap in single quotes
+    printf "'%s'" "$(printf "%s" "$1" | sed "s/'/'\\\\''/g")"
+}
+
+NEW_ARGS=""
 while [ "$#" -gt 0 ]; do
-    case $1 in
-        -e|--environment) ENVIRONMENT="$2"; shift ;;
-        *) ;;
+    case "$1" in
+        -y|--yes)
+            NEW_ARGS="${NEW_ARGS:+$NEW_ARGS }$(quote_arg --yes)"
+            shift
+            ;;
+        -e|--environment)
+            shift
+            if [ "$#" -eq 0 ]; then
+                echo "ERROR: --environment requires a value." >&2
+                exit 1
+            fi
+            NEW_ARGS="${NEW_ARGS:+$NEW_ARGS }$(quote_arg --environment) $(quote_arg "$1")"
+            shift
+            ;;
+        *)
+            NEW_ARGS="${NEW_ARGS:+$NEW_ARGS }$(quote_arg "$1")"
+            shift
+            ;;
     esac
-    shift
 done
 
-echo '$ENVIRONMENT' is set to $ENVIRONMENT
-
-## Make sure we are in a virtual env
-if [ $VIRTUAL_ENV ] ; then
-    echo "Checking/installing dependencies in virtual environment '$VIRTUAL_ENV'..."
+# Rebuild positional parameters from the quoted list
+if [ -n "$NEW_ARGS" ]; then
+    eval "set -- $NEW_ARGS"
 else
-  if [ "$ENVIRONMENT" = "docker" ]; then
-    echo "Checking/installing dependencies on native environment since we are in docker mode..."
-    PIP_ROOT_USER_MODE="ignore"
-    PIP_SYNC_ASK=""
-  else
-    echo "Is seems that no Python virtual environment is active."
-    echo "Please create and activate a virtual environment first. (see README.md)"
-    exit
-  fi
+    set --
 fi
 
-## Temporary workaround because of issue in celery (invalid metadata) => not needed anymore(?)
-#pip install "pip<24.1"
-
-## Handle legacy Python versions
-REQUIREMENTS="requirements.txt"
-PYTHON_VERSION=`python -c "import sys; print(f'{sys.version_info[0]}.{sys.version_info[1]}')"`
-if [ -z "$PYTHON_VERSION" ] ; then
-    echo "ERROR: Can't determine Python version."
-    exit
-fi
-if [ -e ./requirements_legacy_python${PYTHON_VERSION}.txt ] ; then
-    echo "Using legacy requirements file for Python ${PYTHON_VERSION}"
-    REQUIREMENTS="requirements_legacy_python${PYTHON_VERSION}.txt"
-fi
-
-## Make sure we have pip-sync
-export PIP_ROOT_USER_ACTION=$PIP_ROOT_USER_MODE
-set -x
-command -v pip-sync >/dev/null 2>&1 || pip install pip-tools
-
-## Uninstall old patched versions of python-sepa
-SITE_PACKAGES=`python -c "import site; print(site.getsitepackages()[0])"`
-if [ "$SITE_PACKAGES" ] ; then
-    find $SITE_PACKAGES -name "sepa-0.5.[1-3]+mst[1-9]-*.egg" -printf "Removing %p\n"
-    find $SITE_PACKAGES -name "sepa-0.5.[1-3]+mst[1-9]-*.egg" | xargs rm -rf
-fi
-
-## Install patched version of python-sepa and make sure it is in requirements.txt to prevent uninstallation when running pip-sync
-if [ "$ENVIRONMENT" != "docker" ] ; then
-    if [ ! -e ./geno/python-sepa/.git ] ; then
-        echo "Initializing git submodule python-sepa"
-        git submodule update --init geno/python-sepa
-    else
-        git submodule update geno/python-sepa
-    fi
-fi
-echo "Installing python-sepa from submodule"
-( cd geno/python-sepa && python3 setup.py build install )
-grep "^sepa==" $REQUIREMENTS >/dev/null || printf "\n# Packages added/managed by install_dependencies.sh:\nsepa==0.5.4+mst1\n" >> $REQUIREMENTS
-
-## Sync virtual environment with requirements.txt
-
-pip-sync $PIP_SYNC_ASK $REQUIREMENTS
-
-## Apply patches to site packages in virtual environment
-INSTALLPATH=`pip show djangosaml2idp | grep ^Location: | cut -c 11-`
-patch --backup --forward --reject-file - $INSTALLPATH/djangosaml2idp/models.py cohiva/saml2/djangosaml2idp_models.py.patch
-patch --backup --forward --reject-file - $INSTALLPATH/djangosaml2idp/views.py cohiva/saml2/djangosaml2idp_views.py.patch
+exec "$PYTHON_CMD" install.py "$@"

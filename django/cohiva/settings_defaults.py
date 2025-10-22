@@ -325,6 +325,7 @@ DATABASES = {
             ## ALLOW_INVALID_DATES --> workaround datetime format problem with piecash
             "sql_mode": "traditional,ALLOW_INVALID_DATES",
             "charset": "utf8mb4",
+            "collation": "utf8mb4_unicode_ci",  # Force consistent collation for MariaDB
         },
     }
 }
