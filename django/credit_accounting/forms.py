@@ -32,13 +32,13 @@ class TransactionFilterForm(forms.Form):
     search = forms.CharField(
         label="Suche",
         required=False,
-        widget=UnfoldAdminTextInputWidget(attrs={"size": "40", "autofocus": True})
+        widget=UnfoldAdminTextInputWidget(attrs={"size": "40", "autofocus": True}),
     )
     time = forms.ChoiceField(
         choices=get_transaction_time_filter_options(),
         label="Zeitraum",
         required=False,
-        widget=UnfoldAdminSelectWidget()
+        widget=UnfoldAdminSelectWidget(),
     )
     sign_options = [
         ("all", "Alle Buchungen"),
@@ -46,22 +46,19 @@ class TransactionFilterForm(forms.Form):
         ("minus", "Lastschriften"),
     ]
     sign = forms.ChoiceField(
-        choices=sign_options,
-        label="Typ",
-        required=False,
-        widget=UnfoldAdminSelectWidget()
+        choices=sign_options, label="Typ", required=False, widget=UnfoldAdminSelectWidget()
     )
     amount_min = forms.DecimalField(
         label="Betrag min.",
         required=False,
         decimal_places=2,
-        widget=UnfoldAdminDecimalFieldWidget()
+        widget=UnfoldAdminDecimalFieldWidget(),
     )
     amount_max = forms.DecimalField(
         label="Betrag max.",
         required=False,
         decimal_places=2,
-        widget=UnfoldAdminDecimalFieldWidget()
+        widget=UnfoldAdminDecimalFieldWidget(),
     )
 
     def __init__(self, *args, **kwargs):
@@ -72,9 +69,7 @@ class TransactionFilterForm(forms.Form):
         if admin:
             account_options.append(("_all_", "== ALLE =="))
         self.fields["account"] = forms.ChoiceField(
-            choices=account_options,
-            label="Konto",
-            widget=UnfoldAdminSelect2Widget()
+            choices=account_options, label="Konto", widget=UnfoldAdminSelect2Widget()
         )
 
 
@@ -83,7 +78,7 @@ class TransactionUploadForm(forms.Form):
         label="Zahlungsdatei",
         required=False,
         widget=UnfoldAdminFileFieldWidget(),
-        help_text="camt.053 oder camt.054 (XML) oder ZIP-Datei mit mehreren XML-Dateien"
+        help_text="camt.053 oder camt.054 (XML) oder ZIP-Datei mit mehreren XML-Dateien",
     )
 
     def __init__(self, *args, **kwargs):
@@ -91,9 +86,9 @@ class TransactionUploadForm(forms.Form):
         # Add Crispy Forms helper for Unfold styling
         self.helper = FormHelper()
         self.helper.form_tag = False  # Form tag handled in template
-        self.helper.form_class = ''
+        self.helper.form_class = ""
         self.helper.layout = Layout(
-            Div('file', css_class='mb-4'),
+            Div("file", css_class="mb-4"),
         )
 
 
@@ -113,9 +108,7 @@ class AccountEditForm(forms.ModelForm):
         for a in Address.objects.filter(active=True).exclude(user=None):
             owner_options.append(("a_%s" % a.id, str(a)))
         self.fields["owner"] = forms.ChoiceField(
-            choices=owner_options,
-            label="Verknüpft mit",
-            widget=UnfoldAdminSelect2Widget()
+            choices=owner_options, label="Verknüpft mit", widget=UnfoldAdminSelect2Widget()
         )
 
     def clean(self):
@@ -140,19 +133,17 @@ class AccountFilterForm(forms.Form):
     search = forms.CharField(
         label="Suche",
         required=False,
-        widget=UnfoldAdminTextInputWidget(attrs={"size": "40", "autofocus": True})
+        widget=UnfoldAdminTextInputWidget(attrs={"size": "40", "autofocus": True}),
     )
 
 
 class RevenueReportForm(forms.Form):
     start_date = forms.DateField(
-        label="Start Datum",
-        widget=UnfoldAdminTextInputWidget(attrs={"class": "datepicker"})
+        label="Start Datum", widget=UnfoldAdminTextInputWidget(attrs={"class": "datepicker"})
     )
     start_time = forms.TimeField(label="Start Zeit")
     end_date = forms.DateField(
-        label="End Datum",
-        widget=UnfoldAdminTextInputWidget(attrs={"class": "datepicker"})
+        label="End Datum", widget=UnfoldAdminTextInputWidget(attrs={"class": "datepicker"})
     )
     end_time = forms.TimeField(label="Start Zeit")
 
@@ -162,7 +153,5 @@ class RevenueReportForm(forms.Form):
         for year in range(start_year, datetime.datetime.now().year + 1):
             period_options.insert(0, (f"year_{year}", f"Jahr {year}"))
         self.fields["period"] = forms.ChoiceField(
-            choices=period_options,
-            label="Zeitraum",
-            widget=UnfoldAdminSelect2Widget()
+            choices=period_options, label="Zeitraum", widget=UnfoldAdminSelect2Widget()
         )

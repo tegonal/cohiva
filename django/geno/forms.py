@@ -1,11 +1,8 @@
 import datetime
 
-import select2.fields
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Column, Div, HTML, Layout, Row
+from crispy_forms.layout import Column, Div, Layout, Row
 from django import forms
-
-from geno.layout_helpers import UnfoldSeparator
 from django.conf import settings
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.core.mail import send_mail
@@ -17,7 +14,6 @@ from unfold.widgets import (
     UnfoldAdminRadioSelectWidget,
     UnfoldAdminSelect2MultipleWidget,
     UnfoldAdminSelect2Widget,
-    UnfoldAdminSelectMultipleWidget,
     UnfoldAdminSelectWidget,
     UnfoldAdminTextareaWidget,
     UnfoldAdminTextInputWidget,
@@ -25,6 +21,7 @@ from unfold.widgets import (
 )
 
 import geno.settings as geno_settings
+from geno.layout_helpers import UnfoldSeparator
 from geno.utils import send_error_mail
 
 from .models import (
@@ -49,29 +46,26 @@ class TransactionForm(forms.Form):
     transaction = forms.ChoiceField(
         choices=get_manual_transaction_types(),
         label="Buchungstyp",
-        widget=UnfoldAdminSelectWidget()
+        widget=UnfoldAdminSelectWidget(),
     )
     name = forms.ModelChoiceField(
         queryset=Address.objects.filter(active=True),
         label="Name",
-        widget=UnfoldAdminSelect2Widget()
+        widget=UnfoldAdminSelect2Widget(),
     )
-    date = forms.DateField(
-        label="Datum",
-        widget=UnfoldAdminDateWidget()
-    )
+    date = forms.DateField(label="Datum", widget=UnfoldAdminDateWidget())
     amount = forms.DecimalField(
         label="Betrag",
         decimal_places=2,
         required=False,
         widget=UnfoldAdminDecimalFieldWidget(),
-        help_text=""
+        help_text="",
     )
     note = forms.CharField(
         label="Kommentar",
         required=False,
         widget=UnfoldAdminTextareaWidget(attrs={"rows": 2}),
-        help_text="(optional)"
+        help_text="(optional)",
     )
 
     def __init__(self, *args, **kwargs):
@@ -79,26 +73,25 @@ class TransactionForm(forms.Form):
         # Add Crispy Forms helper for Unfold styling
         self.helper = FormHelper()
         self.helper.form_tag = False  # Form tag handled in template
-        self.helper.form_class = ''
+        self.helper.form_class = ""
         self.helper.layout = Layout(
-            Div('transaction', css_class='mb-4'),
-            Div('name', css_class='mb-4'),
-            Div('date', css_class='mb-4'),
-            Div('amount', css_class='mb-4'),
-            Div('note', css_class='mb-4'),
+            Div("transaction", css_class="mb-4"),
+            Div("name", css_class="mb-4"),
+            Div("date", css_class="mb-4"),
+            Div("amount", css_class="mb-4"),
+            Div("note", css_class="mb-4"),
         )
 
     def clean_amount(self):
         """Validate that amount is positive if provided."""
-        amount = self.cleaned_data.get('amount')
+        amount = self.cleaned_data.get("amount")
         if amount is not None and amount <= 0:
             raise forms.ValidationError("Betrag muss grösser als 0 sein.")
         return amount
 
     def clean_date(self):
         """Validate that date is not in the future."""
-        import datetime
-        date = self.cleaned_data.get('date')
+        date = self.cleaned_data.get("date")
         if date and date > datetime.date.today():
             raise forms.ValidationError("Datum darf nicht in der Zukunft liegen.")
         return date
@@ -110,19 +103,16 @@ class TransactionFormInvoice(forms.Form):
         .filter(consolidated=False)
         .filter(invoice_type="Invoice"),
         label="Rechnung",
-        widget=UnfoldAdminSelect2Widget()
+        widget=UnfoldAdminSelect2Widget(),
     )
-    date = forms.DateField(
-        label="Datum",
-        widget=UnfoldAdminDateWidget()
-    )
+    date = forms.DateField(label="Datum", widget=UnfoldAdminDateWidget())
     amount = forms.DecimalField(
         label="Betrag",
         decimal_places=2,
         min_value=0.01,
         required=False,
         widget=UnfoldAdminDecimalFieldWidget(),
-        help_text="(falls abweichend von Rechnung)"
+        help_text="(falls abweichend von Rechnung)",
     )
 
     def __init__(self, *args, **kwargs):
@@ -130,22 +120,21 @@ class TransactionFormInvoice(forms.Form):
         # Add Crispy Forms helper for Unfold styling
         self.helper = FormHelper()
         self.helper.form_tag = False  # Form tag handled in template
-        self.helper.form_class = ''
+        self.helper.form_class = ""
         self.helper.layout = Layout(
-            Div('invoice', css_class='mb-4'),
-            Div('date', css_class='mb-4'),
-            Div('amount', css_class='mb-4'),
+            Div("invoice", css_class="mb-4"),
+            Div("date", css_class="mb-4"),
+            Div("amount", css_class="mb-4"),
         )
 
     def clean(self):
         """Cross-field validation for invoice payment."""
-        import datetime
         from django.utils.formats import date_format
 
         cleaned_data = super().clean()
-        invoice = cleaned_data.get('invoice')
-        amount = cleaned_data.get('amount')
-        date = cleaned_data.get('date')
+        invoice = cleaned_data.get("invoice")
+        amount = cleaned_data.get("amount")
+        date = cleaned_data.get("date")
 
         if not invoice:
             return cleaned_data
@@ -153,21 +142,20 @@ class TransactionFormInvoice(forms.Form):
         # Validate amount is not greater than invoice amount
         if amount and invoice.total_amount and amount > invoice.total_amount:
             self.add_error(
-                'amount',
-                f"Betrag darf nicht grösser sein als Rechnungsbetrag ({invoice.total_amount})."
+                "amount",
+                f"Betrag darf nicht grösser sein als Rechnungsbetrag ({invoice.total_amount}).",
             )
 
         # Validate date is not before invoice date
         if date and invoice.date and date < invoice.date:
-            formatted_date = date_format(invoice.date, format='SHORT_DATE_FORMAT', use_l10n=True)
+            formatted_date = date_format(invoice.date, format="SHORT_DATE_FORMAT", use_l10n=True)
             self.add_error(
-                'date',
-                f"Datum darf nicht vor Rechnungsdatum ({formatted_date}) liegen."
+                "date", f"Datum darf nicht vor Rechnungsdatum ({formatted_date}) liegen."
             )
 
         # Validate date is not in the future
         if date and date > datetime.date.today():
-            self.add_error('date', "Datum darf nicht in der Zukunft liegen.")
+            self.add_error("date", "Datum darf nicht in der Zukunft liegen.")
 
         return cleaned_data
 
@@ -632,14 +620,20 @@ def process_registration_forms(request, selector="internal"):
         too_late = False
         if event.publication_start:
             from django.utils.formats import date_format
+
             localized_start = timezone.localtime(event.publication_start)
-            start_period = date_format(localized_start, format='DATETIME_FORMAT', use_l10n=True) + " Uhr"
+            start_period = (
+                date_format(localized_start, format="DATETIME_FORMAT", use_l10n=True) + " Uhr"
+            )
             if event.publication_start > timezone.now():
                 too_early = True
         if event.publication_end:
             from django.utils.formats import date_format
+
             localized_end = timezone.localtime(event.publication_end)
-            end_period = date_format(localized_end, format='DATETIME_FORMAT', use_l10n=True) + " Uhr"
+            end_period = (
+                date_format(localized_end, format="DATETIME_FORMAT", use_l10n=True) + " Uhr"
+            )
             if event.publication_end < timezone.now():
                 too_late = True
         q = (
@@ -797,29 +791,21 @@ class TransactionUploadProcessForm(forms.Form):
     transaction = forms.ChoiceField(
         choices=get_upload_transaction_types(),
         label="Buchungstyp",
-        widget=UnfoldAdminSelectWidget()
+        widget=UnfoldAdminSelectWidget(),
     )
     name = forms.ModelChoiceField(
         queryset=Address.objects.filter(active=True),
         required=False,
         label="Name",
-        widget=UnfoldAdminSelect2Widget()
+        widget=UnfoldAdminSelect2Widget(),
     )
     note = forms.CharField(label="Mitteilung", widget=forms.HiddenInput(), required=False)
-    date = forms.DateField(
-        label="Datum",
-        widget=UnfoldAdminDateWidget()
-    )
+    date = forms.DateField(label="Datum", widget=UnfoldAdminDateWidget())
     amount = forms.DecimalField(
-        label="Betrag",
-        decimal_places=2,
-        required=False,
-        widget=UnfoldAdminDecimalFieldWidget()
+        label="Betrag", decimal_places=2, required=False, widget=UnfoldAdminDecimalFieldWidget()
     )
     extra_info = forms.CharField(
-        label="Zusatzinfo",
-        required=False,
-        widget=UnfoldAdminTextInputWidget()
+        label="Zusatzinfo", required=False, widget=UnfoldAdminTextInputWidget()
     )
 
     def __init__(self, *args, **kwargs):
@@ -829,15 +815,15 @@ class TransactionUploadProcessForm(forms.Form):
         # Add Crispy Forms helper for Unfold styling
         self.helper = FormHelper()
         self.helper.form_tag = False  # Form tag handled in template
-        self.helper.form_class = ''
+        self.helper.form_class = ""
         self.helper.layout = Layout(
-            Div('transaction', css_class='mb-4'),
-            Div('name', css_class='mb-4'),
-            Div('date', css_class='mb-4'),
-            Div('amount', css_class='mb-4'),
-            Div('extra_info', css_class='mb-4'),
-            Div('save_sender', css_class='mb-4'),
-            Div('note', css_class='mb-4'),  # Hidden field
+            Div("transaction", css_class="mb-4"),
+            Div("name", css_class="mb-4"),
+            Div("date", css_class="mb-4"),
+            Div("amount", css_class="mb-4"),
+            Div("extra_info", css_class="mb-4"),
+            Div("save_sender", css_class="mb-4"),
+            Div("note", css_class="mb-4"),  # Hidden field
         )
 
         choices = [("IGNORE", "Nicht speichern")]
@@ -855,9 +841,7 @@ class TransactionUploadProcessForm(forms.Form):
             choices.append((combo_note, combo_note))
             choices.append((combo_amount_note, combo_amount_note))
         self.fields["save_sender"] = forms.ChoiceField(
-            choices=choices,
-            label="Absender speichern",
-            widget=UnfoldAdminSelectWidget()
+            choices=choices, label="Absender speichern", widget=UnfoldAdminSelectWidget()
         )
 
         guess_info = [
@@ -911,13 +895,13 @@ class ManualInvoiceForm(forms.Form):
         # Add Crispy Forms helper for Unfold styling
         self.helper = FormHelper()
         self.helper.form_tag = False  # Form tag handled in template
-        self.helper.form_class = ''
+        self.helper.form_class = ""
         self.helper.layout = Layout(
-            Div('category', css_class='mb-4'),
+            Div("category", css_class="mb-4"),
             UnfoldSeparator(),
-            Div('date', css_class='mb-4'),
-            Div('address', css_class='mb-4'),
-            Div('extra_text', css_class='mb-4'),
+            Div("date", css_class="mb-4"),
+            Div("address", css_class="mb-4"),
+            Div("extra_text", css_class="mb-4"),
             # Note: send_email is rendered in footer submit bar, not in form content
         )
 
@@ -1016,25 +1000,25 @@ class InvoiceFilterForm(forms.Form):
         for ic in InvoiceCategory.objects.filter(active=True):
             self.fields["category_filter"].choices.append((ic.id, str(ic)))
             self.fields["category_filter"].widget.choices.append((ic.id, str(ic)))
-        
+
         # Add Crispy Forms helper for Unfold styling
         # Responsive grid layout: search full-width, then 2-column rows
         self.helper = FormHelper()
-        self.helper.form_class = ''
+        self.helper.form_class = ""
         self.helper.layout = Layout(
             # Row 1: Search field (full width)
-            Div('search', css_class='mb-4'),
+            Div("search", css_class="mb-4"),
             # Row 2: Category filter + Show consolidated toggle
             Row(
-                Column('category_filter', css_class='mb-4'),
-                Column('show_consolidated', css_class='mb-4'),
-                css_class='grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4'
+                Column("category_filter", css_class="mb-4"),
+                Column("show_consolidated", css_class="mb-4"),
+                css_class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4",
             ),
             # Row 3: Date range
             Row(
-                Column('date_from', css_class='mb-4 lg:mb-0'),
-                Column('date_to', css_class='mb-4 lg:mb-0'),
-                css_class='grid grid-cols-1 lg:grid-cols-2 gap-4'
+                Column("date_from", css_class="mb-4 lg:mb-0"),
+                Column("date_to", css_class="mb-4 lg:mb-0"),
+                css_class="grid grid-cols-1 lg:grid-cols-2 gap-4",
             ),
         )
 

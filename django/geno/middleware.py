@@ -40,8 +40,8 @@ class LoginRedirectMiddleware:
     """
 
     # Login URL paths (without domain/protocol)
-    ADMIN_LOGIN_PATH = '/admin/login/'
-    PORTAL_LOGIN_PATH = '/portal/login/'
+    ADMIN_LOGIN_PATH = "/admin/login/"
+    PORTAL_LOGIN_PATH = "/portal/login/"
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -53,7 +53,7 @@ class LoginRedirectMiddleware:
         if response.status_code != HTTPStatus.FOUND:
             return response
 
-        location = response.get('Location', '')
+        location = response.get("Location", "")
         if not location:
             return response
 
@@ -71,11 +71,11 @@ class LoginRedirectMiddleware:
         # Determine the correct login path based on original request path
         correct_login_path = None
 
-        if request.path.startswith('/admin/') or request.path.startswith('/geno/'):
+        if request.path.startswith("/admin/") or request.path.startswith("/geno/"):
             # Admin/geno paths should go to admin login
             if redirect_path == self.PORTAL_LOGIN_PATH:
                 correct_login_path = self.ADMIN_LOGIN_PATH
-        elif request.path.startswith('/portal/'):
+        elif request.path.startswith("/portal/"):
             # Portal paths should go to portal login
             if redirect_path == self.ADMIN_LOGIN_PATH:
                 correct_login_path = self.PORTAL_LOGIN_PATH
@@ -84,7 +84,7 @@ class LoginRedirectMiddleware:
         if correct_login_path:
             new_parsed = parsed_location._replace(path=correct_login_path)
             new_location = urlunparse(new_parsed)
-            response['Location'] = new_location
+            response["Location"] = new_location
 
             logger.debug(
                 f"LoginRedirectMiddleware: Redirected {request.path} from "

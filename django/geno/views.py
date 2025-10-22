@@ -128,8 +128,6 @@ from .models import (
 )
 from .shares import check_rental_shares_report, get_share_statement_data, share_interest_calc
 from .tables import (
-    InvoiceDetailTable,
-    InvoiceOverviewTable,
     MemberTable,
     MemberTableAdmin,
 )
@@ -1020,22 +1018,31 @@ class DebtorView(CohivaAdminViewMixin, TemplateView):
 
     def debtor_list(self):
         from django.utils.safestring import mark_safe
+
         from .models import Contract
-        
+
         if self.request.POST.get("consolidate"):
             consolidate_invoices()
         data = invoice_overview(self.request.session["invoice_filter"])
-        
+
         # Format data for Unfold table component
         # Unfold expects: {"headers": [...], "rows": [[col1, col2, ...], ...]}
-        headers = ["Link", "Vertrag/Person/Org.", "Gefordert", "Bezahlt", "Saldo", "Offene Forderung seit", "Letzte Zahlung"]
+        headers = [
+            "Link",
+            "Vertrag/Person/Org.",
+            "Gefordert",
+            "Bezahlt",
+            "Saldo",
+            "Offene Forderung seit",
+            "Letzte Zahlung",
+        ]
         rows = []
-        
+
         total_billed_sum = 0
         total_paid_sum = 0
         total_receivable = 0  # positive values (Forderungen)
         total_payable = 0  # negative values (Verbindlichkeiten / Vorauszahlungen)
-        
+
         for item in data:
             obj_type = "c" if type(item["obj"]) is Contract else "p"
             link = mark_safe(
@@ -1060,16 +1067,18 @@ class DebtorView(CohivaAdminViewMixin, TemplateView):
             else:
                 saldo_class = "text-gray-500 dark:text-gray-400"
 
-            rows.append([
-                link,
-                item["name"],
-                f'<div class="text-right">{item["total_billed"]:.2f}</div>',
-                f'<div class="text-right">{item["total_paid"]:.2f}</div>',
-                f'<div class="text-right {saldo_class}">{saldo_value:.2f}</div>',
-                f'<div class="text-center">{item["open_bill_date"].strftime("%d.%m.%Y") if item["open_bill_date"] else ""}</div>',
-                f'<div class="text-center">{item["last_payment_date"].strftime("%d.%m.%Y") if item["last_payment_date"] else ""}</div>'
-            ])
-        
+            rows.append(
+                [
+                    link,
+                    item["name"],
+                    f'<div class="text-right">{item["total_billed"]:.2f}</div>',
+                    f'<div class="text-right">{item["total_paid"]:.2f}</div>',
+                    f'<div class="text-right {saldo_class}">{saldo_value:.2f}</div>',
+                    f'<div class="text-center">{item["open_bill_date"].strftime("%d.%m.%Y") if item["open_bill_date"] else ""}</div>',
+                    f'<div class="text-center">{item["last_payment_date"].strftime("%d.%m.%Y") if item["last_payment_date"] else ""}</div>',
+                ]
+            )
+
         # Add footer row with totals
         footer = [
             "<strong>Summe</strong>",
@@ -1081,24 +1090,20 @@ class DebtorView(CohivaAdminViewMixin, TemplateView):
                 f'<div class="text-red-600 dark:text-red-400">{total_receivable:.2f}</div>'
                 f'<div class="text-green-600 dark:text-green-400">{total_payable:.2f}</div>'
                 f'<div class="border-t border-base-300 dark:border-base-700 mt-1 pt-1 font-bold">'
-                f'{total_receivable + total_payable:.2f}</div>'
-                f'</div>'
+                f"{total_receivable + total_payable:.2f}</div>"
+                f"</div>"
             ),
             "",
-            ""
+            "",
         ]
-        
-        table_data = {
-            "headers": headers,
-            "rows": rows,
-            "footer": footer
-        }
-        
+
+        table_data = {"headers": headers, "rows": rows, "footer": footer}
+
         return {"title": "Debitoren", "table_data": table_data, "invoice_table": True}
 
     def debtor_detail(self, key_type, key):
         from django.utils.safestring import mark_safe
-        
+
         if key_type == "c":
             obj = Contract.objects.get(pk=key)
         else:
@@ -1106,11 +1111,21 @@ class DebtorView(CohivaAdminViewMixin, TemplateView):
         if self.request.POST.get("consolidate"):
             consolidate_invoices(obj)
         data = invoice_detail(obj, self.request.session["invoice_filter"])
-        
+
         # Format data for Unfold table component
-        headers = ["Link", "Datum", "Nummer", "Beschreibung", "Rechnung", "Zahlung", "Saldo", "K", "Zusatzinfo"]
+        headers = [
+            "Link",
+            "Datum",
+            "Nummer",
+            "Beschreibung",
+            "Rechnung",
+            "Zahlung",
+            "Saldo",
+            "K",
+            "Zusatzinfo",
+        ]
         rows = []
-        
+
         for item in data:
             link_text = "Zahlung" if item["obj"].invoice_type == "Payment" else "Rechnung"
             link = mark_safe(
@@ -1128,23 +1143,24 @@ class DebtorView(CohivaAdminViewMixin, TemplateView):
             else:
                 balance_class = "text-gray-500 dark:text-gray-400"
 
-            rows.append([
-                link,
-                f'<div class="text-center">{item["date"].strftime("%d.%m.%Y") if item["date"] else ""}</div>',
-                f'<div class="text-center">{str(item["number"])}</div>',
-                item["note"],
-                f'<div class="text-right">{item["billed"]:.2f}</div>' if item["billed"] else "",
-                f'<div class="text-right">{item["paid"]:.2f}</div>' if item["paid"] else "",
-                f'<div class="text-right {balance_class}">{balance_value:.2f}</div>',
-                f'<div class="text-center">{item["consolidated"]}</div>',
-                item["extra_info"] or ""
-            ])
-        
-        table_data = {
-            "headers": headers,
-            "rows": rows
-        }
-        
+            rows.append(
+                [
+                    link,
+                    f'<div class="text-center">{item["date"].strftime("%d.%m.%Y") if item["date"] else ""}</div>',
+                    f'<div class="text-center">{str(item["number"])}</div>',
+                    item["note"],
+                    f'<div class="text-right">{item["billed"]:.2f}</div>'
+                    if item["billed"]
+                    else "",
+                    f'<div class="text-right">{item["paid"]:.2f}</div>' if item["paid"] else "",
+                    f'<div class="text-right {balance_class}">{balance_value:.2f}</div>',
+                    f'<div class="text-center">{item["consolidated"]}</div>',
+                    item["extra_info"] or "",
+                ]
+            )
+
+        table_data = {"headers": headers, "rows": rows}
+
         return {
             "title": "Detailansicht: %s" % (obj),
             "table_data": table_data,
@@ -3608,19 +3624,19 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
                     {
                         "text": "X Nächte à Fr. 22.00, Gästezimmer 003",
                         "amount": None,
-                        "date": datetime.date.today()
+                        "date": datetime.date.today(),
                     },
                     {
                         "text": "X Nächte à Fr. 17.00, Gästezimmer 410",
                         "amount": None,
-                        "date": datetime.date.today()
+                        "date": datetime.date.today(),
                     },
                     {
                         "text": "X Nächte à Fr. 17.00, Gästezimmer 509",
                         "amount": None,
-                        "date": datetime.date.today()
-                    }
-                ]
+                        "date": datetime.date.today(),
+                    },
+                ],
             },
             1: {  # Mitgliedschaft
                 "extra_text": "Vielen Dank für die Beitrittserklärung. Die Mitgliedschaft in der Genossenschaft ist verbunden mit dem Zeichnen von Anteilscheinen und einer einmaligen Beitrittsgebühr. Dies stellen wir hiermit in Rechnung. Nach Zahlungseingang folgt dann die Bestätigung der Mitgliedschaft.",
@@ -3628,15 +3644,15 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
                     {
                         "text": "Beitrittsgebühr Genossenschaft",
                         "amount": 200,
-                        "date": datetime.date.today()
+                        "date": datetime.date.today(),
                     },
                     {
                         "text": "Zeichnung von 1 Anteilschein der Genossenschaft",
                         "amount": 200,
-                        "date": datetime.date.today()
-                    }
-                ]
-            }
+                        "date": datetime.date.today(),
+                    },
+                ],
+            },
         }
 
     def get_context_data(self, **kwargs):
@@ -3651,49 +3667,51 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
             form = ManualInvoiceForm(self.request.POST)
         else:
             initial_data = {"date": datetime.date.today()}
-            
+
             # If category is selected via GET parameter, preserve it and apply template if available
-            category_id = self.request.GET.get('category')
+            category_id = self.request.GET.get("category")
             if category_id:
                 try:
                     category_id = int(category_id)
                     # Fetch the actual InvoiceCategory instance
-                    category = InvoiceCategory.objects.filter(id=category_id, active=True, manual_allowed=True).first()
+                    category = InvoiceCategory.objects.filter(
+                        id=category_id, active=True, manual_allowed=True
+                    ).first()
                     if category:
                         # Always preserve the selected category (as model instance)
-                        initial_data['category'] = category
-                        
+                        initial_data["category"] = category
+
                         # Apply template data if available for this category
                         templates = self.get_invoice_templates()
                         if category_id in templates:
                             template = templates[category_id]
-                            initial_data['extra_text'] = template['extra_text']
+                            initial_data["extra_text"] = template["extra_text"]
                 except (ValueError, TypeError):
                     pass
-            
+
             form = ManualInvoiceForm(initial=initial_data)
         return form
 
     def get_formset(self):
         MAX_FORMS = 5
-        
+
         invoice_formset_class = formset_factory(
-            ManualInvoiceLineForm, 
-            extra=0, 
-            max_num=MAX_FORMS, 
+            ManualInvoiceLineForm,
+            extra=0,
+            max_num=MAX_FORMS,
             validate_max=True,
             min_num=1,
-            validate_min=True
+            validate_min=True,
         )
-        
+
         if self.request.method == "POST":
             formset = invoice_formset_class(self.request.POST, self.request.FILES)
         else:
             # Check if category is selected via GET parameter
-            category_id = self.request.GET.get('category')
-            extra_param = self.request.GET.get('extra')
+            category_id = self.request.GET.get("category")
+            extra_param = self.request.GET.get("extra")
             templates = self.get_invoice_templates()
-            
+
             # Determine initial data based on parameters
             if extra_param:
                 # User explicitly requested a specific number of forms (via add/remove buttons)
@@ -3711,7 +3729,7 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
                     if category_id in templates:
                         # Use template data to create initial forms
                         template = templates[category_id]
-                        initial_data = template['lines']
+                        initial_data = template["lines"]
                     else:
                         # Category selected but no template, start with 1 empty form
                         initial_data = [{"date": datetime.date.today()}]
@@ -3721,7 +3739,7 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
             else:
                 # No category or extra param - default to 1 empty form
                 initial_data = [{"date": datetime.date.today()}]
-            
+
             formset = invoice_formset_class(initial=initial_data)
         return formset
 

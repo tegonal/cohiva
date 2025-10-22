@@ -3,8 +3,8 @@ Custom static file storage backends for cache busting.
 """
 
 import os
+
 from django.contrib.staticfiles.storage import StaticFilesStorage
-from django.core.files.storage import FileSystemStorage
 
 
 class CacheBustingStaticFilesStorage(StaticFilesStorage):
@@ -24,7 +24,7 @@ class CacheBustingStaticFilesStorage(StaticFilesStorage):
                 # Get file modification time
                 mtime = int(os.path.getmtime(file_path))
                 # Append as query parameter
-                separator = '&' if '?' in url else '?'
+                separator = "&" if "?" in url else "?"
                 url = f"{url}{separator}v={mtime}"
         except (NotImplementedError, AttributeError, OSError):
             # If we can't get the file path or mtime, just return the original URL

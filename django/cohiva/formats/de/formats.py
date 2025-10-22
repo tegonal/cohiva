@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Custom date/time format overrides for Swiss German (de-ch).
 
@@ -27,5 +26,5 @@ DATETIME_INPUT_FORMATS = [
     "%d.%m.%Y %H:%M:%S.%f",
     "%d.%m.%Y %H:%M",
     "%Y-%m-%d %H:%M:%S",  # ISO format (added)
-    "%Y-%m-%d %H:%M",     # ISO format (added)
+    "%Y-%m-%d %H:%M",  # ISO format (added)
 ]

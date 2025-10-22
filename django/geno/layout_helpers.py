@@ -26,16 +26,17 @@ class UnfoldSeparator(LayoutObject):
             Div('date', css_class='mb-4'),
         )
     """
+
     template = "unfold/components/separator.html"
 
     def __init__(self, vertical=False, css_class=None):
         self.vertical = 1 if vertical else 0
-        self.css_class = css_class or ''
+        self.css_class = css_class or ""
 
     def render(self, form, context, template_pack=None, **kwargs):
         """Render the separator component."""
         template_context = {
-            'vertical': self.vertical,
-            'class': self.css_class,
+            "vertical": self.vertical,
+            "class": self.css_class,
         }
         return render_to_string(self.template, template_context)
