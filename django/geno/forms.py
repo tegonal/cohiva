@@ -1043,9 +1043,8 @@ class ShareOverviewFilterForm(forms.Form):
 
 
 class ShareStatementForm(forms.Form):
-    date_widget = forms.TextInput(attrs={"class": "datepicker"})
     date = forms.DateField(
         label="Kontoauszug per",
         required=True,
-        widget=date_widget,
+        widget=UnfoldAdminDateWidget(),
     )

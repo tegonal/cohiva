@@ -87,5 +87,6 @@ celery[redis]
 ruff
 pylint
 coverage
+djlint
 
 #EOF

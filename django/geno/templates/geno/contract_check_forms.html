@@ -37,10 +37,10 @@
         </ul>
     </div>
 {% else %}
-  {# Display contracts table using the table component with striped rows #}
+  {# Display contracts table using Unfold's official table component #}
   {% if table_data %}
     {% component "unfold/components/card.html" %}
-    {% component "geno/components/table.html" with table=table_data card_included=1 striped=1 %}
+    {% component "unfold/components/table.html" with table=table_data card_included=1 striped=1 %}
   {% endcomponent %}
   {% endcomponent %}
   {% endif %}

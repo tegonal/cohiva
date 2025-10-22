@@ -558,8 +558,37 @@ def setup_config(install_dir, venv_path):
             base_config.write_text(content)
             print_info(f"INSTALL_DIR updated to: {install_dir}")
 
+    # Ask about certificate generation
+    print()
+    print_step("Certificate Generation")
+    print()
+    print("Cohiva needs SSL/TLS certificates for SAML2 authentication.")
+    print("Choose certificate generation method:")
+    print("  1. Quick setup with default values (recommended for development)")
+    print("     Country: CH, State: Zurich, City: Zurich")
+    print("     Organization: Cohiva Development, Common Name: localhost")
+    print("  2. Provide custom certificate information (interactive)")
+    print()
+
+    while True:
+        cert_choice = input("Select option [1-2, default: 1]: ").strip()
+
+        # Default to option 1
+        if not cert_choice:
+            cert_choice = "1"
+
+        if cert_choice in ["1", "2"]:
+            break
+        print_error("Invalid choice. Please enter 1 or 2.")
+
     # Run setup.py to create directories and keys
-    run_command([str(python_path), "setup.py"], env=env)
+    setup_cmd = [str(python_path), "setup.py"]
+    if cert_choice == "1":
+        setup_cmd.append("--use-default-certs")
+        print()
+        print_info("Generating certificates with default values...")
+
+    run_command(setup_cmd, env=env)
 
     # Uncomment CSRF/Session cookie settings for local development
     settings_file = Path("cohiva/settings.py")

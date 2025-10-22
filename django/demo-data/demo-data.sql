@@ -2189,7 +2189,7 @@ CREATE TABLE `geno_contenttemplate` (
   KEY `geno_contenttemplate_active_e48140f3` (`active`),
   KEY `geno_contenttemplate_file_id_3d163c4b` (`file_id`),
   CONSTRAINT `geno_contenttemplate_file_id_3d163c4b_fk_filer_file_id` FOREIGN KEY (`file_id`) REFERENCES `filer_file` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2206,6 +2206,9 @@ INSERT INTO `geno_contenttemplate` VALUES (5,'','2024-12-04 09:31:50.979268','20
 INSERT INTO `geno_contenttemplate` VALUES (6,'','2024-12-04 09:33:43.864868','2024-12-04 09:33:43.864910','Email Allgemein','Email','{{anrede}}\r\n  \r\nAnbei {{erhältst}} {{du}} die im Betreff erwähnten Unterlagen.\r\n\r\nHerzliche Grüsse\r\nGenossenschaft Musterweg',1,NULL,1);
 INSERT INTO `geno_contenttemplate` VALUES (7,'','2024-12-04 09:44:02.235073','2024-12-04 09:44:02.235104','Einladung GV','File','',1,4,1);
 INSERT INTO `geno_contenttemplate` VALUES (8,'','2024-12-04 10:02:23.741334','2024-12-04 10:02:23.741368','Formular Überprüfung Belegungsrichtlinien','OpenDocument','',1,5,1);
+INSERT INTO `geno_contenttemplate` VALUES (9,'','2025-01-22 10:00:00.000000','2025-01-22 10:00:00.000000','Brief Bestätigung Einforderung','OpenDocument','',1,NULL,1);
+INSERT INTO `geno_contenttemplate` VALUES (10,'','2025-01-22 10:00:00.000000','2025-01-22 10:00:00.000000','Brief Erinnerung Darlehen','OpenDocument','',1,NULL,1);
+INSERT INTO `geno_contenttemplate` VALUES (11,'','2025-01-22 10:00:00.000000','2025-01-22 10:00:00.000000','Brief Bestätigung Anteilschein','OpenDocument','',1,NULL,1);
 /*!40000 ALTER TABLE `geno_contenttemplate` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -2602,7 +2605,7 @@ CREATE TABLE `geno_documenttype` (
   UNIQUE KEY `name` (`name`),
   KEY `geno_documenttype_template_id_d3dc6efe_fk_geno_cont` (`template_id`),
   CONSTRAINT `geno_documenttype_template_id_d3dc6efe_fk_geno_cont` FOREIGN KEY (`template_id`) REFERENCES `geno_contenttemplate` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -2615,6 +2618,9 @@ INSERT INTO `geno_documenttype` VALUES (1,'','2024-11-06 16:14:02.624821','2024-
 INSERT INTO `geno_documenttype` VALUES (2,'','2024-12-03 11:16:30.634245','2024-12-03 11:16:30.634284','memberletter','Bestätigung Mitgliedschaft','',1,2);
 INSERT INTO `geno_documenttype` VALUES (3,'','2024-12-03 14:44:52.542905','2024-12-03 14:44:52.542933','statement','Kontoauszug Beteiligungen','',1,3);
 INSERT INTO `geno_documenttype` VALUES (4,'','2024-12-04 10:02:51.800863','2024-12-04 10:02:51.800893','contract_check','Selbstdeklaration Belegungsrichtlinien','',1,8);
+INSERT INTO `geno_documenttype` VALUES (5,'','2025-01-22 10:00:00.000000','2025-01-22 10:00:00.000000','shareconfirm_req','Bestätigung Einforderung Beteiligung','',1,9);
+INSERT INTO `geno_documenttype` VALUES (6,'','2025-01-22 10:00:00.000000','2025-01-22 10:00:00.000000','loanreminder','Erinnerung Fälligkeit Darlehen','',1,10);
+INSERT INTO `geno_documenttype` VALUES (7,'','2025-01-22 10:00:00.000000','2025-01-22 10:00:00.000000','shareconfirm','Bestätigung Anteilschein','',1,11);
 /*!40000 ALTER TABLE `geno_documenttype` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -3852,9 +3858,9 @@ INSERT INTO `geno_share` VALUES (1,'','2024-10-30 15:57:09.009692','2024-12-03 1
 INSERT INTO `geno_share` VALUES (2,'','2024-10-30 15:57:20.017705','2024-12-03 10:26:47.059297','2023-07-20',25,200.00,3,1,NULL,'bezahlt',0,'',NULL,NULL,0,0,NULL,'Standard',0.00);
 INSERT INTO `geno_share` VALUES (3,'','2024-10-30 15:57:54.834265','2024-12-03 10:35:18.684516','2024-06-22',27,200.00,5,1,NULL,'bezahlt',0,'',NULL,NULL,1,0,NULL,'Standard',0.00);
 INSERT INTO `geno_share` VALUES (4,'','2024-10-30 15:58:27.471729','2024-10-30 15:58:27.471770','2024-06-20',16,200.00,4,1,NULL,'bezahlt',0,'',NULL,NULL,0,0,NULL,'Standard',0.00);
-INSERT INTO `geno_share` VALUES (5,'','2024-10-30 15:59:37.014982','2024-12-03 10:26:25.651116','2023-03-01',1,10000.00,19,3,NULL,'bezahlt',0,'',10,NULL,0,0,NULL,'Standard',0.00);
+INSERT INTO `geno_share` VALUES (5,'','2024-10-30 15:59:37.014982','2024-12-03 10:26:25.651116','2023-03-01',1,10000.00,19,3,NULL,'bezahlt',0,'',10,'2026-08-22',0,0,NULL,'Standard',0.00);
 INSERT INTO `geno_share` VALUES (6,'','2024-10-30 15:59:44.811766','2024-12-03 10:26:20.723935','2022-03-01',1,10000.00,20,3,NULL,'bezahlt',0,'',10,NULL,0,0,NULL,'Standard',0.00);
-INSERT INTO `geno_share` VALUES (7,'','2024-10-30 16:00:05.291242','2024-12-03 10:26:15.352942','2022-03-01',1,20000.00,7,2,NULL,'bezahlt',0,'',5,NULL,0,0,NULL,'Standard',0.00);
+INSERT INTO `geno_share` VALUES (7,'','2024-10-30 16:00:05.291242','2024-12-03 10:26:15.352942','2022-03-01',1,20000.00,7,2,NULL,'bezahlt',0,'',5,'2026-10-22',0,0,NULL,'Standard',0.00);
 INSERT INTO `geno_share` VALUES (8,'','2024-10-30 16:00:39.699635','2024-12-03 10:26:07.462381','2023-05-15',1,5000.00,2,4,NULL,'bezahlt',0,'',NULL,NULL,0,0,NULL,'Standard',0.00);
 INSERT INTO `geno_share` VALUES (9,'','2024-10-30 16:01:12.873293','2024-12-03 10:26:02.642552','2022-05-21',1,12500.00,24,4,NULL,'bezahlt',0,'',NULL,NULL,0,0,NULL,'Standard',0.00);
 INSERT INTO `geno_share` VALUES (10,'','2024-12-03 10:34:59.021965','2024-12-03 10:38:04.984504','2022-06-13',1,100000.00,37,2,NULL,'bezahlt',0,'',8,NULL,0,0,NULL,'Manual',1.45);

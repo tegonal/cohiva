@@ -26,10 +26,10 @@
 </div>
 {% endcomponent %}
 
-{# Table using custom extended Unfold table component #}
+{# Table using custom table component with footer support #}
 {% if table_data %}
   {% component "unfold/components/card.html" %}
-  {% component "geno/components/table.html" with table=table_data card_included=1 striped=1 %}
+  {% component "geno/components/table_with_footer.html" with table=table_data card_included=1 striped=1 %}
 {% endcomponent %}
 {% endcomponent %}
 {% endif %}

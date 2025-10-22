@@ -23,6 +23,7 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.encoding import smart_str
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, TemplateView
 from django_tables2 import RequestConfig
 from oauthlib.oauth2 import TokenExpiredError
@@ -1335,6 +1336,7 @@ class ShareConfirmationLetterView(DocumentGeneratorView):
         "geno.canview_billing",
     )
     doctype = "shareconfirm_req"
+    template_name = "geno/share_confirm.html"
 
     def get_objects(self):
         # Find shares without documents (ignore single AS)
@@ -1369,6 +1371,33 @@ class ShareConfirmationLetterView(DocumentGeneratorView):
             "link_url": "/geno/share/confirm",
         }
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Build table data from response
+        if self.result and not self.error_message:
+            # Filter out the "Dokumente:" item
+            share_items = [item for item in self.result if item.get("info") != "Dokumente:"]
+
+            if share_items:
+                headers = [_("Name/Adresse"), _("Details")]
+                rows = []
+
+                for item in share_items:
+                    details = ", ".join(str(o) for o in item.get("objects", [])) if item.get("objects") else "—"
+                    rows.append([
+                        str(item.get("info", "")),
+                        details,
+                    ])
+
+                context["table_data"] = {
+                    "headers": headers,
+                    "rows": rows,
+                }
+                context["share_count"] = len(share_items)
+
+        return context
+
 
 class ShareReminderLetterView(DocumentGeneratorView):
     permission_required = (
@@ -1378,6 +1407,7 @@ class ShareReminderLetterView(DocumentGeneratorView):
         "geno.canview_billing",
     )
     doctype = "loanreminder"
+    template_name = "geno/share_duedate_reminder.html"
 
     def get_objects(self):
         cutoff_date = timezone.now() + relativedelta(months=16)
@@ -1488,6 +1518,33 @@ class ShareReminderLetterView(DocumentGeneratorView):
             "beschreibung": "Brief Erinnerung Darlehen",
             "link_url": "/geno/share/duedate_reminder",
         }
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Build table data from response
+        if self.result and not self.error_message:
+            # Filter out the "Dokumente:" item
+            reminder_items = [item for item in self.result if item.get("info") != "Dokumente:"]
+
+            if reminder_items:
+                headers = [_("Name/Adresse"), _("Darlehen Details")]
+                rows = []
+
+                for item in reminder_items:
+                    details = ", ".join(str(o) for o in item.get("objects", [])) if item.get("objects") else "—"
+                    rows.append([
+                        str(item.get("info", "")),
+                        details,
+                    ])
+
+                context["table_data"] = {
+                    "headers": headers,
+                    "rows": rows,
+                }
+                context["reminder_count"] = len(reminder_items)
+
+        return context
 
 
 class ShareInterestView(CohivaAdminViewMixin, TemplateView):
@@ -2100,6 +2157,7 @@ def share_mailing(request):
 
 
 class ShareStatementView(DocumentGeneratorView):
+    template_name = "geno/share_statement.html"
     permission_required = (
         "geno.canview_share",
         "geno.canview_billing",
@@ -2207,9 +2265,70 @@ class ShareStatementView(DocumentGeneratorView):
             )
         return objects
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Clean up the title - remove technical details
+        context["title"] = f"Kontoauszüge {self.enddate.year}"
+
+        # Get the raw objects with extra_context before they're processed by create_documents
+        objects = self.get_objects()
+
+        if objects and not self.error_message:
+            headers = [
+                _("Mitglied"),
+                _("Anteilscheine"),
+                _("Darlehen"),
+                _("Depositen"),
+                _("Verrechnungssteuer"),
+                _("Zinszahlung"),
+            ]
+
+            rows = []
+            total_tax = 0
+            total_interest = 0
+
+            for item in objects:
+                if "extra_context" in item:
+                    statement_data = item["extra_context"]
+                    obj = item["obj"]
+
+                    # Parse the formatted values back to numbers for totals
+                    try:
+                        tax_value = float(statement_data["s_tax"].replace("'", "").replace(",", "."))
+                        total_tax += tax_value
+                    except (ValueError, AttributeError):
+                        tax_value = 0
+
+                    try:
+                        interest_value = float(statement_data["s_pay"].replace("'", "").replace(",", "."))
+                        total_interest += interest_value
+                    except (ValueError, AttributeError):
+                        interest_value = 0
+
+                    rows.append([
+                        str(obj),
+                        f"{statement_data['n_shares']} ({statement_data['s_shares']})",
+                        statement_data["s_loan"],
+                        f"{statement_data['dep_start']}/{statement_data['dep_end']}",
+                        statement_data["s_tax"],
+                        statement_data["s_pay"],
+                    ])
+
+            context["table_data"] = {
+                "headers": headers,
+                "rows": rows,
+            }
+            context["statement_count"] = len(rows)
+            context["total_tax"] = nformat(total_tax)
+            context["total_interest"] = nformat(total_interest)
+
+        return context
+
 
 class ShareStatementFormView(CohivaAdminViewMixin, FormView):
     form_class = ShareStatementForm
+    template_name = "geno/share_statement_form.html"
     title = "Kontoauszüge"
     permission_required = (
         "geno.canview_share",
@@ -2224,7 +2343,7 @@ class ShareStatementFormView(CohivaAdminViewMixin, FormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["submit_title"] = "Dokumente erstellen"
+        context["attrs_button"] = {"form": "statement-form"}
         if getattr(settings, "GENO_SMALL_NUMBER_OF_SHARES_CUTOFF", 0) > 0:
             context["help_text"] = (
                 "Es werden nur Kontoauszüge erstellt, falls mehr als "
