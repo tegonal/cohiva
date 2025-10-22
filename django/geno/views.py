@@ -71,12 +71,12 @@ from .forms import (
     MemberMailActionForm,
     MemberMailForm,
     MemberMailSelectForm,
+    Odt2PdfForm,
     SendInvoicesForm,
     ShareOverviewFilterForm,
     ShareStatementForm,
     TransactionForm,
     TransactionFormInvoice,
-    TransactionUploadFileForm,
     TransactionUploadProcessForm,
     WebstampForm,
     process_registration_forms,
@@ -4592,19 +4592,10 @@ def check_duplicate_invoices(request):
 
 class Odt2PdfView(CohivaAdminViewMixin, FormView):
     title = "ODT in PDF umwandeln"
-    form_class = TransactionUploadFileForm
-    # "geno/upload_form.html",
+    form_class = Odt2PdfForm
+    template_name = "geno/odt2pdf.html"
     permission_required = ("geno.tools_odt2pdf",)
     tmpdir = "/tmp/odt2pdf"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context.update(
-            {
-                "form_title": "LibreOffice Datei (.odt) hochladen um in ein PDF umzuwandeln",
-            }
-        )
-        return context
 
     def form_valid(self, form):
         if not os.path.isdir(self.tmpdir):

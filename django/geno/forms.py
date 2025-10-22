@@ -12,6 +12,7 @@ from django.utils.translation import gettext_lazy as _
 from unfold.widgets import (
     UnfoldAdminDateWidget,
     UnfoldAdminDecimalFieldWidget,
+    UnfoldAdminFileFieldWidget,
     UnfoldAdminRadioSelectWidget,
     UnfoldAdminSelect2MultipleWidget,
     UnfoldAdminSelect2Widget,
@@ -783,6 +784,32 @@ class SendInvoicesForm(forms.Form):
 
 class TransactionUploadFileForm(forms.Form):
     file = forms.FileField(required=False)
+
+
+
+class Odt2PdfForm(forms.Form):
+    """Form for uploading ODT files to convert to PDF."""
+
+    file = forms.FileField(
+        label=_("ODT-Datei"),
+        required=True,
+        help_text=_("Wählen Sie eine LibreOffice-Datei (.odt) zum Hochladen aus."),
+        widget=UnfoldAdminFileFieldWidget(
+            attrs={
+                "accept": ".odt",
+            }
+        ),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Crispy Forms helper for stacked layout
+        self.helper = FormHelper()
+        self.helper.form_class = ""
+        self.helper.layout = Layout(
+            Div("file", css_class="mb-4"),
+        )
 
 
 class TransactionUploadProcessForm(forms.Form):
