@@ -756,14 +756,58 @@ def create_superuser(venv_path):
     """Create superuser account."""
     print_step("Creating superuser account...")
     print()
-    print("Please create an admin user for accessing the Cohiva admin interface:")
+
+    # Ask if user wants demo credentials or custom ones
+    print("Choose superuser creation method:")
+    print("  1. Quick setup with demo credentials (username: demo, password: demo)")
+    print("  2. Create custom superuser (interactive)")
+    print()
+
+    while True:
+        choice = input("Select option [1-2, default: 1]: ").strip()
+
+        # Default to option 1
+        if not choice:
+            choice = "1"
+
+        if choice in ["1", "2"]:
+            break
+        print_error("Invalid choice. Please enter 1 or 2.")
 
     # Set up environment for venv
     env = os.environ.copy()
     env["VIRTUAL_ENV"] = str(venv_path)
     env["PATH"] = f"{venv_path / 'bin'}:{env['PATH']}"
 
-    run_command(["./manage.py", "createsuperuser"], env=env)
+    if choice == "1":
+        # Create demo superuser non-interactively
+        print()
+        print_info("Creating superuser with demo credentials...")
+        print_warn("IMPORTANT: Change these credentials in production!")
+        print()
+
+        env["DJANGO_SUPERUSER_USERNAME"] = "demo"
+        env["DJANGO_SUPERUSER_EMAIL"] = "demo@example.com"
+        env["DJANGO_SUPERUSER_PASSWORD"] = "demo"
+
+        try:
+            run_command(
+                ["./manage.py", "createsuperuser", "--noinput"],
+                env=env,
+                capture_output=False
+            )
+            print()
+            print_info("Demo superuser created successfully")
+            print_info("  Username: demo")
+            print_info("  Password: demo")
+            print_warn("  Remember to change these credentials!")
+        except subprocess.CalledProcessError:
+            print_warn("Superuser creation failed (may already exist)")
+    else:
+        # Interactive superuser creation
+        print()
+        print("Please create an admin user for accessing the Cohiva admin interface:")
+        run_command(["./manage.py", "createsuperuser"], env=env)
 
 
 def load_demo_data(venv_path):
