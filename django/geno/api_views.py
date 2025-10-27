@@ -191,15 +191,9 @@ class QRBill(APIView):
         ref_number = get_reference_nr(invoice_category, self.contract.id)
 
         self.context["qr_account"] = settings.GENO_FINANCE_ACCOUNTS["default_debtor"]["iban"]
-        if self.address.organization:
-            bill_name = self.address.organization
-        else:
-            bill_name = "%s %s" % (self.address.first_name, self.address.name)
         self.context["qr_ref_number"] = ref_number
         self.context["qr_amount"] = None
-        self.context["qr_bill_name"] = bill_name
-        self.context["qr_addr_line1"] = self.address.street
-        self.context["qr_addr_line2"] = self.address.city
+        self.context["qr_debtor"] = self.address
         self.context["qr_extra_info"] = (
             "NK-Akontozahlung ausserordentlich, Vertrag %s" % self.contract.id
         )

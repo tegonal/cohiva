@@ -359,12 +359,21 @@ class Address(GenoBase):
                 roles.append("community")
         return roles
 
+    def get_full_name(self):
+        if self.first_name and self.name:
+            name_person = f"{self.first_name} {self.name}"
+        else:
+            name_person = self.name
+        if self.organization and name_person:
+            return f"{self.organization}, {name_person}"
+        return self.organization or name_person or "[Ohne Name]"
+
     def get_mail_recipient(self):
-        if settings.DEBUG or self.email.split("@")[-1] == "example.com":
+        if settings.DEBUG or settings.DEMO or self.email.split("@")[-1] == "example.com":
             email_address = settings.TEST_MAIL_RECIPIENT
         else:
             email_address = self.email
-        mail_recipient = f'"{self.first_name} {self.name}" <{email_address}>'
+        mail_recipient = f'"{self.get_full_name()}" <{email_address}>'
         return mail_recipient
 
     def get_context(self):

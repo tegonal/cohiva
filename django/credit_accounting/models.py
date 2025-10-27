@@ -25,9 +25,9 @@ class Vendor(GenoBase):
     vendor_type = models.CharField(
         "Typ", max_length=50, choices=VENDOR_TYPE_CHOICES, default="default"
     )
-    qr_name = models.CharField("Name auf QR-Rechnung", max_length=50, blank=True)
-    qr_line1 = models.CharField("Adress-Zeile 1 auf QR-Rechnung", max_length=50, blank=True)
-    qr_line2 = models.CharField("Adress-Zeile 2 auf QR-Rechnung", max_length=50, blank=True)
+    qr_address = models.ForeignKey(
+        Address, verbose_name="Adresse für QR-Rechnung", on_delete=models.SET_NULL, null=True
+    )
     qr_iban = models.CharField(
         "QR-IBAN Nummer für QR-Rechnung",
         max_length=21,
@@ -141,24 +141,24 @@ class Account(GenoBase):
     def create_qrbill(self):
         context = {}
         owner = self.account_owners.first()
+        if self.vendor.qr_address:
+            default_address = {
+                "street": self.vendor.qr_address.street_name,
+                "house_num": self.vendor.qr_address.house_number,
+                "pcode": self.vendor.qr_address.city_zipcode,
+                "city": self.vendor.qr_address.city_name,
+                "country": self.vendor.qr_address.country,
+            }
+        else:
+            default_address = {}
         if owner and isinstance(owner.owner_object, Address):
-            address = owner.owner_object
-            if address.organization:
-                context["qr_bill_name"] = address.organization
-            else:
-                context["qr_bill_name"] = "%s %s" % (address.first_name, address.name)
-            context["qr_addr_line1"] = address.street
-            context["qr_addr_line2"] = address.city
+            context["qr_debtor"] = owner.owner_object
         else:
-            context["qr_bill_name"] = self.name
-            context["qr_addr_line1"] = "Holligerhof 8"
-            context["qr_addr_line2"] = "3008 Bern"
-        if self.vendor.qr_name:
-            context["qr_creditor"] = {"name": self.vendor.qr_name}
+            context["qr_debtor"] = {**default_address, "name": self.name}
+        if self.vendor.qr_address:
+            context["qr_creditor"] = self.vendor.qr_address
         else:
-            context["qr_creditor"] = {"name": self.vendor.name}
-        context["qr_creditor"]["line1"] = self.vendor.qr_line1
-        context["qr_creditor"]["line2"] = self.vendor.qr_line2
+            context["qr_creditor"] = {**default_address, "name": self.vendor.name}
         context["qr_account"] = self.vendor.qr_iban
         context["qr_ref_number"] = get_reference_nr(
             "app", self.pk, extra_id1=1, app_name="credit_accounting"

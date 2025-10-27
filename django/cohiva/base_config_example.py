@@ -20,8 +20,11 @@ SITE_SECRET = "<SECRET>"
 ##                  print(get_random_secret_key())'
 
 ORG_NAME = "Genossenschaft Musterweg"
-ORG_ADDRESS_STREET = "Musterweg 1"
-ORG_ADDRESS_CITY = "3000 Bern"
+ORG_ADDRESS_STREET_NAME = "Musterweg"
+ORG_ADDRESS_HOUSE_NUMBER = "1"
+ORG_ADDRESS_CITY_ZIPCODE = "3000"
+ORG_ADDRESS_CITY_NAME = "Bern"
+ORG_ADDRESS_COUNTRY = "Schweiz"
 
 ADMINS = (("Hans Muster", "info@example.com"),)
 
