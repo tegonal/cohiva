@@ -76,7 +76,7 @@ If you need to set up step-by-step or are preparing a production deployment, fol
 
 ## Install required system packages
 
-Supported Python versions: 3.9 – 3.13
+Supported Python versions: 3.9 (legacy) and 3.11 – 3.13
 
 Example for Debian 11 (should work on most Debian/Ubuntu based systems):
 
