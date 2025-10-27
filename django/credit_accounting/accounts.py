@@ -11,7 +11,7 @@ from django.shortcuts import redirect
 from django.utils import timezone
 
 import credit_accounting.settings as app_settings
-from geno.gnucash import parse_reference_nr
+from geno.billing import parse_reference_nr
 from geno.models import Address, Contract
 from geno.utils import send_error_mail
 

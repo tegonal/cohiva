@@ -26,9 +26,9 @@ from stdnum.ch import esr
 from svglib.svglib import svg2rlg
 
 import geno.settings as geno_settings
-
-## For PDF merging
 from cohiva.utils.pdf import PdfGenerator
+from finance.accounting import AccountingManager
+from finance.accounting.accounts import Account, AccountKey
 
 from .models import (
     Address,
@@ -189,14 +189,14 @@ def create_invoices(
             sum_nk_electricity = 0
             ru_list = []
             rent_info = []
-            rent_type = "rent"  # Wohnungen
+            rent_account_key = None  # Wohnungen: Get account from invoice_category (default)
             for ru in contract.rental_units.all():
                 if ru.rental_type in ("Gewerbe", "Lager", "Hobby"):
-                    rent_type = "rent_business"
+                    rent_account_key = AccountKey.RENT_BUSINESS
                 elif ru.rental_type == "Gemeinschaft":
-                    rent_type = "rent_other"
+                    rent_account_key = AccountKey.RENT_OTHER
                 elif ru.rental_type == "Parkplatz":
-                    rent_type = "rent_parking"
+                    rent_account_key = AccountKey.RENT_PARKING
                 if not ru.rent_netto:
                     ru.rent_netto = Decimal(0.0)
                 if not ru.nk:
@@ -249,7 +249,7 @@ def create_invoices(
                     )
                     invoice_value = sum_rent_net * factor
                     r = add_invoice(
-                        rent_type,
+                        rent_account_key,
                         invoice_category,
                         description,
                         invoice_date,
@@ -276,7 +276,7 @@ def create_invoices(
                     )
                     invoice_value = sum_nk * factor
                     r = add_invoice(
-                        "nk",
+                        AccountKey.NK,
                         invoice_category,
                         description,
                         invoice_date,
@@ -303,7 +303,7 @@ def create_invoices(
                     )
                     invoice_value = sum_nk_flat * factor
                     r = add_invoice(
-                        "nk_flat",
+                        AccountKey.NK_FLAT,
                         invoice_category,
                         description,
                         invoice_date,
@@ -330,7 +330,7 @@ def create_invoices(
                     )
                     invoice_value = sum_nk_electricity * factor
                     r = add_invoice(
-                        "strom",
+                        AccountKey.STROM,
                         invoice_category,
                         description,
                         invoice_date,
@@ -358,7 +358,7 @@ def create_invoices(
                     )
                     invoice_value = -1 * contract.rent_reduction * factor
                     r = add_invoice(
-                        "rent_reduction",
+                        AccountKey.RENT_REDUCTION,
                         invoice_category,
                         description,
                         invoice_date,
@@ -396,7 +396,7 @@ def create_invoices(
                     )
                     invoice_value = -1 * contract.rent_reservation * factor
                     r = add_invoice(
-                        "rent_reservation",
+                        AccountKey.RENT_RESERVATION,
                         invoice_category,
                         description,
                         invoice_date,
@@ -513,107 +513,43 @@ def pay_invoice(invoice, date, amount):
 
 
 def add_payment(date, amount, person, invoice=None, note=None, cash=False):
-    messages = []
+    if not invoice:
+        return "Kein Rechnungstyp für diese Zahlung definiert."
 
-    book = get_book(messages)
-    if not book:
-        return messages[-1]
-
-    account_nbr = (
-        build_account(geno_settings.GNUCASH_ACC_INVOICE_RECEIVABLE)
-        if invoice and invoice.contract and invoice.contract.rental_units.exists()
-        else geno_settings.GNUCASH_ACC_INVOICE_RECEIVABLE
-    )
-
-    receivables = book.accounts(code=account_nbr)  ## Debitoren Miete
+    receivables = Account.from_settings(AccountKey.DEFAULT_RECEIVABLES)  ## Debitoren
     if cash:
-        payment_account = book.accounts(code=geno_settings.GNUCASH_ACC_KASSA)  ## Kasse
+        payment_account = Account.from_settings(AccountKey.CASH)
     else:
-        payment_account = book.accounts(code=geno_settings.GNUCASH_ACC_POST)  ## Postkonto
-
-    description = "Zahlung"
+        payment_account = Account.from_settings(AccountKey.DEFAULT_DEBTOR_MANUAL)
     if note:
-        description = "Zahlung: %s" % note
-
-    if invoice:
-        description = "%s %s %s" % (description, invoice.invoice_category, invoice.id)
-        r = add_invoice_obj(
-            book,
-            "Payment",
-            invoice.invoice_category,
-            description,
-            person,
-            payment_account,
-            receivables,
-            date,
-            amount,
-            invoice.contract,
-            invoice.year,
-            invoice.month,
-        )
+        description = f"Zahlung: {note} {invoice.invoice_category} {invoice.id}"
     else:
-        return "Kein Rechnungstyp für diese Zahlung definiert (TODO)."
-    if isinstance(r, str):
-        return r
-    else:
-        ## No error
-        return 0
-
-
-def get_income_account(book, invoice_category, kind, contract=None):
-    ## Special income accounts
-    if kind == "rent_business":
-        return book.accounts(
-            code=build_account(
-                geno_settings.GNUCASH_ACC_INVOICE_INCOME_BUSINESS, contract=contract
+        description = f"Zahlung {invoice.invoice_category} {invoice.id}"
+    try:
+        with AccountingManager() as book:
+            r = add_invoice_obj(
+                book,
+                "Payment",
+                invoice.invoice_category,
+                description,
+                person,
+                payment_account,
+                receivables,
+                date,
+                amount,
+                invoice.contract,
+                invoice.year,
+                invoice.month,
             )
-        )
-    elif kind == "rent_other":
-        return book.accounts(
-            code=build_account(geno_settings.GNUCASH_ACC_INVOICE_INCOME_OTHER, contract=contract)
-        )
-    elif kind == "rent_parking":
-        return book.accounts(
-            code=build_account(geno_settings.GNUCASH_ACC_INVOICE_INCOME_PARKING, contract=contract)
-        )
-    elif kind == "nk":
-        return book.accounts(code=build_account(geno_settings.GNUCASH_ACC_NK, contract=contract))
-    elif kind == "nk_flat":
-        return book.accounts(
-            code=build_account(geno_settings.GNUCASH_ACC_NK_FLAT, contract=contract)
-        )
-    elif kind == "rent_reduction":
-        return book.accounts(
-            code=build_account(geno_settings.GNUCASH_ACC_RENTREDUCTION, contract=contract)
-        )
-    elif kind == "rent_reservation":
-        return book.accounts(
-            code=build_account(geno_settings.GNUCASH_ACC_RENTRESERVATION, contract=contract)
-        )
-    elif kind == "mietdepot":
-        return book.accounts(
-            code=build_account(geno_settings.GNUCASH_ACC_MIETDEPOT, contract=contract)
-        )
-    elif kind == "schluesseldepot":
-        return book.accounts(
-            code=build_account(geno_settings.GNUCASH_ACC_SCHLUESSELDEPOT, contract=contract)
-        )
-    elif kind == "strom":
-        return book.accounts(
-            code=build_account(geno_settings.GNUCASH_ACC_STROM, contract=contract)
-        )
-    elif kind == "kiosk":
-        return book.accounts(
-            code=build_account(geno_settings.GNUCASH_ACC_KIOSK, contract=contract)
-        )
-    elif kind == "spende":
-        return book.accounts(
-            code=build_account(geno_settings.GNUCASH_ACC_SPENDE, contract=contract)
-        )
-    elif kind == "other":
-        return book.accounts(
-            code=build_account(geno_settings.GNUCASH_ACC_OTHER, contract=contract)
-        )
+            if isinstance(r, str):
+                raise RuntimeError(r)
+    except Exception as e:
+        return f"Konnte Rechnung nicht erstellen: {e}"
+
+
+def get_income_account_code(invoice_category, account_key, contract=None):
+    if isinstance(account_key, AccountKey) and account_key in settings.FINANCIAL_ACCOUNTS:
+        return build_account(account_key, contract=contract)
     elif (
         invoice_category.income_account_building_based
         and contract
@@ -622,22 +558,22 @@ def get_income_account(book, invoice_category, kind, contract=None):
         ## Use first rental unit's building accounting postfix
         ru = contract.rental_units.all().first()
         if ru.building:
-            return book.accounts(code=invoice_category.build_income_account(ru.building))
+            return invoice_category.build_income_account(ru.building)
         else:
             logger.error(
                 "Could not find building for contract %s, using default income account with no postfix %s."
                 % (contract, invoice_category.income_account)
             )
             send_error_mail(
-                "get_income_account()",
+                "get_income_account_code()",
                 "Could not find building for contract %s, using default income account with no postfix %s."
                 % (contract, invoice_category.income_account),
             )
     ## Default
-    return book.accounts(code=invoice_category.income_account)  ## z.B. Mietertag Wohnungen
+    return invoice_category.income_account
 
 
-def get_receivables_account(book, invoice_category, contract=None):
+def get_receivables_account_code(book, invoice_category, contract=None):
     if (
         invoice_category.receivables_account_building_based
         and contract
@@ -657,11 +593,11 @@ def get_receivables_account(book, invoice_category, contract=None):
                 "Could not find building for contract %s, using default receivables account with no postfix %s."
                 % (contract, invoice_category.receivables_account),
             )
-    return book.accounts(code=invoice_category.receivables_account)  ## z.B. Debitoren Miete
+    return invoice_category.receivables_account
 
 
 def add_invoice(
-    kind,
+    account_key,
     invoice_category,
     description,
     date,
@@ -680,14 +616,38 @@ def add_invoice(
             raise RuntimeError("Can't specify address AND contract.")
         address = contract.get_contact_address()
 
+    income_account = Account(
+        name="Ertragskonto für Rechnung",
+        code=get_income_account_code(invoice_category, account_key, contract),
+    )
+    receivables = Account(
+        name="Debitoren für Rechnung",
+        code=get_receivables_account_code(invoice_category, contract),
+    )
+
     if not book:
         messages = []
-        book = get_book(messages)
-        if not book:
-            return messages[-1]
-    income_account = get_income_account(book, invoice_category, kind, contract)
-    receivables = get_receivables_account(book, invoice_category, contract)
+        with AccountingManager(messages) as book:
+            if not book:
+                return messages[-1]
 
+        return add_invoice_obj(
+            book,
+            "Invoice",
+            invoice_category,
+            description,
+            address,
+            income_account,
+            receivables,
+            date,
+            amount,
+            contract=contract,
+            year=year,
+            month=month,
+            is_additional=is_additional,
+            dry_run=dry_run,
+            comment=comment,
+        )
     return add_invoice_obj(
         book,
         "Invoice",
@@ -773,22 +733,10 @@ def add_invoice_obj(
             additional_info=additional_info,
             comment=comment,
         )
-
-        if settings.GNUCASH:
-            txn = Transaction(
-                post_date=date,  # datetime.datetime.strptime(date, "%Y-%m-%d"),
-                enter_date=datetime.datetime.now(),
-                # currency = book.default_currency,
-                currency=book.currencies(mnemonic="CHF"),
-                description=txn_description,
-            )
-            Split(account=acc_to, value=amount_dec, memo="", transaction=txn)
-            Split(account=acc_from, value=-amount_dec, memo="", transaction=txn)
-
-            book.flush()
-            invoice.gnc_transaction = txn.guid
-            invoice.gnc_account = account.code
-            invoice.gnc_account_receivables = receivables_account.code
+        ## TODO: Change acc_from and acc_to numbers (with ID?)
+        transaction_id = book.add_transaction(
+            amount_dec, acc_from, acc_to, date, txn_description, autosave=False
+        )
     except Exception as e:
         return "Could not create invoice: %s" % e
 
@@ -1305,8 +1253,6 @@ def guess_name_fuzzy(transaction):
 
 
 def process_transaction(transaction_type, date, address, amount, save_sender=None, note=None):
-    messages = []
-
     if save_sender and save_sender != "IGNORE" and len(save_sender) > 5 and address and address.pk:
         try:
             lu = LookupTable.objects.get(name=save_sender, lookup_type="payment_sender")
@@ -1315,232 +1261,197 @@ def process_transaction(transaction_type, date, address, amount, save_sender=Non
         lu.value = address.pk
         lu.save()
 
-    book = get_book(messages)
-    if not book:
-        return messages[-1]
-
-    ## Accounts
-    payment_account = book.accounts(code=geno_settings.GNUCASH_ACC_POST)  ## Postkonto
-    total = Decimal(amount)
-
-    if transaction_type in ("entry_as", "entry_as_inv"):
-        share_as_account = book.accounts(
-            code=geno_settings.GNUCASH_ACC_SHARES_MEMBERS
-        )  ## Genossenschaftsanteile Mitglieder
-        book.accounts(code=geno_settings.GNUCASH_ACC_SHARES_DEPOSIT)  ## Depositenkasse
-
-        entryfee_account = book.accounts(
-            code=geno_settings.GNUCASH_ACC_MEMBER_FEE_ENTRY
-        )  ## Beitrittsgebühren
-
-        if transaction_type == "entry_as_inv":
-            payment_account = book.accounts(code=geno_settings.GNUCASH_ACC_HELPER_SHARES)
-
-        split1 = Decimal("200")
-        split2 = total - split1
-        count = int(split2 / 200)
-        if count == 1:
-            text_as = "1 Anteilschein"
-        else:
-            text_as = "%d Anteilscheine" % count
-        try:
-            if count != 0:
-                share = Share(
-                    name=address,
-                    share_type=ShareType.objects.get(name="Anteilschein"),
-                    state="bezahlt",
-                    date=date,
-                    quantity=count,
-                    value=200,
-                )
-
-            att = MemberAttribute(
-                member=Member.objects.get(name=address),
-                date=date,
-                attribute_type=MemberAttributeType.objects.get(
-                    name="Mitgliederbeitrag %s" % date.year
-                ),
-                value="Bezahlt (mit Eintritt)",
-            )
-
-            if settings.GNUCASH:
-                t = Transaction(
-                    post_date=date,
-                    enter_date=datetime.datetime.now(),
-                    # currency = book.default_currency,
-                    currency=book.currencies(mnemonic="CHF"),
-                    description="%s und Beitrittsgebühr, %s" % (text_as, address),
-                )
-                Split(account=payment_account, value=total, memo="", transaction=t)
-                Split(account=entryfee_account, value=-split1, memo="", transaction=t)
-                if count != 0:
-                    Split(account=share_as_account, value=-split2, memo="", transaction=t)
-                book.flush()
-        except Exception as e:
-            return "Could not create transaction: %s" % e
-        if count != 0:
-            share.save()
-        att.save()
-        book.save()
-    elif transaction_type == "kiosk_payment":
-        income_account = book.accounts(code=geno_settings.GNUCASH_ACC_KIOSK)
-        desc = "Kiosk/Getränke"
-        if note:
-            desc = "%s: %s" % (desc, note)
-        total = Decimal(amount)
-        if settings.GNUCASH:
-            t = Transaction(
-                post_date=date,
-                enter_date=datetime.datetime.now(),
-                currency=book.currencies(mnemonic="CHF"),
-                description=desc,
-            )
-            Split(account=payment_account, value=total, memo="", transaction=t)
-            Split(account=income_account, value=-total, memo="", transaction=t)
-            book.save()
-    elif transaction_type in ("share_as", "share_as_inv"):
-        payment_bank_account = book.accounts(code=geno_settings.GNUCASH_ACC_BANK)  ## Bankkonto
-        share_as_account = book.accounts(
-            code=geno_settings.GNUCASH_ACC_SHARES_MEMBERS
-        )  ## Genossenschaftsanteile Mitglieder
-        if transaction_type == "share_as_inv":
-            payment_bank_account = book.accounts(code=geno_settings.GNUCASH_ACC_HELPER_SHARES)
-        if float(amount) % 200.00 != 0.0:
-            return "Share is not a multiple of 200.-!"
-        count = int(total / 200)
-        if count == 1:
-            text_as = "1 Anteilschein"
-        else:
-            text_as = "%d Anteilscheine" % count
-        try:
-            share = Share(
-                name=address,
-                share_type=ShareType.objects.get(name="Anteilschein"),
-                state="bezahlt",
-                date=date,
-                quantity=count,
-                value=200,
-            )
-
-            if settings.GNUCASH:
-                t = Transaction(
-                    post_date=date,
-                    enter_date=datetime.datetime.now(),
-                    # currency = book.default_currency,
-                    currency=book.currencies(mnemonic="CHF"),
-                    description="%s, %s" % (text_as, address),
-                )
-                Split(account=payment_bank_account, value=total, memo="", transaction=t)
-                Split(account=share_as_account, value=-total, memo="", transaction=t)
-                book.flush()
-        except Exception as e:
-            return "Could not create transaction: %s" % e
-
-        share.save()
-        book.save()
-    elif (
-        transaction_type == "loan_interest_toloan" or transaction_type == "loan_interest_todeposit"
-    ):
-        interest_account = book.accounts(
-            code=geno_settings.GNUCASH_ACC_SHARES_INTEREST
-        )  ## Verbindlichkeiten aus Finanzierung
-
-        if transaction_type == "loan_interest_toloan":
-            to_account = book.accounts(
-                code=geno_settings.GNUCASH_ACC_SHARES_LOAN_INT
-            )  ## Darlehen verzinst
-            text = "Anrechnung Darlehenszins an Darlehen"
-            stype = ShareType.objects.get(name="Darlehen verzinst")
-        elif transaction_type == "loan_interest_todeposit":
-            to_account = book.accounts(
-                code=geno_settings.GNUCASH_ACC_SHARES_DEPOSIT
-            )  ## Depositenkasse
-            text = "Anrechnung Darlehenszins an Depositenkasse"
-            stype = ShareType.objects.get(name="Depositenkasse")
-
-        try:
-            share = Share(
-                name=address,
-                share_type=stype,
-                state="bezahlt",
-                date=date,
-                quantity=1,
-                value=total,
-                is_interest_credit=True,
-                note=text,
-            )
-
-            if settings.GNUCASH:
-                t = Transaction(
-                    post_date=date,
-                    enter_date=datetime.datetime.now(),
-                    currency=book.currencies(mnemonic="CHF"),
-                    description="%s, %s" % (text, address),
-                )
-                Split(account=interest_account, value=total, memo="", transaction=t)
-                Split(account=to_account, value=-total, memo="", transaction=t)
-                book.flush()
-        except Exception as e:
-            return "Could not create transaction: %s" % e
-
-        share.save()
-        book.save()
-    elif transaction_type == "memberfee":
-        fee_year = datetime.datetime.today().year
-        memberfee_account = book.accounts(
-            code=geno_settings.GNUCASH_ACC_MEMBER_FEE
-        )  ## Mitgliederbeiträge
-        try:
-            att_type = MemberAttributeType.objects.get(name="Mitgliederbeitrag %s" % fee_year)
-        except MemberAttributeType.DoesNotExist:
-            return "Mitglieder Attribut 'Mitgliederbeitrag %s' existiert nicht." % fee_year
-
-        member = Member.objects.get(name=address)
-        att = MemberAttribute.objects.filter(member=member, attribute_type=att_type)
-        # for a in att:
-        #   messages.warning(request, "Attribute found: %s - %s" % (a.date,a.value))
-        if len(att) == 0:
-            ## Create new attribute
-            att = MemberAttribute(member=member, attribute_type=att_type)
-        elif len(att) == 1:
-            att = att[0]
-            if att.value.startswith("Bezahlt"):
-                return "Schon als bezahlt markiert"
-            elif (
-                att.value != "Mail-Rechnung geschickt"
-                and att.value != "Mail-Reminder geschickt"
-                and att.value != "Brief-Rechnung geschickt"
-                and att.value != "Brief-Reminder geschickt"
-                and att.value != "Brief-Mahnung geschickt"
-                and att.value != "Brief-Mahnung2 geschickt"
-            ):
-                return "Unknown attribute value"
-        else:
-            return "More than one attribute found"
-        try:
-            if settings.GNUCASH:
-                t = Transaction(
-                    post_date=date,
-                    # enter_date = test_date, ## Default = now
-                    # currency = book.default_currency,
-                    currency=book.currencies(mnemonic="CHF"),
-                    description="Mitgliederbeitrag %s, %s" % (fee_year, address),
-                )
-                Split(account=payment_account, value=total, memo="", transaction=t)
-                Split(account=memberfee_account, value=-total, memo="", transaction=t)
-                book.flush()
-            att.value = "Bezahlt"
-            att.date = date
-        except Exception as e:
-            return "Could not create transaction: %s" % e
-        att.save()
-        book.save()
-    elif transaction_type == "invoice_payment":
+    if transaction_type == "invoice_payment":
         return add_payment(date, amount, address, invoice=None, note=note)
-    elif transaction_type == "cash_payment":
+    if transaction_type == "cash_payment":
         return add_payment(date, amount, address, invoice=None, note=note, cash=True)
+
+    try:
+        with AccountingManager() as book:
+            if transaction_type == "share_as":
+                add_transaction_shares(book, date, amount, address)
+            elif transaction_type == "share_as_inv":
+                add_transaction_shares(book, date, amount, address, use_clearing=True)
+            elif transaction_type == "entry_as":
+                add_transaction_shares_entry(book, date, amount, address)
+            elif transaction_type == "entry_as_inv":
+                add_transaction_shares_entry(book, date, amount, address, use_clearing=True)
+            elif transaction_type == "loan_interest_todeposit":
+                add_transaction_interest(book, date, amount, address, book_to="deposit")
+            elif transaction_type == "loan_interest_toloan":
+                add_transaction_interest(book, date, amount, address, book_to="loan")
+            elif transaction_type == "memberfee":
+                add_transaction_memberfee(book, date, amount, address)
+            elif transaction_type == "kiosk_payment":
+                add_transaction_kiosk(book, date, amount, note)
+            else:
+                raise ValueError(f"Transaktionstyp '{transaction_type}' nicht implementiert.")
+            book.save()
+    except Exception as e:
+        return f"Konnte Transaktion nicht erstellen: {e}"
+
+
+def add_transaction_shares(book, date, amount, address, use_clearing=False):
+    ## Genossenschaftsanteile Mitglieder
+    share_as_account = Account.from_settings(AccountKey.SHARES_MEMBERS)
+    if use_clearing:
+        ## Hilfskonto für Beteiligungs-Rechnungen, die erst bei Zahlung auf das definitive
+        ## Konto gebucht werden.
+        payment_account = Account.from_settings(AccountKey.SHARES_CLEARING)
     else:
-        return "Transaction type '%s' not implemented yet." % transaction_type
+        payment_account = Account.from_settings(AccountKey.SHARES_DEBTOR_MANUAL)
+
+    if float(amount) % 200.00 != 0.0:
+        raise ValueError("Share is not a multiple of 200.-!")
+    count = int(amount / 200)
+    if count == 1:
+        text_as = "1 Anteilschein"
+    else:
+        text_as = "%d Anteilscheine" % count
+    share = Share(
+        name=address,
+        share_type=ShareType.objects.get(name="Anteilschein"),
+        state="bezahlt",
+        date=date,
+        quantity=count,
+        value=200,
+    )
+    description = f"{text_as} {address}"
+    book.add_transaction(
+        amount, share_as_account, payment_account, date, description, autosave=False
+    )
+    share.save()
+
+
+def add_transaction_shares_entry(book, date, amount, address, use_clearing=False):
+    ## Genossenschaftsanteile Mitglieder
+    share_as_account = Account.from_settings(AccountKey.SHARES_MEMBERS)
+    ## Beitrittsgebühren
+    entryfee_account = Account.from_settings(AccountKey.MEMBER_FEE_ONETIME)
+    if use_clearing:
+        ## Hilfskonto für Beteiligungs-Rechnungen, die erst bei Zahlung auf das definitive
+        ## Konto gebucht werden.
+        payment_account = Account.from_settings(AccountKey.SHARES_CLEARING)
+    else:
+        payment_account = Account.from_settings(AccountKey.DEFAULT_DEBTOR_MANUAL)
+
+    split1 = 200
+    split2 = amount - split1
+    count = int(split2 / 200)
+    if split2 != count * 200:
+        raise ValueError(f"Betrag ist kein Vielfaches von 200: {amount}")
+    if count == 1:
+        text_as = "1 Anteilschein"
+    else:
+        text_as = "%d Anteilscheine" % count
+    if count != 0:
+        share = Share(
+            name=address,
+            share_type=ShareType.objects.get(name="Anteilschein"),
+            state="bezahlt",
+            date=date,
+            quantity=count,
+            value=200,
+        )
+
+    att = MemberAttribute(
+        member=Member.objects.get(name=address),
+        date=date,
+        attribute_type=MemberAttributeType.objects.get(name="Mitgliederbeitrag %s" % date.year),
+        value="Bezahlt (mit Eintritt)",
+    )
+
+    splits = [
+        {"account": entryfee_account, "amount": -split1},
+        {"account": payment_account, "amount": amount},
+    ]
+    if split2:
+        splits.append({"account": share_as_account, "amount": -split2})
+    description = f"{text_as} und Beitrittsgebühr, {address}"
+    book.add_split_transaction(splits, date, description, autosave=False)
+
+    if count != 0:
+        share.save()
+    att.save()
+
+
+def add_transaction_interest(book, date, amount, address, book_to):
+    ## Verbindlichkeiten aus Finanzierung
+    interest_account = Account.from_settings(AccountKey.SHARES_INTEREST)
+
+    if book_to == "loan":
+        text = "Anrechnung Darlehenszins an Darlehen"
+        stype = ShareType.objects.get(name="Darlehen verzinst")
+        shares_account = Account.from_settings(AccountKey.SHARES_LOAN_INTEREST)
+    elif book_to == "deposit":
+        text = "Anrechnung Darlehenszins an Depositenkasse"
+        stype = ShareType.objects.get(name="Depositenkasse")
+        shares_account = Account.from_settings(AccountKey.SHARES_DEPOSIT)
+    else:
+        raise ValueError(f"Invalid value for book_to: {book_to}")
+    share = Share(
+        name=address,
+        share_type=stype,
+        state="bezahlt",
+        date=date,
+        quantity=1,
+        value=amount,
+        is_interest_credit=True,
+        note=text,
+    )
+    description = f"{text}, {address}"
+    book.add_transaction(
+        amount, shares_account, interest_account, date, description, autosave=False
+    )
+    share.save()
+
+
+def add_transaction_memberfee(book, date, amount, address):
+    payment_account = Account.from_settings(AccountKey.DEFAULT_DEBTOR_MANUAL)
+    fee_year = datetime.datetime.today().year
+    memberfee_account = Account.from_settings(AccountKey.MEMBER_FEE)
+    member_attribute_name = f"Mitgliederbeitrag {fee_year}"
+    try:
+        att_type = MemberAttributeType.objects.get(name=member_attribute_name)
+    except MemberAttributeType.DoesNotExist:
+        raise ValueError(f"Mitglieder Attribut '{member_attribute_name}' existiert nicht.")
+
+    member = Member.objects.get(name=address)
+    att = MemberAttribute.objects.filter(member=member, attribute_type=att_type)
+    if len(att) == 0:
+        att = MemberAttribute(member=member, attribute_type=att_type)
+    elif len(att) == 1:
+        att = att[0]
+        if att.value.startswith("Bezahlt"):
+            raise ValueError("Ist bereits als bezahlt markiert")
+        elif (
+            att.value != "Mail-Rechnung geschickt"
+            and att.value != "Mail-Reminder geschickt"
+            and att.value != "Brief-Rechnung geschickt"
+            and att.value != "Brief-Reminder geschickt"
+            and att.value != "Brief-Mahnung geschickt"
+            and att.value != "Brief-Mahnung2 geschickt"
+        ):
+            raise ValueError(f"Unbekannter Wert für Attribut '{member_attribute_name}'")
+    else:
+        raise ValueError(f"Mehr als ein Attribut '{member_attribute_name}' gefunden.")
+
+    description = f"Mitgliederbeitrag {fee_year}, {address}"
+    book.add_transaction(
+        amount, memberfee_account, payment_account, date, description, autosave=False
+    )
+    att.value = "Bezahlt"
+    att.date = date
+    att.save()
+
+
+def add_transaction_kiosk(book, date, amount, note=None):
+    payment_account = Account.from_settings(AccountKey.DEFAULT_DEBTOR_MANUAL)
+    income_account = Account.from_settings(AccountKey.KIOSK)
+    desc = "Kiosk/Twint"
+    if note:
+        desc = "%s: %s" % (desc, note)
+    book.add_transaction(amount, income_account, payment_account, date, desc, autosave=False)
 
 
 def process_sepa_transactions(data):
@@ -1585,18 +1496,21 @@ def process_sepa_transactions(data):
         payment_account = None
         receivable_account = None
         try:
-            for account in settings.GENO_FINANCE_ACCOUNTS.values():
-                if normalize_iban(tx["account"]) in (
-                    normalize_iban(account["iban"]),
-                    normalize_iban(account["account_iban"]),
+            for account in settings.FINANCIAL_ACCOUNTS.values():
+                if account.get("type", None) == "debtor" and normalize_iban(tx["account"]) in (
+                    normalize_iban(account.get("iban", "-")),
+                    normalize_iban(account.get("account_iban", "-")),
                 ):
-                    payment_account = book.accounts(code=account["account_code"])
+                    payment_account = Account.from_settings_dict(account)
                     break
             if not payment_account:
                 raise Exception(
-                    f"IBAN {tx['account']} nicht gefunden in settings.GENO_FINANCE_ACCOUNTS"
+                    f"IBAN {tx['account']} nicht gefunden in settings.FINANCIAL_ACCOUNTS"
                 )
-            receivable_account = book.accounts(code=bill_info["receivables_account"])
+            receivable_account = Account(
+                name="Debitoren von Rechnung",
+                code=bill_info["receivables_account"],
+            )
         except Exception as e:
             errors.append(
                 "Buchhaltungs-Konten nicht gefunden: %s/%s (%s) [%s]"
@@ -1768,7 +1682,7 @@ def create_qrbill(
         bill_name = "%s %s" % (address.first_name, address.name)
 
     if render:
-        context["qr_account"] = settings.GENO_FINANCE_ACCOUNTS["default_debtor"]["iban"]
+        context["qr_account"] = settings.FINANCIAL_ACCOUNTS["default_debtor"]["iban"]
         context["qr_ref_number"] = ref_number
         context["qr_bill_name"] = bill_name
         context["qr_addr_line1"] = address.street

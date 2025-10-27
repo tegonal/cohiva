@@ -18,8 +18,8 @@ from django.utils.html import escape
 from html2text import html2text
 
 import geno.settings as geno_settings
+from geno.billing import add_invoice, get_reference_nr, render_qrbill
 from geno.exporter import export_data_to_xls
-from geno.gnucash import add_invoice, get_reference_nr, render_qrbill
 from geno.models import (
     Address,
     ContentTemplate,

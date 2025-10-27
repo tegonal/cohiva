@@ -5,9 +5,11 @@ import warnings
 
 from django.utils.deprecation import RemovedInDjango51Warning
 
+from finance.accounting.accounts import AccountKey
+
 ## Load settings
 from .settings import *  # noqa: F403
-from .settings import GENO_FINANCE_ACCOUNTS, MEDIA_ROOT, SMEDIA_ROOT
+from .settings import FINANCIAL_ACCOUNTS, MEDIA_ROOT, SMEDIA_ROOT
 
 ## Redirect (S)MEDIA_ROOT for running tests (files will be deleted by run-tests.sh):
 (head, tail) = os.path.split(MEDIA_ROOT)
@@ -30,4 +32,4 @@ IS_RUNNING_TESTS = True
 ## Default settings for tests, which are overwritten temporarily by specific tests, if needed.
 GENO_FORMAL = True
 RESERVATION_BLOCKER_RULES = []
-GENO_FINANCE_ACCOUNTS["default_debtor"]["iban"] = "CH7730000001250094239"
+FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]["iban"] = "CH7730000001250094239"

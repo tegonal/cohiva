@@ -4,7 +4,7 @@ from uuid import UUID
 from django.test import TestCase
 
 from finance.accounting import AccountingManager, CashctrlBook, DummyBook, GnucashBook
-from finance.accounting.accounts import Account, AccountKeys, AccountRoles
+from finance.accounting.accounts import Account, AccountKey, AccountRole
 
 
 class AccountingTestCase(TestCase):
@@ -20,7 +20,7 @@ class AccountingTestCase(TestCase):
         account = Account("Test", "1000")
         self.assertEqual(account.name, "Test")
         self.assertEqual(account.code, "1000")
-        self.assertEqual(account.role, AccountRoles.DEFAULT)
+        self.assertEqual(account.role, AccountRole.DEFAULT)
         self.assertEqual(account.iban, None)
         self.assertEqual(account.account_iban, None)
 
@@ -30,19 +30,19 @@ class AccountingTestCase(TestCase):
             name="Test IBAN",
             iban="CH111111111111111",
             account_iban="CH2222222222222222",
-            role=AccountRoles.QR_DEBTOR,
+            role=AccountRole.QR_DEBTOR,
         )
         self.assertEqual(account.name, "Test IBAN")
         self.assertEqual(account.code, "2000")
-        self.assertEqual(account.role, AccountRoles.QR_DEBTOR)
+        self.assertEqual(account.role, AccountRole.QR_DEBTOR)
         self.assertEqual(account.iban, "CH111111111111111")
         self.assertEqual(account.account_iban, "CH2222222222222222")
 
     def test_account_from_settings(self):
-        account = Account.from_settings(AccountKeys.DEFAULT_DEBTOR)
+        account = Account.from_settings(AccountKey.DEFAULT_DEBTOR)
         self.assertEqual(account.name, "Bankkonto QR-Einzahlungen")
         self.assertEqual(account.code, "1020.1")
-        self.assertEqual(account.role, AccountRoles.QR_DEBTOR)
+        self.assertEqual(account.role, AccountRole.QR_DEBTOR)
         self.assertEqual(account.iban, "CH7730000001250094239")
         self.assertEqual(account.account_iban, None)
 

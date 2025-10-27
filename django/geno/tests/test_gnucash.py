@@ -1,4 +1,4 @@
-from geno.gnucash import get_book
+from geno.billing import get_book
 
 from .base import BaseTestCase
 

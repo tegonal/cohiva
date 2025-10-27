@@ -15,7 +15,7 @@ from django.urls import reverse
 from credit_accounting.models import Account, Transaction
 
 # from geno.models import Address
-from geno.gnucash import get_reference_nr
+from geno.billing import get_reference_nr
 
 # from credit_accounting.models import CreditAccountingObject
 from .base import CreditAccountingTestCase

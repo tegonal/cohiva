@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 
-class AccountKeys(Enum):
+class AccountKey(Enum):
     _value_: str
     DEFAULT_DEBTOR = "_default_debtor"
     DEFAULT_DEBTOR_MANUAL = "_default_debtor_manual"
@@ -36,7 +36,7 @@ class AccountKeys(Enum):
     INTEREST_DEPOSIT = "_interest_deposit"
 
 
-class AccountRoles(Enum):
+class AccountRole(Enum):
     _value_: int
     DEFAULT = 1
     QR_DEBTOR = 2
@@ -45,13 +45,13 @@ class AccountRoles(Enum):
 @dataclass
 class Account:
     name: str
-    code: AccountKeys | str  # Account code for financial accounting
-    role: AccountRoles = AccountRoles.DEFAULT
+    code: AccountKey | str  # Account code for financial accounting
+    role: AccountRole = AccountRole.DEFAULT
     iban: str | None = None  # QR-IBAN for QR-Bills
     account_iban: str | None = None  # Account IBAN if different from QR-IBAN
 
     @classmethod
-    def from_settings(cls, account_key: AccountKeys | str):
+    def from_settings(cls, account_key: AccountKey | str):
         from django.conf import settings
 
         if account_key not in settings.FINANCIAL_ACCOUNTS:
@@ -61,7 +61,7 @@ class Account:
     @classmethod
     def from_settings_dict(cls, account_settings: dict):
         return Account(
-            role=account_settings.get("role", AccountRoles.DEFAULT),
+            role=account_settings.get("role", AccountRole.DEFAULT),
             name=account_settings.get("name"),
             code=account_settings.get("account_code"),
             iban=account_settings.get("iban"),

@@ -13,7 +13,7 @@ from django.utils import timezone
 from openpyxl import load_workbook
 from vdirsyncer.storage.dav import CardDAVStorage
 
-from .gnucash import get_reference_nr
+from .billing import get_reference_nr
 from .models import Address, Invoice, RentalUnit, get_active_contracts
 
 

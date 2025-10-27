@@ -1719,7 +1719,7 @@ class Invoice(GenoBase):
 
 @receiver(pre_delete, sender=Invoice)
 def _delete_invoice_pre(sender, instance, *args, **kwargs):
-    from .gnucash import delete_invoice_transaction
+    from .billing import delete_invoice_transaction
 
     ret = delete_invoice_transaction(instance)
     if ret:

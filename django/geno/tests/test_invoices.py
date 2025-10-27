@@ -10,7 +10,7 @@ from django.db.models import Sum  # , Q
 from django.template import loader
 
 import geno.tests.data as testdata
-from geno.gnucash import create_invoices, get_book, get_reference_nr
+from geno.billing import create_invoices, get_book, get_reference_nr
 from geno.invoice import InvoiceCreator, InvoiceCreatorError, InvoiceNotUnique
 from geno.models import Contract, Invoice, InvoiceCategory
 
@@ -214,7 +214,7 @@ class InvoicesTest(GenoAdminTestCase):
         for invoice in invoices:
             date = invoice.date + datetime.timedelta(days=10)
             info = {}
-            info["iban"] = settings.GENO_FINANCE_ACCOUNTS["default_debtor"]["iban"]
+            info["iban"] = settings.FINANCIAL_ACCOUNTS["default_debtor"]["iban"]
             info["refnr"] = get_reference_nr(
                 invoice.invoice_category, invoice.person.id, invoice.id
             )
@@ -244,13 +244,13 @@ class InvoicesTest(GenoAdminTestCase):
             amount=Decimal("99.95"),
         )
 
-        if not settings.GENO_FINANCE_ACCOUNTS["default_debtor"]["iban"]:
+        if not settings.FINANCIAL_ACCOUNTS["default_debtor"]["iban"]:
             raise AssertionError(
-                "GENO_FINANCE_ACCOUNTS['default_debtor']['iban'] must be set for this test."
+                "FINANCIAL_ACCOUNTS['default_debtor']['iban'] must be set for this test."
             )
-        if "account_iban" not in settings.GENO_FINANCE_ACCOUNTS["default_debtor"]:
+        if "account_iban" not in settings.FINANCIAL_ACCOUNTS["default_debtor"]:
             raise AssertionError(
-                "GENO_FINANCE_ACCOUNTS['default_debtor']['account_iban'] "
+                "FINANCIAL_ACCOUNTS['default_debtor']['account_iban'] "
                 "must be defined for this test."
             )
 
