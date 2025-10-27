@@ -303,12 +303,14 @@ class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
                 if stat["last_date"] is None or s.date > stat["last_date"]:
                     stat["last_date"] = s.date
 
-            share_stats.append({
-                "type": str(share_type),
-                "quantity": stat["quantity"],
-                "value": stat["value"],
-                "last_date": stat["last_date"],
-            })
+            share_stats.append(
+                {
+                    "type": str(share_type),
+                    "quantity": stat["quantity"],
+                    "value": stat["value"],
+                    "last_date": stat["last_date"],
+                }
+            )
             total_value += stat["value"]
 
         context["share_stats"] = share_stats
@@ -321,29 +323,27 @@ class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
                 try:
                     m = Member.objects.get(name=s.name)
                     if m.date_leave:
-                        non_members.append({
+                        non_members.append(
+                            {
+                                "name": s.name,
+                                "quantity": s.quantity,
+                                "date_leave": m.date_leave,
+                            }
+                        )
+                except Member.DoesNotExist:
+                    non_members.append(
+                        {
                             "name": s.name,
                             "quantity": s.quantity,
-                            "date_leave": m.date_leave,
-                        })
-                except Member.DoesNotExist:
-                    non_members.append({
-                        "name": s.name,
-                        "quantity": s.quantity,
-                        "date_leave": None,
-                    })
+                            "date_leave": None,
+                        }
+                    )
 
         context["non_members"] = non_members
 
         # Show plot if enabled and viewing current data (today or no date specified)
-        is_today = (
-            not reference_date or reference_date == datetime.date.today()
-        )
-        context["show_plot"] = (
-            is_today
-            and hasattr(settings, "SHARE_PLOT")
-            and settings.SHARE_PLOT
-        )
+        is_today = not reference_date or reference_date == datetime.date.today()
+        context["show_plot"] = is_today and hasattr(settings, "SHARE_PLOT") and settings.SHARE_PLOT
 
         return context
 
@@ -357,14 +357,14 @@ class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
                 if url_has_allowed_host_and_scheme(target, allowed_hosts={request.get_host()}):
                     return redirect(target)
                 else:
-                    return redirect('/')
+                    return redirect("/")
             else:
                 # Redirect without date parameter (show current date)
                 target = request.path
                 if url_has_allowed_host_and_scheme(target, allowed_hosts={request.get_host()}):
                     return redirect(target)
                 else:
-                    return redirect('/')
+                    return redirect("/")
         return self.get(request, *args, **kwargs)
 
 
@@ -1392,11 +1392,17 @@ class ShareConfirmationLetterView(DocumentGeneratorView):
                 rows = []
 
                 for item in share_items:
-                    details = ", ".join(str(o) for o in item.get("objects", [])) if item.get("objects") else "—"
-                    rows.append([
-                        str(item.get("info", "")),
-                        details,
-                    ])
+                    details = (
+                        ", ".join(str(o) for o in item.get("objects", []))
+                        if item.get("objects")
+                        else "—"
+                    )
+                    rows.append(
+                        [
+                            str(item.get("info", "")),
+                            details,
+                        ]
+                    )
 
                 context["table_data"] = {
                     "headers": headers,
@@ -1540,11 +1546,17 @@ class ShareReminderLetterView(DocumentGeneratorView):
                 rows = []
 
                 for item in reminder_items:
-                    details = ", ".join(str(o) for o in item.get("objects", [])) if item.get("objects") else "—"
-                    rows.append([
-                        str(item.get("info", "")),
-                        details,
-                    ])
+                    details = (
+                        ", ".join(str(o) for o in item.get("objects", []))
+                        if item.get("objects")
+                        else "—"
+                    )
+                    rows.append(
+                        [
+                            str(item.get("info", "")),
+                            details,
+                        ]
+                    )
 
                 context["table_data"] = {
                     "headers": headers,
@@ -2303,25 +2315,31 @@ class ShareStatementView(DocumentGeneratorView):
 
                     # Parse the formatted values back to numbers for totals
                     try:
-                        tax_value = float(statement_data["s_tax"].replace("'", "").replace(",", "."))
+                        tax_value = float(
+                            statement_data["s_tax"].replace("'", "").replace(",", ".")
+                        )
                         total_tax += tax_value
                     except (ValueError, AttributeError):
                         tax_value = 0
 
                     try:
-                        interest_value = float(statement_data["s_pay"].replace("'", "").replace(",", "."))
+                        interest_value = float(
+                            statement_data["s_pay"].replace("'", "").replace(",", ".")
+                        )
                         total_interest += interest_value
                     except (ValueError, AttributeError):
                         interest_value = 0
 
-                    rows.append([
-                        str(obj),
-                        f"{statement_data['n_shares']} ({statement_data['s_shares']})",
-                        statement_data["s_loan"],
-                        f"{statement_data['dep_start']}/{statement_data['dep_end']}",
-                        statement_data["s_tax"],
-                        statement_data["s_pay"],
-                    ])
+                    rows.append(
+                        [
+                            str(obj),
+                            f"{statement_data['n_shares']} ({statement_data['s_shares']})",
+                            statement_data["s_loan"],
+                            f"{statement_data['dep_start']}/{statement_data['dep_end']}",
+                            statement_data["s_tax"],
+                            statement_data["s_pay"],
+                        ]
+                    )
 
             context["table_data"] = {
                 "headers": headers,
@@ -2479,14 +2497,17 @@ class ContractCheckFormsView(CohivaAdminViewMixin, TemplateView):
                 contractors_str = " / ".join(contractors) if contractors else "-"
 
                 rental_units = ", ".join(
-                    str(ru) for ru in contract.rental_units.all()
+                    str(ru)
+                    for ru in contract.rental_units.all()
                     if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz")
                 )
-                rows.append([
-                    str(contract.get_contract_label() or f"Vertrag {contract.pk}"),
-                    contractors_str,
-                    rental_units,
-                ])
+                rows.append(
+                    [
+                        str(contract.get_contract_label() or f"Vertrag {contract.pk}"),
+                        contractors_str,
+                        rental_units,
+                    ]
+                )
 
             context["table_data"] = {
                 "headers": headers,

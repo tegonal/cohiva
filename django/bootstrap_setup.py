@@ -603,18 +603,14 @@ def setup_config(install_dir, venv_path):
         print_info("Enabled local development cookie settings (insecure cookies for HTTP)")
 
     # Uncomment CSRF/Session cookie settings for local development
-    settings_file = Path('cohiva/settings.py')
+    settings_file = Path("cohiva/settings.py")
     if settings_file.exists():
         content = settings_file.read_text()
         # Uncomment the CSRF and session cookie settings for local HTTP development
         content = content.replace(
-            '# SESSION_COOKIE_SECURE = False',
-            'SESSION_COOKIE_SECURE = False'
+            "# SESSION_COOKIE_SECURE = False", "SESSION_COOKIE_SECURE = False"
         )
-        content = content.replace(
-            '# CSRF_COOKIE_SECURE = False',
-            'CSRF_COOKIE_SECURE = False'
-        )
+        content = content.replace("# CSRF_COOKIE_SECURE = False", "CSRF_COOKIE_SECURE = False")
         settings_file.write_text(content)
         print_info("Enabled local development cookie settings (insecure cookies for HTTP)")
 
@@ -821,9 +817,7 @@ def create_superuser(venv_path):
 
         try:
             run_command(
-                ["./manage.py", "createsuperuser", "--noinput"],
-                env=env,
-                capture_output=False
+                ["./manage.py", "createsuperuser", "--noinput"], env=env, capture_output=False
             )
             print()
             print_info("Demo superuser created successfully")

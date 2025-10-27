@@ -111,10 +111,7 @@ def generate_saml2_keys(use_defaults=False):
 
     if use_defaults:
         # Use default certificate subject
-        cmd.extend([
-            "-subj",
-            "/C=CH/ST=Zurich/L=Zurich/O=Cohiva Development/CN=localhost"
-        ])
+        cmd.extend(["-subj", "/C=CH/ST=Zurich/L=Zurich/O=Cohiva Development/CN=localhost"])
 
     subprocess.run(cmd)
 
@@ -128,8 +125,12 @@ def generate_oidc_keys():
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description='Cohiva setup script')
-    parser.add_argument('--use-default-certs', action='store_true',
-                        help='Use default certificate values without prompting')
+
+    parser = argparse.ArgumentParser(description="Cohiva setup script")
+    parser.add_argument(
+        "--use-default-certs",
+        action="store_true",
+        help="Use default certificate values without prompting",
+    )
     args = parser.parse_args()
     setup(use_default_certs=args.use_default_certs)

@@ -894,10 +894,13 @@ def create_documents(default_doctype, objects=None, options=None):
             ## Create document
             # Check if template has a file attached
             if not doctype_obj.template or not doctype_obj.template.file:
-                ret.append({
-                    "info": "FEHLER: Keine Vorlage-Datei für Dokumenttyp '%s' konfiguriert." % doctype,
-                    "objects": []
-                })
+                ret.append(
+                    {
+                        "info": "FEHLER: Keine Vorlage-Datei für Dokumenttyp '%s' konfiguriert."
+                        % doctype,
+                        "objects": [],
+                    }
+                )
                 continue
 
             if "extra_context" in o:

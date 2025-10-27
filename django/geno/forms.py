@@ -786,7 +786,6 @@ class TransactionUploadFileForm(forms.Form):
     file = forms.FileField(required=False)
 
 
-
 class Odt2PdfForm(forms.Form):
     """Form for uploading ODT files to convert to PDF."""
 
@@ -1049,7 +1048,6 @@ class InvoiceFilterForm(forms.Form):
                 css_class="grid grid-cols-1 lg:grid-cols-2 gap-4",
             ),
         )
-
 
 
 class ShareOverviewFilterForm(forms.Form):
