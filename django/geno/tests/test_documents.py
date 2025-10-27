@@ -777,8 +777,14 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.assertInPDF(
             mail.outbox[0].attachments[0][1],
             [
-                "Zahlbar durch\nHans Muster",
-                "Konto / Zahlbar an\nCH56 0483 5012 3456 7800 9",  # Not QR-IBAN
+                "Zahlbar durch\nHans Muster\nBeispielweg 1\nCH-3000 Bern",
+                (
+                    "Konto / Zahlbar an\n"
+                    "CH56 0483 5012 3456 7800 9\n"  # Not QR-IBAN
+                    "Genossenschaft Musterweg\n"
+                    "Musterweg 1\n"
+                    "CH-3000 Bern\n"
+                ),
                 f"Zusätzliche Informationen\nQR-Infotext {self.year}",
                 "Betrag\nCHF\n9.95",
             ],
@@ -825,8 +831,14 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.assertInPDF(
             mail.outbox[0].attachments[0][1],
             [
-                "Zahlbar durch\nHans Muster",
-                "Konto / Zahlbar an\nCH64 3196 1000 0044 2155 7",  # QR-IBAN
+                "Zahlbar durch\nHans Muster\nBeispielweg 1\nCH-3000 Bern",
+                (
+                    "Konto / Zahlbar an\n"
+                    "CH64 3196 1000 0044 2155 7\n"  # QR-IBAN
+                    "Genossenschaft Musterweg\n"
+                    "Musterweg 1\n"
+                    "CH-3000 Bern\n"
+                ),
                 f"Referenz\n77 00000 {invoice.id:05} 00000 {self.addresses[0].id:05} {self.year}",
                 f"Zusätzliche Informationen\nQR-Infotext {self.year}",
                 "Betrag\nCHF\n9.95",

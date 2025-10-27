@@ -530,16 +530,20 @@ GENO_CARDDAV_PASS = None
 
 GENO_ORG_INFO = {
     "name": cbc.ORG_NAME,
-    "street": cbc.ORG_ADDRESS_STREET,
-    "city": cbc.ORG_ADDRESS_CITY,
+    "street": f"{cbc.ORG_ADDRESS_STREET_NAME} {cbc.ORG_ADDRESS_HOUSE_NUMBER}",
+    "city": f"{cbc.ORG_ADDRESS_CITY_ZIPCODE} {cbc.ORG_ADDRESS_CITY_NAME}",
+    "country": cbc.ORG_ADDRESS_COUNTRY,
     "email": "info@" + cbc.DOMAIN,
     "website": "www." + cbc.DOMAIN,
 }
 
 GENO_QRBILL_CREDITOR = {
     "name": cbc.ORG_NAME,
-    "line1": cbc.ORG_ADDRESS_STREET,
-    "line2": cbc.ORG_ADDRESS_CITY,
+    "street": cbc.ORG_ADDRESS_STREET_NAME,
+    "house_num": cbc.ORG_ADDRESS_HOUSE_NUMBER,
+    "pcode": cbc.ORG_ADDRESS_CITY_ZIPCODE,
+    "city": cbc.ORG_ADDRESS_CITY_NAME,
+    "country": cbc.ORG_ADDRESS_COUNTRY,
 }
 
 GENO_FINANCE_ACCOUNTS = {
