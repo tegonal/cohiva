@@ -14,7 +14,11 @@ class AccountingTestCase(TestCase):
         with AccountingManager(messages) as book:
             self.assertEqual(book, None)
             self.assertEqual(len(messages), 1)
-            self.assertEqual(messages[0], "No accounting backend configured.")
+            self.assertEqual(messages[0], "Keine Buchhaltungsanbindung konfiguriert.")
+
+        with self.assertRaises(RuntimeError, msg="Keine Buchhaltungsanbindung konfiguriert."):
+            with AccountingManager() as book:
+                pass
 
     def test_account_minimal(self):
         account = Account("Test", "1000")
@@ -26,7 +30,7 @@ class AccountingTestCase(TestCase):
 
     def test_account_iban(self):
         account = Account(
-            code="2000",
+            prefix="2000",
             name="Test IBAN",
             iban="CH111111111111111",
             account_iban="CH2222222222222222",

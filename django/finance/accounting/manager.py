@@ -23,7 +23,7 @@ class AccountingManager:
 
     def __enter__(self):
         if not self.backends:
-            if self.messages:
+            if self.messages is not None:
                 self.messages.append("Keine Buchhaltungsanbindung konfiguriert.")
                 return None
             raise RuntimeError("Keine Buchhaltungsanbindung konfiguriert.")

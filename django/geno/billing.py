@@ -45,7 +45,6 @@ from .models import (
     ShareType,
 )
 from .utils import (
-    build_account,
     ensure_dir_exists,
     fill_template_pod,
     nformat,
@@ -547,53 +546,44 @@ def add_payment(date, amount, person, invoice=None, note=None, cash=False):
         return f"Konnte Rechnung nicht erstellen: {e}"
 
 
-def get_income_account_code(invoice_category, account_key, contract=None):
-    if isinstance(account_key, AccountKey) and account_key in settings.FINANCIAL_ACCOUNTS:
-        return build_account(account_key, contract=contract)
-    elif (
-        invoice_category.income_account_building_based
-        and contract
-        and contract.rental_units.exists()
-    ):
+def get_income_account(invoice_category, account_key, contract=None):
+    if account_key in settings.FINANCIAL_ACCOUNTS:
+        account = Account.from_settings(account_key)
+    else:
+        account = Account(
+            name="Ertrag aus Rechnung",
+            prefix=invoice_category.income_account,
+            building_based=invoice_category.income_account_building_based,
+        )
+    return setup_account(account, contract)
+
+
+def get_receivables_account(invoice_category, contract=None):
+    account = Account(
+        name="Forderungen aus Rechnung",
+        prefix=invoice_category.receivables_account,
+        building_based=invoice_category.receivables_account_building_based,
+    )
+    return setup_account(account, contract)
+
+
+def setup_account(account, contract):
+    if account.building_based and contract and contract.rental_units.exists():
         ## Use first rental unit's building accounting postfix
         ru = contract.rental_units.all().first()
         if ru.building:
-            return invoice_category.build_income_account(ru.building)
+            account.set_code(building=ru.building)
         else:
             logger.error(
-                "Could not find building for contract %s, using default income account with no postfix %s."
-                % (contract, invoice_category.income_account)
+                "Could not find building for contract %s, using default account with no postfix %s."
+                % (contract, account.prefix)
             )
             send_error_mail(
                 "get_income_account_code()",
-                "Could not find building for contract %s, using default income account with no postfix %s."
-                % (contract, invoice_category.income_account),
+                "Could not find building for contract %s, using default account with no postfix %s."
+                % (contract, account.prefix),
             )
-    ## Default
-    return invoice_category.income_account
-
-
-def get_receivables_account_code(book, invoice_category, contract=None):
-    if (
-        invoice_category.receivables_account_building_based
-        and contract
-        and contract.rental_units.exists()
-    ):
-        ## Use first rental unit's building accounting postfix
-        ru = contract.rental_units.all().first()
-        if ru.building:
-            return book.accounts(code=invoice_category.build_receivables_account(ru.building))
-        else:
-            logger.error(
-                "Could not find building for contract %s, using default receivables account with no postfix %s."
-                % (contract, invoice_category.receivables_account)
-            )
-            send_error_mail(
-                "get_receivables_account()",
-                "Could not find building for contract %s, using default receivables account with no postfix %s."
-                % (contract, invoice_category.receivables_account),
-            )
-    return invoice_category.receivables_account
+    return account
 
 
 def add_invoice(
@@ -616,14 +606,8 @@ def add_invoice(
             raise RuntimeError("Can't specify address AND contract.")
         address = contract.get_contact_address()
 
-    income_account = Account(
-        name="Ertragskonto für Rechnung",
-        code=get_income_account_code(invoice_category, account_key, contract),
-    )
-    receivables = Account(
-        name="Debitoren für Rechnung",
-        code=get_receivables_account_code(invoice_category, contract),
-    )
+    income_account = get_income_account(invoice_category, account_key, contract)
+    receivables = get_receivables_account(invoice_category, contract)
 
     if not book:
         messages = []
@@ -1509,7 +1493,7 @@ def process_sepa_transactions(data):
                 )
             receivable_account = Account(
                 name="Debitoren von Rechnung",
-                code=bill_info["receivables_account"],
+                prefix=bill_info["receivables_account"],
             )
         except Exception as e:
             errors.append(

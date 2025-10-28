@@ -1,3 +1,4 @@
+import copy
 import logging
 import os
 from datetime import date, datetime
@@ -15,7 +16,7 @@ from stdnum.ch import esr
 
 from credit_accounting.api_views import get_capabilities as credit_accounting_capabilities
 from finance.accounting import AccountingManager
-from finance.accounting.accounts import AccountKey
+from finance.accounting.accounts import Account, AccountKey, AccountRole
 from finance.accounting.book import AccountingBook
 from geno.billing import (
     add_invoice,
@@ -31,7 +32,6 @@ from geno.serializers import (
     UserSerializer,
 )
 from geno.utils import (
-    build_account,
     nformat,
 )
 from reservation.api_views import get_capabilities as reservation_capabilities
@@ -115,7 +115,7 @@ class Akonto(APIView):
         akonto_total = 0
         if self.contract_id >= 0:
             contract = Contract.objects.get(id=self.contract_id)
-            fiaccount = build_account(AccountKey.NK, contract)
+            fiaccount = Account.from_settings(AccountKey.NK).set_code(contract=contract)
             # Get payments from contract AND linked contracts in case there are invoices
             # before/after the billing contract has been changed!
             for c in Contract.objects.filter(Q(id=contract.id) | Q(billing_contract=contract)):
@@ -142,8 +142,9 @@ class Akonto(APIView):
 
     def get_akonto_for_all_contracts(self):
         ## Get invoices for NK-Akonto and NK-Ausserordentlich
+        fiaccount = Account.from_settings(AccountKey.NK)
         akonto_invoices = Invoice.objects.filter(
-            Q(gnc_account__startswith=settings.FINANCIAL_ACCOUNTS[AccountKey.NK]["account_code"])
+            Q(gnc_account__startswith=fiaccount.prefix)
             | Q(invoice_category=self.invoice_category_nk_ausserordentlich),
             invoice_type="Invoice",
             date__gte=self.billing_period_start,
@@ -172,22 +173,18 @@ class QRBill(APIView):
     # permission_classes = [permissions.IsAuthenticated] ## Allow all authenticated users
 
     def __init__(self, **kwargs):
-        ## TODO: Move configuration to settings.FINANCIAL_ACCOUNTS
-        ## Virtual contract: Just do accounting, no invoice
+        # Virtual contracts: Just do accounting, no invoice
+        # Example: (configured in settings.FINANCIAL_ACCOUNTS)
         #      1 - Aufwand Gästezimmer [6700]
         #      2 - Aufwand Sitzungszimmer [6720]
         #      3 - Geschäftsstelle -> Büromiete [6500]
         #      4 - Holliger -> Nicht verteilbare NK [4581]  --> von dort manuell umbuchen / in Rechnung stellen
         #      5 - Allgemein -> Nicht verteilbare NK [4581] --> von dort manuell umbuchen / in Rechnung stellen
         #      6 - Leerstand -> NK Leerstand [4582]
-        self.virtual_contracts = {
-            -1: {"name": "Gästezimmer", "account": "6700"},
-            -2: {"name": "Sitzungszimmer", "account": "6720"},
-            -3: {"name": "Geschäftsstelle", "account": "6500"},
-            -4: {"name": "Holliger", "account": "4581"},
-            -5: {"name": "Allgemein", "account": "4581"},
-            -6: {"name": "Leerstand", "account": "4582"},
-        }
+        self.virtual_contract_accounts = {}
+        for key, account in settings.FINANCIAL_ACCOUNTS.items():
+            if account["role"] == AccountRole.NK_VIRTUAL:
+                self.virtual_contract_accounts[account["virtual_id"]] = Account.from_settings(key)
         self.invoice_id = None
         self.contract = None
         self.address = None
@@ -199,10 +196,10 @@ class QRBill(APIView):
         super().__init__(**kwargs)
 
     def get_virtual_contract_account(self, virt_contract_id):
-        acc_prefix = self.virtual_contracts[virt_contract_id]["account"]
+        account = copy.copy(self.virtual_contract_accounts[virt_contract_id])
         if self.contract:
-            return build_account(acc_prefix, contract=self.contract)
-        return acc_prefix
+            account.set_code(contract=self.contract)
+        return account
 
     def get_akonto_qrbill(self, request):
         invoice_category = InvoiceCategory.objects.get(
@@ -251,18 +248,18 @@ class QRBill(APIView):
 
     def do_accounting(self, request, book: AccountingBook):
         billing_period_end = datetime.strptime(request.data["billing_period_end"], "%Y-%m-%d")
-        fiaccount_nk = build_account(AccountKey.NK, contract=self.contract)
-        fiaccount_nk_receivables = build_account(AccountKey.NK_RECEIVABLES, contract=self.contract)
+        fiaccount_nk = Account.from_settings(AccountKey.NK).set_code(contract=self.contract)
+        fiaccount_nk_receivables = Account.from_settings(AccountKey.NK_RECEIVABLES).set_code(
+            contract=self.contract
+        )
         if request.data["total_akonto"] > 0:
             ## Transaction: Forderungen>Nebenkosten [1104] -> Passive Abgenzung>NK-Akonto [2301]
             description = "NK-Abrechnung Verrechnung Akontozahlungen %s" % (self.contract)
-            account_to = fiaccount_nk
-            account_from = fiaccount_nk_receivables
             amount = request.data["total_akonto"]
             book.add_transaction(
                 amount,
-                account_from,
-                account_to,
+                fiaccount_nk_receivables,
+                fiaccount_nk,
                 billing_period_end.date(),
                 description,
                 autosave=False,
@@ -309,18 +306,13 @@ class QRBill(APIView):
             if not self.dry_run:
                 self.invoice_id = invoice.id
         else:
-            description = (
-                "NK-Abrechnung %s" % (self.virtual_contracts[request.data["contract_id"]]["name"])
-            )
-            account_to = self.get_virtual_contract_account(request.data["contract_id"])
-            account_from = fiaccount_nk_receivables
-            amount = total_amount
+            virtual_account = self.get_virtual_contract_account(request.data["contract_id"])
             book.add_transaction(
-                amount,
-                account_from,
-                account_to,
+                total_amount,
+                fiaccount_nk_receivables,
+                virtual_account,
                 billing_period_end.date(),
-                description,
+                f"NK-Abrechnung {virtual_account.name}",
                 autosave=not self.dry_run,
             )
             logger.info(
@@ -382,13 +374,12 @@ class QRBill(APIView):
             ## Virtual contract
             self.invoice_id = 8888888888
             ref_number = get_reference_nr(None, 0, self.invoice_id)
+            virtual_contract = self.virtual_contract_accounts[request.data["contract_id"]]
             output_filename = "NK_%s_%s.odf" % (
-                self.virtual_contracts[request.data["contract_id"]]["name"],
+                virtual_contract.name,
                 self.invoice_date.strftime("%Y%m%d"),
             )
-            self.context["contract_info"] = self.virtual_contracts[request.data["contract_id"]][
-                "name"
-            ]
+            self.context["contract_info"] = virtual_contract.name
 
         total_amount = request.data["total_amount"]
         if total_amount < 0:

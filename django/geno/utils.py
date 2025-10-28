@@ -13,8 +13,6 @@ from django.contrib import auth
 from django.core.mail import mail_admins
 from django.db.models import Q
 
-from finance.accounting.accounts import AccountKey
-
 logger = logging.getLogger("geno")
 
 
@@ -247,29 +245,3 @@ class JSONDecoderDatetime(json.JSONDecoder):
                     except (ValueError, AttributeError):
                         pass
         return json_dict
-
-
-def build_account(account_prefix_or_key, building=None, rental_units=None, contract=None):
-    if (
-        building is None
-        and rental_units is None
-        and contract
-        and contract.rental_units
-        and contract.rental_units.all().exists()
-    ):
-        rental_units = contract.rental_units.all()
-    if building is None and rental_units and rental_units.first():
-        building = rental_units.first().building
-    if isinstance(account_prefix_or_key, AccountKey):
-        account_prefix = settings.FINANCIAL_ACCOUNTS[account_prefix_or_key]["account_code"]
-        use_unified_account = settings.FINANCIAL_ACCOUNTS[account_prefix_or_key].get(
-            "use_unified_account", False
-        )
-    else:
-        account_prefix = account_prefix_or_key
-        use_unified_account = False
-    if building and building.accounting_postfix and not use_unified_account:
-        postfix = "%03d" % building.accounting_postfix
-        return re.sub(r"(\d+)$", r"\1%s" % postfix, account_prefix)
-    else:
-        return account_prefix

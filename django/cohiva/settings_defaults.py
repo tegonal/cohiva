@@ -583,6 +583,8 @@ GENO_QRBILL_CREDITOR = {
     "line2": cbc.ORG_ADDRESS_CITY,
 }
 
+FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT = False
+
 FINANCIAL_ACCOUNTS = {
     AccountKey.DEFAULT_DEBTOR: {
         "role": AccountRole.QR_DEBTOR,
@@ -620,38 +622,47 @@ FINANCIAL_ACCOUNTS = {
     AccountKey.RENT_BUSINESS: {
         "name": "Mietertrag Gewerbe",
         "account_code": "3001",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
     },
     AccountKey.RENT_PARKING: {
         "name": "Mietertrag Parkplätze",
         "account_code": "3002",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
     },
     AccountKey.RENT_OTHER: {
         "name": "Mietertrag andere (Gemeinschaft/Diverses)",
         "account_code": "3003",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
     },
     AccountKey.NK: {
         "name": "Nebenkosten-Akonto",
         "account_code": "2301",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
     },
     AccountKey.NK_FLAT: {
         "name": "Nebenkosten-Pauschale",
         "account_code": "2301",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
     },
     AccountKey.STROM: {
         "name": "Strompauschalen -> NK-Pauschalzahlungen",
         "account_code": "2302",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
     },
     AccountKey.RENT_REDUCTION: {
         "name": "Mietzinsausfälle",
         "account_code": "3015",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
     },
     AccountKey.RENT_RESERVATION: {
         "name": "Mietzinsvorbehalt",
         "account_code": "3016",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
     },
     AccountKey.MIETDEPOT: {
         "name": "Mietdepots",
         "account_code": "241.0",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
     },
     AccountKey.SCHLUESSELDEPOT: {
         "name": "Schlüsseldepots",
@@ -714,6 +725,48 @@ FINANCIAL_ACCOUNTS = {
     AccountKey.INTEREST_DEPOSIT: {
         "name": "Zinsaufwand Depositenkasse",
         "account_code": "6940",
+    },
+    AccountKey.NK_VIRTUAL_1: {
+        "role": AccountRole.NK_VIRTUAL,
+        "virtual_id": -1,
+        "name": "Gästezimmer",
+        "account_code": "6700",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.NK_VIRTUAL_2: {
+        "role": AccountRole.NK_VIRTUAL,
+        "virtual_id": -2,
+        "name": "Sitzungszimmer",
+        "account_code": "6720",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.NK_VIRTUAL_3: {
+        "role": AccountRole.NK_VIRTUAL,
+        "virtual_id": -3,
+        "name": "Geschäftsstelle",
+        "account_code": "6500",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.NK_VIRTUAL_4: {
+        "role": AccountRole.NK_VIRTUAL,
+        "virtual_id": -4,
+        "name": "Holliger",
+        "account_code": "4581",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.NK_VIRTUAL_5: {
+        "role": AccountRole.NK_VIRTUAL,
+        "virtual_id": -5,
+        "name": "Allgemein",
+        "account_code": "4581",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.NK_VIRTUAL_6: {
+        "role": AccountRole.NK_VIRTUAL,
+        "virtual_id": -6,
+        "name": "Leerstand",
+        "account_code": "4582",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
     },
 }
 
