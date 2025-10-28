@@ -22,7 +22,7 @@ from svglib.svglib import svg2rlg
 
 import geno.settings as geno_settings
 from cohiva.utils.pdf import PdfGenerator
-from finance.accounting import Account, AccountingManager, AccountKey
+from finance.accounting import Account, AccountingBook, AccountingManager, AccountKey
 
 from .models import (
     Address,
@@ -71,6 +71,7 @@ def create_invoices(
     )  # name="Mietzins wiederkehrend")
 
     messages = []
+    count = {"invoices": 0, "contracts": 0}
     with AccountingManager(messages) as book:
         if not book:
             return messages
@@ -86,8 +87,10 @@ def create_invoices(
             )
             if isinstance(result, str):
                 return result
-            count = result
-    messages.append("%s Rechnungen" % count)
+            if result > 0:
+                count["invoices"] += result
+                count["contracts"] += 1
+    messages.append(f"{count['invoices']} Rechnungen für {count['contracts']} Verträge")
     return messages
 
 
@@ -529,13 +532,13 @@ def setup_account(account, contract):
             account.set_code(building=ru.building)
         else:
             logger.error(
-                "Could not find building for contract %s, using default account with no postfix %s."
-                % (contract, account.prefix)
+                f"Could not find building for contract id {contract.pk}, "
+                f" using default account with no postfix {account.prefix}."
             )
             send_error_mail(
                 "get_income_account_code()",
-                "Could not find building for contract %s, using default account with no postfix %s."
-                % (contract, account.prefix),
+                f"Could not find building for contract id {contract.pk}, "
+                f"using default account with no postfix {account.prefix}.",
             )
     return account
 
@@ -685,24 +688,25 @@ def add_invoice_obj(
 
 def delete_invoice_transaction(invoice):
     if not invoice.fin_transaction_ref:
-        logger.warning("Trying to delete an invoice without a fin_transaction_ref: %s" % invoice)
+        logger.warning(f"Trying to delete an invoice without a fin_transaction_ref: {invoice.pk}")
         return None
     try:
-        with AccountingManager() as book:
+        book_type_id, _ = AccountingBook.decode_transaction_id(invoice.fin_transaction_ref)
+        with AccountingManager(book_type_id=book_type_id) as book:
             book.delete_transaction(invoice.fin_transaction_ref)
     except Exception:
         logger.error(
-            "Could not delete transaction %s linked to invoice %s."
-            % (invoice.fin_transaction_ref, invoice)
+            f"Could not delete transaction {invoice.fin_transaction_ref} "
+            f"linked to invoice {invoice.pk}."
         )
         send_error_mail(
             "delete_invoice_transaction()",
-            "Could not delete transaction %s linked to invoice %s."
-            % (invoice.fin_transaction_ref, invoice),
+            f"Could not delete transaction {invoice.fin_transaction_ref} "
+            f"linked to invoice {invoice.pk}.",
         )
         return None
     logger.info(
-        "Deleted fin_transaction_ref %s for invoice %s." % (invoice.fin_transaction_ref, invoice)
+        f"Deleted fin_transaction_ref {invoice.fin_transaction_ref} for invoice {invoice.pk}."
     )
     return None
 

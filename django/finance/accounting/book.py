@@ -60,12 +60,19 @@ class AccountingBook:
         return f"{self.book_type_id}_{backend_id}"
 
     def get_backend_id(self, transaction_id):
-        book_type_id, backend_id = transaction_id.split("_", 1)
+        book_type_id, backend_id = self.decode_transaction_id(transaction_id)
         if book_type_id != self.book_type_id:
             raise ValueError(
                 "book_type_id '{book_type_id}' does not match backend type '{self.book_type_id}'"
             )
         return backend_id
+
+    @staticmethod
+    def decode_transaction_id(transaction_id):
+        parts = transaction_id.split("_", 1)
+        if len(parts) != 2:
+            raise ValueError("Invalid transaction_id: {transaction_id}")
+        return parts
 
     @staticmethod
     def get_date(date):

@@ -489,32 +489,32 @@ LOGGING = {
         "access_intern": {
             "level": "DEBUG",
             "handlers": ["access_intern"],
-            "propagate": True,
+            "propagate": False,
         },
         "access_portal": {
             "level": "DEBUG",
             "handlers": ["access_portal"],
-            "propagate": True,
+            "propagate": False,
         },
         "geno": {
             "level": "DEBUG",
             "handlers": ["geno"],
-            "propagate": True,
+            "propagate": False,
         },
         "reservation": {
             "level": "DEBUG",
             "handlers": ["reservation"],
-            "propagate": True,
+            "propagate": False,
         },
         "credit_accounting": {
             "level": "DEBUG",
             "handlers": ["credit_accounting", "mail_admins_debug"],
-            "propagate": True,
+            "propagate": False,
         },
         "finance_accounting": {
             "level": "DEBUG",
             "handlers": ["finance_accounting", "mail_admins_debug"],
-            "propagate": True,
+            "propagate": False,
         },
     },
 }

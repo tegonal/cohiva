@@ -181,7 +181,7 @@ class QRBill(APIView):
         #      6 - Leerstand -> NK Leerstand [4582]
         self.virtual_contract_accounts = {}
         for key, account in settings.FINANCIAL_ACCOUNTS.items():
-            if account["role"] == AccountRole.NK_VIRTUAL:
+            if account.get("role") == AccountRole.NK_VIRTUAL and "virtual_id" in account:
                 self.virtual_contract_accounts[account["virtual_id"]] = Account.from_settings(key)
         self.invoice_id = None
         self.contract = None
