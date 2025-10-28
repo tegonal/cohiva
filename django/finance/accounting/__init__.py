@@ -1,9 +1,12 @@
-# from django.conf import settings
+from django.conf import settings
 
-from .book import CashctrlBook as CashctrlBook
 from .book import DummyBook
-from .book import GnucashBook as GnucashBook
+from .cashctrl import CashctrlBook as CashctrlBook
+from .gnucash import GnucashBook as GnucashBook
 from .manager import AccountingManager
 
-# TODO: Register books based on settings
+if getattr(settings, "GNUCASH", False):
+    AccountingManager.register(GnucashBook)
+if getattr(settings, "CASHCTRL", False):
+    AccountingManager.register(CashctrlBook)
 AccountingManager.register(DummyBook)

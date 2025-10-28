@@ -3,8 +3,6 @@ class AccountingManager:
 
     @classmethod
     def register(cls, backend_class):
-        if cls.backends:
-            raise RuntimeError("Currently only one accounting backend is supported.")
         cls.backends.append(backend_class)
 
     @classmethod
@@ -17,9 +15,17 @@ class AccountingManager:
     def unregister_all(cls):
         cls.backends = []
 
-    def __init__(self, messages: list | None = None):
+    def __init__(self, messages: list | None = None, book_type_id: str | None = None):
         self.messages = messages
         self.backend_obj = None
+        if self.backends:
+            self.backend_class = self.backends[0]
+            if book_type_id:
+                for backend in self.backends:
+                    if backend.book_type_id == book_type_id:
+                        self.backend_class = backend
+        else:
+            self.backend_class = None
 
     def __enter__(self):
         if not self.backends:

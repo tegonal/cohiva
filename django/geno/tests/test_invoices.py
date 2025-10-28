@@ -10,7 +10,8 @@ from django.db.models import Sum  # , Q
 from django.template import loader
 
 import geno.tests.data as testdata
-from geno.billing import create_invoices, get_book, get_reference_nr
+from finance.accounting import AccountingManager
+from geno.billing import create_invoices, get_reference_nr
 from geno.invoice import InvoiceCreator, InvoiceCreatorError, InvoiceNotUnique
 from geno.models import Contract, Invoice, InvoiceCategory
 
@@ -28,30 +29,26 @@ class InvoicesTest(GenoAdminTestCase):
     def test_invoices_create_and_delete(self):
         create_invoices(dry_run=False, reference_date=datetime.datetime(2001, 4, 15))
 
-        messages = []
-        book = get_book(messages)
         transaction_ids = []
-        for invoice in Invoice.objects.all():
-            self.assertEqual(invoice.year, 2001)
-            self.assertEqual(invoice.month, 4)
-            self.assertEqual(invoice.contract, self.contracts[0])
-            self.assertEqual(invoice.invoice_type, "Invoice")
-            self.assertEqual(
-                invoice.invoice_category, self.invoicecategories[1]
-            )  # Mietzins wiederkehrend
-            if settings.GNUCASH:
-                tr = book.transactions.get(guid=invoice.gnc_transaction)
+        with AccountingManager() as book:
+            for invoice in Invoice.objects.all():
+                self.assertEqual(invoice.year, 2001)
+                self.assertEqual(invoice.month, 4)
+                self.assertEqual(invoice.contract, self.contracts[0])
+                self.assertEqual(invoice.invoice_type, "Invoice")
+                self.assertEqual(
+                    invoice.invoice_category, self.invoicecategories[1]
+                )  # Mietzins wiederkehrend
+                tr = book.get_transaction(invoice.gnc_transaction)
                 self.assertIn(invoice.name, tr.description)
                 transaction_ids.append(invoice.gnc_transaction)
-        book.close()
 
         Invoice.objects.all().delete()
 
-        if settings.GNUCASH:
-            book = get_book(messages)
+        with AccountingManager() as book:
             for tid in transaction_ids:
-                self.assertRaises(KeyError, book.transactions.get, guid=tid)
-            book.close()
+                with self.assertRaises(KeyError):
+                    book.get_transaction(tid)
 
     def test_invoices_when_rental_object_removed(self):
         msg = create_invoices(dry_run=False, reference_date=datetime.datetime(2001, 4, 15))

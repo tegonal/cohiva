@@ -4,7 +4,6 @@ import io
 import logging
 import re
 import tempfile
-import warnings
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from smtplib import SMTPException
 
@@ -15,13 +14,9 @@ from django.template import Context, loader
 from django.utils.html import escape
 from html2text import html2text
 
-## For GnuCash and interest calc.
-from piecash import Split, Transaction, open_book
-
 ## For QR bill and svg -> pdf
 from qrbill import QRBill
 from reportlab.graphics import renderPDF
-from sqlalchemy import exc as sa_exc
 from stdnum.ch import esr
 from svglib.svglib import svg2rlg
 
@@ -82,14 +77,8 @@ class DummyBook:
 def create_invoices(
     dry_run=True, reference_date=None, single_contract=None, building_ids=None, download_only=None
 ):
-    messages = []
-    book = get_book(messages)
-    if not book:
-        return messages
-
     if not reference_date:
         reference_date = datetime.datetime.today()
-    count = 0
 
     if single_contract:
         contracts = Contract.objects.filter(id=single_contract)
@@ -105,406 +94,395 @@ def create_invoices(
         reference_id=10
     )  # name="Mietzins wiederkehrend")
 
-    for contract in contracts:
-        ## Create monthly invoices starting from reference date
-        month = reference_date.month
-        year = reference_date.year
-        stop = False
-        while not stop:
-            invoices = Invoice.objects.filter(
-                contract=contract,
-                year=year,
-                month=month,
-                invoice_type="Invoice",
-                is_additional_invoice=False,
+    messages = []
+    with AccountingManager(messages) as book:
+        if not book:
+            return messages
+        for contract in contracts:
+            ## Create monthly invoices starting from the reference date
+            options = {
+                "download_only": download_only,
+                "single_contract": single_contract,
+                "dry_run": dry_run,
+            }
+            result = create_monthly_invoices(
+                book, contract, reference_date, invoice_category, messages, options
             )
-            if download_only:
-                ## Only generate one bill
-                stop = True
-            elif invoices:
-                stop = True
-                # messages.append('Last invoice found: %s' % invoices.first())
-                break
-
-            ## Add invoice (if needed)
-            factor = Decimal(1.0)
-            invoice_date = datetime.date(year, month, 1)
-
-            if contract.date > invoice_date:
-                stop = True
-                invoice_date = datetime.date(year, month, 15)
-                if contract.date <= invoice_date:
-                    ## Mid-month start
-                    factor = Decimal(0.5)
-                else:
-                    ## Contract is in future
-                    factor = Decimal(0.0)
-
-            if contract.date_end:
-                if contract.date_end <= datetime.date(year, month, 1):
-                    ## Contract has ended
-                    factor = Decimal(0.0)
-                elif contract.date_end <= datetime.date(year, month, 15):
-                    ## Mid-month end
-                    factor = Decimal(0.5)
-
-            ## Use other billing contract if set (for reference number/accounting)
-            if (
-                factor > 0.0
-                and contract.billing_contract
-                and contract.billing_contract != contract
-            ):
-                billing_contract = contract.billing_contract
-                billing_contract_info = "%s (Rechnungs-Vertrag: %s)" % (contract, billing_contract)
-                is_additional_invoice = True
-                ## Add dummy invoice to prevent creation of further invoices
-                invoice = Invoice(
-                    name="Platzhalter: Inkasso läuft über Vertrag %s" % (billing_contract),
-                    invoice_type="Invoice",
-                    invoice_category=invoice_category,
-                    year=year,
-                    month=month,
-                    contract=contract,
-                    date=invoice_date,
-                    amount=Decimal(0.0),
-                )
-                if not dry_run:
-                    invoice.save()
-                messages.append(
-                    "Platzhalter-Montasrechnung %d.%d hinzugefügt: %s."
-                    % (month, year, billing_contract_info)
-                )
-            else:
-                billing_contract = contract
-                billing_contract_info = "%s" % (contract)
-                is_additional_invoice = False
-
-            ## Get rental unit information
-            sum_depot = 0
-            sum_rent_total = 0
-            sum_rent_net = 0
-            sum_nk = 0
-            sum_nk_flat = 0
-            sum_nk_electricity = 0
-            ru_list = []
-            rent_info = []
-            rent_account_key = None  # Wohnungen: Get account from invoice_category (default)
-            for ru in contract.rental_units.all():
-                if ru.rental_type in ("Gewerbe", "Lager", "Hobby"):
-                    rent_account_key = AccountKey.RENT_BUSINESS
-                elif ru.rental_type == "Gemeinschaft":
-                    rent_account_key = AccountKey.RENT_OTHER
-                elif ru.rental_type == "Parkplatz":
-                    rent_account_key = AccountKey.RENT_PARKING
-                if not ru.rent_netto:
-                    ru.rent_netto = Decimal(0.0)
-                if not ru.nk:
-                    ru.nk = Decimal(0.0)
-                if not ru.nk_flat:
-                    ru.nk_flat = Decimal(0.0)
-                if not ru.nk_electricity:
-                    ru.nk_electricity = Decimal(0.0)
-                if not ru.depot:
-                    ru.depot = Decimal(0.0)
-                sum_depot += ru.depot
-                sum_rent_total += ru.rent_total if ru.rent_total else Decimal(0.0)
-                sum_nk += ru.nk
-                sum_nk_flat += ru.nk_flat
-                sum_nk_electricity += ru.nk_electricity
-                sum_rent_net += ru.rent_netto
-                if ru.rent_netto or ru.nk or ru.nk_flat:
-                    rent_info.append(
-                        {
-                            "text": ru.str_short(),
-                            "net": ru.rent_netto,
-                            "nk": ru.nk + ru.nk_flat,
-                            "total": ru.rent_netto + ru.nk + ru.nk_flat,
-                        }
-                    )
-                if ru.nk_electricity:
-                    rent_info.append(
-                        {
-                            "text": "Strompauschale %s" % str(ru.name),
-                            "net": "",
-                            "nk": "",
-                            "total": ru.nk_electricity,
-                        }
-                    )
-                ru_list.append(ru.name)
-
-            if factor > 0.0:
-                count += 1
-                if factor != 1.0:
-                    factor_txt = " (Faktor %.2f)" % factor
-                else:
-                    factor_txt = ""
-
-                if sum_rent_net > 0.0:
-                    description = "Nettomiete %02d.%d für %s%s" % (
-                        month,
-                        year,
-                        "/".join(ru_list),
-                        factor_txt,
-                    )
-                    invoice_value = sum_rent_net * factor
-                    r = add_invoice(
-                        rent_account_key,
-                        invoice_category,
-                        description,
-                        invoice_date,
-                        invoice_value,
-                        book=book,
-                        contract=billing_contract,
-                        year=year,
-                        month=month,
-                        is_additional=is_additional_invoice,
-                        dry_run=dry_run,
-                    )
-                    if not isinstance(r, str):
-                        messages.append(
-                            "Montasrechnung hinzugefügt: %s für %s."
-                            % (description, billing_contract_info)
-                        )
-
-                if sum_nk > 0.0:
-                    description = "Nebenkosten %02d.%d für %s%s" % (
-                        month,
-                        year,
-                        "/".join(ru_list),
-                        factor_txt,
-                    )
-                    invoice_value = sum_nk * factor
-                    r = add_invoice(
-                        AccountKey.NK,
-                        invoice_category,
-                        description,
-                        invoice_date,
-                        invoice_value,
-                        book=book,
-                        contract=billing_contract,
-                        year=year,
-                        month=month,
-                        is_additional=is_additional_invoice,
-                        dry_run=dry_run,
-                    )
-                    if not isinstance(r, str):
-                        messages.append(
-                            "Montasrechnung hinzugefügt: %s für %s."
-                            % (description, billing_contract_info)
-                        )
-
-                if sum_nk_flat > 0.0:
-                    description = "Nebenkosten pauschal %02d.%d für %s%s" % (
-                        month,
-                        year,
-                        "/".join(ru_list),
-                        factor_txt,
-                    )
-                    invoice_value = sum_nk_flat * factor
-                    r = add_invoice(
-                        AccountKey.NK_FLAT,
-                        invoice_category,
-                        description,
-                        invoice_date,
-                        invoice_value,
-                        book=book,
-                        contract=billing_contract,
-                        year=year,
-                        month=month,
-                        is_additional=is_additional_invoice,
-                        dry_run=dry_run,
-                    )
-                    if not isinstance(r, str):
-                        messages.append(
-                            "Montasrechnung hinzugefügt: %s für %s."
-                            % (description, billing_contract_info)
-                        )
-
-                if sum_nk_electricity > 0.0:
-                    description = "Strompauschale %02d.%d für %s%s" % (
-                        month,
-                        year,
-                        "/".join(ru_list),
-                        factor_txt,
-                    )
-                    invoice_value = sum_nk_electricity * factor
-                    r = add_invoice(
-                        AccountKey.STROM,
-                        invoice_category,
-                        description,
-                        invoice_date,
-                        invoice_value,
-                        book=book,
-                        contract=billing_contract,
-                        year=year,
-                        month=month,
-                        is_additional=is_additional_invoice,
-                        dry_run=dry_run,
-                    )
-                    if not isinstance(r, str):
-                        messages.append(
-                            "Montasrechnung hinzugefügt: %s für %s."
-                            % (description, billing_contract_info)
-                        )
-
-                ## Rent reduction
-                if contract.rent_reduction:
-                    description = "Nettomietzinsreduktion %02d.%d für %s%s" % (
-                        month,
-                        year,
-                        "/".join(ru_list),
-                        factor_txt,
-                    )
-                    invoice_value = -1 * contract.rent_reduction * factor
-                    r = add_invoice(
-                        AccountKey.RENT_REDUCTION,
-                        invoice_category,
-                        description,
-                        invoice_date,
-                        invoice_value,
-                        book=book,
-                        contract=billing_contract,
-                        year=year,
-                        month=month,
-                        is_additional=is_additional_invoice,
-                        dry_run=dry_run,
-                    )
-                    if not isinstance(r, str):
-                        messages.append(
-                            "Montasrechnung hinzugefügt: %s für %s."
-                            % (description, billing_contract_info)
-                        )
-                    rent_info.append(
-                        {
-                            "text": "Mietzinsreduktion",
-                            "net": -1 * contract.rent_reduction,
-                            "nk": "",
-                            "total": -1 * contract.rent_reduction,
-                        }
-                    )
-                    sum_rent_net -= contract.rent_reduction
-                    sum_rent_total -= contract.rent_reduction
-
-                ## Rent reservation
-                if contract.rent_reservation:
-                    description = "Mietzinsvorbehalt %02d.%d für %s%s" % (
-                        month,
-                        year,
-                        "/".join(ru_list),
-                        factor_txt,
-                    )
-                    invoice_value = -1 * contract.rent_reservation * factor
-                    r = add_invoice(
-                        AccountKey.RENT_RESERVATION,
-                        invoice_category,
-                        description,
-                        invoice_date,
-                        invoice_value,
-                        book=book,
-                        contract=billing_contract,
-                        year=year,
-                        month=month,
-                        is_additional=is_additional_invoice,
-                        dry_run=dry_run,
-                    )
-                    if not isinstance(r, str):
-                        messages.append(
-                            "Montasrechnung hinzugefügt: %s für %s."
-                            % (description, billing_contract_info)
-                        )
-                    rent_info.append(
-                        {
-                            "text": "Mietzinsvorbehalt",
-                            "net": -1 * contract.rent_reservation,
-                            "nk": "",
-                            "total": -1 * contract.rent_reservation,
-                        }
-                    )
-                    sum_rent_net -= contract.rent_reservation
-                    sum_rent_total -= contract.rent_reservation
-
-            invoice_title = "Mietzinsrechnung %02d.%d" % (month, year)
-            if download_only:
-                (ret, output_filename) = create_qrbill_rent(
-                    invoice_title,
-                    invoice_category,
-                    contract,
-                    rent_info,
-                    invoice_date,
-                    sum_rent_net,
-                    sum_nk,
-                    sum_rent_total,
-                    factor,
-                    dry_run=False,
-                    render=True,
-                    email_template=None,
-                    billing_contract=billing_contract,
-                )
-                book.close()
-                return output_filename
-            elif (
-                factor > 0
-                and sum_rent_total > 0.0
-                and contract.send_qrbill in ("only_next", "always")
-            ):
-                if dry_run and not single_contract:
-                    render = False
-                else:
-                    render = True
-                (ret, output_filename) = create_qrbill_rent(
-                    invoice_title,
-                    invoice_category,
-                    contract,
-                    rent_info,
-                    invoice_date,
-                    sum_rent_net,
-                    sum_nk,
-                    sum_rent_total,
-                    factor,
-                    dry_run=dry_run,
-                    render=render,
-                    email_template=invoice_category.email_template,
-                    billing_contract=billing_contract,
-                )
-                messages = messages + ret
-                if dry_run and single_contract:
-                    book.close()
-                    return output_filename
-
-            ## Continue with previous month
-            if month == 1:
-                month = 12
-                year -= 1
-            else:
-                month -= 1
-
-    book.close()
+            if isinstance(result, str):
+                return result
+            count = result
     messages.append("%s Rechnungen" % count)
     return messages
 
 
-def get_book(messages):
-    if not settings.GNUCASH:
-        return DummyBook()
-    try:
-        if settings.GNUCASH_IGNORE_SQLALCHEMY_WARNINGS:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", category=sa_exc.SAWarning)
-                book = open_book(
-                    uri_conn=settings.GNUCASH_DB_SECRET,
-                    readonly=settings.GNUCASH_READONLY,
-                    do_backup=False,
-                )
-        else:
-            book = open_book(
-                uri_conn=settings.GNUCASH_DB_SECRET,
-                readonly=settings.GNUCASH_READONLY,
-                do_backup=False,
+def create_monthly_invoices(book, contract, reference_date, invoice_category, messages, options):
+    download_only = options.get("download_only")
+    single_contract = options.get("single_contract")
+    dry_run = options.get("dry_run")
+    month = reference_date.month
+    year = reference_date.year
+    stop = False
+    count = 0
+    while not stop:
+        invoices = Invoice.objects.filter(
+            contract=contract,
+            year=year,
+            month=month,
+            invoice_type="Invoice",
+            is_additional_invoice=False,
+        )
+        if download_only:
+            ## Only generate one bill
+            stop = True
+        elif invoices:
+            stop = True
+            # messages.append('Last invoice found: %s' % invoices.first())
+            break
+
+        ## Add invoice (if needed)
+        factor = Decimal(1.0)
+        invoice_date = datetime.date(year, month, 1)
+
+        if contract.date > invoice_date:
+            stop = True
+            invoice_date = datetime.date(year, month, 15)
+            if contract.date <= invoice_date:
+                ## Mid-month start
+                factor = Decimal(0.5)
+            else:
+                ## Contract is in the future
+                factor = Decimal(0.0)
+
+        if contract.date_end:
+            if contract.date_end <= datetime.date(year, month, 1):
+                ## Contract has ended
+                factor = Decimal(0.0)
+            elif contract.date_end <= datetime.date(year, month, 15):
+                ## Mid-month end
+                factor = Decimal(0.5)
+
+        ## Use other billing contract if set (for reference number/accounting)
+        if factor > 0.0 and contract.billing_contract and contract.billing_contract != contract:
+            billing_contract = contract.billing_contract
+            billing_contract_info = "%s (Rechnungs-Vertrag: %s)" % (contract, billing_contract)
+            is_additional_invoice = True
+            ## Add dummy invoice to prevent creation of further invoices
+            invoice = Invoice(
+                name="Platzhalter: Inkasso läuft über Vertrag %s" % (billing_contract),
+                invoice_type="Invoice",
+                invoice_category=invoice_category,
+                year=year,
+                month=month,
+                contract=contract,
+                date=invoice_date,
+                amount=Decimal(0.0),
             )
-    except Exception as e:
-        messages.append("ERROR: Could not open Gnucash book: %s" % e)
-        return None
-    return book
+            if not dry_run:
+                invoice.save()
+            messages.append(
+                "Platzhalter-Montasrechnung %d.%d hinzugefügt: %s."
+                % (month, year, billing_contract_info)
+            )
+        else:
+            billing_contract = contract
+            billing_contract_info = "%s" % (contract)
+            is_additional_invoice = False
+
+        ## Get rental unit information
+        sum_depot = 0
+        sum_rent_total = 0
+        sum_rent_net = 0
+        sum_nk = 0
+        sum_nk_flat = 0
+        sum_nk_electricity = 0
+        ru_list = []
+        rent_info = []
+        rent_account_key = None  # Wohnungen: Get account from invoice_category (default)
+        for ru in contract.rental_units.all():
+            if ru.rental_type in ("Gewerbe", "Lager", "Hobby"):
+                rent_account_key = AccountKey.RENT_BUSINESS
+            elif ru.rental_type == "Gemeinschaft":
+                rent_account_key = AccountKey.RENT_OTHER
+            elif ru.rental_type == "Parkplatz":
+                rent_account_key = AccountKey.RENT_PARKING
+            if not ru.rent_netto:
+                ru.rent_netto = Decimal(0.0)
+            if not ru.nk:
+                ru.nk = Decimal(0.0)
+            if not ru.nk_flat:
+                ru.nk_flat = Decimal(0.0)
+            if not ru.nk_electricity:
+                ru.nk_electricity = Decimal(0.0)
+            if not ru.depot:
+                ru.depot = Decimal(0.0)
+            sum_depot += ru.depot
+            sum_rent_total += ru.rent_total if ru.rent_total else Decimal(0.0)
+            sum_nk += ru.nk
+            sum_nk_flat += ru.nk_flat
+            sum_nk_electricity += ru.nk_electricity
+            sum_rent_net += ru.rent_netto
+            if ru.rent_netto or ru.nk or ru.nk_flat:
+                rent_info.append(
+                    {
+                        "text": ru.str_short(),
+                        "net": ru.rent_netto,
+                        "nk": ru.nk + ru.nk_flat,
+                        "total": ru.rent_netto + ru.nk + ru.nk_flat,
+                    }
+                )
+            if ru.nk_electricity:
+                rent_info.append(
+                    {
+                        "text": "Strompauschale %s" % str(ru.name),
+                        "net": "",
+                        "nk": "",
+                        "total": ru.nk_electricity,
+                    }
+                )
+            ru_list.append(ru.name)
+
+        if factor > 0.0:
+            count += 1
+            if factor != 1.0:
+                factor_txt = " (Faktor %.2f)" % factor
+            else:
+                factor_txt = ""
+
+            if sum_rent_net > 0.0:
+                description = "Nettomiete %02d.%d für %s%s" % (
+                    month,
+                    year,
+                    "/".join(ru_list),
+                    factor_txt,
+                )
+                invoice_value = sum_rent_net * factor
+                r = add_invoice(
+                    rent_account_key,
+                    invoice_category,
+                    description,
+                    invoice_date,
+                    invoice_value,
+                    book=book,
+                    contract=billing_contract,
+                    year=year,
+                    month=month,
+                    is_additional=is_additional_invoice,
+                    dry_run=dry_run,
+                )
+                if not isinstance(r, str):
+                    messages.append(
+                        "Montasrechnung hinzugefügt: %s für %s."
+                        % (description, billing_contract_info)
+                    )
+
+            if sum_nk > 0.0:
+                description = "Nebenkosten %02d.%d für %s%s" % (
+                    month,
+                    year,
+                    "/".join(ru_list),
+                    factor_txt,
+                )
+                invoice_value = sum_nk * factor
+                r = add_invoice(
+                    AccountKey.NK,
+                    invoice_category,
+                    description,
+                    invoice_date,
+                    invoice_value,
+                    book=book,
+                    contract=billing_contract,
+                    year=year,
+                    month=month,
+                    is_additional=is_additional_invoice,
+                    dry_run=dry_run,
+                )
+                if not isinstance(r, str):
+                    messages.append(
+                        "Montasrechnung hinzugefügt: %s für %s."
+                        % (description, billing_contract_info)
+                    )
+
+            if sum_nk_flat > 0.0:
+                description = "Nebenkosten pauschal %02d.%d für %s%s" % (
+                    month,
+                    year,
+                    "/".join(ru_list),
+                    factor_txt,
+                )
+                invoice_value = sum_nk_flat * factor
+                r = add_invoice(
+                    AccountKey.NK_FLAT,
+                    invoice_category,
+                    description,
+                    invoice_date,
+                    invoice_value,
+                    book=book,
+                    contract=billing_contract,
+                    year=year,
+                    month=month,
+                    is_additional=is_additional_invoice,
+                    dry_run=dry_run,
+                )
+                if not isinstance(r, str):
+                    messages.append(
+                        "Montasrechnung hinzugefügt: %s für %s."
+                        % (description, billing_contract_info)
+                    )
+
+            if sum_nk_electricity > 0.0:
+                description = "Strompauschale %02d.%d für %s%s" % (
+                    month,
+                    year,
+                    "/".join(ru_list),
+                    factor_txt,
+                )
+                invoice_value = sum_nk_electricity * factor
+                r = add_invoice(
+                    AccountKey.STROM,
+                    invoice_category,
+                    description,
+                    invoice_date,
+                    invoice_value,
+                    book=book,
+                    contract=billing_contract,
+                    year=year,
+                    month=month,
+                    is_additional=is_additional_invoice,
+                    dry_run=dry_run,
+                )
+                if not isinstance(r, str):
+                    messages.append(
+                        "Montasrechnung hinzugefügt: %s für %s."
+                        % (description, billing_contract_info)
+                    )
+
+            ## Rent reduction
+            if contract.rent_reduction:
+                description = "Nettomietzinsreduktion %02d.%d für %s%s" % (
+                    month,
+                    year,
+                    "/".join(ru_list),
+                    factor_txt,
+                )
+                invoice_value = -1 * contract.rent_reduction * factor
+                r = add_invoice(
+                    AccountKey.RENT_REDUCTION,
+                    invoice_category,
+                    description,
+                    invoice_date,
+                    invoice_value,
+                    book=book,
+                    contract=billing_contract,
+                    year=year,
+                    month=month,
+                    is_additional=is_additional_invoice,
+                    dry_run=dry_run,
+                )
+                if not isinstance(r, str):
+                    messages.append(
+                        "Montasrechnung hinzugefügt: %s für %s."
+                        % (description, billing_contract_info)
+                    )
+                rent_info.append(
+                    {
+                        "text": "Mietzinsreduktion",
+                        "net": -1 * contract.rent_reduction,
+                        "nk": "",
+                        "total": -1 * contract.rent_reduction,
+                    }
+                )
+                sum_rent_net -= contract.rent_reduction
+                sum_rent_total -= contract.rent_reduction
+
+            ## Rent reservation
+            if contract.rent_reservation:
+                description = "Mietzinsvorbehalt %02d.%d für %s%s" % (
+                    month,
+                    year,
+                    "/".join(ru_list),
+                    factor_txt,
+                )
+                invoice_value = -1 * contract.rent_reservation * factor
+                r = add_invoice(
+                    AccountKey.RENT_RESERVATION,
+                    invoice_category,
+                    description,
+                    invoice_date,
+                    invoice_value,
+                    book=book,
+                    contract=billing_contract,
+                    year=year,
+                    month=month,
+                    is_additional=is_additional_invoice,
+                    dry_run=dry_run,
+                )
+                if not isinstance(r, str):
+                    messages.append(
+                        "Montasrechnung hinzugefügt: %s für %s."
+                        % (description, billing_contract_info)
+                    )
+                rent_info.append(
+                    {
+                        "text": "Mietzinsvorbehalt",
+                        "net": -1 * contract.rent_reservation,
+                        "nk": "",
+                        "total": -1 * contract.rent_reservation,
+                    }
+                )
+                sum_rent_net -= contract.rent_reservation
+                sum_rent_total -= contract.rent_reservation
+
+        invoice_title = "Mietzinsrechnung %02d.%d" % (month, year)
+        if download_only:
+            (ret, output_filename) = create_qrbill_rent(
+                invoice_title,
+                invoice_category,
+                contract,
+                rent_info,
+                invoice_date,
+                sum_rent_net,
+                sum_nk,
+                sum_rent_total,
+                factor,
+                dry_run=False,
+                render=True,
+                email_template=None,
+                billing_contract=billing_contract,
+            )
+            return output_filename
+        elif (
+            factor > 0 and sum_rent_total > 0.0 and contract.send_qrbill in ("only_next", "always")
+        ):
+            if dry_run and not single_contract:
+                render = False
+            else:
+                render = True
+            (ret, output_filename) = create_qrbill_rent(
+                invoice_title,
+                invoice_category,
+                contract,
+                rent_info,
+                invoice_date,
+                sum_rent_net,
+                sum_nk,
+                sum_rent_total,
+                factor,
+                dry_run=dry_run,
+                render=render,
+                email_template=invoice_category.email_template,
+                billing_contract=billing_contract,
+            )
+            messages = messages + ret
+            if dry_run and single_contract:
+                return output_filename
+
+        ## Continue with previous month
+        if month == 1:
+            month = 12
+            year -= 1
+        else:
+            month -= 1
+    return count
 
 
 def pay_invoice(invoice, date, amount):
@@ -729,94 +707,24 @@ def add_invoice_obj(
     return invoice
 
 
-## TODO: Consolidate/refactor transaction creation and deletion
-def add_transaction(
-    date,
-    description,
-    account_to_code,
-    account_from_code,
-    amount,
-    book=None,
-    messages=None,
-    dry_run=False,
-):
-    if messages is None:
-        messages = []
-    if not settings.GNUCASH:
-        return None
-    if not isinstance(amount, Decimal):
-        amount_dec = Decimal(str(amount))
-    else:
-        amount_dec = amount
-
-    if not book:
-        book = get_book(messages)
-        close_book = True
-    else:
-        close_book = False
-
-    if not book:
-        return None
-
-    acc_to = book.accounts(code=account_to_code)
-    acc_from = book.accounts(code=account_from_code)
-
-    ## Post date should be datetime.date
-    if isinstance(date, datetime.datetime):
-        date_obj = date.date()
-    elif isinstance(date, datetime.date):
-        date_obj = date
-        # date_obj = datetime.datetime.combine(date, datetime.datetime.min.time())
-    else:
-        date_obj = datetime.datetime.strptime(date, "%Y-%m-%d").date()
-
-    txn = Transaction(
-        post_date=date_obj,
-        enter_date=datetime.datetime.now(),
-        currency=book.currencies(mnemonic="CHF"),
-        description=description,
-    )
-    Split(account=acc_to, value=amount_dec, memo="", transaction=txn)
-    Split(account=acc_from, value=-amount_dec, memo="", transaction=txn)
-    book.flush()
-
-    if close_book:
-        if not dry_run:
-            book.save()
-        book.close()
-
-    return txn.guid
-
-
 def delete_invoice_transaction(invoice):
-    # print("Deleting transaction %s" % invoice.gnc_transaction)
-    if not settings.GNUCASH:
-        return None
     if not invoice.gnc_transaction:
-        logger.warning("Trying to delete invoice withouth gnc_transaction id: %s" % invoice)
+        logger.warning("Trying to delete an invoice without a gnc_transaction id: %s" % invoice)
         return None
-    messages = []
-    book = get_book(messages)
-    if not book:
-        return "Could not open book"
-    tr = None
     try:
-        tr = book.transactions(guid=invoice.gnc_transaction)
-    except KeyError:
+        with AccountingManager() as book:
+            book.delete_transaction(invoice.gnc_transaction)
+    except Exception:
         logger.error(
-            "Could not find and delete transaction %s linked to invoice %s."
+            "Could not delete transaction %s linked to invoice %s."
             % (invoice.gnc_transaction, invoice)
         )
         send_error_mail(
             "delete_invoice_transaction()",
-            "Could not find and delete transaction %s linked to invoice %s."
+            "Could not delete transaction %s linked to invoice %s."
             % (invoice.gnc_transaction, invoice),
         )
         return None
-    if not tr or isinstance(tr, list):
-        return "Could not get transaction with id %s" % (invoice.gnc_transaction)
-    book.delete(tr)
-    book.save()
     logger.info("Deleted gnc_transaction %s for invoice %s." % (invoice.gnc_transaction, invoice))
     return None
 
@@ -1445,95 +1353,97 @@ def process_sepa_transactions(data):
     for item in data["log"]:
         logger.info("%s: %s" % (item["info"], "/".join(item["objects"])))
 
-    book = get_book(data["log"])
-    if not book:
-        errors.append("Kann Buchhaltung nicht öffnen!")
-        return {"errors": errors, "skipped": skipped, "success": success, "log": data["log"]}
-
-    #'id': tx_id, 'date': date, 'amount': amount, 'reference': reference_nr, 'debtor': debtor, 'extra_info': additional_info, 'charges': charges
-    for tx in data["transactions"]:
-        bill_info = parse_reference_nr(tx["reference_nr"])
-        if "error" in bill_info:
-            errors.append(
-                "Ungültige Referenznummer: %s für Buchung %s - CHF %s"
-                % (bill_info["error"], tx["date"], tx["amount"])
-            )
-            continue
-        addtl_info = []
-        if tx["extra_info"]:
-            addtl_info.append(tx["extra_info"])
-        if tx["debtor"]:
-            addtl_info.append(tx["debtor"])
-        if tx["charges"]:
-            addtl_info.append("Charges: %s" % tx["charges"])
-        if bill_info["person"]:
-            bill_info_name = bill_info["person"]
+    with AccountingManager(data["log"]) as book:
+        if book:
+            for tx in data["transactions"]:
+                add_sepa_transaction(book, tx, errors, skipped, success)
         else:
-            bill_info_name = bill_info["contract"]
-        transaction_info_txt = "%s - CHF %s: %s [%s] (%s)" % (
-            tx["date"],
-            tx["amount"],
-            bill_info["description"],
-            bill_info_name,
-            "/".join(addtl_info),
-        )
-        payment_account = None
-        receivable_account = None
-        try:
-            for account in settings.FINANCIAL_ACCOUNTS.values():
-                if account.get("type", None) == "debtor" and normalize_iban(tx["account"]) in (
-                    normalize_iban(account.get("iban", "-")),
-                    normalize_iban(account.get("account_iban", "-")),
-                ):
-                    payment_account = Account.from_settings_dict(account)
-                    break
-            if not payment_account:
-                raise Exception(
-                    f"IBAN {tx['account']} nicht gefunden in settings.FINANCIAL_ACCOUNTS"
-                )
-            receivable_account = Account(
-                name="Debitoren von Rechnung",
-                prefix=bill_info["receivables_account"],
-            )
-        except Exception as e:
-            errors.append(
-                "Buchhaltungs-Konten nicht gefunden: %s/%s (%s) [%s]"
-                % (tx["account"], bill_info["receivables_account"], e, transaction_info_txt)
-            )
-            continue
-
-        r = add_invoice_obj(
-            book,
-            "Payment",  # invoice_type,
-            bill_info["invoice_category"],
-            bill_info["description"],
-            bill_info["person"],
-            payment_account,
-            receivable_account,
-            tx["date"],
-            tx["amount"],
-            contract=bill_info["contract"],
-            year=None,
-            month=None,
-            transaction_id=tx["id"],
-            reference_nr=tx["reference_nr"],
-            additional_info="/".join(addtl_info),
-            dry_run=False,
-        )
-        if isinstance(r, str):
-            if r == f"Invoice with transaction ID {tx['id']} exists already!":
-                skipped.append(
-                    "Buchung mit Transaktions-ID %s existiert bereits (%s)"
-                    % (tx["id"], transaction_info_txt)
-                )
-            else:
-                errors.append(
-                    "Buchung konnte nicht ausgeführt werden: %s (%s)" % (r, transaction_info_txt)
-                )
-        else:
-            success.append(transaction_info_txt)
+            errors.append("Kann Buchhaltung nicht öffnen!")
 
     return {"errors": errors, "skipped": skipped, "success": success, "log": data["log"]}
+
+
+def add_sepa_transaction(book, tx, errors, skipped, success):
+    # tx: 'id': tx_id, 'date': date, 'amount': amount, 'reference': reference_nr,
+    #     'debtor': debtor, 'extra_info': additional_info, 'charges': charges
+    bill_info = parse_reference_nr(tx["reference_nr"])
+    if "error" in bill_info:
+        errors.append(
+            "Ungültige Referenznummer: %s für Buchung %s - CHF %s"
+            % (bill_info["error"], tx["date"], tx["amount"])
+        )
+        return
+    addtl_info = []
+    if tx["extra_info"]:
+        addtl_info.append(tx["extra_info"])
+    if tx["debtor"]:
+        addtl_info.append(tx["debtor"])
+    if tx["charges"]:
+        addtl_info.append("Charges: %s" % tx["charges"])
+    if bill_info["person"]:
+        bill_info_name = bill_info["person"]
+    else:
+        bill_info_name = bill_info["contract"]
+    transaction_info_txt = "%s - CHF %s: %s [%s] (%s)" % (
+        tx["date"],
+        tx["amount"],
+        bill_info["description"],
+        bill_info_name,
+        "/".join(addtl_info),
+    )
+    payment_account = None
+    receivable_account = None
+    try:
+        for account in settings.FINANCIAL_ACCOUNTS.values():
+            if account.get("type", None) == "debtor" and normalize_iban(tx["account"]) in (
+                normalize_iban(account.get("iban", "-")),
+                normalize_iban(account.get("account_iban", "-")),
+            ):
+                payment_account = Account.from_settings_dict(account)
+                break
+        if not payment_account:
+            raise Exception(f"IBAN {tx['account']} nicht gefunden in settings.FINANCIAL_ACCOUNTS")
+        receivable_account = Account(
+            name="Debitoren von Rechnung",
+            prefix=bill_info["receivables_account"],
+        )
+    except Exception as e:
+        errors.append(
+            "Buchhaltungs-Konten nicht gefunden: %s/%s (%s) [%s]"
+            % (tx["account"], bill_info["receivables_account"], e, transaction_info_txt)
+        )
+        return
+
+    r = add_invoice_obj(
+        book,
+        "Payment",  # invoice_type,
+        bill_info["invoice_category"],
+        bill_info["description"],
+        bill_info["person"],
+        payment_account,
+        receivable_account,
+        tx["date"],
+        tx["amount"],
+        contract=bill_info["contract"],
+        year=None,
+        month=None,
+        transaction_id=tx["id"],
+        reference_nr=tx["reference_nr"],
+        additional_info="/".join(addtl_info),
+        dry_run=False,
+    )
+    if isinstance(r, str):
+        if r == f"Invoice with transaction ID {tx['id']} exists already!":
+            skipped.append(
+                "Buchung mit Transaktions-ID %s existiert bereits (%s)"
+                % (tx["id"], transaction_info_txt)
+            )
+        else:
+            errors.append(
+                "Buchung konnte nicht ausgeführt werden: %s (%s)" % (r, transaction_info_txt)
+            )
+    else:
+        success.append(transaction_info_txt)
 
 
 ## Get invoice/bill info based on reference number

@@ -1,17 +1,15 @@
 import datetime
 import logging
 import uuid
-import warnings
-from decimal import Decimal
 
-import piecash
-from django.conf import settings
-from sqlalchemy import exc as sa_exc
+from finance.accounting.transaction import Split, Transaction
 
 logger = logging.getLogger("finance_accounting")
 
 
 class AccountingBook:
+    book_type_id = None
+
     def __init__(self):
         self._transactions = []
         self._book = None
@@ -27,27 +25,29 @@ class AccountingBook:
         autosave=True,
     ):
         return self.add_split_transaction(
-            [
-                {"account": account_debit, "amount": -amount},
-                {"account": account_credit, "amount": amount},
-            ],
-            date,
-            description,
-            currency,
+            Transaction(
+                [
+                    Split(account_debit, -amount),
+                    Split(account_credit, amount),
+                ],
+                date,
+                description,
+                currency,
+            ),
             autosave,
         )
 
     def add_split_transaction(
         self,
-        splits,
-        date=None,
-        description="",
-        currency="CHF",
+        transaction,
         autosave=True,
     ):
         raise NotImplementedError
 
-    def get_account(self, account_number):
+    def get_transaction(self, transaction_id):
+        raise NotImplementedError
+
+    def delete_transaction(self, transaction_id):
         raise NotImplementedError
 
     def save(self):
@@ -55,6 +55,17 @@ class AccountingBook:
 
     def close(self):
         pass
+
+    def build_transaction_id(self, backend_id):
+        return f"{self.book_type_id}_{backend_id}"
+
+    def get_backend_id(self, transaction_id):
+        book_type_id, backend_id = transaction_id.split("_", 1)
+        if book_type_id != self.book_type_id:
+            raise ValueError(
+                "book_type_id '{book_type_id}' does not match backend type '{self.book_type_id}'"
+            )
+        return backend_id
 
     @staticmethod
     def get_date(date):
@@ -72,100 +83,38 @@ class AccountingBook:
 class DummyBook(AccountingBook):
     book_type_id = "dum"
 
-    def add_split_transaction(
-        self,
-        splits,
-        date=None,
-        description="",
-        currency="CHF",
-        autosave=True,
-    ):
-        if len(splits) == 2:
-            logging.info(
-                f"Add dummy transaction: {date} {currency} {splits[0]['amount']}  "
-                f"{splits[0]['account']} => {splits[1]['account']} {description}"
-            )
-        else:
-            for split in splits:
-                logging.info(
-                    f"Add dummy transaction split: {date} {currency} {split['amount']} "
-                    f"{split['account']} {description}"
-                )
-        return f"{self.book_type_id}_{uuid.uuid4()}"
-
-
-class GnucashBook(AccountingBook):
-    book_type_id = "gnc"
-
     def __init__(self):
         super().__init__()
-        self.open_book()
+        self.transactions = {}
 
     def add_split_transaction(
         self,
-        splits,
-        date=None,
-        description="",
-        currency="CHF",
+        transaction,
         autosave=True,
     ):
-        self.open_book()
-        txn = piecash.Transaction(
-            post_date=self.get_date(date),
-            enter_date=datetime.datetime.now(),
-            currency=self._book.currencies(mnemonic="CHF"),
-            description=description,
-        )
-        for split in splits:
-            amount = split["amount"]
-            if isinstance(amount, Decimal):
-                amount_dec = amount
-            else:
-                amount_dec = Decimal(amount)
-            piecash.Split(
-                account=self.get_account(split["account"]),
-                value=amount_dec,
-                memo="",
-                transaction=txn,
-            )
-        if autosave:
-            self.save()
+        if len(transaction.splits) == 2:
+            logging.info(f"Add dummy transaction: {transaction}")
         else:
-            self._book.flush()
-        return f"{self.book_type_id}_{txn.guid}"
-
-    def open_book(self):
-        if self._book:
-            return
-        if settings.GNUCASH_IGNORE_SQLALCHEMY_WARNINGS:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", category=sa_exc.SAWarning)
-                self._book = piecash.open_book(
-                    uri_conn=settings.GNUCASH_DB_SECRET,
-                    readonly=settings.GNUCASH_READONLY,
-                    do_backup=False,
+            for split in transaction.splits:
+                logging.info(
+                    f"Add dummy transaction split: {transaction.date} {transaction.currency} "
+                    f"{split.amount} {split.account} {transaction.description}"
                 )
+        backend_id = uuid.uuid4()
+        self.transactions[backend_id] = {"transaction": transaction, "saved": autosave}
+        return self.build_transaction_id(backend_id)
+
+    def get_transaction(self, transaction_id):
+        backend_id = self.get_backend_id(transaction_id)
+        if self.transactions[backend_id]["saved"]:
+            return self.transactions[backend_id]["transaction"]
         else:
-            self._book = piecash.open_book(
-                uri_conn=settings.GNUCASH_DB_SECRET,
-                readonly=settings.GNUCASH_READONLY,
-                do_backup=False,
-            )
+            raise KeyError(f"Transaction {transaction_id} found")
+
+    def delete_transaction(self, transaction_id):
+        backend_id = self.get_backend_id(transaction_id)
+        del self.transactions[backend_id]
 
     def save(self):
-        if not self._book:
-            return False
-        self._book.save()
-        return True
-
-    def close(self):
-        if self._book:
-            self._book.close()
-            self._book = None
-
-    def get_account(self, account):
-        return self._book.accounts(code=account.code)
-
-
-class CashctrlBook(AccountingBook):
-    book_type_id = "cct"
+        for transaction in self.transactions.values():
+            transaction["saved"] = True

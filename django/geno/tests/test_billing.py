@@ -1,13 +1,9 @@
-from geno.billing import get_book
-
 from .base import BaseTestCase
 
 
-class TestGnucash(BaseTestCase):
-    def test_open_book(self):
-        msg = []
-        book = get_book(msg)
-        self.assertIsNotNone(book, " ".join(msg))
+class TestBilling(BaseTestCase):
+    pass
+    ## TODO: Add tests ;)
 
     ## TODO: Test create_qrbill after moving send-mail code to separate util class
 
