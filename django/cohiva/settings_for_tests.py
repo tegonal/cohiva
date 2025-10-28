@@ -5,7 +5,7 @@ import warnings
 
 from django.utils.deprecation import RemovedInDjango51Warning
 
-from finance.accounting.accounts import AccountKey
+from finance.accounting import AccountKey
 
 ## Load settings
 from .settings import *  # noqa: F403

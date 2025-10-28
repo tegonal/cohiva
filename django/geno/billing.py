@@ -22,8 +22,7 @@ from svglib.svglib import svg2rlg
 
 import geno.settings as geno_settings
 from cohiva.utils.pdf import PdfGenerator
-from finance.accounting import AccountingManager
-from finance.accounting.accounts import Account, AccountKey
+from finance.accounting import Account, AccountingManager, AccountKey
 
 from .models import (
     Address,
@@ -49,29 +48,6 @@ from .utils import (
 )
 
 logger = logging.getLogger("geno")
-
-
-class DummyAccount:
-    pass
-
-
-class DummyBook:
-    """Dummy book object to use if GnuCash is not enabled, i.e. settings.GNUCASH = False"""
-
-    def open(self):
-        pass
-
-    def close(self):
-        pass
-
-    def save(self):
-        pass
-
-    def flush(self):
-        pass
-
-    def accounts(self, *args, **kwargs):
-        return DummyAccount()
 
 
 def create_invoices(
@@ -708,24 +684,26 @@ def add_invoice_obj(
 
 
 def delete_invoice_transaction(invoice):
-    if not invoice.gnc_transaction:
-        logger.warning("Trying to delete an invoice without a gnc_transaction id: %s" % invoice)
+    if not invoice.fin_transaction_ref:
+        logger.warning("Trying to delete an invoice without a fin_transaction_ref: %s" % invoice)
         return None
     try:
         with AccountingManager() as book:
-            book.delete_transaction(invoice.gnc_transaction)
+            book.delete_transaction(invoice.fin_transaction_ref)
     except Exception:
         logger.error(
             "Could not delete transaction %s linked to invoice %s."
-            % (invoice.gnc_transaction, invoice)
+            % (invoice.fin_transaction_ref, invoice)
         )
         send_error_mail(
             "delete_invoice_transaction()",
             "Could not delete transaction %s linked to invoice %s."
-            % (invoice.gnc_transaction, invoice),
+            % (invoice.fin_transaction_ref, invoice),
         )
         return None
-    logger.info("Deleted gnc_transaction %s for invoice %s." % (invoice.gnc_transaction, invoice))
+    logger.info(
+        "Deleted fin_transaction_ref %s for invoice %s." % (invoice.fin_transaction_ref, invoice)
+    )
     return None
 
 
@@ -1576,7 +1554,7 @@ def create_qrbill(
         bill_name = "%s %s" % (address.first_name, address.name)
 
     if render:
-        context["qr_account"] = settings.FINANCIAL_ACCOUNTS["default_debtor"]["iban"]
+        context["qr_account"] = settings.FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]["iban"]
         context["qr_ref_number"] = ref_number
         context["qr_bill_name"] = bill_name
         context["qr_addr_line1"] = address.street

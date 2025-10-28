@@ -8,8 +8,7 @@ from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.db.models import Q
 
-from finance.accounting import AccountingManager
-from finance.accounting.accounts import Account, AccountKey
+from finance.accounting import Account, AccountingManager, AccountKey
 
 from .models import Address, RentalUnit, Share, ShareType, get_active_contracts, get_active_shares
 from .utils import is_member, nformat
@@ -679,7 +678,7 @@ def create_interest_transactions_execute(book_date):
         ## Commit transactions
         try:
             book.save()
-            ret.append({"info": "GnuCash Transaktionen GESPEICHERT!"})
+            ret.append({"info": "Transaktionen in Buchhaltung GESPEICHERT!"})
             for s in new_shares:
                 s.save()
             ret.append({"info": "Zins-Beteiligungen GESPEICHERT!"})

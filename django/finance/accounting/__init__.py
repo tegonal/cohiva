@@ -1,12 +1,19 @@
-from django.conf import settings
-
-from .book import DummyBook
-from .cashctrl import CashctrlBook as CashctrlBook
-from .gnucash import GnucashBook as GnucashBook
+from .account import Account, AccountKey, AccountRole
+from .book import AccountingBook, DummyBook
+from .cashctrl import CashctrlBook
+from .gnucash import GnucashBook
 from .manager import AccountingManager
+from .transaction import Split, Transaction
 
-if getattr(settings, "GNUCASH", False):
-    AccountingManager.register(GnucashBook)
-if getattr(settings, "CASHCTRL", False):
-    AccountingManager.register(CashctrlBook)
-AccountingManager.register(DummyBook)
+__all__ = [
+    "AccountingBook",
+    "DummyBook",
+    "GnucashBook",
+    "CashctrlBook",
+    "AccountingManager",
+    "AccountKey",
+    "AccountRole",
+    "Account",
+    "Transaction",
+    "Split",
+]

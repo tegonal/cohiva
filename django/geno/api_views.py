@@ -15,9 +15,7 @@ from rest_framework.views import APIView
 from stdnum.ch import esr
 
 from credit_accounting.api_views import get_capabilities as credit_accounting_capabilities
-from finance.accounting import AccountingManager
-from finance.accounting.accounts import Account, AccountKey, AccountRole
-from finance.accounting.book import AccountingBook
+from finance.accounting import Account, AccountingBook, AccountingManager, AccountKey, AccountRole
 from geno.billing import (
     add_invoice,
     create_qrbill,
@@ -121,7 +119,7 @@ class Akonto(APIView):
             for c in Contract.objects.filter(Q(id=contract.id) | Q(billing_contract=contract)):
                 akonto = Invoice.objects.filter(
                     contract=c,
-                    gnc_account=fiaccount,
+                    fin_account=fiaccount,
                     date__gte=self.billing_period_start,
                     date__lte=self.billing_period_end,
                 ).aggregate(Sum("amount"))
@@ -144,7 +142,7 @@ class Akonto(APIView):
         ## Get invoices for NK-Akonto and NK-Ausserordentlich
         fiaccount = Account.from_settings(AccountKey.NK)
         akonto_invoices = Invoice.objects.filter(
-            Q(gnc_account__startswith=fiaccount.prefix)
+            Q(fin_account__startswith=fiaccount.prefix)
             | Q(invoice_category=self.invoice_category_nk_ausserordentlich),
             invoice_type="Invoice",
             date__gte=self.billing_period_start,
@@ -207,7 +205,7 @@ class QRBill(APIView):
         )  # Nebenkosten Akonto ausserordentlich
         ref_number = get_reference_nr(invoice_category, self.contract.id)
 
-        self.context["qr_account"] = settings.FINANCIAL_ACCOUNTS["default_debtor"]["iban"]
+        self.context["qr_account"] = settings.FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]["iban"]
         if self.address.organization:
             bill_name = self.address.organization
         else:

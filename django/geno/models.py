@@ -278,9 +278,6 @@ class Address(GenoBase):
         ),
     )
     active = models.BooleanField("Aktiv", db_index=True, default=True)
-    gnucash_id = models.CharField(
-        "GnuCash-ID", max_length=30, unique=True, null=True, default=None
-    )
     import_id = models.CharField(
         "Import-ID", max_length=255, unique=True, null=True, default=None, blank=True
     )
@@ -587,7 +584,6 @@ class Address(GenoBase):
     def save_as_copy(self):
         self.user = None
         self.import_id = None
-        self.gnucash_id = None
         self.random_id = uuid.uuid4()
         super().save_as_copy()
 
@@ -1678,11 +1674,13 @@ class Invoice(GenoBase):
     )
     active = models.BooleanField("Aktiv", default=True, db_index=True)
 
-    ## Gnucash references
-    gnc_transaction = models.CharField("GNC transaction", max_length=1024)
-    gnc_account = models.CharField("GNC account", max_length=50, blank=True)
-    gnc_account_receivables = models.CharField(
-        "GNC account receivables", max_length=50, blank=True
+    ## Financial accounting references
+    fin_transaction_ref = models.CharField(
+        "Transaktions-Referenz Buchhaltung", max_length=1024, blank=True
+    )
+    fin_account = models.CharField("Konto Buchhaltung", max_length=50, blank=True)
+    fin_account_receivables = models.CharField(
+        "Konto Forderungen Buchhaltung", max_length=50, blank=True
     )
 
     def __str__(self):

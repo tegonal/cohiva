@@ -14,7 +14,7 @@ from django.utils.translation import gettext_lazy as _
 
 import cohiva.base_config as cbc
 from cohiva.version import __version__ as COHIVA_VERSION  # noqa: F401
-from finance.accounting.accounts import AccountKey, AccountRole
+from finance.accounting import AccountKey, AccountRole
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -187,6 +187,7 @@ if "portal" in cbc.FEATURES:
 INSTALLED_APPS = (
     ## Geno must be before admin so we can extend templates
     "geno",
+    "finance",
     ## Unfold
     "cohiva.apps.CohivaUnfoldConfig",  # before django.contrib.admin
     "unfold.contrib.filters",  # optional, if special filters are needed
@@ -508,6 +509,11 @@ LOGGING = {
         "credit_accounting": {
             "level": "DEBUG",
             "handlers": ["credit_accounting", "mail_admins_debug"],
+            "propagate": True,
+        },
+        "finance_accounting": {
+            "level": "DEBUG",
+            "handlers": ["finance_accounting", "mail_admins_debug"],
             "propagate": True,
         },
     },

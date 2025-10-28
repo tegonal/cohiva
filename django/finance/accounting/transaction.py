@@ -2,7 +2,7 @@ import datetime
 from dataclasses import dataclass
 from decimal import Decimal
 
-from finance.accounting.accounts import Account
+from .account import Account
 
 
 @dataclass

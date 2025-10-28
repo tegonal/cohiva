@@ -3,8 +3,17 @@ from uuid import UUID
 
 from django.test import TestCase
 
-from finance.accounting import AccountingManager, CashctrlBook, DummyBook, GnucashBook
-from finance.accounting.accounts import Account, AccountKey, AccountRole
+from finance.accounting import (
+    Account,
+    AccountingManager,
+    AccountKey,
+    AccountRole,
+    Split,
+    Transaction,
+)
+from finance.accounting.book import DummyBook
+from finance.accounting.cashctrl import CashctrlBook
+from finance.accounting.gnucash import GnucashBook
 
 
 class AccountingTestCase(TestCase):
@@ -104,28 +113,27 @@ class GnucashBookTestCase(TestCase):
             self.assertTrue(transaction_id.startswith("gnc_"))
             self.assertIsInstance(UUID(transaction_id[4:]), UUID)
 
-    @patch("finance.accounting.book.GnucashBook.save")
+    @patch("finance.accounting.gnucash.GnucashBook.save")
     def test_add_split_transaction_and_autosave(
         self,
         mock_save,
     ):
         messages = []
         splits = [
-            {"account": self.account1, "amount": 150},
-            {"account": self.account2, "amount": -50},
-            {"account": self.account3, "amount": -100},
+            Split(account=self.account1, amount=150),
+            Split(account=self.account2, amount=-50),
+            Split(account=self.account3, amount=100),
         ]
         with AccountingManager(messages) as book:
             transaction_id = book.add_split_transaction(
-                splits, date="2020-01-02", description="Split Transaction Test", autosave=False
+                Transaction(splits, date="2020-01-02", description="Split Transaction Test"),
+                autosave=False,
             )
             self.assertFalse(mock_save.called)
             self.assertTrue(transaction_id.startswith("gnc_"))
             self.assertIsInstance(UUID(transaction_id[4:]), UUID)
             book.add_split_transaction(
-                splits,
-                date="2020-01-02",
-                description="Split Transaction Test",
+                Transaction(splits, date="2020-01-02", description="Split Transaction Test"),
             )
             mock_save.assert_called_once()
 

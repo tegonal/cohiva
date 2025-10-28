@@ -6,9 +6,9 @@ import piecash
 from django.conf import settings
 from sqlalchemy import exc as sa_exc
 
-from finance.accounting.accounts import Account
-from finance.accounting.book import AccountingBook
-from finance.accounting.transaction import Split, Transaction
+from .account import Account
+from .book import AccountingBook
+from .transaction import Split, Transaction
 
 # logger = logging.getLogger("finance_accounting")
 
@@ -22,27 +22,23 @@ class GnucashBook(AccountingBook):
 
     def add_split_transaction(
         self,
-        splits,
-        date=None,
-        description="",
-        currency="CHF",
+        transaction,
         autosave=True,
     ):
         self._open_book()
         txn = piecash.Transaction(
-            post_date=self.get_date(date),
+            post_date=self.get_date(transaction.date),
             enter_date=datetime.datetime.now(),
-            currency=self._book.currencies(mnemonic="CHF"),
-            description=description,
+            currency=self._book.currencies(mnemonic=transaction.currency),
+            description=transaction.description,
         )
-        for split in splits:
-            amount = split["amount"]
-            if isinstance(amount, Decimal):
-                amount_dec = amount
+        for split in transaction.splits:
+            if isinstance(split.amount, Decimal):
+                amount_dec = split.amount
             else:
-                amount_dec = Decimal(amount)
+                amount_dec = Decimal(split.amount)
             piecash.Split(
-                account=self._get_gnc_account(split["account"]),
+                account=self._get_gnc_account(split.account),
                 value=amount_dec,
                 memo="",
                 transaction=txn,

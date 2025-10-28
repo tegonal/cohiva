@@ -33,8 +33,7 @@ from stdnum.ch import esr
 from unfold.enums import ActionVariant
 
 from credit_accounting.forms import TransactionUploadForm
-from finance.accounting import AccountingManager
-from finance.accounting.accounts import Account, AccountKey
+from finance.accounting import Account, AccountingManager, AccountKey
 
 if hasattr(settings, "SHARE_PLOT") and settings.SHARE_PLOT:
     ## For Plotting
@@ -3464,7 +3463,7 @@ class InvoiceBatchGenerateView(CohivaAdminViewMixin, TemplateView):
                     buildings=self.request.GET.get("buildings[]", ""),
                 )
             )
-        ret.append({"info": "GnuCash Rechnungen erstellen:", "objects": invoices})
+        ret.append({"info": "Rechnungen in Buchhaltung erstellen:", "objects": invoices})
         return ret
 
 

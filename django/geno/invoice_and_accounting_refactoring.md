@@ -1,19 +1,19 @@
 # Intro
 
-This files collects information regarding refactoring of invoicing and gnucash interface code.
+This files collects information regarding refactoring of invoicing and accounting interface code.
 
 # Inivoice creation
 
 ## Level 0: Direct Invoice() object creation
 
-gnucash.py:
+billing.py:
 
-    add_invoice_obj() ==> Creates Invoice and GNC-transaction
-    create_invoices() ==> Creates placeholder Invoices for linked billing contracts (no GNC-transaction)
+    add_invoice_obj() ==> Creates Invoice and accounting transaction
+    create_invoices() ==> Creates placeholder Invoices for linked billing contracts (no accounting transactions)
 
 ## Level 1: Callers of `add_invoice_obj()`
 
-gnucash.py:
+billing.py:
 
     process_sepa_transactions()
     add_payment()
@@ -28,9 +28,9 @@ gnucash.py:
 
 ## Level 2b: Callers of `add_payment()`
 
-    views.py: transaction_invoce() [TransactionFormInvoice]    => gnucash.py: pay_invoice()
-	      transaction()        [TransactionForm]           => gnucash.py: process_transaction()
-	      transaction_upload() [TransactionUploadFileForm] => gnucash.py: process_transaction()
+    views.py: transaction_invoce() [TransactionFormInvoice]    => billing.py: pay_invoice()
+	      transaction()        [TransactionForm]           => billing.py: process_transaction()
+	      transaction_upload() [TransactionUploadFileForm] => billing.py: process_transaction()
 
 ## Level 2c: Callers of `process_sepa_transactions()`
 

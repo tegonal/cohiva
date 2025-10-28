@@ -1,4 +1,4 @@
-from finance.accounting.book import AccountingBook
+from .book import AccountingBook
 
 # logger = logging.getLogger("finance_accounting")
 

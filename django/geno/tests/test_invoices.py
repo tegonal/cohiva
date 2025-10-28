@@ -10,7 +10,7 @@ from django.db.models import Sum  # , Q
 from django.template import loader
 
 import geno.tests.data as testdata
-from finance.accounting import AccountingManager
+from finance.accounting import AccountingManager, AccountKey
 from geno.billing import create_invoices, get_reference_nr
 from geno.invoice import InvoiceCreator, InvoiceCreatorError, InvoiceNotUnique
 from geno.models import Contract, Invoice, InvoiceCategory
@@ -39,9 +39,9 @@ class InvoicesTest(GenoAdminTestCase):
                 self.assertEqual(
                     invoice.invoice_category, self.invoicecategories[1]
                 )  # Mietzins wiederkehrend
-                tr = book.get_transaction(invoice.gnc_transaction)
+                tr = book.get_transaction(invoice.fin_transaction_ref)
                 self.assertIn(invoice.name, tr.description)
-                transaction_ids.append(invoice.gnc_transaction)
+                transaction_ids.append(invoice.fin_transaction_ref)
 
         Invoice.objects.all().delete()
 
@@ -197,9 +197,9 @@ class InvoicesTest(GenoAdminTestCase):
         self.assertEqual(payment.amount, 100)
 
         if settings.GNUCASH:
-            self.assertNotEqual(payment.gnc_transaction, "")
+            self.assertNotEqual(payment.fin_transaction_ref, "")
         else:
-            self.assertEqual(payment.gnc_transaction, "")
+            self.assertEqual(payment.fin_transaction_ref, "")
         invoice.delete()
         payment.delete()
 
@@ -211,7 +211,7 @@ class InvoicesTest(GenoAdminTestCase):
         for invoice in invoices:
             date = invoice.date + datetime.timedelta(days=10)
             info = {}
-            info["iban"] = settings.FINANCIAL_ACCOUNTS["default_debtor"]["iban"]
+            info["iban"] = settings.FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]["iban"]
             info["refnr"] = get_reference_nr(
                 invoice.invoice_category, invoice.person.id, invoice.id
             )
@@ -241,13 +241,13 @@ class InvoicesTest(GenoAdminTestCase):
             amount=Decimal("99.95"),
         )
 
-        if not settings.FINANCIAL_ACCOUNTS["default_debtor"]["iban"]:
+        if not settings.FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]["iban"]:
             raise AssertionError(
-                "FINANCIAL_ACCOUNTS['default_debtor']['iban'] must be set for this test."
+                "FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]['iban'] must be set for this test."
             )
-        if "account_iban" not in settings.FINANCIAL_ACCOUNTS["default_debtor"]:
+        if "account_iban" not in settings.FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]:
             raise AssertionError(
-                "FINANCIAL_ACCOUNTS['default_debtor']['account_iban'] "
+                "FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]['account_iban'] "
                 "must be defined for this test."
             )
 
@@ -276,11 +276,11 @@ class InvoicesTest(GenoAdminTestCase):
         self.assertEqual(payments[1].amount, Decimal("99.95"))
 
         if settings.GNUCASH:
-            self.assertNotEqual(payments[0].gnc_transaction, "")
-            self.assertNotEqual(payments[1].gnc_transaction, "")
+            self.assertNotEqual(payments[0].fin_transaction_ref, "")
+            self.assertNotEqual(payments[1].fin_transaction_ref, "")
         else:
-            self.assertEqual(payments[0].gnc_transaction, "")
-            self.assertEqual(payments[1].gnc_transaction, "")
+            self.assertEqual(payments[0].fin_transaction_ref, "")
+            self.assertEqual(payments[1].fin_transaction_ref, "")
         Invoice.objects.all().delete()
 
 

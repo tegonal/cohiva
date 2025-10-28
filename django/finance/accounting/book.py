@@ -2,7 +2,7 @@ import datetime
 import logging
 import uuid
 
-from finance.accounting.transaction import Split, Transaction
+from .transaction import Split, Transaction
 
 logger = logging.getLogger("finance_accounting")
 
@@ -77,7 +77,7 @@ class AccountingBook:
             return datetime.datetime.strptime(date, "%Y-%m-%d").date()
         if isinstance(date, datetime.datetime):
             return date.date()
-        raise ValueError("date must be a string or a datetime.date object")
+        raise ValueError("date must be a string, datetime.date, or datetime.datetime object")
 
 
 class DummyBook(AccountingBook):
