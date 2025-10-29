@@ -1,6 +1,7 @@
 from unittest.mock import patch
 from uuid import UUID
 
+from django.conf import settings
 from django.test import TestCase
 
 from finance.accounting import (
@@ -12,8 +13,8 @@ from finance.accounting import (
     Transaction,
 )
 from finance.accounting.book import DummyBook
-from finance.accounting.cashctrl import CashctrlBook
 from finance.accounting.gnucash import GnucashBook
+from geno.models import Building
 
 
 class AccountingTestCase(TestCase):
@@ -28,6 +29,7 @@ class AccountingTestCase(TestCase):
         with self.assertRaises(RuntimeError, msg="Keine Buchhaltungsanbindung konfiguriert."):
             with AccountingManager() as book:
                 pass
+        AccountingManager.register_backends_from_settings()
 
     def test_account_minimal(self):
         account = Account("Test", "1000")
@@ -59,16 +61,33 @@ class AccountingTestCase(TestCase):
         self.assertEqual(account.iban, "CH7730000001250094239")
         self.assertEqual(account.account_iban, None)
 
+    def test_set_account_code(self):
+        account = Account("test", prefix="1312")
+        self.assertEqual(account.code, account.prefix)
+        account.set_code()
+        self.assertEqual(account.code, account.prefix)
+        account = Account("test", prefix="1312", building_based=True).set_code()
+        self.assertEqual(account.code, account.prefix)
+
+        building = Building.objects.create(name="b1", accounting_postfix=1)
+        account = Account("test", prefix="1312").set_code(building=building)
+        self.assertEqual(account.code, "1312")
+        account = Account("test", prefix="1312", building_based=True).set_code(building=building)
+        self.assertEqual(account.code, "1312001")
+        account.building_based = False
+        account.set_code(building=building)
+        self.assertEqual(account.code, "1312")
+
 
 class DummyBookTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        AccountingManager.unregister_all()
-        AccountingManager.register(DummyBook)
+        AccountingManager.default_backend_label = "dummy_test"
 
     @classmethod
     def tearDownClass(cls):
+        AccountingManager.default_backend_label = settings.FINANCIAL_ACCOUNTING_DEFAULT_BACKEND
         super().tearDownClass()
 
     def test_get_book(self):
@@ -88,14 +107,14 @@ class GnucashBookTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        AccountingManager.unregister_all()
-        AccountingManager.register(GnucashBook)
+        AccountingManager.default_backend_label = "gnucash_test"
         cls.account1 = Account("Test1", "1000")
         cls.account2 = Account("Test2", "2000")
         cls.account3 = Account("Test3", "3000")
 
     @classmethod
     def tearDownClass(cls):
+        AccountingManager.default_backend_label = settings.FINANCIAL_ACCOUNTING_DEFAULT_BACKEND
         super().tearDownClass()
 
     def test_get_book(self):
@@ -142,9 +161,9 @@ class CashctrlBookTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        AccountingManager.unregister_all()
-        AccountingManager.register(CashctrlBook)
+        AccountingManager.default_backend_label = "cashctrl_test"
 
     @classmethod
     def tearDownClass(cls):
+        AccountingManager.default_backend_label = settings.FINANCIAL_ACCOUNTING_DEFAULT_BACKEND
         super().tearDownClass()

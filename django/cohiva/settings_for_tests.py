@@ -2,9 +2,11 @@
 
 import os
 import warnings
+from urllib.parse import quote
 
 from django.utils.deprecation import RemovedInDjango51Warning
 
+import cohiva.base_config as cbc
 from finance.accounting import AccountKey
 
 ## Load settings
@@ -33,3 +35,30 @@ IS_RUNNING_TESTS = True
 GENO_FORMAL = True
 RESERVATION_BLOCKER_RULES = []
 FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]["iban"] = "CH7730000001250094239"
+
+FINANCIAL_ACCOUNTING_DEFAULT_BACKEND = "dummy_test"
+FINANCIAL_ACCOUNTING_BACKENDS = {
+    "gnucash_test": {
+        "BACKEND": "finance.accounting.GnucashBook",
+        "OPTIONS": {
+            "DB_SECRET": (
+                f"mysql://{cbc.DB_PREFIX}:{quote(cbc.DB_PASSWORD)}@{cbc.DB_HOSTNAME}/"
+                f"{cbc.DB_PREFIX}_gnucash_test?charset=utf8"
+            ),
+            "READONLY": False,
+            "IGNORE_SQLALCHEMY_WARNINGS": True,
+        },
+    },
+    "cashctrl_test": {
+        "BACKEND": "finance.accounting.CashctrlBook",
+        "OPTIONS": {
+            # TODO
+        },
+    },
+    "dummy_test": {
+        "BACKEND": "finance.accounting.DummyBook",
+        "OPTIONS": {
+            "SAVE_TRANSACTIONS": True,
+        },
+    },
+}

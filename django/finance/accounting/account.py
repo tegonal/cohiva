@@ -1,6 +1,7 @@
-import re
 from dataclasses import dataclass
 from enum import Enum
+
+from geno.utils import build_account
 
 
 class AccountKey(Enum):
@@ -84,20 +85,10 @@ class Account:
 
     def set_code(self, building=None, rental_units=None, contract=None):
         if self.building_based:
-            if (
-                building is None
-                and rental_units is None
-                and contract
-                and contract.rental_units
-                and contract.rental_units.all().exists()
-            ):
-                rental_units = contract.rental_units.all()
-            if building is None and rental_units and rental_units.first():
-                building = rental_units.first().building
-            if building and building.accounting_postfix:
-                postfix = "%03d" % building.accounting_postfix
-                self._code = re.sub(r"(\d+)$", r"\1%s" % postfix, self.prefix)
-        self._code = self.prefix
+            self._code = build_account(self.prefix, building, rental_units, contract)
+        else:
+            self._code = self.prefix
+        return self
 
     @property
     def code(self):

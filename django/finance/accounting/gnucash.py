@@ -3,7 +3,6 @@ import warnings
 from decimal import Decimal
 
 import piecash
-from django.conf import settings
 from sqlalchemy import exc as sa_exc
 
 from .account import Account
@@ -16,8 +15,8 @@ from .transaction import Split, Transaction
 class GnucashBook(AccountingBook):
     book_type_id = "gnc"
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._open_book()
 
     def add_split_transaction(
@@ -83,18 +82,18 @@ class GnucashBook(AccountingBook):
     def _open_book(self):
         if self._book:
             return
-        if settings.GNUCASH_IGNORE_SQLALCHEMY_WARNINGS:
+        if self.get_settings_option("IGNORE_SQLALCHEMY_WARNINGS"):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", category=sa_exc.SAWarning)
                 self._book = piecash.open_book(
-                    uri_conn=settings.GNUCASH_DB_SECRET,
-                    readonly=settings.GNUCASH_READONLY,
+                    uri_conn=self.get_settings_option("DB_SECRET"),
+                    readonly=self.get_settings_option("READONLY", False),
                     do_backup=False,
                 )
         else:
             self._book = piecash.open_book(
-                uri_conn=settings.GNUCASH_DB_SECRET,
-                readonly=settings.GNUCASH_READONLY,
+                uri_conn=self.get_settings_option("DB_SECRET"),
+                readonly=self.get_settings_option("READONLY", False),
                 do_backup=False,
             )
 

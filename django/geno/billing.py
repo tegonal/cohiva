@@ -22,7 +22,8 @@ from svglib.svglib import svg2rlg
 
 import geno.settings as geno_settings
 from cohiva.utils.pdf import PdfGenerator
-from finance.accounting import Account, AccountingBook, AccountingManager, AccountKey
+from cohiva.utils.strings import pluralize
+from finance.accounting import Account, AccountingBook, AccountingManager, AccountKey, AccountRole
 
 from .models import (
     Address,
@@ -82,19 +83,23 @@ def create_invoices(
                 "single_contract": single_contract,
                 "dry_run": dry_run,
             }
-            result = create_monthly_invoices(
-                book, contract, reference_date, invoice_category, messages, options
+            result, result_messages = create_monthly_invoices(
+                book, contract, reference_date, invoice_category, options
             )
+            messages.extend(result_messages)
             if isinstance(result, str):
                 return result
             if result > 0:
                 count["invoices"] += result
                 count["contracts"] += 1
-    messages.append(f"{count['invoices']} Rechnungen für {count['contracts']} Verträge")
+    messages.append(
+        f"{pluralize(count['invoices'], 'Rechnung', 'Rechnungen')} für "
+        f"{pluralize(count['contracts'], 'Vertrag', 'Verträge')}"
+    )
     return messages
 
 
-def create_monthly_invoices(book, contract, reference_date, invoice_category, messages, options):
+def create_monthly_invoices(book, contract, reference_date, invoice_category, options):
     download_only = options.get("download_only")
     single_contract = options.get("single_contract")
     dry_run = options.get("dry_run")
@@ -102,6 +107,7 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, me
     year = reference_date.year
     stop = False
     count = 0
+    messages = []
     while not stop:
         invoices = Invoice.objects.filter(
             contract=contract,
@@ -428,7 +434,7 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, me
                 email_template=None,
                 billing_contract=billing_contract,
             )
-            return output_filename
+            return output_filename, messages
         elif (
             factor > 0 and sum_rent_total > 0.0 and contract.send_qrbill in ("only_next", "always")
         ):
@@ -451,9 +457,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, me
                 email_template=invoice_category.email_template,
                 billing_contract=billing_contract,
             )
-            messages = messages + ret
+            messages.extend(ret)
             if dry_run and single_contract:
-                return output_filename
+                return output_filename, messages
 
         ## Continue with previous month
         if month == 1:
@@ -461,7 +467,7 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, me
             year -= 1
         else:
             month -= 1
-    return count
+    return count, messages
 
 
 def pay_invoice(invoice, date, amount):
@@ -609,13 +615,13 @@ def add_invoice(
 
 
 def add_invoice_obj(
-    book,
+    book: AccountingBook,
     invoice_type,
     invoice_category,
     description,
     person,
-    account,
-    receivables_account,
+    account: Account,
+    receivables_account: Account,
     date,
     amount,
     contract=None,
@@ -675,9 +681,12 @@ def add_invoice_obj(
             comment=comment,
         )
         ## TODO: Change acc_from and acc_to numbers (with ID?)
-        transaction_id = book.add_transaction(
+        fin_transaction_ref = book.add_transaction(
             amount_dec, acc_from, acc_to, date, txn_description, autosave=False
         )
+        invoice.fin_transaction_ref = fin_transaction_ref
+        invoice.fin_account = account.code
+        invoice.fin_receivables_account = receivables_account.code
     except Exception as e:
         return "Could not create invoice: %s" % e
 
@@ -1374,10 +1383,12 @@ def add_sepa_transaction(book, tx, errors, skipped, success):
         "/".join(addtl_info),
     )
     payment_account = None
-    receivable_account = None
+    receivables_account = None
     try:
         for account in settings.FINANCIAL_ACCOUNTS.values():
-            if account.get("type", None) == "debtor" and normalize_iban(tx["account"]) in (
+            if account.get(
+                "role", AccountRole.DEFAULT
+            ) == AccountRole.QR_DEBTOR and normalize_iban(tx["account"]) in (
                 normalize_iban(account.get("iban", "-")),
                 normalize_iban(account.get("account_iban", "-")),
             ):
@@ -1385,7 +1396,7 @@ def add_sepa_transaction(book, tx, errors, skipped, success):
                 break
         if not payment_account:
             raise Exception(f"IBAN {tx['account']} nicht gefunden in settings.FINANCIAL_ACCOUNTS")
-        receivable_account = Account(
+        receivables_account = Account(
             name="Debitoren von Rechnung",
             prefix=bill_info["receivables_account"],
         )
@@ -1403,7 +1414,7 @@ def add_sepa_transaction(book, tx, errors, skipped, success):
         bill_info["description"],
         bill_info["person"],
         payment_account,
-        receivable_account,
+        receivables_account,
         tx["date"],
         tx["amount"],
         contract=bill_info["contract"],
@@ -1732,7 +1743,7 @@ def create_qrbill_rent(
         else:
             messages.append("FEHLER beim Versenden des Emails.")
 
-    return (messages, output_filename)
+    return messages, output_filename
 
 
 ## Takes either a POD template or a base_pdf_file, output goes to /tmp/<output_pdf_file>

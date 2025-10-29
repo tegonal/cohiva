@@ -57,7 +57,7 @@ class InvoicesTest(GenoAdminTestCase):
         self.assertIn("Montasrechnung hinzugefügt: Nettomiete 04.2001 für 001a/001b für", msg[0])
         self.assertIn("Montasrechnung hinzugefügt: Nebenkosten 04.2001 für 001a/001b für", msg[1])
         self.assertIn("Email mit QR-Rechnung an &quot;Anna Muster&quot;", msg[2])
-        self.assertEqual("1 Rechnungen", msg[3])
+        self.assertEqual("1 Rechnung für 1 Vertrag", msg[3])
         self.assertEqual(len(msg), 4)
         self.assert_invoices(2, 1100 + 220)
 
@@ -71,7 +71,7 @@ class InvoicesTest(GenoAdminTestCase):
         # print("=====")
         self.assertIn("Montasrechnung hinzugefügt: Nettomiete 06.2001 für 001a für", msg[0])
         self.assertIn("Montasrechnung hinzugefügt: Nettomiete 05.2001 für 001a für", msg[2])
-        self.assertEqual("2 Rechnungen", msg[4])
+        self.assertEqual("2 Rechnungen für 1 Vertrag", msg[4])
         self.assert_invoices(3 * 2, 3 * 1100 + 220)
 
     def test_invoices_when_moving_rental_object_to_separate_contract_with_link(self):
@@ -195,11 +195,7 @@ class InvoicesTest(GenoAdminTestCase):
         self.assertEqual(payment.invoice_category, self.invoicecategories[0])
         self.assertEqual(payment.date, datetime.date(2025, 6, 12))
         self.assertEqual(payment.amount, 100)
-
-        if settings.GNUCASH:
-            self.assertNotEqual(payment.fin_transaction_ref, "")
-        else:
-            self.assertEqual(payment.fin_transaction_ref, "")
+        self.assertNotEqual(payment.fin_transaction_ref, "")
         invoice.delete()
         payment.delete()
 
@@ -275,12 +271,8 @@ class InvoicesTest(GenoAdminTestCase):
         self.assertEqual(payments[1].date, datetime.date(2000, 1, 12))
         self.assertEqual(payments[1].amount, Decimal("99.95"))
 
-        if settings.GNUCASH:
-            self.assertNotEqual(payments[0].fin_transaction_ref, "")
-            self.assertNotEqual(payments[1].fin_transaction_ref, "")
-        else:
-            self.assertEqual(payments[0].fin_transaction_ref, "")
-            self.assertEqual(payments[1].fin_transaction_ref, "")
+        self.assertNotEqual(payments[0].fin_transaction_ref, "")
+        self.assertNotEqual(payments[1].fin_transaction_ref, "")
         Invoice.objects.all().delete()
 
 

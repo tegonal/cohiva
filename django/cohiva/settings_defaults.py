@@ -484,7 +484,7 @@ LOGGING = {
         "django.request": {
             "handlers": ["mail_admins"],
             "level": "ERROR",
-            "propagate": True,
+            "propagate": False,
         },
         "access_intern": {
             "level": "DEBUG",
@@ -589,8 +589,35 @@ GENO_QRBILL_CREDITOR = {
     "line2": cbc.ORG_ADDRESS_CITY,
 }
 
-FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT = False
+FINANCIAL_ACCOUNTING_DEFAULT_BACKEND = "dummy"
+FINANCIAL_ACCOUNTING_BACKENDS = {
+    "gnucash": {
+        "BACKEND": "finance.accounting.GnucashBook",
+        "OPTIONS": {
+            "DB_SECRET": (
+                f"mysql://{cbc.DB_PREFIX}:{quote(cbc.DB_PASSWORD)}@{cbc.DB_HOSTNAME}/"
+                f"{cbc.DB_PREFIX}_gnucash_test?charset=utf8"
+            ),
+            "READONLY": False,
+            "IGNORE_SQLALCHEMY_WARNINGS": True,
+        },
+    },
+    "cashctrl": {
+        "BACKEND": "finance.accounting.CashctrlBook",
+        "OPTIONS": {
+            # TODO
+        },
+    },
+    "dummy": {
+        "BACKEND": "finance.accounting.DummyBook",
+        "OPTIONS": {
+            # Save transactions in RAM? (until the server is restarted)
+            "SAVE_TRANSACTIONS": False,
+        },
+    },
+}
 
+FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT = False
 FINANCIAL_ACCOUNTS = {
     AccountKey.DEFAULT_DEBTOR: {
         "role": AccountRole.QR_DEBTOR,
@@ -849,13 +876,6 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 ## GnuCash interface
-GNUCASH = False
-GNUCASH_DB_SECRET = (
-    f"mysql://{cbc.DB_PREFIX}:{quote(cbc.DB_PASSWORD)}@{cbc.DB_HOSTNAME}/"
-    f"{cbc.DB_PREFIX}_gnucash_test?charset=utf8"
-)
-GNUCASH_READONLY = False
-GNUCASH_IGNORE_SQLALCHEMY_WARNINGS = True
 
 ## CreateSend API
 CREATESEND_API_KEY = None
