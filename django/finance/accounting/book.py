@@ -110,7 +110,7 @@ class DummyBook(AccountingBook):
         transaction,
         autosave=True,
     ):
-        backend_id = uuid.uuid4()
+        backend_id = str(uuid.uuid4())
         if len(transaction.splits) == 2:
             logger.info(f"Add dummy transaction: {transaction} id={backend_id}")
         else:
@@ -130,7 +130,7 @@ class DummyBook(AccountingBook):
         if self.transactions[backend_id]["saved"]:
             return self.transactions[backend_id]["transaction"]
         else:
-            raise KeyError(f"Transaction {transaction_id} found")
+            raise KeyError(f"Transaction {transaction_id} not found")
 
     def delete_transaction(self, transaction_id):
         if not self._save_transactions:
