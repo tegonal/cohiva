@@ -14,11 +14,12 @@ logger = logging.getLogger("finance_accounting")
 class AccountingBook:
     book_type_id = None
 
-    def __init__(self, settings_label):
+    def __init__(self, settings_label, db_id):
         self._transactions = []
         self._book = None
         self._config_name = None
         self._settings_label = settings_label
+        self.db_id = db_id
 
     def add_transaction(
         self,
@@ -63,14 +64,16 @@ class AccountingBook:
         pass
 
     def build_transaction_id(self, backend_id):
-        return f"{self.book_type_id}_{backend_id}"
+        return f"{self.book_type_id}_{self.db_id}_{backend_id}"
 
     def get_backend_id(self, transaction_id):
-        book_type_id, backend_id = self.decode_transaction_id(transaction_id)
+        book_type_id, db_id, backend_id = self.decode_transaction_id(transaction_id)
         if book_type_id != self.book_type_id:
             raise ValueError(
                 "book_type_id '{book_type_id}' does not match backend type '{self.book_type_id}'"
             )
+        if db_id != self.db_id:
+            raise ValueError("db_id '{db_id}' does not match backend DB id '{self.db_id}'")
         return backend_id
 
     def get_settings_option(self, option, default=None):
@@ -79,8 +82,8 @@ class AccountingBook:
 
     @staticmethod
     def decode_transaction_id(transaction_id):
-        parts = transaction_id.split("_", 1)
-        if len(parts) != 2:
+        parts = transaction_id.split("_", 2)
+        if len(parts) != 3:
             raise ValueError("Invalid transaction_id: {transaction_id}")
         return parts
 

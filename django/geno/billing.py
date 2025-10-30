@@ -700,8 +700,8 @@ def delete_invoice_transaction(invoice):
         logger.warning(f"Trying to delete an invoice without a fin_transaction_ref: {invoice.pk}")
         return None
     try:
-        book_type_id, _ = AccountingBook.decode_transaction_id(invoice.fin_transaction_ref)
-        with AccountingManager(book_type_id=book_type_id) as book:
+        book_type_id, db_id, _ = AccountingBook.decode_transaction_id(invoice.fin_transaction_ref)
+        with AccountingManager(book_type_id=book_type_id, db_id=db_id) as book:
             book.delete_transaction(invoice.fin_transaction_ref)
     except Exception:
         logger.error(
