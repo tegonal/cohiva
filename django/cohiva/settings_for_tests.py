@@ -58,4 +58,11 @@ FINANCIAL_ACCOUNTING_BACKENDS = {
             "SAVE_TRANSACTIONS": True,
         },
     },
+    "dummy_test2": {
+        "BACKEND": "finance.accounting.DummyBook",
+        "DB_ID": 1,
+        "OPTIONS": {
+            "SAVE_TRANSACTIONS": False,
+        },
+    },
 }

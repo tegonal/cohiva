@@ -24,27 +24,30 @@ class AccountingManager:
         if not cls.default_backend_label:
             cls.default_backend_label = settings_label
         if settings_label == cls.default_backend_label:
-            logger.info(
-                f"Registered DEFAULT accounting backend: {settings_label} [{backend_class.__name__}]"
-            )
+            default_txt = "DEFAULT "
         else:
-            logger.info(
-                f"Registered accounting backend: {settings_label} [{backend_class.__name__}]"
-            )
+            default_txt = ""
+        logger.info(
+            f"Registered {default_txt}accounting backend: {settings_label} "
+            f"[{backend_class.__name__}, db_id={db_id}]"
+        )
 
     @classmethod
     def unregister(cls, settings_label):
         if settings_label not in cls.backends:
             raise KeyError(f"Accounting backend with label {settings_label} not registered.")
         class_name = cls.backends[settings_label]["class"].__name__
+        db_id = cls.backends[settings_label]["db_id"]
         del cls.backends[settings_label]
         if settings_label == cls.default_backend_label:
             cls.default_backend_label = None
-            logger.info(
-                f"Unregistered DEFAULT accounting backend: {settings_label} [{class_name}]"
-            )
+            default_txt = "DEFAULT "
         else:
-            logger.info(f"Unregistered accounting backend: {settings_label} [{class_name}]")
+            default_txt = ""
+        logger.info(
+            f"Unregistered {default_txt}accounting backend: {settings_label} "
+            f"[{class_name}, db_id={db_id}]"
+        )
 
     @classmethod
     def unregister_all(cls):
@@ -74,6 +77,10 @@ class AccountingManager:
                         f"und gleicher DB id {db_id} gefunden."
                     )
                 matching_backend = label
+        if not matching_backend:
+            raise KeyError(
+                f"Keine Buchhaltung mit book_type_id {book_type_id} und DB id {db_id} gefunden."
+            )
         return matching_backend
 
     def __init__(
@@ -111,7 +118,7 @@ class AccountingManager:
                 return self.backend_obj
             except Exception as e:
                 logger.error(f"Couldn't initialize accounting backend {self.backend_class}: {e}")
-                if self.messages:
+                if self.messages is not None:
                     self.messages.append(f"Konnte Buchhaltung nicht initialisieren: {e}")
                     return None
                 raise e
