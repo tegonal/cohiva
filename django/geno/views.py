@@ -3835,18 +3835,6 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
     )
     template_name = "geno/invoice_manual.html"
     error_flag = False
-    tabs = [
-        {
-            "title": "Rechnung erstellen",
-            "link": reverse_lazy("geno:invoice-manual"),
-            "active": True,
-        },
-        {
-            "title": "Mietzinsrechnungen erstellen",
-            "link": reverse_lazy("geno:invoice-batch"),
-            "active": False,
-        },
-    ]
     #    actions = [
     #        {
     #            "title": "Mietzins-Rechnungen erstellen",
@@ -4185,18 +4173,6 @@ class InvoiceBatchView(CohivaAdminViewMixin, FormView):
     )
     form_class = SendInvoicesForm
     template_name = "geno/invoice_batch.html"
-    tabs = [
-        {
-            "title": "Rechnung erstellen",
-            "link": reverse_lazy("geno:invoice-manual"),
-            "active": False,
-        },
-        {
-            "title": "Mietzinsrechnungen erstellen",
-            "link": reverse_lazy("geno:invoice-batch"),
-            "active": True,
-        },
-    ]
 
     def get_context_data(self, **kwargs):
         return super().get_context_data(
