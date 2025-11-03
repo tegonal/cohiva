@@ -2773,8 +2773,9 @@ class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
 
     def check_mailinglists(self):
         if not hasattr(settings, "MAILMAN_API") or not settings.MAILMAN_API.get("password", None):
+            if getattr(settings, "DEMO", False):
+                return self.generate_demo_output()
             return [{"info": "FEHLER: Mailman-API ist nicht konfiguriert."}]
-            # return render(request, 'geno/default.html', { 'response': [{'info': 'FEHLER: Mailman-API ist nicht konfiguriert.'}], 'title': 'Check Mailinglisten'})
 
         mailman_client = mailmanclient.Client(
             settings.MAILMAN_API["url"],
@@ -3013,6 +3014,37 @@ class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
         ret.append({"info": "Mailman warnings:", "objects": ml_warnings})
         # return render(request, "geno/default.html", {"response": ret, "title": "Check Mailinglisten"})
         return ret
+
+    def generate_demo_output(self):
+        return [
+            {"info": "<i>INFO: Mailman-API ist nicht konfiguriert. Dies ist ein Demo-Output.</i>"},
+            {
+                "info": "Mitglied nicht in genossenschaft-ML:",
+                "objects": [
+                    (
+                        "IGNORIERE Verein WG Kunterbunt, Hans Muster "
+                        "(DOPPELTE Email-Adresse hans.muster@example.com)"
+                    ),
+                    "IGNORIERE Ohnemail, Peter (KEINE Email-Adresse)",
+                    "hugo@example.com",
+                    "dora@example.com",
+                ],
+            },
+            {
+                "info": "In genossenschaft-ML aber nicht Mitglied:",
+                "objects": [
+                    "alma@example.com",
+                    "berta@example.com",
+                ],
+            },
+            {
+                "info": "Bewohnende aber nicht in bewohnende-ML:",
+                "objects": [
+                    "IGNORIERE Analog, Heidi (KEINE Email-Adresse)",
+                    "zora@example.com",
+                ],
+            },
+        ]
 
 
 ## TODO: Refactor to ClassBased view

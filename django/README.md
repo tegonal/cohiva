@@ -219,10 +219,13 @@ GRANT ALL PRIVILEGES ON `test_cohiva_django_test`.* TO 'cohiva'@'localhost';  --
 
 5. Start using Cohiva:
 
-       # Load initial demo data (optional)
-       ./scripts/demo_data_manager.py --load
+    ```bash
+    # Load initial demo data (optional)
+    ./scripts/demo_data_manager.py --load
 
-       ./manage.py migrate  # Initial DB-creation/migration
+    # DB migration (for the initial DB creation, you might need to use --skip-checks, otherwise unfold checks complain about a missing permissions table)
+    ./manage.py migrate [--skip-checks]
+    ```
 
     Test data and logs are at `<INSTALL_DIR>/django-test`, the production environment lives in `<INSTALL_DIR>/django-production`.
     The production data can be copied to the test environment with `./manage.py copy_production_to_test`.
