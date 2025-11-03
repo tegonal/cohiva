@@ -84,7 +84,7 @@ class AccountingBook:
     def decode_transaction_id(transaction_id):
         parts = transaction_id.split("_", 2)
         if len(parts) != 3:
-            raise ValueError("Invalid transaction_id: {transaction_id}")
+            raise ValueError(f"Invalid transaction_id: {transaction_id}")
         book_type_id = parts[0]
         db_id = int(parts[1])
         backend_id = parts[2]

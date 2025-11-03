@@ -8,7 +8,7 @@ from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.db.models import Q
 
-from finance.accounting import Account, AccountingManager, AccountKey
+from finance.accounting import Account, AccountingManager, AccountKey, Split, Transaction
 
 from .models import Address, RentalUnit, Share, ShareType, get_active_contracts, get_active_shares
 from .utils import is_member, nformat
@@ -706,14 +706,15 @@ def add_interest_transaction(
             nformat(tax),
             nformat(pay),
         )
-    description = f"Zins {nformat(interest_rate)}%% auf {name} {book_date.year} {adr}"
+    description = f"Zins {nformat(interest_rate)}% auf {name} {book_date.year} {adr}"
     splits = [
-        {"account": acc_zins, "amount": total},
-        {"account": acc_pay, "amount": -pay},
+        Split(account=acc_zins, amount=total),
+        Split(account=acc_pay, amount=-pay),
     ]
     if tax > 0:
-        splits.append({"account": acc_tax, "amount": -tax})
-    book.add_split_transaction(splits, book_date, description, autosave=False)
+        splits.append(Split(account=acc_tax, amount=-tax))
+    transaction = Transaction(date=book_date, description=description, splits=splits)
+    book.add_split_transaction(transaction, autosave=False)
     return info
 
 

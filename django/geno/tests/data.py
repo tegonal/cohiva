@@ -516,9 +516,11 @@ def create_sharetypes(cls):
     cls.sharetypes = []
     cls.sharetypes.append(ShareType.objects.create(name="Anteilschein"))
     cls.sharetypes.append(ShareType.objects.create(name="Darlehen zinslos"))
-    cls.sharetypes.append(ShareType.objects.create(name="Darlehen verzinst"))
-    cls.sharetypes.append(ShareType.objects.create(name="Depositenkasse"))
-    cls.sharetypes.append(ShareType.objects.create(name="Darlehen spezial"))
+    cls.sharetypes.append(
+        ShareType.objects.create(name="Darlehen verzinst", standard_interest=1.0)
+    )
+    cls.sharetypes.append(ShareType.objects.create(name="Depositenkasse", standard_interest=0.75))
+    cls.sharetypes.append(ShareType.objects.create(name="Darlehen spezial", standard_interest=1.5))
     cls.sharetypes.append(ShareType.objects.create(name="Hypothek"))
     cls.sharetypes.append(ShareType.objects.create(name="Anteilschein Einzelmitglied"))
     cls.sharetypes.append(ShareType.objects.create(name="Anteilschein Gründungsmitglied"))

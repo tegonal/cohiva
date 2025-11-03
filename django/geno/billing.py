@@ -23,7 +23,15 @@ from svglib.svglib import svg2rlg
 import geno.settings as geno_settings
 from cohiva.utils.pdf import PdfGenerator
 from cohiva.utils.strings import pluralize
-from finance.accounting import Account, AccountingBook, AccountingManager, AccountKey, AccountRole
+from finance.accounting import (
+    Account,
+    AccountingBook,
+    AccountingManager,
+    AccountKey,
+    AccountRole,
+    Split,
+    Transaction,
+)
 
 from .models import (
     Address,
@@ -686,7 +694,7 @@ def add_invoice_obj(
         )
         invoice.fin_transaction_ref = fin_transaction_ref
         invoice.fin_account = account.code
-        invoice.fin_receivables_account = receivables_account.code
+        invoice.fin_account_receivables = receivables_account.code
     except Exception as e:
         return "Could not create invoice: %s" % e
 
@@ -1245,13 +1253,15 @@ def add_transaction_shares_entry(book, date, amount, address, use_clearing=False
     )
 
     splits = [
-        {"account": entryfee_account, "amount": -split1},
-        {"account": payment_account, "amount": amount},
+        Split(account=entryfee_account, amount=-split1),
+        Split(account=payment_account, amount=amount),
     ]
     if split2:
-        splits.append({"account": share_as_account, "amount": -split2})
+        splits.append(Split(account=share_as_account, amount=-split2))
     description = f"{text_as} und Beitrittsgebühr, {address}"
-    book.add_split_transaction(splits, date, description, autosave=False)
+    book.add_split_transaction(
+        Transaction(splits=splits, date=date, description=description), autosave=False
+    )
 
     if count != 0:
         share.save()

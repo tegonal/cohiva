@@ -119,7 +119,7 @@ class Akonto(APIView):
             for c in Contract.objects.filter(Q(id=contract.id) | Q(billing_contract=contract)):
                 akonto = Invoice.objects.filter(
                     contract=c,
-                    fin_account=fiaccount,
+                    fin_account=fiaccount.code,
                     date__gte=self.billing_period_start,
                     date__lte=self.billing_period_end,
                 ).aggregate(Sum("amount"))
@@ -305,17 +305,18 @@ class QRBill(APIView):
                 self.invoice_id = invoice.id
         else:
             virtual_account = self.get_virtual_contract_account(request.data["contract_id"])
+            description = f"NK-Abrechnung {virtual_account.name}"
             book.add_transaction(
                 total_amount,
                 fiaccount_nk_receivables,
                 virtual_account,
                 billing_period_end.date(),
-                f"NK-Abrechnung {virtual_account.name}",
+                description,
                 autosave=not self.dry_run,
             )
             logger.info(
                 "%sAdded transaction: %s CHF %s for virtual contract (id=%s)."
-                % (self.dry_run_tag, description, amount, request.data["contract_id"])
+                % (self.dry_run_tag, description, total_amount, request.data["contract_id"])
             )
 
     def post(self, request):
@@ -373,7 +374,7 @@ class QRBill(APIView):
             self.invoice_id = 8888888888
             ref_number = get_reference_nr(None, 0, self.invoice_id)
             virtual_contract = self.virtual_contract_accounts[request.data["contract_id"]]
-            output_filename = "NK_%s_%s.odf" % (
+            output_filename = "NK_%s_%s.pdf" % (
                 virtual_contract.name,
                 self.invoice_date.strftime("%Y%m%d"),
             )
