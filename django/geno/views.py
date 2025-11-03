@@ -1274,6 +1274,10 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
         self.error_message = ""
         self.result = []
 
+    def should_generate(self):
+        """Override to control when documents should be generated. Default: always generate."""
+        return True
+
     def get_objects(self):
         return []
 
@@ -1283,7 +1287,7 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
     def get(self, request, *args, **kwargs):
         if not self.doctype:
             self.error_message = "Dokumententyp fehlt!"
-        else:
+        elif self.should_generate():
             options = self.get_options()
             options["makezip"] = request.GET.get("makezip", "") == "yes"
             if not options.get("link_url", None) and url_has_allowed_host_and_scheme(
@@ -2410,78 +2414,48 @@ def contract_report(request, year="previous", address=None):
     return export_data_to_xls(report, header=header)
 
 
-class ContractCheckFormsView(CohivaAdminViewMixin, TemplateView):
+class ContractCheckFormsView(DocumentGeneratorView):
     title = "Formulare «Überprüfung Belegung/Fahrzeuge»"
     permission_required = ("geno.canview_share", "geno.rental_contracts")
     template_name = "geno/contract_check_forms.html"
+    doctype = "contract_check"
 
-    def get(self, request, *args, **kwargs):
-        # Check if documents should be generated
-        generate_docs = request.GET.get("generate", "") == "yes"
+    def should_generate(self):
+        """Only generate documents when explicitly requested."""
+        return self.request.GET.get("generate", "") == "yes"
 
-        if generate_docs:
-            # Generate documents using the existing document generation system
-            objects = []
-            for c in get_active_contracts():
-                for ru in c.rental_units.all():
-                    if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
-                        objects.append({"obj": c})
+    def get_objects(self):
+        """Build the list of contracts that need check forms."""
+        objects = []
+        for c in get_active_contracts():
+            for ru in c.rental_units.all():
+                if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
+                    objects.append({"obj": c})
+                    break  # Only add contract once
+        return objects
 
-            makezip = request.GET.get("makezip", "") == "yes"
-            options = {
-                "beschreibung": "Formulare «Überprüfung Belegung/Fahrzeuge»",
-                "makezip": makezip,
-            }
-            if url_has_allowed_host_and_scheme(request.path, allowed_hosts=None):
-                options["link_url"] = request.path
-
-            result = create_documents("contract_check", objects, options)
-
-            # If result is a file download response (HttpResponse), return it directly
-            if isinstance(result, HttpResponse):
-                return result
-
-            # Otherwise, render the template with the result
-            # This will be handled by get_context_data
-
-        return super().get(request, *args, **kwargs)
+    def get_options(self):
+        """Return document generation options."""
+        options = {"beschreibung": "Formulare «Überprüfung Belegung/Fahrzeuge»"}
+        if url_has_allowed_host_and_scheme(self.request.path, allowed_hosts=None):
+            options["link_url"] = self.request.path
+        return options
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # Determine if documents were generated
-        generate_docs = self.request.GET.get("generate", "") == "yes"
+        # Always calculate the list of contracts for count
+        contracts = []
+        for c in get_active_contracts():
+            for ru in c.rental_units.all():
+                if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
+                    contracts.append(c)
+                    break  # Only add contract once
 
-        if generate_docs:
-            # Generate documents and show results
-            objects = []
-            for c in get_active_contracts():
-                for ru in c.rental_units.all():
-                    if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
-                        objects.append({"obj": c})
+        context["contract_count"] = len(contracts)
 
-            makezip = self.request.GET.get("makezip", "") == "yes"
-            options = {
-                "beschreibung": "Formulare «Überprüfung Belegung/Fahrzeuge»",
-                "makezip": makezip,
-            }
-            if url_has_allowed_host_and_scheme(self.request.path, allowed_hosts=None):
-                options["link_url"] = self.request.path
-
-            result = create_documents("contract_check", objects, options)
-
-            # Only set result if it's not an HttpResponse (those are handled in get())
-            if not isinstance(result, HttpResponse):
-                context["result"] = result
-        else:
-            # Show the form to generate documents with contract overview
-            contracts = []
-            for c in get_active_contracts():
-                for ru in c.rental_units.all():
-                    if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
-                        contracts.append(c)
-                        break
-
+        # If not generating, show the preview table with contract overview
+        if not self.should_generate():
             # Prepare table data
             headers = ["Vertrag", "Mieter", "Mietobjekte"]
             rows = []
@@ -2513,7 +2487,6 @@ class ContractCheckFormsView(CohivaAdminViewMixin, TemplateView):
                 "headers": headers,
                 "rows": rows,
             }
-            context["contract_count"] = len(contracts)
 
         return context
 
