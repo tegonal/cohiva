@@ -11,6 +11,9 @@ class CohivaAdminViewMixin:
     model_admin = None
     actions = []  # title, path, items (for dropdown), method_name (for dropdown?), icon, variant, permission_required
     action = None
+    # Set this for "sub-views" that should have the same navigation (active tabs etc.)
+    # as the as the "main" navigation view
+    navigation_view_name = None
 
     def get_context_data(self, **kwargs):
         self.request.current_app = "geno"
@@ -20,7 +23,7 @@ class CohivaAdminViewMixin:
             title=self.title,
             model_admin=self.model_admin,
             actions_list=self.get_actions(),
-            cohiva_view_name=f"{self.__class__.__module__}.{self.__class__.__name__}",
+            navigation_view_name=self.get_navigation_view_name(),
         )
         return context
 
@@ -55,6 +58,11 @@ class CohivaAdminViewMixin:
             else:
                 permitted_actions.append(action)
         return permitted_actions
+
+    def get_navigation_view_name(self):
+        if self.navigation_view_name:
+            return self.navigation_view_name
+        return f"{self.__class__.__module__}.{self.__class__.__name__}"
 
     @classonlymethod
     def as_view(cls, **initkwargs):

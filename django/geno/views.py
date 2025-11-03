@@ -4205,6 +4205,9 @@ class InvoiceBatchGenerateView(CohivaAdminViewMixin, TemplateView):
         "geno.view_rentalunit",
     )
     action = "create"
+    navigation_view_name = (
+        "geno.views.InvoiceBatchView"  # Use this for navigation rendering (active tabs etc.)
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
