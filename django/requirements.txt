@@ -24,6 +24,8 @@ asgiref==3.8.1
     # via
     #   django
     #   django-cors-headers
+async-timeout==5.0.1
+    # via redis
 astroid==3.3.11
     # via pylint
 atomicwrites==1.4.1
@@ -180,6 +182,8 @@ frozenlist==1.6.0
     # via
     #   aiohttp
     #   aiosignal
+greenlet==3.2.4
+    # via sqlalchemy
 html2text==2025.4.15
     # via -r requirements.in
 html5lib==1.1
