@@ -3884,39 +3884,49 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
     def get_invoice_templates(self):
         """
         Define invoice category templates with pre-filled data.
-        Returns a dict mapping category_id to template data.
+        Returns a dict mapping category name to template data.
+
+        NOTE: Keys must match the exact InvoiceCategory.name values in the database.
+        If category names change in the admin, update these keys accordingly.
         """
         return {
-            7: {  # Gästezimmer (Miete Gästezimmer)
-                "extra_text": "Die ersten 3 Nächte sind gemäss Reglement Jokerzimmer kostenlos.",
+            "Miete Gästezimmer": {
+                "extra_text": _(
+                    "Die ersten 3 Nächte sind gemäss Reglement Jokerzimmer kostenlos."
+                ),
                 "lines": [
                     {
-                        "text": "X Nächte à Fr. 22.00, Gästezimmer 003",
+                        "text": _("X Nächte à Fr. 22.00, Gästezimmer 003"),
                         "amount": None,
                         "date": datetime.date.today(),
                     },
                     {
-                        "text": "X Nächte à Fr. 17.00, Gästezimmer 410",
+                        "text": _("X Nächte à Fr. 17.00, Gästezimmer 410"),
                         "amount": None,
                         "date": datetime.date.today(),
                     },
                     {
-                        "text": "X Nächte à Fr. 17.00, Gästezimmer 509",
+                        "text": _("X Nächte à Fr. 17.00, Gästezimmer 509"),
                         "amount": None,
                         "date": datetime.date.today(),
                     },
                 ],
             },
-            1: {  # Mitgliedschaft
-                "extra_text": "Vielen Dank für die Beitrittserklärung. Die Mitgliedschaft in der Genossenschaft ist verbunden mit dem Zeichnen von Anteilscheinen und einer einmaligen Beitrittsgebühr. Dies stellen wir hiermit in Rechnung. Nach Zahlungseingang folgt dann die Bestätigung der Mitgliedschaft.",
+            "Mitgliedschaft": {
+                "extra_text": _(
+                    "Vielen Dank für die Beitrittserklärung. Die Mitgliedschaft in der "
+                    "Genossenschaft ist verbunden mit dem Zeichnen von Anteilscheinen und einer "
+                    "einmaligen Beitrittsgeb ühr. Dies stellen wir hiermit in Rechnung. Nach "
+                    "Zahlungseingang folgt dann die Bestätigung der Mitgliedschaft."
+                ),
                 "lines": [
                     {
-                        "text": "Beitrittsgebühr Genossenschaft",
+                        "text": _("Beitrittsgeb ühr Genossenschaft"),
                         "amount": 200,
                         "date": datetime.date.today(),
                     },
                     {
-                        "text": "Zeichnung von 1 Anteilschein der Genossenschaft",
+                        "text": _("Zeichnung von 1 Anteilschein der Genossenschaft"),
                         "amount": 200,
                         "date": datetime.date.today(),
                     },
@@ -3950,10 +3960,10 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
                         # Always preserve the selected category (as model instance)
                         initial_data["category"] = category
 
-                        # Apply template data if available for this category
+                        # Apply template data if available for this category (by name)
                         templates = self.get_invoice_templates()
-                        if category_id in templates:
-                            template = templates[category_id]
+                        if category.name in templates:
+                            template = templates[category.name]
                             initial_data["extra_text"] = template["extra_text"]
                 except (ValueError, TypeError):
                     pass
@@ -3995,9 +4005,14 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
                 # Category selected but no explicit extra param - use template if available
                 try:
                     category_id = int(category_id)
-                    if category_id in templates:
+                    # Fetch the category to get its name for template lookup
+                    category = InvoiceCategory.objects.filter(
+                        id=category_id, active=True, manual_allowed=True
+                    ).first()
+
+                    if category and category.name in templates:
                         # Use template data to create initial forms
-                        template = templates[category_id]
+                        template = templates[category.name]
                         initial_data = template["lines"]
                     else:
                         # Category selected but no template, start with 1 empty form
