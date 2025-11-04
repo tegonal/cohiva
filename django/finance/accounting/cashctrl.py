@@ -6,6 +6,7 @@ import urllib.parse
 import requests
 from requests.auth import HTTPBasicAuth
 
+from . import Account
 from .book import AccountingBook
 
 logger = logging.getLogger("finance_accounting")
@@ -27,26 +28,23 @@ class BookTransaction:
         # Call delete endpoint. API expects a comma-separated list of ids in 'ids' param.
         # We reuse the GET-style endpoint as described in comments.
         # Normalize and strip possible book prefix (e.g. 'cct_...')
-        tids = ",".join(
-            str(tid).split("_", 1)[1]
-            if str(tid).startswith(f"{self.cct_book_ref.book_type_id}_")
-            else str(tid)
-            for tid in self._inserted_transaction_ids
-        )
-        rest = f"journal/delete.json?ids={urllib.parse.quote_plus(tids)}"
-        response = self._construct_post(rest)
-        response.raise_for_status()
-        self._raise_for_error(response)
-        self._inserted_transaction_ids = []
+        self._delete(self._inserted_transaction_ids)
+        self._inserted_transaction_ids.clear()
 
         # deleted transactions can be ignored as they were not yet saved to CashCtrl
-        self._deleted_transaction_ids = []
+        self._deleted_transaction_ids.clear()
 
     def insert(self, transaction):
-        self._inserted_transaction_ids.append(transaction)
+        if "id" in transaction:
+            self._inserted_transaction_ids.append(transaction["id"])
+        else:
+            self._inserted_transaction_ids.append(transaction)
 
     def delete(self, transaction):
-        self._deleted_transaction_ids.append(transaction)
+        if "id" in transaction:
+            self._deleted_transaction_ids.append(transaction["id"])
+        else:
+            self._deleted_transaction_ids.append(transaction)
 
     def create(self, transaction):
         # Expecting two splits: debit and credit
@@ -57,13 +55,13 @@ class BookTransaction:
         cct_account_debit = self.get_cct_account(transaction.splits[0].account)
         cct_account_credit = self.get_cct_account(transaction.splits[1].account)
 
-        attributes = f"amount={urllib.parse.quote_plus(transaction.splits[0].amount)}&creditId={urllib.parse.quote_plus(cct_account_credit)}&debitId={urllib.parse.quote_plus(cct_account_debit)}&title={urllib.parse.quote_plus(getattr(transaction, 'description', ''))}&dateAdded={datetime.datetime.now()}&notes=Added through API"
+        attributes = f"amount={transaction.splits[1].amount}&creditId={cct_account_credit}&debitId={cct_account_debit}&title={urllib.parse.quote_plus(getattr(transaction, 'description', ''))}&dateAdded={datetime.datetime.now()}&notes=Added through API"
 
         # Call create endpoint
         response = self._construct_post("journal/create.json?" + attributes, None)
         response.raise_for_status()
         data = response.json()
-        self._raise_for_error(response)
+        self._raise_for_error(response, f"create:{cct_account_debit}:{cct_account_credit}:{transaction.splits[1].amount}")
 
         txn_id = None
         if isinstance(data, dict):
@@ -76,47 +74,39 @@ class BookTransaction:
 
     def save(self):
         # inserted transactions can be ignored as they were already saved to CashCtrl via API
-        self._inserted_transaction_ids = []
+        self._inserted_transaction_ids.clear()
         # for each deleted transaction, delete on CashCtrl via API
         # Call delete endpoint. API expects a comma-separated list of ids in 'ids' param.
         # We reuse the GET-style endpoint as described in comments.
         # Normalize and strip possible book prefix (e.g. 'cct_...')
-        tids = ",".join(
-            str(tid).split("_", 1)[1]
-            if str(tid).startswith(f"{self.cct_book_ref.book_type_id}_")
-            else str(tid)
-            for tid in self._deleted_transaction_ids
-        )
-        rest = f"journal/delete.json?ids={urllib.parse.quote_plus(tids)}"
-        response = self._construct_post(rest)
-        response.raise_for_status()
-        self._raise_for_error(response)
-        self._deleted_transaction_ids = []
+        self._delete(self._deleted_transaction_ids)
+        self._deleted_transaction_ids.clear()
 
     def get_cct_account(self, account_nbr):
         if account_nbr is None:
             raise ValueError("account number must not be None")
-        if isinstance(account_nbr, str):
+        elif isinstance(account_nbr, Account):
+            account_nbr = account_nbr.code
+        elif isinstance(account_nbr, str):
             account_nbr = account_nbr
         elif isinstance(account_nbr, int):
             account_nbr = str(account_nbr)
 
         # Build filter as the CashCtrl REST API expects and URL-encode it
-        # comment suggested: account/list.json?filter=[{accountId=[account]}]
-        filter_json = json.dumps([{"number": account_nbr}])
+        filter_json = json.dumps([{"comparison":"eq", "field": "number", "value": account_nbr}])
         rest = "account/list.json?filter=" + urllib.parse.quote_plus(filter_json)
         logger.info(f"Fetching CashCtrl account for number {account_nbr} via {rest}")
 
         response = self._construct_request(rest)
         response.raise_for_status()
-        self._raise_for_error(response)
+        self._raise_for_error(response, f"account_lookup:{account_nbr}")
         data = response.json()
 
         # Expecting a list with a single account; return an identifier used by CashCtrl
         if isinstance(data, dict):
             candidate = data.get("data")
             # Try to extract account id or code
-            if isinstance(candidate, list) and candidate:
+            if isinstance(candidate, list) and candidate and len(candidate) == 1:
                 acct = candidate[0]
                 return acct.get("id")
 
@@ -132,8 +122,25 @@ class BookTransaction:
         rest = "journal/read.json?id=" + urllib.parse.quote_plus(tid)
         response = self._construct_request(rest)
         response.raise_for_status()
+        try:
+            self._raise_for_error(response, f"get_transaction:{tid}")
+        except RuntimeError:
+            return None
         data = response.json()
         return data
+
+    def _delete(self, transaction_ids):
+        if transaction_ids and len(transaction_ids) > 0:
+            tids = ",".join(
+                str(tid).split("_", 1)[1]
+                if str(tid).startswith(f"{self.cct_book_ref.book_type_id}_")
+                else str(tid)
+                for tid in transaction_ids
+            )
+            rest = f"journal/delete.json?ids={urllib.parse.quote_plus(tids)}"
+            response = self._construct_post(rest)
+            response.raise_for_status()
+            self._raise_for_error(response, f"delete:{tids}")
 
     def _get_api_url(self):
         return f"https://{self._cct_tenant}.{self._api_host}/api/v1/"
@@ -152,13 +159,13 @@ class BookTransaction:
             auth=HTTPBasicAuth(self._api_token or "", ""),
         )
 
-    def _raise_for_error(self, response):
+    def _raise_for_error(self, response, request_info=None):
         # if response success is False, raise exception with message
         data = response.json()
         if isinstance(data, dict):
             if not data.get("success", True):
                 error_message = data.get("message", "Unknown error")
-                raise RuntimeError(f"CashCtrl API error: {error_message}")
+                raise RuntimeError(f"CashCtrl API error: {error_message} - for request {request_info}")
 
 
 class CashctrlBook(AccountingBook):
@@ -187,14 +194,16 @@ class CashctrlBook(AccountingBook):
     def get_transaction(self, transaction_id):
         # Use the same endpoint as _get_cct_transaction but expose it here
         data = self._book_transaction.get_cct_transaction(transaction_id)
-        return data
+        if data:
+            return data
+        return None
 
     def delete_transaction(self, transaction_id):
         cct_transaction = self._book_transaction.get_cct_transaction(transaction_id)
 
         # Track deletion in current BookTransaction and persist
-        if self._book_transaction is not None:
-            self._book_transaction.delete(cct_transaction)
+        if cct_transaction and "data" in cct_transaction:
+            self._book_transaction.delete(cct_transaction["data"])
         self.save()
 
     def save(self):
@@ -207,6 +216,9 @@ class CashctrlBook(AccountingBook):
         if self._book_transaction:
             self._book_transaction.close()
             self._book_transaction = None
+
+    def open(self):
+        self._open_book_transactional()
 
     def _open_book_transactional(self):
         if self._book_transaction:

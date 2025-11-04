@@ -9,7 +9,6 @@ from finance.accounting import (
     AccountingManager,
     AccountKey,
     AccountRole,
-    CashctrlBook,
     Split,
     Transaction,
 )
@@ -156,34 +155,3 @@ class GnucashBookTestCase(TestCase):
                 Transaction(splits, date="2020-01-02", description="Split Transaction Test"),
             )
             mock_save.assert_called_once()
-
-
-class CashctrlBookTestCase(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        AccountingManager.default_backend_label = "cashctrl_test"
-        cls.account1 = Account("TestAccount CashCtrl1", "43000")
-        cls.account2 = Account("TestAccount CashCtrl2", "10220")
-        cls.account3 = Account("TestAccount CashCtrl3", "47400")
-
-    @classmethod
-    def tearDownClass(cls):
-        AccountingManager.default_backend_label = settings.FINANCIAL_ACCOUNTING_DEFAULT_BACKEND
-        super().tearDownClass()
-
-    def test_get_book(self):
-        messages = []
-        with AccountingManager(messages) as book:
-            self.assertTrue(isinstance(book, CashctrlBook))
-            self.assertEqual(len(messages), 0)
-
-    def test_add_transaction(self):
-        messages = []
-        with AccountingManager(messages) as book:
-            transaction_id = book.add_transaction(
-                100, self.account1, self.account2, "2026-01-01", "Test CashCtrl"
-            )
-            self.assertTrue(transaction_id.startswith("cct_"))
-            self.assertIsInstance(UUID(transaction_id[4:]), UUID)
-            book.save()

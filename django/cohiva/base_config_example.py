@@ -28,6 +28,9 @@ ORG_ADDRESS_CITY = "3000 Bern"
 
 ADMINS = (("Hans Muster", "info@example.com"),)
 
+CASHCTRL_API_TOKEN = ""
+CASHCTRL_TENANT = ""
+
 FEATURES = [
     "api",
     "portal",
