@@ -46,7 +46,7 @@ class GnucashBook(AccountingBook):
             self.save()
         else:
             self._book.flush()
-        return f"{self.book_type_id}_{txn.guid}"
+        return self.build_transaction_id(txn.guid)
 
     def get_transaction(self, transaction_id):
         gnc_transaction = self._get_gnc_transaction(transaction_id)

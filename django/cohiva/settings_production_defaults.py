@@ -9,7 +9,7 @@ from urllib.parse import quote
 import cohiva.base_config as cbc
 
 from .settings import *  # noqa: F403
-from .settings import DATABASES, LOGGING
+from .settings import DATABASES, FINANCIAL_ACCOUNTING_BACKENDS, LOGGING
 
 # Disable debugging
 DEBUG = False
@@ -24,7 +24,10 @@ SMEDIA_ROOT = cbc.INSTALL_DIR + "/django-production/smedia"
 
 # Use production databases
 DATABASES["default"]["NAME"] = cbc.DB_PREFIX + "_django"
-GNUCASH_DB_SECRET = f"mysql://{cbc.DB_PREFIX}:{quote(cbc.DB_PASSWORD)}@{cbc.DB_HOSTNAME}/{cbc.DB_PREFIX}_gnucash?charset=utf8"
+FINANCIAL_ACCOUNTING_BACKENDS["gnucash"]["OPTIONS"]["DB_SECRET"] = (
+    f"mysql://{cbc.DB_PREFIX}:{quote(cbc.DB_PASSWORD)}@{cbc.DB_HOSTNAME}/"
+    f"{cbc.DB_PREFIX}_gnucash?charset=utf8"
+)
 
 # Hosts/domain names that are valid for this site
 # See https://docs.djangoproject.com/en/1.4/ref/settings/#allowed-hosts

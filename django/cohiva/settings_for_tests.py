@@ -20,9 +20,6 @@ MEDIA_ROOT = head + "/tests/" + tail
 SMEDIA_ROOT = head + "/tests/" + tail
 print(f"Redirected (S)MEDIA_ROOT to: {MEDIA_ROOT} and {SMEDIA_ROOT}")
 
-## Show SA warnings?
-# GNUCASH_IGNORE_SQLALCHEMY_WARNINGS = False
-
 COHIVA_REPORT_API_TOKEN = "TEST_DUMMY_TOKEN"
 
 ## Display deprecation warnings only once
@@ -59,6 +56,13 @@ FINANCIAL_ACCOUNTING_BACKENDS = {
         "BACKEND": "finance.accounting.DummyBook",
         "OPTIONS": {
             "SAVE_TRANSACTIONS": True,
+        },
+    },
+    "dummy_test2": {
+        "BACKEND": "finance.accounting.DummyBook",
+        "DB_ID": 1,
+        "OPTIONS": {
+            "SAVE_TRANSACTIONS": False,
         },
     },
 }

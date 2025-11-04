@@ -109,8 +109,12 @@ def load(force=False, no_docker=False):
         base_cmd = f"docker exec -i cohiva-dev-mariadb mariadb -p{s.db_pass} -u{s.db_user}"
     cmd = f"{base_cmd} {s.test_db} < {s.demodata_dir}/{s.demodata_prefix}.sql"
     run_cmd(cmd, shell=True)
-    cmd = f"{base_cmd} {s.test_db_gnucash} < {s.demodata_dir}/{s.demodata_prefix}-gnucash.sql"
-    run_cmd(cmd, shell=True)
+    gnucash_sql_file = f"{s.demodata_dir}/{s.demodata_prefix}-gnucash.sql"
+    if os.path.exists(gnucash_sql_file):
+        cmd = f"{base_cmd} {s.test_db_gnucash} < {gnucash_sql_file}"
+        run_cmd(cmd, shell=True)
+    else:
+        print(f"WARNING: Skipping import of {gnucash_sql_file} (file does not exist).")
     cmd = f"rsync -av --delete {s.demodata_dir}/media/ {s.media_test_dir}/"
     run_cmd(cmd, shell=True)
     cmd = f"rsync -av --delete {s.demodata_dir}/smedia/ {s.smedia_test_dir}/"

@@ -7,8 +7,8 @@ def add_book_type_prefix(apps, schema_editor):
     """Add the previous default book type prefix to transaction refs"""
     invoice_class = apps.get_model("geno", "Invoice")
     for invoice in invoice_class.objects.all():
-        if invoice.fin_transaction_ref and not invoice.fin_transaction_ref.startswith("gnc_"):
-            invoice.fin_transaction_ref = f"gnc_{invoice.fin_transaction_ref}"
+        if invoice.fin_transaction_ref and not invoice.fin_transaction_ref.startswith("gnc_0_"):
+            invoice.fin_transaction_ref = f"gnc_0_{invoice.fin_transaction_ref}"
             invoice.save()
 
 
@@ -16,8 +16,8 @@ def remove_book_type_prefix(apps, schema_editor):
     """Remove book type prefix from transaction refs"""
     invoice_class = apps.get_model("geno", "Invoice")
     for invoice in invoice_class.objects.all():
-        if invoice.fin_transaction_ref.startswith("gnc_"):
-            invoice.fin_transaction_ref = invoice.fin_transaction_ref[4:]
+        if invoice.fin_transaction_ref.startswith("gnc_0_"):
+            invoice.fin_transaction_ref = invoice.fin_transaction_ref[6:]
             invoice.save()
 
 

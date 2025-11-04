@@ -484,37 +484,37 @@ LOGGING = {
         "django.request": {
             "handlers": ["mail_admins"],
             "level": "ERROR",
-            "propagate": False,
+            "propagate": True,
         },
         "access_intern": {
             "level": "DEBUG",
             "handlers": ["access_intern"],
-            "propagate": False,
+            "propagate": True,
         },
         "access_portal": {
             "level": "DEBUG",
             "handlers": ["access_portal"],
-            "propagate": False,
+            "propagate": True,
         },
         "geno": {
             "level": "DEBUG",
             "handlers": ["geno"],
-            "propagate": False,
+            "propagate": True,
         },
         "reservation": {
             "level": "DEBUG",
             "handlers": ["reservation"],
-            "propagate": False,
+            "propagate": True,
         },
         "credit_accounting": {
             "level": "DEBUG",
             "handlers": ["credit_accounting", "mail_admins_debug"],
-            "propagate": False,
+            "propagate": True,
         },
         "finance_accounting": {
             "level": "DEBUG",
             "handlers": ["finance_accounting", "mail_admins_debug"],
-            "propagate": False,
+            "propagate": True,
         },
     },
 }

@@ -13,7 +13,7 @@ class Transaction:
     currency: str = "CHF"
 
     def __str__(self):
-        ret = f"{self.date} {self.currency}"
+        ret = f"{self.date}"
         if len(self.splits) > 1:
             ret += (
                 f" {self.currency} {self.splits[0].amount}"
