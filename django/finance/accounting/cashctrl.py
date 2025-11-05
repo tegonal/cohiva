@@ -68,9 +68,9 @@ class BookTransaction:
             if data.get("success"):
                 txn_id = data.get("insertId")
         # Record inserted transaction for the current BookTransaction
-        transaction = f"{self.cct_book_ref.book_type_id}_{txn_id}"
-        self.insert(transaction)
-        return transaction
+        transaction_id = self.cct_book_ref.build_transaction_id(txn_id)
+        self.insert(transaction_id)
+        return transaction_id
 
     def save(self):
         # inserted transactions can be ignored as they were already saved to CashCtrl via API
@@ -117,13 +117,12 @@ class BookTransaction:
         # Call _get_api_url + journal/read.json?id=[transaction_id] and fetch the transaction
         # Normalize and strip possible book prefix (e.g. 'cct_...')
         tid = str(transaction_id)
-        if tid.startswith(f"{self.book_type_id}_"):
-            tid = tid.split("_", 1)[1]
-        rest = "journal/read.json?id=" + urllib.parse.quote_plus(tid)
+        backend_id = self.cct_book_ref.get_backend_id(transaction_id)
+        rest = "journal/read.json?id=" + urllib.parse.quote_plus(backend_id)
         response = self._construct_request(rest)
         response.raise_for_status()
         try:
-            self._raise_for_error(response, f"get_transaction:{tid}")
+            self._raise_for_error(response, f"get_transaction:{backend_id}")
         except RuntimeError:
             return None
         data = response.json()
@@ -132,7 +131,7 @@ class BookTransaction:
     def _delete(self, transaction_ids):
         if transaction_ids and len(transaction_ids) > 0:
             tids = ",".join(
-                str(tid).split("_", 1)[1]
+                self.cct_book_ref.get_backend_id(tid)
                 if str(tid).startswith(f"{self.cct_book_ref.book_type_id}_")
                 else str(tid)
                 for tid in transaction_ids
