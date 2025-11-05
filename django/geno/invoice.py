@@ -3,7 +3,7 @@ import datetime
 from dateutil.relativedelta import relativedelta
 from stdnum.ch import esr
 
-from .gnucash import add_invoice, create_qrbill, get_reference_nr
+from .billing import add_invoice, create_qrbill, get_reference_nr
 from .models import Invoice, InvoiceCategory
 from .utils import nformat
 

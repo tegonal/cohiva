@@ -652,7 +652,7 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.assertEmailSent(4)
         self.assertEqual(len(mail.outbox[0].attachments), 1)
         self.assertEqual(len(mail.outbox[1].attachments), 1)
-        self.assertEqual(mail.outbox[0].attachments[0][0], "testpdf_b1.pdf")  # Test_PDF1.pdf
+        self.assertEqual(mail.outbox[0].attachments[0][0], "TestPDF1.pdf")  # testpdf_b1.pdf
         self.assertEqual(mail.outbox[0].attachments[0][2], "application/pdf")
         self.assertInPDF(mail.outbox[0].attachments[0][1], "B1")
 
@@ -663,9 +663,9 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.assertEmailSent(4)
         self.assertEqual(len(mail.outbox[0].attachments), 2)
         self.assertEqual(len(mail.outbox[1].attachments), 2)
-        self.assertEqual(mail.outbox[0].attachments[0][0], "testpdf_b1.pdf")  # Test_PDF1.pdf
+        self.assertEqual(mail.outbox[0].attachments[0][0], "TestPDF1.pdf")  # testpdf_b1.pdf
         self.assertEqual(mail.outbox[0].attachments[0][2], "application/pdf")
-        self.assertEqual(mail.outbox[0].attachments[1][0], "testpdf_c1.pdf")  # Test_PDF2.pdf
+        self.assertEqual(mail.outbox[0].attachments[1][0], "TestPDF2.pdf")  # testpdf_c1.pdf
         self.assertEqual(mail.outbox[0].attachments[1][2], "application/pdf")
         self.assertInPDF(mail.outbox[0].attachments[0][1], "B1")
         self.assertInPDF(mail.outbox[0].attachments[1][1], "C1")
@@ -971,7 +971,7 @@ class DocumentProcessTest(GenoAdminTestCase):
             ],
         )
 
-        self.assertEqual(mail.outbox[0].attachments[1][0], "testpdf_b1.pdf")  # Test_PDF1.pdf
+        self.assertEqual(mail.outbox[0].attachments[1][0], "TestPDF1.pdf")  # testpdf_b1.pdf
 
         self.assertEqual(mail.outbox[0].attachments[2][0], "Muster_Hans_QR-Bill.pdf")
         self.assertInPDF(
@@ -987,7 +987,7 @@ class DocumentProcessTest(GenoAdminTestCase):
             ],
         )
 
-        self.assertEqual(mail.outbox[0].attachments[3][0], "testpdf_c1.pdf")  # Test_PDF2.pdf
+        self.assertEqual(mail.outbox[0].attachments[3][0], "TestPDF2.pdf")  # testpdf_c1.pdf
 
         self.assertEqual(mail.outbox[0].attachments[4][0], "Muster_Hans_QR-BillRef.pdf")
         self.assertInPDF(

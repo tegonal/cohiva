@@ -33,6 +33,7 @@ from stdnum.ch import esr
 from unfold.enums import ActionVariant
 
 from credit_accounting.forms import TransactionUploadForm
+from finance.accounting import Account, AccountingManager, AccountKey
 
 if hasattr(settings, "SHARE_PLOT") and settings.SHARE_PLOT:
     ## For Plotting
@@ -41,11 +42,6 @@ if hasattr(settings, "SHARE_PLOT") and settings.SHARE_PLOT:
 
     from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
     from matplotlib.figure import Figure
-
-## For GnuCash and interest calc.
-from decimal import Decimal
-
-from piecash import Split, Transaction, open_book
 
 if hasattr(settings, "CREATESEND_API_KEY") and settings.CREATESEND_API_KEY:
     import createsend
@@ -56,6 +52,20 @@ if hasattr(settings, "MAILMAN_API") and settings.MAILMAN_API["password"]:
 import geno.settings as geno_settings
 from cohiva.views.admin import CohivaAdminViewMixin
 
+from .billing import (
+    add_invoice,
+    consolidate_invoices,
+    create_invoices,
+    create_qrbill,
+    get_duplicate_invoices,
+    get_reference_nr,
+    guess_transaction,
+    invoice_detail,
+    invoice_overview,
+    pay_invoice,
+    process_sepa_transactions,
+    process_transaction,
+)
 from .documents import context_format, create_documents, get_context_data, send_member_mail_process
 from .exporter import (
     export_addresses_carddav,
@@ -78,21 +88,6 @@ from .forms import (
     TransactionUploadProcessForm,
     WebstampForm,
     process_registration_forms,
-)
-from .gnucash import (
-    add_invoice,
-    consolidate_invoices,
-    create_invoices,
-    create_qrbill,
-    get_book,
-    get_duplicate_invoices,
-    get_reference_nr,
-    guess_transaction,
-    invoice_detail,
-    invoice_overview,
-    pay_invoice,
-    process_sepa_transactions,
-    process_transaction,
 )
 from .importer import (
     import_adit_serial,
@@ -126,7 +121,12 @@ from .models import (
     get_active_contracts,
     get_active_shares,
 )
-from .shares import check_rental_shares_report, get_share_statement_data, share_interest_calc
+from .shares import (
+    check_rental_shares_report,
+    create_interest_transactions,
+    get_share_statement_data,
+    share_interest_calc,
+)
 from .tables import (
     InvoiceDetailTable,
     InvoiceOverviewTable,
@@ -140,8 +140,6 @@ from .utils import fill_template_pod, is_member, nformat, odt2pdf
 if "portal" in settings.INSTALLED_APPS:
     import portal.auth as portal_auth
 
-import builtins
-import contextlib
 import logging
 
 logger = logging.getLogger("geno")
@@ -1382,306 +1380,12 @@ class ShareInterestView(CohivaAdminViewMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.action == "create_transactions" and self.request.user.has_perm("geno.transaction"):
-            context["response"] = self.create_interest_transactions()
+            context["response"] = create_interest_transactions()
             # "title": "Zinsabrechnung %d buchen" % year
         else:
             context["response"] = [{"info": "Bitte wähle eine Aktion."}]
         return context
 
-    # TODO: Refactor: move business logic to shares.py or even shares_interest.py or similar
-    #                 and split it into functions, removing duplicate code.
-    def create_interest_transactions(self):
-        year_current = datetime.datetime.now().year
-        year = year_current - 1
-        stype_deposit = ShareType.objects.get(name="Depositenkasse")
-        ret = []
-
-        ## Try to guess if transactions have already been made
-        count = (
-            Share.objects.filter(is_interest_credit=True)
-            .filter(date=datetime.date(year, 12, 31))
-            .count()
-        )
-        if count:
-            ret.append(
-                {
-                    "info": "FEHLER: Es sieht so aus als ob die Zinsbuchungen schon ausgeführt "
-                    "wurden (%d Zins-Beteiligungen gefunden). Bitte überprüfen!" % count
-                }
-            )
-
-        ## Open GnuCash book
-        try:
-            gnc_messages = []
-            book = get_book(gnc_messages)
-            if not book:
-                raise Exception(gnc_messages[-1])
-            acc_zins_darlehen = book.accounts(
-                code=geno_settings.GNUCASH_ACC_INTEREST_LOAN
-            )  ## Zinsaufwand Darlehen
-            # print acc_zins_darlehen
-            acc_zins_depositen = book.accounts(
-                code=geno_settings.GNUCASH_ACC_INTEREST_DEPOSIT
-            )  ## Zinsaufwand Depositenkasse
-            # print acc_zins_depositen
-            acc_verbindl_geno = book.accounts(
-                code=geno_settings.GNUCASH_ACC_SHARES_INTEREST
-            )  ## Verbindlichkeiten aus Finanzierung
-            # print acc_verbindl_geno
-            acc_verbindl_tax = book.accounts(
-                code=geno_settings.GNUCASH_ACC_SHARES_INTEREST_TAX
-            )  ## Verbindlichkeiten aus Verrechnungssteuer
-            # print acc_verbindl_tax
-            acc_depositen = book.accounts(
-                code=geno_settings.GNUCASH_ACC_SHARES_DEPOSIT
-            )  ## Depositenkasse
-            # print acc_depositen
-        except Exception as e:
-            with contextlib.suppress(builtins.BaseException):
-                book.close()
-            ret.append(
-                {
-                    "info": "FEHLER: Konnte GnuCash DB nicht öffnen oder Konten nicht finden! %s"
-                    % str(e)
-                }
-            )
-            return ret
-
-        ## Create transactions
-        new_shares = []
-        for adr in Address.objects.filter(active=True).order_by("name"):
-            obj = []
-            try:
-                interest = share_interest_calc(adr, year)
-            except Exception as e:
-                ret.append({"info": "FEHLER bei der Zinsberechnung: %s" % str(e)})
-                ret.append({"info": "Verarbeitung abgebrochen. Keine Änderungen gespeichert."})
-                return ret
-            if interest["total"][2] > 0:
-                ## Darlehen normal
-                interest_rate = interest["dates"][2][0]["interest_rate"]
-                try:
-                    info = "Zinsgutschrift Darlehen: %s" % nformat(interest["total"][2])
-                    if interest["tax"][2] > 0:
-                        info += " (VSt. %s -> Netto %s)" % (
-                            nformat(interest["tax"][2]),
-                            nformat(interest["pay"][2]),
-                        )
-                    obj.append(info)
-                    if settings.GNUCASH:
-                        t = Transaction(
-                            post_date=datetime.date(year, 12, 31),
-                            enter_date=datetime.datetime.now(),
-                            currency=book.currencies(mnemonic="CHF"),
-                            description="Zins %s%% auf Darlehen %d %s"
-                            % (nformat(interest_rate), year, adr),
-                        )
-                        Split(
-                            account=acc_zins_darlehen,
-                            value=interest["total"][2],
-                            memo="",
-                            transaction=t,
-                        )
-                        Split(
-                            account=acc_verbindl_geno,
-                            value=-interest["pay"][2],
-                            memo="",
-                            transaction=t,
-                        )
-                        if interest["tax"][2] > 0:
-                            Split(
-                                account=acc_verbindl_tax,
-                                value=-interest["tax"][2],
-                                memo="",
-                                transaction=t,
-                            )
-                except Exception as e:
-                    with contextlib.suppress(builtins.BaseException):
-                        book.close()
-                    obj.append(str(e))
-                    ret.append(
-                        {
-                            "info": "%s: FEHLER: Konnte Transaktion nicht erstellen!" % adr,
-                            "objects": obj,
-                        }
-                    )
-                    ret.append({"info": "Verarbeitung abgebrochen. Keine Änderungen gespeichert."})
-                    return ret
-
-            if interest["total"][4] > 0:
-                ## Darlehen spezial
-                interest_rate = interest["dates"][4][0]["interest_rate"]
-                try:
-                    info = "Zinsgutschrift Darlehen: %s" % nformat(interest["total"][4])
-                    if interest["tax"][4] > 0:
-                        info += " (VSt. %s -> Netto %s)" % (
-                            nformat(interest["tax"][4]),
-                            nformat(interest["pay"][4]),
-                        )
-                    obj.append(info)
-                    if settings.GNUCASH:
-                        t = Transaction(
-                            post_date=datetime.date(year, 12, 31),
-                            enter_date=datetime.datetime.now(),
-                            currency=book.currencies(mnemonic="CHF"),
-                            description="Zins %s%% auf Darlehen %d %s"
-                            % (nformat(interest_rate), year, adr),
-                        )
-                        Split(
-                            account=acc_zins_darlehen,
-                            value=interest["total"][4],
-                            memo="",
-                            transaction=t,
-                        )
-                        Split(
-                            account=acc_verbindl_geno,
-                            value=-interest["pay"][4],
-                            memo="",
-                            transaction=t,
-                        )
-                        if interest["tax"][4] > 0:
-                            Split(
-                                account=acc_verbindl_tax,
-                                value=-interest["tax"][4],
-                                memo="",
-                                transaction=t,
-                            )
-                except Exception as e:
-                    with contextlib.suppress(builtins.BaseException):
-                        book.close()
-                    obj.append(str(e))
-                    ret.append(
-                        {
-                            "info": "%s: FEHLER: Konnte Transaktion nicht erstellen!" % adr,
-                            "objects": obj,
-                        }
-                    )
-                    ret.append({"info": "Verarbeitung abgebrochen. Keine Änderungen gespeichert."})
-                    return ret
-
-            if interest["total"][3] > 0:
-                ## Depositenkasse
-                interest_rate = interest["dates"][3][0]["interest_rate"]
-                try:
-                    info = "Zinsgutschrift Depositenkasse: %s" % nformat(interest["total"][3])
-                    if interest["tax"][3] > 0:
-                        info += " (VSt. %s -> Netto %s)" % (
-                            nformat(interest["tax"][3]),
-                            nformat(interest["pay"][3]),
-                        )
-                    obj.append(info)
-                    if settings.GNUCASH:
-                        t = Transaction(
-                            post_date=datetime.date(year, 12, 31),
-                            enter_date=datetime.datetime.now(),
-                            currency=book.currencies(mnemonic="CHF"),
-                            description="Zins %s%% auf Depositenkasse %d %s"
-                            % (nformat(interest_rate), year, adr),
-                        )
-                        Split(
-                            account=acc_zins_depositen,
-                            value=interest["total"][3],
-                            memo="",
-                            transaction=t,
-                        )
-                        Split(
-                            account=acc_depositen,
-                            value=-interest["pay"][3],
-                            memo="",
-                            transaction=t,
-                        )
-                        if interest["tax"][3] > 0:
-                            Split(
-                                account=acc_verbindl_tax,
-                                value=-interest["tax"][3],
-                                memo="",
-                                transaction=t,
-                            )
-                except Exception as e:
-                    with contextlib.suppress(builtins.BaseException):
-                        book.close()
-                    obj.append(str(e))
-                    ret.append(
-                        {
-                            "info": "%s: FEHLER: Konnte Transaktion nicht erstellen!" % adr,
-                            "objects": obj,
-                        }
-                    )
-                    ret.append({"info": "Verarbeitung abgebrochen. Keine Änderungen gespeichert."})
-                    return ret
-
-                try:
-                    new_shares.append(
-                        Share(
-                            name=adr,
-                            share_type=stype_deposit,
-                            date=datetime.date(year, 12, 31),
-                            quantity=1,
-                            value=interest["pay"][3],
-                            is_interest_credit=True,
-                            state="bezahlt",
-                            note="Bruttozinsen %s%% Depositenkasse %d"
-                            % (nformat(interest_rate), year),
-                        )
-                    )
-                    obj.append(
-                        "Erzeuge Zins-Beteiligung Depositenkasse (%s, %s)"
-                        % (nformat(interest["pay"][3]), nformat(interest_rate))
-                    )
-                except Exception as e:
-                    with contextlib.suppress(builtins.BaseException):
-                        book.close()
-                    obj.append(str(e))
-                    ret.append(
-                        {
-                            "info": "%s: FEHLER: Konnte Zins-Beteiligung nicht erstellen!" % adr,
-                            "objects": obj,
-                        }
-                    )
-                    ret.append({"info": "Verarbeitung abgebrochen. Keine Änderungen gespeichert."})
-                    return ret
-            if obj:
-                ret.append({"info": str(adr), "objects": obj})
-
-        ## Commit transactions
-        try:
-            book.save()
-        except Exception as e:
-            ret.append(
-                {
-                    "info": "FEHLER BEIM SPEICHERN: Konnte GnuCash Transaktionen nicht speichen! %s"
-                    % str(e)
-                }
-            )
-            return ret
-        ret.append({"info": "GnuCash Transaktionen GESPEICHERT!"})
-
-        try:
-            for s in new_shares:
-                s.save()
-        except Exception as e:
-            ret.append(
-                {
-                    "info": "FEHLER BEIM SPEICHERN: Konnte Zins-Beteiligungen nicht speichen! %s"
-                    % str(e)
-                }
-            )
-            return ret
-        ret.append({"info": "Zins-Beteiligungen GESPEICHERT!"})
-
-        try:
-            book.close()
-        except Exception as e:
-            ret.append(
-                {
-                    "info": "WARNUNG: Konnte GnuCash Buchhaltung nicht ordnungsgemäss schliessen! %s"
-                    % str(e)
-                }
-            )
-        return ret
-
-    # TODO: Refactor: move business logic to shares.py or even shares_interest.py or similar
-    #                 and split it into functions, removing duplicate code.
     def download(self):
         year_current = datetime.datetime.now().year
         year = year_current - 1
@@ -3182,7 +2886,7 @@ class TransactionManualView(CohivaAdminViewMixin, FormView):
         if len(member) != 1:
             messages.error(
                 self.request,
-                "Member not found or not unique: %s" % form.cleaned_data["name"],
+                "Mitglied nicht gefunden oder nicht eindeutig: %s" % form.cleaned_data["name"],
             )
             return True
         att = MemberAttribute.objects.filter(member=member[0], attribute_type=att_type)
@@ -3209,53 +2913,26 @@ class TransactionManualView(CohivaAdminViewMixin, FormView):
                 and att.value != "Brief-Mahnung geschickt"
                 and att.value != "Brief-Mahnung2 geschickt"
             ):
-                messages.error(self.request, "Unknown attribute value")
+                messages.error(self.request, f"Unbekannter Attribut-Wert: {att.value}")
                 return True
         else:
-            messages.error(self.request, "More than one attribute found")
+            messages.error(self.request, "Mehr als ein Attribut gefunden")
             return True
 
-        if settings.GNUCASH:
-            ## Add transaction to GnuCash
-            msg = "Undefined"
-            try:
-                book = open_book(
-                    uri_conn=settings.GNUCASH_DB_SECRET,
-                    readonly=settings.GNUCASH_READONLY,
-                    do_backup=False,
+        ## Add transaction to financial accounting
+        try:
+            with AccountingManager() as book:
+                to_account = Account.from_settings(AccountKey.DEFAULT_DEBTOR_MANUAL)
+                from_account = Account.from_settings(AccountKey.MEMBER_FEE)
+                description = ("Mitgliederbeitrag %s %s" % (fee_year, member[0]),)
+                amount = "80.00"
+                book.add_transaction(
+                    amount, from_account, to_account, form.cleaned_data["date"], description
                 )
-                to_account = book.accounts(
-                    code=geno_settings.GNUCASH_ACC_POST
-                )  # Aktiven:Umlaufvermögen:Flüssige Mittel:Postkonto
-                from_account = book.accounts(
-                    code=geno_settings.GNUCASH_ACC_MEMBER_FEE
-                )  # Ertrag aus Leistungen:Mitgliederbeiträge")
-                amount = Decimal("80.00")
-                t = Transaction(
-                    post_date=form.cleaned_data["date"],
-                    enter_date=datetime.datetime.now(),
-                    currency=book.currencies(mnemonic="CHF"),
-                    description="Mitgliederbeitrag %s %s" % (fee_year, member[0]),
-                    splits=[
-                        Split(account=to_account, value=amount, memo=""),
-                        Split(account=from_account, value=-amount, memo=""),
-                    ],
-                )
-                msg = "CHF %s, %s [%s > %s]" % (
-                    amount,
-                    t.description,
-                    from_account.name,
-                    to_account.name,
-                )
-                book.save()
-                book.close()
-            except Exception as e:
-                messages.error(self.request, "Could not create Gnucash transaction: %s" % e)
-                with contextlib.suppress(builtins.BaseException):
-                    book.close()
-                return True
-            messages.success(self.request, "Added GnuCash transaction: %s" % msg)
-            return False
+                messages.success(self.request, f"Buchung erstellt: CHF {amount}, {description}")
+        except Exception as e:
+            messages.error(self.request, "Konnte Buchung nicht erstellen: %s" % e)
+            return True
 
         ## Update/add attribute
         att.value = "Bezahlt"
@@ -3786,7 +3463,7 @@ class InvoiceBatchGenerateView(CohivaAdminViewMixin, TemplateView):
                     buildings=self.request.GET.get("buildings[]", ""),
                 )
             )
-        ret.append({"info": "GnuCash Rechnungen erstellen:", "objects": invoices})
+        ret.append({"info": "Rechnungen in Buchhaltung erstellen:", "objects": invoices})
         return ret
 
 

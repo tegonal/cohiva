@@ -28,7 +28,6 @@ from cohiva.utils.settings import (
 )
 from geno.model_fields import LowercaseEmailField
 from geno.utils import (
-    build_account,
     is_member,
     is_renting,
     nformat,
@@ -279,9 +278,6 @@ class Address(GenoBase):
         ),
     )
     active = models.BooleanField("Aktiv", db_index=True, default=True)
-    gnucash_id = models.CharField(
-        "GnuCash-ID", max_length=30, unique=True, null=True, default=None
-    )
     import_id = models.CharField(
         "Import-ID", max_length=255, unique=True, null=True, default=None, blank=True
     )
@@ -588,7 +584,6 @@ class Address(GenoBase):
     def save_as_copy(self):
         self.user = None
         self.import_id = None
-        self.gnucash_id = None
         self.random_id = uuid.uuid4()
         super().save_as_copy()
 
@@ -1621,18 +1616,6 @@ class InvoiceCategory(GenoBase):
             raise ValidationError("Die ausgewählte Vorlage ist keine Email-Vorlage.")
         super().clean(*args, **kwargs)
 
-    def build_income_account(self, building=None):
-        if self.income_account_building_based and building:
-            build_account(self.income_account, building=building)
-        else:
-            return self.income_account
-
-    def build_receivables_account(self, building=None):
-        if self.receivables_account_building_based and building:
-            build_account(self.receivables_account, building=building)
-        else:
-            return self.receivables_account
-
     class Meta:
         verbose_name = "Rechnungstyp"
         verbose_name_plural = "Rechnungstypen"
@@ -1691,11 +1674,13 @@ class Invoice(GenoBase):
     )
     active = models.BooleanField("Aktiv", default=True, db_index=True)
 
-    ## Gnucash references
-    gnc_transaction = models.CharField("GNC transaction", max_length=1024)
-    gnc_account = models.CharField("GNC account", max_length=50, blank=True)
-    gnc_account_receivables = models.CharField(
-        "GNC account receivables", max_length=50, blank=True
+    ## Financial accounting references
+    fin_transaction_ref = models.CharField(
+        "Transaktions-Referenz Buchhaltung", max_length=1024, blank=True
+    )
+    fin_account = models.CharField("Konto Buchhaltung", max_length=50, blank=True)
+    fin_account_receivables = models.CharField(
+        "Konto Forderungen Buchhaltung", max_length=50, blank=True
     )
 
     def __str__(self):
@@ -1719,7 +1704,7 @@ class Invoice(GenoBase):
 
 @receiver(pre_delete, sender=Invoice)
 def _delete_invoice_pre(sender, instance, *args, **kwargs):
-    from .gnucash import delete_invoice_transaction
+    from .billing import delete_invoice_transaction
 
     ret = delete_invoice_transaction(instance)
     if ret:

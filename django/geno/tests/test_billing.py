@@ -1,0 +1,300 @@
+import datetime
+from unittest.mock import patch
+
+import geno.billing
+import geno.tests.data as geno_testdata
+from finance.accounting import Account, AccountingManager, AccountKey
+from geno.models import (
+    Contract,
+    InvoiceCategory,
+    Member,
+    MemberAttribute,
+    MemberAttributeType,
+    Share,
+    ShareType,
+)
+
+from .base import GenoAdminTestCase
+
+
+class TestBilling(GenoAdminTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        geno_testdata.create_contracts(cls)
+        cls.share_type_member_share = ShareType.objects.get(name="Anteilschein")
+        cls.share_type_loan = ShareType.objects.get(name="Darlehen verzinst")
+        cls.share_type_deposit = ShareType.objects.get(name="Depositenkasse")
+        cls.member_attribute_2001 = MemberAttributeType.objects.create(
+            name="Mitgliederbeitrag 2001"
+        )
+
+    @patch("geno.billing.create_monthly_invoices", return_value=(2, ["Message"]))
+    def test_create_invoices_one_contract(self, mock_monthly_invoices):
+        ret = geno.billing.create_invoices()
+        self.assertEqual(mock_monthly_invoices.call_count, 1)
+        self.assertEqual(len(ret), 2)
+        self.assertEqual(ret[0], "Message")
+        self.assertEqual(ret[1], "2 Rechnungen für 1 Vertrag")
+
+    @patch("geno.billing.create_monthly_invoices", return_value=(2, []))
+    def test_create_invoices_multiple_contracts(self, mock_monthly_invoices):
+        Contract.objects.create(date=datetime.date(2001, 1, 1), state="unterzeichnet")
+        ret = geno.billing.create_invoices()
+        self.assertEqual(mock_monthly_invoices.call_count, 2)
+        self.assertEqual(len(ret), 1)
+        self.assertEqual(ret[0], "4 Rechnungen für 2 Verträge")
+
+    @patch("geno.billing.create_monthly_invoices", return_value=("String", ["Unused Message"]))
+    def test_create_invoices_return_string(self, mock_monthly_invoices):
+        Contract.objects.create(date=datetime.date(2001, 1, 1), state="unterzeichnet")
+        ret = geno.billing.create_invoices()
+        self.assertEqual(mock_monthly_invoices.call_count, 1)
+        self.assertEqual(ret, "String")
+
+    @patch("geno.billing.add_invoice")
+    def test_create_monthly_invoices_none(self, mock_add_invoice):
+        with AccountingManager(book_type_id="dum") as book:
+            contract = self.contracts[0]
+            date = datetime.date(2001, 3, 1)
+            inv_cat = InvoiceCategory.objects.get(
+                reference_id=10
+            )  # name="Mietzins wiederkehrend")
+            options = {
+                "download_only": None,
+                "single_contract": None,
+                "dry_run": True,
+            }
+            ret, messages = geno.billing.create_monthly_invoices(
+                book, contract, date, inv_cat, options
+            )
+            mock_add_invoice.assert_not_called()
+            self.assertEqual(ret, 0)
+            self.assertEqual(len(messages), 0)
+
+    @patch("geno.billing.add_invoice")
+    def test_create_monthly_invoices_one_month(self, mock_add_invoice):
+        with AccountingManager(book_type_id="dum") as book:
+            contract = self.contracts[0]
+            date = datetime.date(2001, 4, 1)
+            inv_cat = InvoiceCategory.objects.get(
+                reference_id=10
+            )  # name="Mietzins wiederkehrend")
+            options = {
+                "download_only": None,
+                "single_contract": None,
+                "dry_run": True,
+            }
+            ret, messages = geno.billing.create_monthly_invoices(
+                book, contract, date, inv_cat, options
+            )
+            self.assertEqual(mock_add_invoice.call_count, 2)
+            self.assertEqual(ret, 1)
+            self.assertEqual(len(messages), 3)
+            contract_string = "001a/001b für 001a Wohnung (Musterweg 1)/001b Wohnung (Musterweg 1) [Anna Muster/Hans Muster]"
+            self.assertEqual(
+                messages[0],
+                f"Montasrechnung hinzugefügt: Nettomiete 04.2001 für {contract_string}.",
+            )
+            self.assertEqual(
+                messages[1],
+                f"Montasrechnung hinzugefügt: Nebenkosten 04.2001 für {contract_string}.",
+            )
+            self.assertTrue(messages[2].startswith("DRY-RUN: Hätte nun Email"))
+
+    @patch("geno.billing.add_invoice")
+    def test_create_monthly_invoices_multiple_month(self, mock_add_invoice):
+        with AccountingManager(book_type_id="dum") as book:
+            contract = self.contracts[0]
+            date = datetime.date(2001, 6, 1)
+            inv_cat = InvoiceCategory.objects.get(
+                reference_id=10
+            )  # name="Mietzins wiederkehrend")
+            options = {
+                "download_only": None,
+                "single_contract": None,
+                "dry_run": True,
+            }
+            ret, messages = geno.billing.create_monthly_invoices(
+                book, contract, date, inv_cat, options
+            )
+            self.assertEqual(mock_add_invoice.call_count, 3 * 2)
+            self.assertEqual(ret, 3)
+            self.assertEqual(len(messages), 3 * 3)
+
+    def test_add_transaction_shares_200(self):
+        with AccountingManager(book_type_id="dum") as book:
+            date = datetime.date(2001, 4, 1)
+            adr = self.addresses[0]
+            book._db = {}
+            geno.billing.add_transaction_shares(book, date, 200, adr)
+            share = Share.objects.get(name=adr, date=date, state="bezahlt", value=200)
+            self.assertEqual(share.share_type, self.share_type_member_share)
+            self.assertEqual(share.quantity, 1)
+            book.save()
+            tr = book.get_transaction(book.build_transaction_id(list(book._db.keys())[0]))
+            self.assertEqual(tr.date, date)
+            self.assertEqual(tr.description, "1 Anteilschein Muster, Hans")
+            for split in tr.splits:
+                if split.account == Account.from_settings(AccountKey.SHARES_MEMBERS):
+                    self.assertEqual(split.amount, -200)
+                elif split.account == Account.from_settings(AccountKey.SHARES_DEBTOR_MANUAL):
+                    self.assertEqual(split.amount, 200)
+                else:
+                    raise ValueError("Wrong account")
+
+    def test_add_transaction_shares_400(self):
+        with AccountingManager(book_type_id="dum") as book:
+            date = datetime.date(2001, 4, 1)
+            adr = self.addresses[0]
+            book._db = {}
+            geno.billing.add_transaction_shares(book, date, 400, adr)
+            share = Share.objects.get(name=adr, date=date, state="bezahlt", value=200)
+            self.assertEqual(share.share_type, self.share_type_member_share)
+            self.assertEqual(share.quantity, 2)
+            book.save()
+            tr = book.get_transaction(book.build_transaction_id(list(book._db.keys())[0]))
+            self.assertEqual(tr.description, "2 Anteilscheine Muster, Hans")
+            for split in tr.splits:
+                if split.account == Account.from_settings(AccountKey.SHARES_MEMBERS):
+                    self.assertEqual(split.amount, -400)
+                elif split.account == Account.from_settings(AccountKey.SHARES_DEBTOR_MANUAL):
+                    self.assertEqual(split.amount, 400)
+                else:
+                    raise ValueError("Wrong account")
+
+    def test_add_transaction_shares_400_clearing(self):
+        with AccountingManager(book_type_id="dum") as book:
+            date = datetime.date(2001, 4, 1)
+            adr = self.addresses[0]
+            book._db = {}
+            geno.billing.add_transaction_shares(book, date, 400, adr, use_clearing=True)
+            book.save()
+            tr = book.get_transaction(book.build_transaction_id(list(book._db.keys())[0]))
+            self.assertEqual(tr.description, "2 Anteilscheine Muster, Hans")
+            for split in tr.splits:
+                if split.account == Account.from_settings(AccountKey.SHARES_MEMBERS):
+                    self.assertEqual(split.amount, -400)
+                elif split.account == Account.from_settings(AccountKey.SHARES_CLEARING):
+                    self.assertEqual(split.amount, 400)
+                else:
+                    raise ValueError(f"Wrong account: {split.account}")
+
+    def test_add_transaction_shares_invalid(self):
+        with self.assertRaises(ValueError, msg="Share is not a multiple of 200.-!"):
+            geno.billing.add_transaction_shares(None, None, 100, None)
+
+    def test_add_transaction_shares_entry_200(self):
+        with AccountingManager(book_type_id="dum") as book:
+            date = datetime.date(2001, 4, 1)
+            adr = self.addresses[0]
+            book._db = {}
+            geno.billing.add_transaction_shares_entry(book, date, 200, adr)
+            with self.assertRaises(Share.DoesNotExist):
+                Share.objects.get(name=adr, date=date, state="bezahlt", value=200)
+            attr = MemberAttribute.objects.get(
+                member=Member.objects.get(name=adr),
+                date=date,
+                attribute_type=self.member_attribute_2001,
+            )
+            self.assertEqual(attr.value, "Bezahlt (mit Eintritt)")
+            book.save()
+            tr = book.get_transaction(book.build_transaction_id(list(book._db.keys())[0]))
+            self.assertEqual(tr.date, date)
+            self.assertEqual(tr.description, "0 Anteilscheine und Beitrittsgebühr, Muster, Hans")
+            for split in tr.splits:
+                if split.account == Account.from_settings(AccountKey.MEMBER_FEE_ONETIME):
+                    self.assertEqual(split.amount, -200)
+                elif split.account == Account.from_settings(AccountKey.DEFAULT_DEBTOR_MANUAL):
+                    self.assertEqual(split.amount, 200)
+                else:
+                    raise ValueError(f"Wrong account: {split.account}")
+
+    def test_add_transaction_shares_entry_400(self):
+        with AccountingManager(book_type_id="dum") as book:
+            date = datetime.date(2001, 4, 1)
+            adr = self.addresses[0]
+            book._db = {}
+            geno.billing.add_transaction_shares_entry(book, date, 400, adr)
+            share = Share.objects.get(name=adr, date=date, state="bezahlt", value=200)
+            self.assertEqual(share.share_type, self.share_type_member_share)
+            self.assertEqual(share.quantity, 1)
+            book.save()
+            tr = book.get_transaction(book.build_transaction_id(list(book._db.keys())[0]))
+            self.assertEqual(tr.description, "1 Anteilschein und Beitrittsgebühr, Muster, Hans")
+            for split in tr.splits:
+                if split.account in (
+                    Account.from_settings(AccountKey.MEMBER_FEE_ONETIME),
+                    Account.from_settings(AccountKey.SHARES_MEMBERS),
+                ):
+                    self.assertEqual(split.amount, -200)
+                elif split.account == Account.from_settings(AccountKey.DEFAULT_DEBTOR_MANUAL):
+                    self.assertEqual(split.amount, 400)
+                else:
+                    raise ValueError(f"Wrong account: {split.account}")
+
+    def test_add_transaction_shares_entry_400_clearing(self):
+        with AccountingManager(book_type_id="dum") as book:
+            date = datetime.date(2001, 4, 1)
+            adr = self.addresses[0]
+            book._db = {}
+            geno.billing.add_transaction_shares_entry(book, date, 400, adr, use_clearing=True)
+            book.save()
+            tr = book.get_transaction(book.build_transaction_id(list(book._db.keys())[0]))
+            for split in tr.splits:
+                if split.account in (
+                    Account.from_settings(AccountKey.MEMBER_FEE_ONETIME),
+                    Account.from_settings(AccountKey.SHARES_MEMBERS),
+                ):
+                    self.assertEqual(split.amount, -200)
+                elif split.account == Account.from_settings(AccountKey.SHARES_CLEARING):
+                    self.assertEqual(split.amount, 400)
+                else:
+                    raise ValueError(f"Wrong account: {split.account}")
+
+    def test_add_transaction_shares_entry_invalid(self):
+        with self.assertRaises(ValueError, msg="Betrag ist kein Vielfaches von 200: 100"):
+            geno.billing.add_transaction_shares_entry(None, None, 100, None)
+
+    def test_add_transaction_interest_loan(self):
+        with AccountingManager(book_type_id="dum") as book:
+            date = datetime.date(2001, 4, 1)
+            adr = self.addresses[0]
+            book._db = {}
+            geno.billing.add_transaction_interest(book, date, 50, adr, book_to="loan")
+            book.save()
+            share = Share.objects.get(
+                name=adr, date=date, state="bezahlt", value=50, is_interest_credit=True, quantity=1
+            )
+            self.assertEqual(share.share_type, self.share_type_loan)
+            self.assertEqual(share.note, "Anrechnung Darlehenszins an Darlehen")
+            tr = book.get_transaction(book.build_transaction_id(list(book._db.keys())[0]))
+            for split in tr.splits:
+                if split.account == Account.from_settings(AccountKey.SHARES_LOAN_INTEREST):
+                    self.assertEqual(split.amount, -50)
+                elif split.account == Account.from_settings(AccountKey.SHARES_INTEREST):
+                    self.assertEqual(split.amount, 50)
+                else:
+                    raise ValueError(f"Wrong account: {split.account}")
+            self.assertEqual(tr.description, f"{share.note}, Muster, Hans")
+
+    def test_add_transaction_interest_deposit(self):
+        with AccountingManager(book_type_id="dum") as book:
+            date = datetime.date(2001, 4, 1)
+            adr = self.addresses[0]
+            book._db = {}
+            geno.billing.add_transaction_interest(book, date, 50, adr, book_to="deposit")
+            book.save()
+            share = Share.objects.get(
+                name=adr, date=date, state="bezahlt", value=50, is_interest_credit=True, quantity=1
+            )
+            self.assertEqual(share.share_type, self.share_type_deposit)
+            self.assertEqual(share.note, "Anrechnung Darlehenszins an Depositenkasse")
+            tr = book.get_transaction(book.build_transaction_id(list(book._db.keys())[0]))
+            for split in tr.splits:
+                if split.account == Account.from_settings(AccountKey.SHARES_DEPOSIT):
+                    self.assertEqual(split.amount, -50)
+                elif split.account == Account.from_settings(AccountKey.SHARES_INTEREST):
+                    self.assertEqual(split.amount, 50)
+                else:
+                    raise ValueError(f"Wrong account: {split.account}")

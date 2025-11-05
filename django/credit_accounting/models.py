@@ -12,7 +12,7 @@ from django.db.models.signals import post_delete, post_save
 from django.dispatch.dispatcher import receiver
 from django.template.loader import render_to_string
 
-from geno.gnucash import get_reference_nr, render_qrbill
+from geno.billing import get_reference_nr, render_qrbill
 from geno.models import Address, GenoBase
 
 logger = logging.getLogger("credit_accounting")

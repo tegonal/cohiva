@@ -256,10 +256,10 @@ def build_account(account_prefix, building=None, rental_units=None, contract=Non
         and contract.rental_units.all().exists()
     ):
         rental_units = contract.rental_units.all()
-    if building is None and rental_units and rental_units.first():
-        building = rental_units.first().building
+    if building is None and rental_units and rental_units[0]:
+        building = rental_units[0].building
     if building and building.accounting_postfix:
         postfix = "%03d" % building.accounting_postfix
-        return re.sub(r"(\d+)$", r"\1%s" % postfix, account_prefix)
+        return f"{account_prefix}{postfix}"
     else:
         return account_prefix

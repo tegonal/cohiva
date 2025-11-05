@@ -6,9 +6,11 @@ export PYTHONWARNINGS=always
 INSTALL_DIR=`grep "^INSTALL_DIR = " cohiva/base_config.py | cut -d \" -f 2`
 
 ## Run coverage? No / full / append
+COVERAGE_OPT=""
+#COVERAGE_OPT="--source $INSTALL_DIR/django"
 COVERAGE=""
-#COVERAGE="coverage run --source $INSTALL_DIR/django"
-#COVERAGE="coverage run --append --source $INSTALL_DIR/django"
+#COVERAGE="coverage run $COVERAGE_OPT"
+#COVERAGE="coverage run --append $COVERAGE_OPT"
 
 ## Base test command
 TESTCMD="./manage.py test --settings=cohiva.settings_for_tests"
@@ -33,6 +35,9 @@ if [ -n "$COVERAGE" ] ; then
 fi
 
 ## Cleanup
+## TODO: Move this cleanup step to a custom test runner, so it is integrated in
+##       the ./manage.py test command, and tests also work when run from the
+##       IDE, for example.
 rm -rf $INSTALL_DIR/django-test/tests
 
 #EOF

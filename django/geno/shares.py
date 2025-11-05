@@ -8,7 +8,9 @@ from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.db.models import Q
 
-from .models import RentalUnit, Share, ShareType, get_active_contracts, get_active_shares
+from finance.accounting import Account, AccountingManager, AccountKey, Split, Transaction
+
+from .models import Address, RentalUnit, Share, ShareType, get_active_contracts, get_active_shares
 from .utils import is_member, nformat
 
 
@@ -569,6 +571,151 @@ def share_interest_calc(address, year, enddate=None):
         "pay_alltypes": interest_pay_alltypes,
     }
     return ret
+
+
+def create_interest_transactions():
+    year_current = datetime.datetime.now().year
+    book_date = datetime.date(year_current - 1, 12, 31)
+    ret = []
+
+    ## Try to guess if transactions have already been made
+    count = Share.objects.filter(is_interest_credit=True).filter(date=book_date).count()
+    if count:
+        ret.append(
+            {
+                "info": "WARNUNG: Es sieht so aus als ob die Zinsbuchungen schon ausgeführt "
+                "wurden (%d Zins-Beteiligungen gefunden). Bitte überprüfen!" % count
+            }
+        )
+
+    result = create_interest_transactions_execute(book_date)
+    ret.extend(result)
+    return ret
+
+
+def create_interest_transactions_execute(book_date):
+    ret = []
+    transaction_info = {
+        # 2 - Darlehen normal: Zinsaufwand Darlehen => Verbindlichkeiten
+        2: {
+            "name": "Darlehen",
+            "acc_zins": Account.from_settings(AccountKey.INTEREST_LOAN),
+            "acc_pay": Account.from_settings(AccountKey.SHARES_INTEREST),
+            "acc_tax": Account.from_settings(AccountKey.SHARES_INTEREST_TAX),
+        },
+        # 4 - Darlehen spezial: Zinsaufwand Darlehen => Verbindlichkeiten
+        4: {
+            "name": "Darlehen",
+            "acc_zins": Account.from_settings(AccountKey.INTEREST_LOAN),
+            "acc_pay": Account.from_settings(AccountKey.SHARES_INTEREST),
+            "acc_tax": Account.from_settings(AccountKey.SHARES_INTEREST_TAX),
+        },
+        # 3 - Depositenkasse: Zinsaufwand Depositenkasse => Depositenkasse
+        3: {
+            "name": "Depositenkasse",
+            "acc_zins": Account.from_settings(AccountKey.INTEREST_DEPOSIT),
+            "acc_pay": Account.from_settings(AccountKey.SHARES_DEPOSIT),
+            "acc_tax": Account.from_settings(AccountKey.SHARES_INTEREST_TAX),
+        },
+    }
+
+    book_messages = []
+    with AccountingManager(book_messages) as book:
+        if not book:
+            ret.append({"info": f"FEHLER: {book_messages[-1]}"})
+            return ret
+
+        ## Create transactions
+        new_shares = []
+        for adr in Address.objects.filter(active=True).order_by("name"):
+            obj = []
+            try:
+                interest = share_interest_calc(adr, book_date.year)
+                for idx in (2, 3, 4):
+                    if interest["total"][idx] > 0:
+                        info = add_interest_transaction(
+                            book,
+                            book_date,
+                            adr,
+                            transaction_info[idx]["name"],
+                            interest["dates"][idx][0]["interest_rate"],
+                            interest["total"][idx],
+                            interest["tax"][idx],
+                            interest["pay"][idx],
+                            transaction_info[idx]["acc_zins"],
+                            transaction_info[idx]["acc_pay"],
+                            transaction_info[idx]["acc_tax"],
+                        )
+                        obj.append(info)
+                if interest["total"][3] > 0:
+                    ## New share for Depositenkassen-Zins
+                    interest_rate = interest["dates"][3][0]["interest_rate"]
+                    new_shares.append(
+                        Share(
+                            name=adr,
+                            share_type=ShareType.objects.get(name="Depositenkasse"),
+                            date=book_date,
+                            quantity=1,
+                            value=interest["pay"][3],
+                            is_interest_credit=True,
+                            state="bezahlt",
+                            note="Bruttozinsen %s%% Depositenkasse %d"
+                            % (nformat(interest_rate), book_date.year),
+                        )
+                    )
+                    obj.append(
+                        "Erzeuge Zins-Beteiligung Depositenkasse (%s, %s)"
+                        % (nformat(interest["pay"][3]), nformat(interest_rate))
+                    )
+            except Exception as e:
+                obj.append(str(e))
+                ret.append({"info": f"FEHLER bei der Verarbeitung von {adr}", "objects": obj})
+                ret.append({"info": "Verarbeitung abgebrochen. Keine Änderungen gespeichert."})
+                return ret
+            if obj:
+                ret.append({"info": str(adr), "objects": obj})
+
+        ## Commit transactions
+        try:
+            book.save()
+            ret.append({"info": "Transaktionen in Buchhaltung GESPEICHERT!"})
+            for s in new_shares:
+                s.save()
+            ret.append({"info": "Zins-Beteiligungen GESPEICHERT!"})
+        except Exception:
+            ret.append({"info": "FEHLER BEIM SPEICHERN: {e}"})
+    return ret
+
+
+def add_interest_transaction(
+    book,
+    book_date,
+    adr,
+    name,
+    interest_rate,
+    total,
+    tax,
+    pay,
+    acc_zins,
+    acc_pay,
+    acc_tax,
+):
+    info = f"Zinsgutschrift {name}: {nformat(total)}"
+    if tax > 0:
+        info += " (VSt. %s -> Netto %s)" % (
+            nformat(tax),
+            nformat(pay),
+        )
+    description = f"Zins {nformat(interest_rate)}% auf {name} {book_date.year} {adr}"
+    splits = [
+        Split(account=acc_zins, amount=total),
+        Split(account=acc_pay, amount=-pay),
+    ]
+    if tax > 0:
+        splits.append(Split(account=acc_tax, amount=-tax))
+    transaction = Transaction(date=book_date, description=description, splits=splits)
+    book.add_split_transaction(transaction, autosave=False)
+    return info
 
 
 def share_get_donations(address, year, enddate=None):

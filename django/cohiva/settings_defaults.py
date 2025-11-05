@@ -14,6 +14,7 @@ from django.utils.translation import gettext_lazy as _
 
 import cohiva.base_config as cbc
 from cohiva.version import __version__ as COHIVA_VERSION  # noqa: F401
+from finance.accounting import AccountKey, AccountRole
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -186,6 +187,7 @@ if "portal" in cbc.FEATURES:
 INSTALLED_APPS = (
     ## Geno must be before admin so we can extend templates
     "geno",
+    "finance",
     ## Unfold
     "cohiva.apps.CohivaUnfoldConfig",  # before django.contrib.admin
     "unfold.contrib.filters",  # optional, if special filters are needed
@@ -471,6 +473,12 @@ LOGGING = {
             "filename": cbc.INSTALL_DIR + "/django-test/log/credit_accounting.log",
             "formatter": "verbose",
         },
+        "finance_accounting": {
+            "level": "DEBUG",
+            "class": "logging.FileHandler",
+            "filename": cbc.INSTALL_DIR + "/django-test/log/finance_accounting.log",
+            "formatter": "verbose",
+        },
     },
     "loggers": {
         "django.request": {
@@ -501,6 +509,11 @@ LOGGING = {
         "credit_accounting": {
             "level": "DEBUG",
             "handlers": ["credit_accounting", "mail_admins_debug"],
+            "propagate": True,
+        },
+        "finance_accounting": {
+            "level": "DEBUG",
+            "handlers": ["finance_accounting", "mail_admins_debug"],
             "propagate": True,
         },
     },
@@ -576,12 +589,217 @@ GENO_QRBILL_CREDITOR = {
     "line2": cbc.ORG_ADDRESS_CITY,
 }
 
-GENO_FINANCE_ACCOUNTS = {
-    "default_debtor": {
-        "name": "Bankkonto Einzahlungen",
+FINANCIAL_ACCOUNTING_DEFAULT_BACKEND = "dummy"
+FINANCIAL_ACCOUNTING_BACKENDS = {
+    "gnucash": {
+        "BACKEND": "finance.accounting.GnucashBook",
+        "OPTIONS": {
+            "DB_SECRET": (
+                f"mysql://{cbc.DB_PREFIX}:{quote(cbc.DB_PASSWORD)}@{cbc.DB_HOSTNAME}/"
+                f"{cbc.DB_PREFIX}_gnucash_test?charset=utf8"
+            ),
+            "READONLY": False,
+            "IGNORE_SQLALCHEMY_WARNINGS": True,
+        },
+    },
+    "cashctrl": {
+        "BACKEND": "finance.accounting.CashctrlBook",
+        "OPTIONS": {
+            # TODO
+        },
+    },
+    "dummy": {
+        "BACKEND": "finance.accounting.DummyBook",
+        "OPTIONS": {
+            # Save transactions in RAM? (until the server is restarted)
+            "SAVE_TRANSACTIONS": False,
+        },
+    },
+}
+
+FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT = False
+FINANCIAL_ACCOUNTS = {
+    AccountKey.DEFAULT_DEBTOR: {
+        "role": AccountRole.QR_DEBTOR,
+        "name": "Bankkonto QR-Einzahlungen",
         "iban": None,  ## QR-IBAN
         "account_iban": None,
         "account_code": "1020.1",  ## Account number in financial accounting (e.g. GnuCash)
+    },
+    AccountKey.DEFAULT_DEBTOR_MANUAL: {
+        "role": AccountRole.QR_DEBTOR,
+        "name": "Bankkonto manuelle Einzahlungen",
+        "iban": None,
+        "account_iban": None,
+        "account_code": "1010.1",
+    },
+    AccountKey.SHARES_DEBTOR_MANUAL: {
+        "role": AccountRole.QR_DEBTOR,
+        "name": "Bankkonto manuelle Einzahlungen Beteiligungen",
+        "iban": None,
+        "account_iban": None,
+        "account_code": "1020.2",
+    },
+    AccountKey.DEFAULT_RECEIVABLES: {
+        "name": "Debitoren",
+        "account_code": "1102",
+    },
+    AccountKey.NK_RECEIVABLES: {
+        "name": "Forderungen Nebenkosten",
+        "account_code": "1104",
+    },
+    AccountKey.CASH: {
+        "name": "Kassa",
+        "account_code": "1000",
+    },
+    AccountKey.RENT_BUSINESS: {
+        "name": "Mietertrag Gewerbe",
+        "account_code": "3001",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.RENT_PARKING: {
+        "name": "Mietertrag Parkplätze",
+        "account_code": "3002",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.RENT_OTHER: {
+        "name": "Mietertrag andere (Gemeinschaft/Diverses)",
+        "account_code": "3003",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.NK: {
+        "name": "Nebenkosten-Akonto",
+        "account_code": "2301",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.NK_FLAT: {
+        "name": "Nebenkosten-Pauschale",
+        "account_code": "2301",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.STROM: {
+        "name": "Strompauschalen -> NK-Pauschalzahlungen",
+        "account_code": "2302",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.RENT_REDUCTION: {
+        "name": "Mietzinsausfälle",
+        "account_code": "3015",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.RENT_RESERVATION: {
+        "name": "Mietzinsvorbehalt",
+        "account_code": "3016",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.MIETDEPOT: {
+        "name": "Mietdepots",
+        "account_code": "241.0",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.SCHLUESSELDEPOT: {
+        "name": "Schlüsseldepots",
+        "account_code": "241.1",
+    },
+    AccountKey.KIOSK: {
+        "name": "Diverse Einnahmen, Twint GS etc.",
+        "account_code": "3500",
+    },
+    AccountKey.SPENDE: {
+        "name": "Ertrag Spenden",
+        "account_code": "3620",
+    },
+    AccountKey.OTHER: {
+        "name": "Übriger Ertrag",
+        "account_code": "3690",
+    },
+    AccountKey.MEMBER_FEE: {
+        "name": "Mitgliederbeiträge",
+        "account_code": "3610",
+    },
+    AccountKey.MEMBER_FEE_ONETIME: {
+        "name": "Beitrittsgebühren",
+        "account_code": "3600",
+    },
+    AccountKey.SHARES_MEMBERS: {
+        "name": "Genossenschaftsanteile Mitglieder",
+        "account_code": "2800",
+    },
+    AccountKey.SHARES_LOAN_NOINTEREST: {
+        "name": "Darlehen unverzinst",
+        "account_code": "2401",
+    },
+    AccountKey.SHARES_LOAN_INTEREST: {
+        "name": "Darlehen verzinst",
+        "account_code": "2402",
+    },
+    AccountKey.SHARES_DEPOSIT: {
+        "name": "Depositenkasse",
+        "account_code": "2110",
+    },
+    AccountKey.SHARES_CLEARING: {
+        ## Hilfskonto für Beteiligungs-Rechnungen, die erst bei Zahlung auf das definitive
+        ## Konto gebucht werden.
+        "name": "Hilfskonto Mitgliedschaft/Beteiligungen",
+        "account_code": "9250",
+    },
+    AccountKey.SHARES_INTEREST: {
+        "name": "Verbindlichkeiten aus Finanzierung",
+        "account_code": "2070",
+    },
+    AccountKey.SHARES_INTEREST_TAX: {
+        "name": "Verbindlichkeiten aus Verrechnungssteuer",
+        "account_code": "2010",
+    },
+    AccountKey.INTEREST_LOAN: {
+        "name": "Zinsaufwand Darlehen",
+        "account_code": "6920",
+    },
+    AccountKey.INTEREST_DEPOSIT: {
+        "name": "Zinsaufwand Depositenkasse",
+        "account_code": "6940",
+    },
+    AccountKey.NK_VIRTUAL_1: {
+        "role": AccountRole.NK_VIRTUAL,
+        "virtual_id": -1,
+        "name": "Gästezimmer",
+        "account_code": "6700",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.NK_VIRTUAL_2: {
+        "role": AccountRole.NK_VIRTUAL,
+        "virtual_id": -2,
+        "name": "Sitzungszimmer",
+        "account_code": "6720",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.NK_VIRTUAL_3: {
+        "role": AccountRole.NK_VIRTUAL,
+        "virtual_id": -3,
+        "name": "Geschäftsstelle",
+        "account_code": "6500",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.NK_VIRTUAL_4: {
+        "role": AccountRole.NK_VIRTUAL,
+        "virtual_id": -4,
+        "name": "Holliger",
+        "account_code": "4581",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.NK_VIRTUAL_5: {
+        "role": AccountRole.NK_VIRTUAL,
+        "virtual_id": -5,
+        "name": "Allgemein",
+        "account_code": "4581",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.NK_VIRTUAL_6: {
+        "role": AccountRole.NK_VIRTUAL,
+        "virtual_id": -6,
+        "name": "Leerstand",
+        "account_code": "4582",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
     },
 }
 
@@ -605,8 +823,6 @@ GENO_SHARE_LETTER_CUTOFF_DATE = datetime.date(2018, 7, 1)
 # When creating statements, treat persons differently if they own only up to this
 # number of shares (and they have no loans etc).
 GENO_SMALL_NUMBER_OF_SHARES_CUTOFF = 5
-
-GENO_GNUCASH_ACC_POST = "1010.1"
 
 GENO_MEMBER_FLAGS = {
     1: "Wohnen",
@@ -660,13 +876,6 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 ## GnuCash interface
-GNUCASH = False
-GNUCASH_DB_SECRET = (
-    f"mysql://{cbc.DB_PREFIX}:{quote(cbc.DB_PASSWORD)}@{cbc.DB_HOSTNAME}/"
-    f"{cbc.DB_PREFIX}_gnucash_test?charset=utf8"
-)
-GNUCASH_READONLY = False
-GNUCASH_IGNORE_SQLALCHEMY_WARNINGS = True
 
 ## CreateSend API
 CREATESEND_API_KEY = None
