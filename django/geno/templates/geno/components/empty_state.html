@@ -1,0 +1,44 @@
+{% load i18n %}
+{% with icon=icon|default:"inbox" variant=variant|default:"info" %}
+
+  {# Determine colors based on variant #}
+  {% if variant == "error" %}
+    {% with icon_color="text-red-400 dark:text-red-500" %}
+      <div class="bg-white border border-base-200 rounded-default p-12 shadow-sm dark:border-base-800 dark:bg-base-900">
+        <div class="flex flex-col items-center justify-center text-center space-y-6"
+             role="status"
+             aria-live="polite">
+          <span class="material-symbols-outlined {{ icon_color }}"
+                style="font-size: 96px">{{ icon }}</span>
+          <p class="text-lg text-font-light dark:text-font-dark max-w-lg">{{ message }}</p>
+        </div>
+      </div>
+    {% endwith %}
+  {% elif variant == "warning" %}
+    {% with icon_color="text-yellow-500 dark:text-yellow-600" %}
+      <div class="bg-white border border-base-200 rounded-default p-12 shadow-sm dark:border-base-800 dark:bg-base-900">
+        <div class="flex flex-col items-center justify-center text-center space-y-6"
+             role="status"
+             aria-live="polite">
+          <span class="material-symbols-outlined {{ icon_color }}"
+                style="font-size: 96px">{{ icon }}</span>
+          <p class="text-lg text-font-light dark:text-font-dark max-w-lg">{{ message }}</p>
+        </div>
+      </div>
+    {% endwith %}
+  {% else %}
+    {# Default: info variant #}
+    {% with icon_color="text-base-400 dark:text-base-600" %}
+      <div class="bg-white border border-base-200 rounded-default p-12 shadow-sm dark:border-base-800 dark:bg-base-900">
+        <div class="flex flex-col items-center justify-center text-center space-y-6"
+             role="status"
+             aria-live="polite">
+          <span class="material-symbols-outlined {{ icon_color }}"
+                style="font-size: 96px">{{ icon }}</span>
+          <p class="text-lg text-font-light dark:text-font-dark max-w-lg">{{ message }}</p>
+        </div>
+      </div>
+    {% endwith %}
+  {% endif %}
+
+{% endwith %}

@@ -1,0 +1,25 @@
+{
+  "launchOptions": {
+    "args": [
+      "--disable-blink-features=AutomationControlled",
+      "--disable-extensions",
+      "--disable-component-extensions-with-background-pages",
+      "--disable-background-networking",
+      "--disable-sync",
+      "--disable-translate",
+      "--hide-scrollbars",
+      "--metrics-recording-only",
+      "--mute-audio",
+      "--no-first-run",
+      "--disable-password-manager-reauthentication",
+      "--password-store=basic"
+    ]
+  },
+  "contextOptions": {
+    "ignoreHTTPSErrors": true,
+    "bypassCSP": true,
+    "acceptDownloads": true,
+    "javaScriptEnabled": true,
+    "serviceWorkers": "block"
+  }
+}

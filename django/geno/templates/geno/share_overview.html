@@ -1,0 +1,180 @@
+{% extends "geno/base.html" %}
+{% load static %}
+{% load i18n %}
+{% load unfold %}
+{% load crispy_forms_tags %}
+
+{% block object-tools %}
+  {# Override to hide the tab list when there's only one view #}
+{% endblock %}
+
+{% block custom_content %}
+
+  <div class="mb-6">
+    <h1 class="text-2xl font-semibold text-font-important-light dark:text-font-important-dark">
+      {{ title }}
+    </h1>
+  </div>
+
+  {# Two-column layout: Left = Statistics plot, Right = Date selector + cards + sum #}
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {# Left column - Statistics plot #}
+    <div class="order-2 lg:order-1">
+      <div class="bg-white border border-base-200 rounded-default p-6 shadow-sm dark:border-base-800 dark:bg-base-900 h-full">
+        <h3 class="text-lg font-semibold mb-4 text-font-important-light dark:text-font-important-dark">
+          {% trans "Statistik" %}
+        </h3>
+        {% if show_plot %}
+          <img src="/geno/share/overview/plot/"
+               alt="{% trans 'Statistik' %}"
+               class="w-full"
+               loading="lazy">
+        {% else %}
+          {% component "geno/components/empty_state.html" with message=_("Die Statistik ist nur für das aktuelle Datum verfügbar.") icon="insights" %}
+        {% endcomponent %}
+      {% endif %}
+    </div>
+  </div>
+
+  {# Right column - Date selector integrated with stats #}
+  <div class="order-1 lg:order-2">
+    {# Date filter form integrated into stats card #}
+    <form method="post"
+          class="mb-6"
+          id="date-filter-form"
+          aria-label="{% trans 'Datumsfilter' %}">
+      {% csrf_token %}
+      <div class="bg-white border border-base-200 rounded-default p-4 shadow-sm dark:border-base-800 dark:bg-base-900">
+        {% crispy form form.helper %}
+      </div>
+    </form>
+
+    {# Share statistics cards - 2 per row #}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      {% for stat in share_stats %}
+        <div class="bg-white border border-base-200 rounded-default p-4 shadow-sm dark:border-base-800 dark:bg-base-900">
+          <h3 class="text-base font-semibold mb-3 text-font-important-light dark:text-font-important-dark">
+            {{ stat.type }}
+          </h3>
+          <dl class="space-y-1">
+            <div class="flex justify-between">
+              <dt class="text-sm text-font-light dark:text-font-dark">{% trans "Anzahl" %}</dt>
+              <dd class="text-sm font-medium text-font-important-light dark:text-font-important-dark">
+                {{ stat.quantity|floatformat:0 }}
+              </dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-sm text-font-light dark:text-font-dark">{% trans "Summe CHF" %}</dt>
+              <dd class="text-sm font-medium text-font-important-light dark:text-font-important-dark">
+                {{ stat.value|floatformat:2 }}
+              </dd>
+            </div>
+            {% if stat.last_date %}
+              <div class="flex justify-between">
+                <dt class="text-sm text-font-light dark:text-font-dark">{% trans "Letzter Eingang" %}</dt>
+                <dd class="text-sm font-medium text-font-important-light dark:text-font-important-dark">
+                  {{ stat.last_date|date:"SHORT_DATE_FORMAT" }}
+                </dd>
+              </div>
+            {% endif %}
+          </dl>
+        </div>
+      {% endfor %}
+    </div>
+
+    {# Total row - compact with colored background #}
+    <div class="mb-6 bg-base-100 border-t-2 border-primary-600 rounded-default px-4 py-3 shadow-sm dark:bg-base-800 dark:border-primary-400">
+      <div class="flex justify-between items-center">
+        <h3 class="text-base font-bold text-font-important-light dark:text-font-important-dark">
+          {% trans "TOTAL" %}
+        </h3>
+        <p class="text-xl font-bold text-primary-600 dark:text-primary-400">
+          {% blocktrans with value=total_value|floatformat:2 %}CHF {{ value }}{% endblocktrans %}
+        </p>
+      </div>
+    </div>
+
+    {# Non-members warning #}
+    {% if non_members %}
+      <div class="mb-6 bg-red-50 border border-red-200 rounded-default p-6 shadow-sm dark:border-red-800 dark:bg-red-900/20">
+        <h3 class="text-lg font-semibold mb-4 text-red-800 dark:text-red-400 flex items-center gap-2">
+          <span class="material-symbols-outlined">warning</span>
+          {% trans "WARNUNG: Nichtmitglieder mit Anteilsscheinen" %}
+        </h3>
+        <ul class="space-y-1">
+          {% for nm in non_members %}
+            <li class="text-sm text-red-700 dark:text-red-300">
+              {{ nm.name }} ({{ nm.quantity }})
+              {% if nm.date_leave %}
+                [{% trans "ausgetreten" %} {{ nm.date_leave|date:"d.m.Y" }}]
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateInput = document.querySelector('#date-filter-form input[type="text"]');
+        if (!dateInput) return;
+
+        let lastValue = dateInput.value;
+        let submitTimeout = null;
+        let pollInterval = null;
+
+        function submitForm() {
+            // Clear any pending submission
+            if (submitTimeout) {
+                clearTimeout(submitTimeout);
+            }
+            // Stop polling once we're submitting
+            if (pollInterval) {
+                clearInterval(pollInterval);
+            }
+            document.getElementById('date-filter-form').submit();
+        }
+
+        function scheduleSubmit() {
+            if (submitTimeout) {
+                clearTimeout(submitTimeout);
+            }
+            submitTimeout = setTimeout(submitForm, 200);
+        }
+
+        function checkValueChange() {
+            if (dateInput.value && dateInput.value !== lastValue && dateInput.value.length >= 8) {
+                lastValue = dateInput.value;
+                scheduleSubmit();
+            }
+        }
+
+        // Manual input - submit on change
+        dateInput.addEventListener('change', function() {
+            if (this.value && this.value !== lastValue) {
+                lastValue = this.value;
+                submitForm();
+            }
+        });
+
+        // Calendar picker - watch for value changes using MutationObserver
+        const observer = new MutationObserver(checkValueChange);
+        observer.observe(dateInput, {
+            attributes: true,
+            attributeFilter: ['value']
+        });
+
+        // Poll for value changes as fallback (stops after first submit)
+        pollInterval = setInterval(checkValueChange, 300);
+
+        // Input event from calendar picker
+        dateInput.addEventListener('input', checkValueChange);
+
+        // Blur event when calendar closes
+        dateInput.addEventListener('blur', checkValueChange);
+    });
+</script>
+
+{% endblock %}
