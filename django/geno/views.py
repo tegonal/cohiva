@@ -23,6 +23,7 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.encoding import smart_str
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, TemplateView
 from django_tables2 import RequestConfig
 from oauthlib.oauth2 import TokenExpiredError
@@ -80,11 +81,12 @@ from .forms import (
     MemberMailActionForm,
     MemberMailForm,
     MemberMailSelectForm,
+    Odt2PdfForm,
     SendInvoicesForm,
+    ShareOverviewFilterForm,
     ShareStatementForm,
     TransactionForm,
     TransactionFormInvoice,
-    TransactionUploadFileForm,
     TransactionUploadProcessForm,
     WebstampForm,
     process_registration_forms,
@@ -128,8 +130,6 @@ from .shares import (
     share_interest_calc,
 )
 from .tables import (
-    InvoiceDetailTable,
-    InvoiceOverviewTable,
     MemberTable,
     MemberTableAdmin,
 )
@@ -259,39 +259,40 @@ def documents(request, doctype, obj_id, action):
 
 
 class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
-    title = "Übersicht Beteiligungen"  # required: custom page header title
-    permission_required = "geno.canview_share_overview"  # required: tuple of permissions
+    title = "Übersicht Beteiligungen"
+    permission_required = "geno.canview_share_overview"
+    template_name = "geno/share_overview.html"
 
     def get_context_data(self, **kwargs):
-        return super().get_context_data(
-            **kwargs,
-            response=self.share_overview(),
-        )
+        context = super().get_context_data(**kwargs)
 
-    def share_overview(self):
-        ret = []
+        # Parse date from URL parameter
+        reference_date = None
+        if len(self.request.GET.get("date", "")) == 10:
+            try:
+                reference_date = datetime.datetime.strptime(
+                    self.request.GET.get("date"), "%Y-%m-%d"
+                ).date()
+                context["reference_date_str"] = reference_date.strftime("%Y-%m-%d")
+            except ValueError:
+                pass
+
+        # Initialize the filter form - always show today's date as default
+        form_initial = {"date": reference_date if reference_date else datetime.date.today()}
+
+        form = ShareOverviewFilterForm(initial=form_initial)
+        context["form"] = form
+        context["reference_date"] = reference_date
+
+        # Get share type statistics
+        share_stats = []
+        total_value = 0
 
         try:
             stype_AS = ShareType.objects.get(name="Anteilschein")
         except ShareType.DoesNotExist:
             stype_AS = None
 
-        if len(self.request.GET.get("date", "")) == 10:
-            reference_date = datetime.datetime.strptime(
-                self.request.GET.get("date"), "%Y-%m-%d"
-            ).date()
-            ret.append({"info": "Übersicht per %s" % (reference_date.strftime("%Y-%m-%d"))})
-        else:
-            reference_date = None
-            ret.append(
-                {
-                    "info": (
-                        "Übersicht per heute (datum kann mit ?date=YYYY-MM-DD in URL angegeben werden)"
-                    )
-                }
-            )
-
-        total = {"value": 0}
         for share_type in ShareType.objects.all():
             stat = {"quantity": 0, "value": 0, "last_date": None}
             for s in get_active_shares(date=reference_date).filter(share_type=share_type):
@@ -299,39 +300,70 @@ class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
                 stat["value"] += s.quantity * s.value
                 if stat["last_date"] is None or s.date > stat["last_date"]:
                     stat["last_date"] = s.date
-            obj = [
-                "Anzahl: %s" % nformat(stat["quantity"], 0),
-                "Summe CHF: %s" % nformat(stat["value"]),
-                "Letzter Eingang: %s" % stat["last_date"],
-            ]
-            ret.append({"info": share_type, "objects": obj})
-            total["value"] += stat["value"]
-        ret.append({"info": "TOTAL", "objects": ["Summe CHF: %s" % nformat(total["value"])]})
 
+            share_stats.append(
+                {
+                    "type": str(share_type),
+                    "quantity": stat["quantity"],
+                    "value": stat["value"],
+                    "last_date": stat["last_date"],
+                }
+            )
+            total_value += stat["value"]
+
+        context["share_stats"] = share_stats
+        context["total_value"] = total_value
+
+        # Check for non-members with shares (warning)
+        non_members = []
         if not reference_date and self.request.user.has_perm("geno.canview_share") and stype_AS:
-            non_members = []
             for s in get_active_shares(date=reference_date).filter(share_type=stype_AS):
                 try:
                     m = Member.objects.get(name=s.name)
                     if m.date_leave:
                         non_members.append(
-                            "%s (%d) [ausgetreten %s]"
-                            % (s.name, s.quantity, m.date_leave.strftime("%d.%m.%Y"))
+                            {
+                                "name": s.name,
+                                "quantity": s.quantity,
+                                "date_leave": m.date_leave,
+                            }
                         )
                 except Member.DoesNotExist:
-                    non_members.append("%s (%d)" % (s.name, s.quantity))
-            if non_members:
-                ret.append(
-                    {
-                        "info": "WARNUNG: Nichtmitglieder mit Anteilsscheinen:",
-                        "objects": non_members,
-                    }
-                )
+                    non_members.append(
+                        {
+                            "name": s.name,
+                            "quantity": s.quantity,
+                            "date_leave": None,
+                        }
+                    )
 
-        if not reference_date and hasattr(settings, "SHARE_PLOT") and settings.SHARE_PLOT:
-            ret.append({"info": '<img src="/geno/share/overview/plot/" alt="Statistik">'})
+        context["non_members"] = non_members
 
-        return ret
+        # Show plot if enabled and viewing current data (today or no date specified)
+        is_today = not reference_date or reference_date == datetime.date.today()
+        context["show_plot"] = is_today and hasattr(settings, "SHARE_PLOT") and settings.SHARE_PLOT
+
+        return context
+
+    def post(self, request, *args, **kwargs):
+        form = ShareOverviewFilterForm(request.POST)
+        if form.is_valid():
+            date = form.cleaned_data.get("date")
+            if date:
+                # Redirect with date parameter
+                target = f"{request.path}?date={date.strftime('%Y-%m-%d')}"
+                if url_has_allowed_host_and_scheme(target, allowed_hosts={request.get_host()}):
+                    return redirect(target)
+                else:
+                    return redirect("/")
+            else:
+                # Redirect without date parameter (show current date)
+                target = request.path
+                if url_has_allowed_host_and_scheme(target, allowed_hosts={request.get_host()}):
+                    return redirect(target)
+                else:
+                    return redirect("/")
+        return self.get(request, *args, **kwargs)
 
 
 def member_overview_plot(request):
@@ -955,7 +987,7 @@ def share_export(request):
 class DebtorView(CohivaAdminViewMixin, TemplateView):
     title = "Debitoren"
     permission_required = ("geno.canview_billing", "geno.transaction", "geno.transaction_invoice")
-    template_name = "geno/table.html"
+    template_name = "geno/debtor.html"
     action = "overview"
 
     def get_context_data(self, **kwargs):
@@ -1017,15 +1049,93 @@ class DebtorView(CohivaAdminViewMixin, TemplateView):
         return form
 
     def debtor_list(self):
+        from django.utils.safestring import mark_safe
+
+        from .models import Contract
+
         if self.request.POST.get("consolidate"):
             consolidate_invoices()
         data = invoice_overview(self.request.session["invoice_filter"])
-        table = InvoiceOverviewTable(data)
-        table.order_by = "-total"
-        RequestConfig(self.request, paginate={"per_page": 100}).configure(table)
-        return {"title": "Debitoren", "table": table, "invoice_table": True}
+
+        # Format data for Unfold table component
+        # Unfold expects: {"headers": [...], "rows": [[col1, col2, ...], ...]}
+        headers = [
+            "Link",
+            "Vertrag/Person/Org.",
+            "Gefordert",
+            "Bezahlt",
+            "Saldo",
+            "Offene Forderung seit",
+            "Letzte Zahlung",
+        ]
+        rows = []
+
+        total_billed_sum = 0
+        total_paid_sum = 0
+        total_receivable = 0  # positive values (Forderungen)
+        total_payable = 0  # negative values (Verbindlichkeiten / Vorauszahlungen)
+
+        for item in data:
+            obj_type = "c" if type(item["obj"]) is Contract else "p"
+            link = mark_safe(
+                f'<a href="/geno/debtor/detail/{obj_type}/{item["obj"].pk}/" '
+                f'class="text-primary-600 dark:text-primary-400 hover:underline" '
+                f'aria-label="Details für {item["name"]}">Details</a>'
+            )
+
+            total_billed_sum += item["total_billed"]
+            total_paid_sum += item["total_paid"]
+            if item["total"] > 0:
+                total_receivable += item["total"]
+            else:
+                total_payable += item["total"]
+
+            # Color-code saldo values: red for receivables, green for payables
+            saldo_value = item["total"]
+            if saldo_value > 0:
+                saldo_class = "text-red-600 dark:text-red-400 font-semibold"
+            elif saldo_value < 0:
+                saldo_class = "text-green-600 dark:text-green-400 font-semibold"
+            else:
+                saldo_class = "text-gray-500 dark:text-gray-400"
+
+            rows.append(
+                [
+                    link,
+                    item["name"],
+                    f'<div class="text-right">{item["total_billed"]:.2f}</div>',
+                    f'<div class="text-right">{item["total_paid"]:.2f}</div>',
+                    f'<div class="text-right {saldo_class}">{saldo_value:.2f}</div>',
+                    f'<div class="text-center">{item["open_bill_date"].strftime("%d.%m.%Y") if item["open_bill_date"] else ""}</div>',
+                    f'<div class="text-center">{item["last_payment_date"].strftime("%d.%m.%Y") if item["last_payment_date"] else ""}</div>',
+                ]
+            )
+
+        # Add footer row with totals
+        footer = [
+            "<strong>Summe</strong>",
+            f"<strong>{len(data)} Einträge</strong>",
+            f'<div class="text-right"><strong>{total_billed_sum:.2f}</strong></div>',
+            f'<div class="text-right"><strong>{total_paid_sum:.2f}</strong></div>',
+            mark_safe(
+                f'<div class="text-right">'
+                f'<div class="text-red-600 dark:text-red-400">{total_receivable:.2f}</div>'
+                f'<div class="text-green-600 dark:text-green-400">{total_payable:.2f}</div>'
+                f'<div class="border-t border-base-300 dark:border-base-700 mt-1 pt-1 font-bold">'
+                f"{total_receivable + total_payable:.2f}</div>"
+                f"</div>"
+            ),
+            "",
+            "",
+        ]
+
+        table_data = {"headers": headers, "rows": rows, "footer": footer}
+
+        return {"title": "Debitoren", "table_data": table_data, "invoice_table": True}
 
     def debtor_detail(self, key_type, key):
+        from django.utils.safestring import mark_safe
+
         if key_type == "c":
             obj = Contract.objects.get(pk=key)
         else:
@@ -1033,11 +1143,59 @@ class DebtorView(CohivaAdminViewMixin, TemplateView):
         if self.request.POST.get("consolidate"):
             consolidate_invoices(obj)
         data = invoice_detail(obj, self.request.session["invoice_filter"])
-        table = InvoiceDetailTable(data)
-        RequestConfig(self.request, paginate={"per_page": 100}).configure(table)
+
+        # Format data for Unfold table component
+        headers = [
+            "Link",
+            "Datum",
+            "Nummer",
+            "Beschreibung",
+            "Rechnung",
+            "Zahlung",
+            "Saldo",
+            "K",
+            "Zusatzinfo",
+        ]
+        rows = []
+
+        for item in data:
+            link_text = "Zahlung" if item["obj"].invoice_type == "Payment" else "Rechnung"
+            link = mark_safe(
+                f'<a href="/admin/geno/invoice/{item["obj"].pk}/" '
+                f'class="text-primary-600 dark:text-primary-400 hover:underline" '
+                f'aria-label="{link_text} {item["number"]}">{link_text}</a>'
+            )
+
+            # Color-code balance values
+            balance_value = item["balance"]
+            if balance_value > 0:
+                balance_class = "text-red-600 dark:text-red-400 font-semibold"
+            elif balance_value < 0:
+                balance_class = "text-green-600 dark:text-green-400 font-semibold"
+            else:
+                balance_class = "text-gray-500 dark:text-gray-400"
+
+            rows.append(
+                [
+                    link,
+                    f'<div class="text-center">{item["date"].strftime("%d.%m.%Y") if item["date"] else ""}</div>',
+                    f'<div class="text-center">{str(item["number"])}</div>',
+                    item["note"],
+                    f'<div class="text-right">{item["billed"]:.2f}</div>'
+                    if item["billed"]
+                    else "",
+                    f'<div class="text-right">{item["paid"]:.2f}</div>' if item["paid"] else "",
+                    f'<div class="text-right {balance_class}">{balance_value:.2f}</div>',
+                    f'<div class="text-center">{item["consolidated"]}</div>',
+                    item["extra_info"] or "",
+                ]
+            )
+
+        table_data = {"headers": headers, "rows": rows}
+
         return {
             "title": "Detailansicht: %s" % (obj),
-            "table": table,
+            "table_data": table_data,
             "invoice_table": True,
             "breadcrumbs": [{"name": "Debitoren", "href": "/geno/debtor/"}],
         }
@@ -1114,6 +1272,10 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
         self.error_message = ""
         self.result = []
 
+    def should_generate(self):
+        """Override to control when documents should be generated. Default: always generate."""
+        return True
+
     def get_objects(self):
         return []
 
@@ -1123,7 +1285,7 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
     def get(self, request, *args, **kwargs):
         if not self.doctype:
             self.error_message = "Dokumententyp fehlt!"
-        else:
+        elif self.should_generate():
             options = self.get_options()
             options["makezip"] = request.GET.get("makezip", "") == "yes"
             if not options.get("link_url", None) and url_has_allowed_host_and_scheme(
@@ -1184,6 +1346,7 @@ class ShareConfirmationLetterView(DocumentGeneratorView):
         "geno.canview_billing",
     )
     doctype = "shareconfirm_req"
+    template_name = "geno/share_confirm.html"
 
     def get_objects(self):
         # Find shares without documents (ignore single AS)
@@ -1218,6 +1381,39 @@ class ShareConfirmationLetterView(DocumentGeneratorView):
             "link_url": "/geno/share/confirm",
         }
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Build table data from response
+        if self.result and not self.error_message:
+            # Filter out the "Dokumente:" item
+            share_items = [item for item in self.result if item.get("info") != "Dokumente:"]
+
+            if share_items:
+                headers = [_("Name/Adresse"), _("Details")]
+                rows = []
+
+                for item in share_items:
+                    details = (
+                        ", ".join(str(o) for o in item.get("objects", []))
+                        if item.get("objects")
+                        else "—"
+                    )
+                    rows.append(
+                        [
+                            str(item.get("info", "")),
+                            details,
+                        ]
+                    )
+
+                context["table_data"] = {
+                    "headers": headers,
+                    "rows": rows,
+                }
+                context["share_count"] = len(share_items)
+
+        return context
+
 
 class ShareReminderLetterView(DocumentGeneratorView):
     permission_required = (
@@ -1227,6 +1423,7 @@ class ShareReminderLetterView(DocumentGeneratorView):
         "geno.canview_billing",
     )
     doctype = "loanreminder"
+    template_name = "geno/share_duedate_reminder.html"
 
     def get_objects(self):
         cutoff_date = timezone.now() + relativedelta(months=16)
@@ -1337,6 +1534,39 @@ class ShareReminderLetterView(DocumentGeneratorView):
             "beschreibung": "Brief Erinnerung Darlehen",
             "link_url": "/geno/share/duedate_reminder",
         }
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Build table data from response
+        if self.result and not self.error_message:
+            # Filter out the "Dokumente:" item
+            reminder_items = [item for item in self.result if item.get("info") != "Dokumente:"]
+
+            if reminder_items:
+                headers = [_("Name/Adresse"), _("Darlehen Details")]
+                rows = []
+
+                for item in reminder_items:
+                    details = (
+                        ", ".join(str(o) for o in item.get("objects", []))
+                        if item.get("objects")
+                        else "—"
+                    )
+                    rows.append(
+                        [
+                            str(item.get("info", "")),
+                            details,
+                        ]
+                    )
+
+                context["table_data"] = {
+                    "headers": headers,
+                    "rows": rows,
+                }
+                context["reminder_count"] = len(reminder_items)
+
+        return context
 
 
 class ShareInterestView(CohivaAdminViewMixin, TemplateView):
@@ -1655,6 +1885,7 @@ def share_mailing(request):
 
 
 class ShareStatementView(DocumentGeneratorView):
+    template_name = "geno/share_statement.html"
     permission_required = (
         "geno.canview_share",
         "geno.canview_billing",
@@ -1762,9 +1993,76 @@ class ShareStatementView(DocumentGeneratorView):
             )
         return objects
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Clean up the title - remove technical details
+        context["title"] = f"Kontoauszüge {self.enddate.year}"
+
+        # Get the raw objects with extra_context before they're processed by create_documents
+        objects = self.get_objects()
+
+        if objects and not self.error_message:
+            headers = [
+                _("Mitglied"),
+                _("Anteilscheine"),
+                _("Darlehen"),
+                _("Depositen"),
+                _("Verrechnungssteuer"),
+                _("Zinszahlung"),
+            ]
+
+            rows = []
+            total_tax = 0
+            total_interest = 0
+
+            for item in objects:
+                if "extra_context" in item:
+                    statement_data = item["extra_context"]
+                    obj = item["obj"]
+
+                    # Parse the formatted values back to numbers for totals
+                    try:
+                        tax_value = float(
+                            statement_data["s_tax"].replace("'", "").replace(",", ".")
+                        )
+                        total_tax += tax_value
+                    except (ValueError, AttributeError):
+                        tax_value = 0
+
+                    try:
+                        interest_value = float(
+                            statement_data["s_pay"].replace("'", "").replace(",", ".")
+                        )
+                        total_interest += interest_value
+                    except (ValueError, AttributeError):
+                        interest_value = 0
+
+                    rows.append(
+                        [
+                            str(obj),
+                            f"{statement_data['n_shares']} ({statement_data['s_shares']})",
+                            statement_data["s_loan"],
+                            f"{statement_data['dep_start']}/{statement_data['dep_end']}",
+                            statement_data["s_tax"],
+                            statement_data["s_pay"],
+                        ]
+                    )
+
+            context["table_data"] = {
+                "headers": headers,
+                "rows": rows,
+            }
+            context["statement_count"] = len(rows)
+            context["total_tax"] = nformat(total_tax)
+            context["total_interest"] = nformat(total_interest)
+
+        return context
+
 
 class ShareStatementFormView(CohivaAdminViewMixin, FormView):
     form_class = ShareStatementForm
+    template_name = "geno/share_statement_form.html"
     title = "Kontoauszüge"
     permission_required = (
         "geno.canview_share",
@@ -1779,7 +2077,7 @@ class ShareStatementFormView(CohivaAdminViewMixin, FormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["submit_title"] = "Dokumente erstellen"
+        context["attrs_button"] = {"form": "statement-form"}
         if getattr(settings, "GENO_SMALL_NUMBER_OF_SHARES_CUTOFF", 0) > 0:
             context["help_text"] = (
                 "Es werden nur Kontoauszüge erstellt, falls mehr als "
@@ -1821,17 +2119,80 @@ def contract_report(request, year="previous", address=None):
 
 
 class ContractCheckFormsView(DocumentGeneratorView):
-    permission_required = ("geno.canview_share", "geno.rental_contracts")
-    doctype = "contract_check"
     title = "Formulare «Überprüfung Belegung/Fahrzeuge»"
+    permission_required = ("geno.canview_share", "geno.rental_contracts")
+    template_name = "geno/contract_check_forms.html"
+    doctype = "contract_check"
+
+    def should_generate(self):
+        """Only generate documents when explicitly requested."""
+        return self.request.GET.get("generate", "") == "yes"
 
     def get_objects(self):
+        """Build the list of contracts that need check forms."""
         objects = []
         for c in get_active_contracts():
             for ru in c.rental_units.all():
                 if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
                     objects.append({"obj": c})
+                    break  # Only add contract once
         return objects
+
+    def get_options(self):
+        """Return document generation options."""
+        options = {"beschreibung": "Formulare «Überprüfung Belegung/Fahrzeuge»"}
+        if url_has_allowed_host_and_scheme(self.request.path, allowed_hosts=None):
+            options["link_url"] = self.request.path
+        return options
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Always calculate the list of contracts for count
+        contracts = []
+        for c in get_active_contracts():
+            for ru in c.rental_units.all():
+                if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
+                    contracts.append(c)
+                    break  # Only add contract once
+
+        context["contract_count"] = len(contracts)
+
+        # If not generating, show the preview table with contract overview
+        if not self.should_generate():
+            # Prepare table data
+            headers = ["Vertrag", "Mieter", "Mietobjekte"]
+            rows = []
+
+            for contract in contracts:
+                # Get contractors list
+                contractors = []
+                for c in contract.contractors.all():
+                    if c == contract.main_contact:
+                        contractors.insert(0, str(c))
+                    else:
+                        contractors.append(str(c))
+                contractors_str = " / ".join(contractors) if contractors else "-"
+
+                rental_units = ", ".join(
+                    str(ru)
+                    for ru in contract.rental_units.all()
+                    if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz")
+                )
+                rows.append(
+                    [
+                        str(contract.get_contract_label() or f"Vertrag {contract.pk}"),
+                        contractors_str,
+                        rental_units,
+                    ]
+                )
+
+            context["table_data"] = {
+                "headers": headers,
+                "rows": rows,
+            }
+
+        return context
 
 
 ## TODO: Refactor to ClassBased view
@@ -2089,8 +2450,9 @@ class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
 
     def check_mailinglists(self):
         if not hasattr(settings, "MAILMAN_API") or not settings.MAILMAN_API.get("password", None):
+            if getattr(settings, "DEMO", False):
+                return self.generate_demo_output()
             return [{"info": "FEHLER: Mailman-API ist nicht konfiguriert."}]
-            # return render(request, 'geno/default.html', { 'response': [{'info': 'FEHLER: Mailman-API ist nicht konfiguriert.'}], 'title': 'Check Mailinglisten'})
 
         mailman_client = mailmanclient.Client(
             settings.MAILMAN_API["url"],
@@ -2329,6 +2691,37 @@ class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
         ret.append({"info": "Mailman warnings:", "objects": ml_warnings})
         # return render(request, "geno/default.html", {"response": ret, "title": "Check Mailinglisten"})
         return ret
+
+    def generate_demo_output(self):
+        return [
+            {"info": "<i>INFO: Mailman-API ist nicht konfiguriert. Dies ist ein Demo-Output.</i>"},
+            {
+                "info": "Mitglied nicht in genossenschaft-ML:",
+                "objects": [
+                    (
+                        "IGNORIERE Verein WG Kunterbunt, Hans Muster "
+                        "(DOPPELTE Email-Adresse hans.muster@example.com)"
+                    ),
+                    "IGNORIERE Ohnemail, Peter (KEINE Email-Adresse)",
+                    "hugo@example.com",
+                    "dora@example.com",
+                ],
+            },
+            {
+                "info": "In genossenschaft-ML aber nicht Mitglied:",
+                "objects": [
+                    "alma@example.com",
+                    "berta@example.com",
+                ],
+            },
+            {
+                "info": "Bewohnende aber nicht in bewohnende-ML:",
+                "objects": [
+                    "IGNORIERE Analog, Heidi (KEINE Email-Adresse)",
+                    "zora@example.com",
+                ],
+            },
+        ]
 
 
 ## TODO: Refactor to ClassBased view
@@ -3153,6 +3546,59 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
                 return ret
         return self.get(request, *args, **kwargs)
 
+    def get_invoice_templates(self):
+        """
+        Define invoice category templates with pre-filled data.
+        Returns a dict mapping category name to template data.
+
+        NOTE: Keys must match the exact InvoiceCategory.name values in the database.
+        If category names change in the admin, update these keys accordingly.
+        """
+        return {
+            "Miete Gästezimmer": {
+                "extra_text": _(
+                    "Die ersten 3 Nächte sind gemäss Reglement Jokerzimmer kostenlos."
+                ),
+                "lines": [
+                    {
+                        "text": _("X Nächte à Fr. 22.00, Gästezimmer 003"),
+                        "amount": None,
+                        "date": datetime.date.today(),
+                    },
+                    {
+                        "text": _("X Nächte à Fr. 17.00, Gästezimmer 410"),
+                        "amount": None,
+                        "date": datetime.date.today(),
+                    },
+                    {
+                        "text": _("X Nächte à Fr. 17.00, Gästezimmer 509"),
+                        "amount": None,
+                        "date": datetime.date.today(),
+                    },
+                ],
+            },
+            "Mitgliedschaft": {
+                "extra_text": _(
+                    "Vielen Dank für die Beitrittserklärung. Die Mitgliedschaft in der "
+                    "Genossenschaft ist verbunden mit dem Zeichnen von Anteilscheinen und einer "
+                    "einmaligen Beitrittsgeb ühr. Dies stellen wir hiermit in Rechnung. Nach "
+                    "Zahlungseingang folgt dann die Bestätigung der Mitgliedschaft."
+                ),
+                "lines": [
+                    {
+                        "text": _("Beitrittsgeb ühr Genossenschaft"),
+                        "amount": 200,
+                        "date": datetime.date.today(),
+                    },
+                    {
+                        "text": _("Zeichnung von 1 Anteilschein der Genossenschaft"),
+                        "amount": 200,
+                        "date": datetime.date.today(),
+                    },
+                ],
+            },
+        }
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["form"] = self.get_form()
@@ -3164,23 +3610,86 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
         if self.request.method == "POST":
             form = ManualInvoiceForm(self.request.POST)
         else:
-            form = ManualInvoiceForm(initial={"date": datetime.date.today()})
+            initial_data = {"date": datetime.date.today()}
+
+            # If category is selected via GET parameter, preserve it and apply template if available
+            category_id = self.request.GET.get("category")
+            if category_id:
+                try:
+                    category_id = int(category_id)
+                    # Fetch the actual InvoiceCategory instance
+                    category = InvoiceCategory.objects.filter(
+                        id=category_id, active=True, manual_allowed=True
+                    ).first()
+                    if category:
+                        # Always preserve the selected category (as model instance)
+                        initial_data["category"] = category
+
+                        # Apply template data if available for this category (by name)
+                        templates = self.get_invoice_templates()
+                        if category.name in templates:
+                            template = templates[category.name]
+                            initial_data["extra_text"] = template["extra_text"]
+                except (ValueError, TypeError):
+                    pass
+
+            form = ManualInvoiceForm(initial=initial_data)
         return form
 
     def get_formset(self):
-        invoice_formset_class = formset_factory(ManualInvoiceLineForm, extra=0)
+        MAX_FORMS = 5
+
+        invoice_formset_class = formset_factory(
+            ManualInvoiceLineForm,
+            extra=0,
+            max_num=MAX_FORMS,
+            validate_max=True,
+            min_num=1,
+            validate_min=True,
+        )
+
         if self.request.method == "POST":
             formset = invoice_formset_class(self.request.POST, self.request.FILES)
         else:
-            formset = invoice_formset_class(
-                initial=[
-                    {"date": datetime.date.today()},
-                    {"date": datetime.date.today()},
-                    {"date": datetime.date.today()},
-                    {"date": datetime.date.today()},
-                    {"date": datetime.date.today()},
-                ]
-            )
+            # Check if category is selected via GET parameter
+            category_id = self.request.GET.get("category")
+            extra_param = self.request.GET.get("extra")
+            templates = self.get_invoice_templates()
+
+            # Determine initial data based on parameters
+            if extra_param:
+                # User explicitly requested a specific number of forms (via add/remove buttons)
+                # This takes precedence over template defaults
+                try:
+                    extra_forms = int(extra_param)
+                    num_forms = min(1 + extra_forms, MAX_FORMS)
+                    initial_data = [{"date": datetime.date.today()} for _ in range(num_forms)]
+                except (ValueError, TypeError):
+                    initial_data = [{"date": datetime.date.today()}]
+            elif category_id:
+                # Category selected but no explicit extra param - use template if available
+                try:
+                    category_id = int(category_id)
+                    # Fetch the category to get its name for template lookup
+                    category = InvoiceCategory.objects.filter(
+                        id=category_id, active=True, manual_allowed=True
+                    ).first()
+
+                    if category and category.name in templates:
+                        # Use template data to create initial forms
+                        template = templates[category.name]
+                        initial_data = template["lines"]
+                    else:
+                        # Category selected but no template, start with 1 empty form
+                        initial_data = [{"date": datetime.date.today()}]
+                except (ValueError, TypeError):
+                    # Invalid category ID, start with 1 empty form
+                    initial_data = [{"date": datetime.date.today()}]
+            else:
+                # No category or extra param - default to 1 empty form
+                initial_data = [{"date": datetime.date.today()}]
+
+            formset = invoice_formset_class(initial=initial_data)
         return formset
 
     def process(self, form, formset):
@@ -3221,13 +3730,10 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
             )
             self.error_flag = True
 
-        if (
-            not self.error_flag
-            and "submit_action_pdf" in self.request.POST
-            or "submit_action_mail" in self.request.POST
-        ):
+        if not self.error_flag and "submit_action_save" in self.request.POST:
             dry_run = False
-            if "submit_action_mail" in self.request.POST:
+            # Check if email checkbox is checked
+            if self.request.POST.get("send_email"):
                 ## Send email
                 email_template = "email_invoice.html"
 
@@ -3343,6 +3849,7 @@ class InvoiceBatchView(CohivaAdminViewMixin, FormView):
         "geno.view_rentalunit",
     )
     form_class = SendInvoicesForm
+    template_name = "geno/invoice_batch.html"
 
     def get_context_data(self, **kwargs):
         return super().get_context_data(
@@ -3375,6 +3882,9 @@ class InvoiceBatchGenerateView(CohivaAdminViewMixin, TemplateView):
         "geno.view_rentalunit",
     )
     action = "create"
+    navigation_view_name = (
+        "geno.views.InvoiceBatchView"  # Use this for navigation rendering (active tabs etc.)
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -3787,19 +4297,10 @@ def check_duplicate_invoices(request):
 
 class Odt2PdfView(CohivaAdminViewMixin, FormView):
     title = "ODT in PDF umwandeln"
-    form_class = TransactionUploadFileForm
-    # "geno/upload_form.html",
+    form_class = Odt2PdfForm
+    template_name = "geno/odt2pdf.html"
     permission_required = ("geno.tools_odt2pdf",)
     tmpdir = "/tmp/odt2pdf"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context.update(
-            {
-                "form_title": "LibreOffice Datei (.odt) hochladen um in ein PDF umzuwandeln",
-            }
-        )
-        return context
 
     def form_valid(self, form):
         if not os.path.isdir(self.tmpdir):

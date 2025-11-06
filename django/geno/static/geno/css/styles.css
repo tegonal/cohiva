@@ -1,15 +1,5 @@
 /* Custom styles for the Cohiva Admin UI (based on Django + Unfold) */
 
-/* Tweak legacy custrom forms for Unfold styles
-   TODO: Cleaner solution. Maybe with crispy-forms+unfold?
-         https://unfoldadmin.com/docs/configuration/crispy-forms/ */
-div.legacyform input,select,textarea {
-      border: 1px solid;
-      border-color: #ccc3c3;
-      border-radius: 3px;
-      padding: 2px;
-}
-
 .error { color: #dd1b1b; }
 .warning { color: #a86815; }
 .success { color: #217721; }

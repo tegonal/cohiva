@@ -875,7 +875,7 @@ def create_documents(default_doctype, objects=None, options=None):
         options = {"beschreibung": default_doctype_obj.description}
 
     if not objects:
-        return [{"info": 'Keine Objekte gefunden (Dokumenttyp "%s").' % default_doctype}]
+        return []
 
     filenames = []
     for o in objects:
@@ -892,6 +892,17 @@ def create_documents(default_doctype, objects=None, options=None):
                 doctype = default_doctype
                 doctype_obj = default_doctype_obj
             ## Create document
+            # Check if template has a file attached
+            if not doctype_obj.template or not doctype_obj.template.file:
+                ret.append(
+                    {
+                        "info": "FEHLER: Keine Vorlage-Datei für Dokumenttyp '%s' konfiguriert."
+                        % doctype,
+                        "objects": [],
+                    }
+                )
+                continue
+
             if "extra_context" in o:
                 data = get_context_data(doctype, o["obj"].pk, o["extra_context"])
             else:

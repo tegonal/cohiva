@@ -19,6 +19,7 @@ logger = logging.getLogger("finance_accounting")
 # - Batch inserts and deletes to reduce number of API calls
 # - inserts only on save(): possibility to fetch ID provided by CashCtrl API, but needs more complex tracking (concurrency)
 
+
 class BookTransaction:
     _inserted_transaction_ids = []
     _deleted_transaction_ids = []
@@ -72,14 +73,7 @@ class BookTransaction:
             cct_account = self.get_cct_account(split.account)
             credit_type = "debit" if split.amount > 0 else "credit"
             amount = abs(split.amount)
-            split_items_o.append({
-                "accountId": cct_account,
-                credit_type: amount
-            })
-
-        form_data = {"items": split_items_o, "title": getattr(transaction, "description", ""),
-                     "dateAdded": datetime.datetime.now().strftime('%Y-%m-%d'),
-                     "notes": "Added through API"}
+            split_items_o.append({"accountId": cct_account, credit_type: amount})
 
         payload = dict(
             dateAdded="2025-11-06",
@@ -92,7 +86,9 @@ class BookTransaction:
         response = self._construct_request_post("journal/create.json", payload=payload)
         response.raise_for_status()
         data = response.json()
-        self._raise_for_error(response, f"create collective transaction: len: {len(transaction.splits)}")
+        self._raise_for_error(
+            response, f"create collective transaction: len: {len(transaction.splits)}"
+        )
 
         txn_id = None
         if isinstance(data, dict):
@@ -118,7 +114,10 @@ class BookTransaction:
         response = self._construct_request_post("journal/create.json?" + attributes, None)
         response.raise_for_status()
         data = response.json()
-        self._raise_for_error(response, f"create:{cct_account_debit}:{cct_account_credit}:{transaction.splits[1].amount}")
+        self._raise_for_error(
+            response,
+            f"create:{cct_account_debit}:{cct_account_credit}:{transaction.splits[1].amount}",
+        )
 
         txn_id = None
         if isinstance(data, dict):
@@ -150,7 +149,7 @@ class BookTransaction:
             account_nbr = str(account_nbr)
 
         # Build filter as the CashCtrl REST API expects and URL-encode it
-        filter_json = json.dumps([{"comparison":"eq", "field": "number", "value": account_nbr}])
+        filter_json = json.dumps([{"comparison": "eq", "field": "number", "value": account_nbr}])
         rest = "account/list.json?filter=" + urllib.parse.quote_plus(filter_json)
         logger.info(f"Fetching CashCtrl account for number {account_nbr} via {rest}")
 
@@ -220,7 +219,9 @@ class BookTransaction:
         if isinstance(data, dict):
             if not data.get("success", True):
                 error_message = data.get("message", "Unknown error")
-                raise RuntimeError(f"CashCtrl API error: {error_message} - for request {request_info}")
+                raise RuntimeError(
+                    f"CashCtrl API error: {error_message} - for request {request_info}"
+                )
 
 
 class CashctrlBook(AccountingBook):

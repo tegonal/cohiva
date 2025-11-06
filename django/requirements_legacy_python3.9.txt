@@ -61,6 +61,7 @@ click==8.1.8
     #   click-log
     #   click-plugins
     #   click-repl
+    #   djlint
     #   piecash
     #   vdirsyncer
     #   x-wr-timezone
@@ -72,6 +73,8 @@ click-plugins==1.1.1.2
     # via celery
 click-repl==0.3.0
     # via celery
+colorama==0.4.6
+    # via djlint
 contourpy==1.3.0
     # via matplotlib
 coverage==7.8.0
@@ -83,6 +86,8 @@ cryptography==43.0.3
     #   jwcrypto
     #   pyopenssl
     #   pysaml2
+cssbeautifier==1.15.4
+    # via djlint
 cssselect2==0.8.0
     # via svglib
 cycler==0.12.1
@@ -102,6 +107,7 @@ django==4.2.25
     #   -r requirements.in
     #   dj-rest-auth
     #   django-cors-headers
+    #   django-crispy-forms
     #   django-datetime-widget
     #   django-filer
     #   django-filter
@@ -118,6 +124,8 @@ django==4.2.25
     #   easy-thumbnails
     #   wagtail
 django-cors-headers==4.7.0
+    # via -r requirements.in
+django-crispy-forms==2.4
     # via -r requirements.in
 django-datetime-widget==0.9.3
     # via -r requirements.in
@@ -154,10 +162,16 @@ djangorestframework==3.16.1
     #   wagtail
 djangosaml2idp==0.7.2
     # via -r requirements.in
+djlint==1.36.4
+    # via -r requirements.in
 draftjs-exporter==2.1.7
     # via wagtail
 easy-thumbnails==2.10.1
     # via django-filer
+editorconfig==0.17.1
+    # via
+    #   cssbeautifier
+    #   jsbeautifier
 elementpath==4.8.0
     # via xmlschema
 et-xmlfile==2.0.0
@@ -191,8 +205,14 @@ iso3166==2.1.1
     # via qrbill
 isort==6.0.1
     # via pylint
+jsbeautifier==1.15.4
+    # via
+    #   cssbeautifier
+    #   djlint
 json-with-comments==1.2.10
     # via -r requirements.in
+json5==0.12.1
+    # via djlint
 jwcrypto==1.5.6
     # via django-oauth-toolkit
 kaleido==0.2.1
@@ -239,6 +259,8 @@ packaging==25.0
     #   matplotlib
     #   plotly
     #   rocketchat-api
+pathspec==0.12.1
+    # via djlint
 persistent==6.1.1
     # via
     #   btrees
@@ -296,6 +318,8 @@ pytz==2025.2
     #   piecash
     #   pysaml2
     #   vobject
+pyyaml==6.0.3
+    # via djlint
 qrbill==1.1.0
     # via -r requirements.in
 qrcode==8.2
@@ -304,6 +328,8 @@ recurring-ical-events==3.7.0
     # via caldav
 redis==5.2.1
     # via kombu
+regex==2025.10.23
+    # via djlint
 reportlab==4.4.4
     # via
     #   easy-thumbnails
@@ -326,7 +352,9 @@ ruff==0.12.10
     # via -r requirements.in
 six==1.17.0
     # via
+    #   cssbeautifier
     #   html5lib
+    #   jsbeautifier
     #   l18n
     #   python-dateutil
     #   vobject
@@ -351,9 +379,13 @@ tinycss2==1.4.0
     #   cssselect2
     #   svglib
 tomli==2.2.1
-    # via pylint
+    # via
+    #   djlint
+    #   pylint
 tomlkit==0.13.3
     # via pylint
+tqdm==4.67.1
+    # via djlint
 transaction==5.0
     # via zodb
 types-python-dateutil==2.9.0.20250822
@@ -364,6 +396,7 @@ typing-extensions==4.13.2
     #   asgiref
     #   astroid
     #   caldav
+    #   djlint
     #   jwcrypto
     #   multidict
     #   pylint
@@ -432,5 +465,5 @@ zope-proxy==6.1
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
 
-# Packages added/managed by install_dependencies.sh:
+# Packages added/managed by install.py:
 sepa==0.5.4+mst1

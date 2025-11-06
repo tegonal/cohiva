@@ -1,0 +1,77 @@
+{% extends "geno/base.html" %}
+{% load static i18n unfold %}
+
+{% block object-tools %}{# Override to hide tab list when there's only one view #}{% endblock %}
+
+{% block custom_content %}
+
+  {% if error_message %}
+    {# Show error message #}
+    {% component "geno/components/empty_state.html" with message=error_message icon="error" variant="error" %}
+  {% endcomponent %}
+{% elif table_data %}
+  {# Display statements table using Unfold's official table component #}
+  {% component "unfold/components/card.html" %}
+  {% component "unfold/components/table.html" with table=table_data card_included=1 striped=1 %}
+{% endcomponent %}
+{% endcomponent %}
+
+{# Summary info #}
+<div class="bg-white border border-base-200 rounded-default p-6 mt-6 shadow-sm dark:border-base-800 dark:bg-base-900">
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div>
+      <div class="text-sm text-font-light dark:text-font-dark">{% trans "Anzahl Kontoauszüge" %}</div>
+      <div class="text-2xl font-semibold text-font-important-light dark:text-font-important-dark">
+        {{ statement_count }}
+      </div>
+    </div>
+    <div>
+      <div class="text-sm text-font-light dark:text-font-dark">
+        {% trans "Total Verrechnungssteuer" %}
+      </div>
+      <div class="text-2xl font-semibold text-font-important-light dark:text-font-important-dark">
+        {{ total_tax }}
+      </div>
+    </div>
+    <div>
+      <div class="text-sm text-font-light dark:text-font-dark">{% trans "Total Zinszahlung" %}</div>
+      <div class="text-2xl font-semibold text-font-important-light dark:text-font-important-dark">
+        {{ total_interest }}
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+{# No data available #}
+{% component "geno/components/empty_state.html" with message=_("Keine Kontoauszüge gefunden.") icon="description" %}
+{% endcomponent %}
+{% endif %}
+
+{% endblock %}
+
+{% block footer %}
+  {% if table_data %}
+    {# Floating action buttons footer #}
+    <div class="relative lg:sticky lg:bottom-0 z-40">
+      <div class="backdrop-blur-xs bg-white/80 rounded-b-default pb-4 px-4 dark:bg-base-900/80 lg:border-t lg:border-base-200 relative lg:scrollable-top lg:py-0 dark:border-base-800">
+        <div class="flex flex-col-reverse gap-3 items-center mx-auto lg:flex-row-reverse container lg:h-[64px]">
+          {# Primary action - Generate as ZIP #}
+          <a href="?makezip=yes"
+             class="bg-primary-600 block border border-transparent cursor-pointer font-medium px-3 py-2 rounded-default text-white w-full lg:w-auto inline-flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">folder_zip</span>
+            {% trans "Als ZIP-Datei generieren" %}
+          </a>
+
+          {# Statement count info on the left #}
+          <div class="mr-auto text-sm text-font-light dark:text-font-dark">
+            {% blocktrans count counter=statement_count %}
+            {{ counter }} Kontoauszug bereit.
+          {% plural %}
+            {{ counter }} Kontoauszüge bereit.
+          {% endblocktrans %}
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

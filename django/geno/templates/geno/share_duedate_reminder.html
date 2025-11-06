@@ -1,0 +1,53 @@
+{% extends "geno/base.html" %}
+{% load static %}
+{% load i18n %}
+{% load unfold %}
+
+{% block object-tools %}
+{# Override to hide the tab list when there's only one view #}
+{% endblock %}
+
+{% block custom_content %}
+
+{% if error_message %}
+    {# Show error message #}
+    {% component "geno/components/empty_state.html" with message=error_message icon="error" variant="error" %}{% endcomponent %}
+{% elif table_data %}
+    {# Display loan reminders table using Unfold's official table component #}
+    {% component "unfold/components/card.html" %}
+        {% component "unfold/components/table.html" with table=table_data card_included=1 striped=1 %}
+        {% endcomponent %}
+    {% endcomponent %}
+{% else %}
+    {# No data available #}
+    {% component "geno/components/empty_state.html" with message=_("Keine Darlehen mit Erinnerungsbedarf gefunden.") icon="event_available" %}{% endcomponent %}
+{% endif %}
+
+{% endblock %}
+
+{% block footer %}
+{% if table_data %}
+  {# Floating action buttons footer #}
+  <div class="relative lg:sticky lg:bottom-0 z-40">
+    <div class="backdrop-blur-xs bg-white/80 rounded-b-default pb-4 px-4 dark:bg-base-900/80 lg:border-t lg:border-base-200 relative lg:scrollable-top lg:py-0 dark:border-base-800">
+      <div class="flex flex-col-reverse gap-3 items-center mx-auto lg:flex-row-reverse container lg:h-[64px]">
+        {# Primary action - Generate as ZIP #}
+        <a href="?makezip=yes"
+           class="bg-primary-600 block border border-transparent cursor-pointer font-medium px-3 py-2 rounded-default text-white w-full lg:w-auto inline-flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined text-[18px]">folder_zip</span>
+          {% trans "Als ZIP-Datei generieren" %}
+        </a>
+
+        {# Reminder count info on the left #}
+        <div class="mr-auto text-sm text-font-light dark:text-font-dark">
+          {% blocktrans count counter=reminder_count %}
+            Es wird eine Erinnerung für {{ counter }} Darlehen generiert.
+          {% plural %}
+            Es werden Erinnerungen für {{ counter }} Darlehen generiert.
+          {% endblocktrans %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

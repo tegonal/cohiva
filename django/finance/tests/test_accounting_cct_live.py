@@ -13,9 +13,11 @@ from finance.accounting import (
 
 
 # Disabled by default. May be used to run live tests against a CashCtrl test instance.
-@unittest.skipUnless(getattr(settings, "FINANCIAL_ACCOUNTING_CASHCTRL_LIVE_TESTS", False), "CashCtrl live tests are disabled in settings.")
+@unittest.skipUnless(
+    getattr(settings, "FINANCIAL_ACCOUNTING_CASHCTRL_LIVE_TESTS", False),
+    "CashCtrl live tests are disabled in settings.",
+)
 class CashctrlBookTestCase(TestCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -39,17 +41,26 @@ class CashctrlBookTestCase(TestCase):
         messages = []
         with AccountingManager(messages) as book:
             transaction_id = book.add_transaction(
-                100.00, self.account1, self.account2, "2026-01-01", "Test CashCtrl add_transaction", autosave=False
+                100.00,
+                self.account1,
+                self.account2,
+                "2026-01-01",
+                "Test CashCtrl add_transaction",
+                autosave=False,
             )
             self.assertTrue(transaction_id.startswith("cct_"))
             book.save()
-
 
     def test_add_transaction_no_commit(self):
         messages = []
         with AccountingManager(messages) as book:
             transaction_id = book.add_transaction(
-                100.00, self.account1, self.account2, "2026-01-01", "Test CashCtrl add_transaction_no_commit", autosave=False
+                100.00,
+                self.account1,
+                self.account2,
+                "2026-01-01",
+                "Test CashCtrl add_transaction_no_commit",
+                autosave=False,
             )
 
             self.assertTrue(transaction_id.startswith("cct_"))
@@ -57,7 +68,7 @@ class CashctrlBookTestCase(TestCase):
 
     def test_add_transaction_split(self):
         messages = []
-        with (AccountingManager(messages) as book):
+        with AccountingManager(messages) as book:
             transaction_id = book.add_split_transaction(
                 Transaction(
                     [
@@ -73,16 +84,18 @@ class CashctrlBookTestCase(TestCase):
             )
             book.save()
 
-
     def test_delete_transaction(self):
         messages = []
         with AccountingManager(messages) as book:
             transaction_id = book.add_transaction(
-                300.00, self.account2, self.account3, "2026-02-01", "Test CashCtrl delete_transaction"
+                300.00,
+                self.account2,
+                self.account3,
+                "2026-02-01",
+                "Test CashCtrl delete_transaction",
             )
             self.assertTrue(transaction_id.startswith("cct_"))
 
             book.save()
             book.delete_transaction(transaction_id, autosave=False)
             book.save()
-
