@@ -83,6 +83,8 @@ class CashctrlBookTestCase(TestCase):
                 True,
             )
             book.save()
+            book.delete_transaction(transaction_id, autosave=False)
+            book.save()
 
     def test_delete_transaction(self):
         messages = []

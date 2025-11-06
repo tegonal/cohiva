@@ -172,7 +172,6 @@ class BookTransaction:
     def get_cct_transaction(self, transaction_id):
         # Call _get_api_url + journal/read.json?id=[transaction_id] and fetch the transaction
         # Normalize and strip possible book prefix (e.g. 'cct_...')
-        tid = str(transaction_id)
         backend_id = self.cct_book_ref.get_backend_id(transaction_id)
         rest = "journal/read.json?id=" + urllib.parse.quote_plus(backend_id)
         response = self._construct_request_get(rest)
