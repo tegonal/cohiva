@@ -57,12 +57,62 @@ class BookTransaction:
         # Expecting two splits: debit and credit
         if not getattr(transaction, "splits", None) or len(transaction.splits) < 2:
             raise ValueError("transaction must contain at least two splits (debit and credit)")
+        elif len(transaction.splits) == 2:
+            return self._create_simple_transaction(transaction)
+        else:
+            return self._create_collective_transaction(transaction)
 
-        # Resolve CashCtrl account identifiers for the two sides
+    def _create_collective_transaction(self, transaction):
+        # Expecting two splits: debit and credit
+        if not getattr(transaction, "splits", None) or len(transaction.splits) <= 2:
+            raise ValueError("transaction must contain at least two splits")
+
+        split_items_o = []
+        for split in transaction.splits:
+            cct_account = self.get_cct_account(split.account)
+            credit_type = "debit" if split.amount > 0 else "credit"
+            amount = abs(split.amount)
+            split_items_o.append({
+                "accountId": cct_account,
+                credit_type: amount
+            })
+
+        form_data = {"items": split_items_o, "title": getattr(transaction, "description", ""),
+                     "dateAdded": datetime.datetime.now().strftime('%Y-%m-%d'),
+                     "notes": "Added through API"}
+
+        payload = dict(
+            dateAdded="2025-11-06",
+            title="API generated collective entry",
+            sequenceNumberId="1000",
+            items=json.dumps(split_items_o),
+        )
+
+        # Call create endpoint
+        response = self._construct_request_post("journal/create.json", payload=payload)
+        response.raise_for_status()
+        data = response.json()
+        self._raise_for_error(response, f"create collective transaction: len: {len(transaction.splits)}")
+
+        txn_id = None
+        if isinstance(data, dict):
+            if data.get("success"):
+                txn_id = data.get("insertId")
+        # Record inserted transaction for the current BookTransaction
+        transaction_id = self.cct_book_ref.build_transaction_id(txn_id)
+        self.insert(transaction_id)
+        return transaction_id
+
+    def _create_simple_transaction(self, transaction):
+        # Expecting two splits: debit and credit
+        if not getattr(transaction, "splits", None) or len(transaction.splits) != 2:
+            raise ValueError("transaction must contain at exactly two splits (debit and credit)")
+
+        # Resolve CashCtrl account identifiers for all involved accounts
         cct_account_debit = self.get_cct_account(transaction.splits[0].account)
         cct_account_credit = self.get_cct_account(transaction.splits[1].account)
 
-        attributes = urllib.parse.quote_plus(f"amount={transaction.splits[1].amount}&creditId={cct_account_credit}&debitId={cct_account_debit}&title={urllib.parse.quote_plus(getattr(transaction, 'description', ''))}&dateAdded={datetime.datetime.now()}&notes=Added through API")
+        attributes = f"amount={transaction.splits[1].amount}&creditId={cct_account_credit}&debitId={cct_account_debit}&title={urllib.parse.quote_plus(getattr(transaction, 'description', ''))}&dateAdded={datetime.datetime.now()}&notes={urllib.parse.quote_plus('Added through API"')}"
 
         # Call create endpoint
         response = self._construct_request_post("journal/create.json?" + attributes, None)
@@ -157,11 +207,10 @@ class BookTransaction:
 
     def _construct_request_post(self, rest_service, payload=None):
         url = self._get_api_url() + rest_service
-        headers = {"Content-Type": "application/json"}
+
         return requests.post(
             url,
-            data=json.dumps(payload),
-            headers=headers,
+            data=payload,
             auth=HTTPBasicAuth(self._api_token or "", ""),
         )
 
