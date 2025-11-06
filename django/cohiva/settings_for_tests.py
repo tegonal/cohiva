@@ -49,7 +49,9 @@ FINANCIAL_ACCOUNTING_BACKENDS = {
     "cashctrl_test": {
         "BACKEND": "finance.accounting.CashctrlBook",
         "OPTIONS": {
-            # TODO
+            "API_HOST": "cashctrl123.com",
+            "API_TOKEN": "123test",
+            "TENANT": "cohiva-test",
         },
     },
     "dummy_test": {

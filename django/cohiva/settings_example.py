@@ -27,3 +27,6 @@ EMAIL_HOST_PASSWORD = "secret"
 #    "handlers": ["access_portal"],
 #    "propagate": True,
 # }
+
+## Configure the cashctrl token and tenant in base_config.py
+# FINANCIAL_ACCOUNTING_DEFAULT_BACKEND = "cashctrl"

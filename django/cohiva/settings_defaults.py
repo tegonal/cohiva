@@ -606,8 +606,8 @@ FINANCIAL_ACCOUNTING_BACKENDS = {
         "BACKEND": "finance.accounting.CashctrlBook",
         "OPTIONS": {
             "API_HOST": "cashctrl.com",
-            "API_TOKEN": "",
-            "TENANT": "",
+            "API_TOKEN": f"{cbc.CASHCTRL_API_TOKEN}",
+            "TENANT": f"{cbc.CASHCTRL_TENANT}",
         },
     },
     "dummy": {

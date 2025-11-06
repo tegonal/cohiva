@@ -11,6 +11,13 @@ from .book import AccountingBook
 
 logger = logging.getLogger("finance_accounting")
 
+# CashCtrl Handler for transactional operations
+# Inserts are executed immediately via API, but tracked for possible rollback on close()
+# Deletes are tracked and executed on save()
+#
+# Possible improvements:
+# - Batch inserts and deletes to reduce number of API calls
+# - inserts only on save(): possibility to fetch ID provided by CashCtrl API, but needs more complex tracking (concurrency)
 
 class BookTransaction:
     _inserted_transaction_ids = []
@@ -55,10 +62,10 @@ class BookTransaction:
         cct_account_debit = self.get_cct_account(transaction.splits[0].account)
         cct_account_credit = self.get_cct_account(transaction.splits[1].account)
 
-        attributes = f"amount={transaction.splits[1].amount}&creditId={cct_account_credit}&debitId={cct_account_debit}&title={urllib.parse.quote_plus(getattr(transaction, 'description', ''))}&dateAdded={datetime.datetime.now()}&notes=Added through API"
+        attributes = urllib.parse.quote_plus(f"amount={transaction.splits[1].amount}&creditId={cct_account_credit}&debitId={cct_account_debit}&title={urllib.parse.quote_plus(getattr(transaction, 'description', ''))}&dateAdded={datetime.datetime.now()}&notes=Added through API")
 
         # Call create endpoint
-        response = self._construct_post("journal/create.json?" + attributes, None)
+        response = self._construct_request_post("journal/create.json?" + attributes, None)
         response.raise_for_status()
         data = response.json()
         self._raise_for_error(response, f"create:{cct_account_debit}:{cct_account_credit}:{transaction.splits[1].amount}")
@@ -97,7 +104,7 @@ class BookTransaction:
         rest = "account/list.json?filter=" + urllib.parse.quote_plus(filter_json)
         logger.info(f"Fetching CashCtrl account for number {account_nbr} via {rest}")
 
-        response = self._construct_request(rest)
+        response = self._construct_request_get(rest)
         response.raise_for_status()
         self._raise_for_error(response, f"account_lookup:{account_nbr}")
         data = response.json()
@@ -119,7 +126,7 @@ class BookTransaction:
         tid = str(transaction_id)
         backend_id = self.cct_book_ref.get_backend_id(transaction_id)
         rest = "journal/read.json?id=" + urllib.parse.quote_plus(backend_id)
-        response = self._construct_request(rest)
+        response = self._construct_request_get(rest)
         response.raise_for_status()
         try:
             self._raise_for_error(response, f"get_transaction:{backend_id}")
@@ -137,18 +144,18 @@ class BookTransaction:
                 for tid in transaction_ids
             )
             rest = f"journal/delete.json?ids={urllib.parse.quote_plus(tids)}"
-            response = self._construct_post(rest)
+            response = self._construct_request_post(rest)
             response.raise_for_status()
             self._raise_for_error(response, f"delete:{tids}")
 
     def _get_api_url(self):
         return f"https://{self._cct_tenant}.{self._api_host}/api/v1/"
 
-    def _construct_request(self, rest_service):
+    def _construct_request_get(self, rest_service):
         url = self._get_api_url() + rest_service
         return requests.get(url, auth=HTTPBasicAuth(self._api_token or "", ""))
 
-    def _construct_post(self, rest_service, payload=None):
+    def _construct_request_post(self, rest_service, payload=None):
         url = self._get_api_url() + rest_service
         headers = {"Content-Type": "application/json"}
         return requests.post(
@@ -197,13 +204,14 @@ class CashctrlBook(AccountingBook):
             return data
         return None
 
-    def delete_transaction(self, transaction_id):
+    def delete_transaction(self, transaction_id, autosave=True):
         cct_transaction = self._book_transaction.get_cct_transaction(transaction_id)
 
         # Track deletion in current BookTransaction and persist
         if cct_transaction and "data" in cct_transaction:
             self._book_transaction.delete(cct_transaction["data"])
-        self.save()
+        if autosave:
+            self.save()
 
     def save(self):
         if not self._book_transaction:
