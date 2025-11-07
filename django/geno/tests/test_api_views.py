@@ -299,3 +299,21 @@ class QRBillAPIViewTest(GenoAdminTestCase):
         self.assertEqual(self.view.context["contract_info"], "Gästezimmer")
         self.assertTrue(isinstance(ret, FileResponse))
         ret.file_to_stream.close()
+
+    def test_get_akonto_qrbill(self):
+        request = self.factory.post("/geno/qrbill/", {"contract_id": 0})
+        pdf_file = self.view.get_akonto_qrbill(request)
+        self.assertInPDF(
+            pdf_file.file_to_stream,
+            [
+                "Zahlbar durch\nAnna Muster\nBeispielweg 1\nCH-3000 Bern\n",
+                (
+                    "Konto / Zahlbar an\n"
+                    "CH77 3000 0001 2500 9423 9\n"
+                    "Genossenschaft Musterweg\n"
+                    "Musterweg 1\n"
+                    "CH-3000 Bern\n"
+                ),
+            ],
+        )
+        pdf_file.file_to_stream.close()

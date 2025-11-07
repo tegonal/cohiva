@@ -239,6 +239,7 @@ if "cms" in cbc.FEATURES:
         "wagtail",
         "modelcluster",
         "taggit",
+        "wagtailmenus",
     )
 
 if "website" in cbc.FEATURES:
@@ -289,8 +290,12 @@ MIDDLEWARE += (
     "geno.middleware.LoginRedirectMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    #'wagtail.contrib.redirects.middleware.RedirectMiddleware',
+    ## For django-datetime-widget
+    "django.middleware.locale.LocaleMiddleware",
 )
+
+if "cms" in cbc.FEATURES:
+    MIDDLEWARE += ("wagtail.contrib.redirects.middleware.RedirectMiddleware",)
 
 # TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 
@@ -316,6 +321,11 @@ TEMPLATES = [
         },
     },
 ]
+if "cms" in cbc.FEATURES:
+    TEMPLATES[0]["OPTIONS"]["context_processors"] += [
+        "wagtailmenus.context_processors.wagtailmenus",
+    ]
+
 
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = "cohiva.wsgi.application"
@@ -609,16 +619,20 @@ GENO_CARDDAV_PASS = None
 
 GENO_ORG_INFO = {
     "name": cbc.ORG_NAME,
-    "street": cbc.ORG_ADDRESS_STREET,
-    "city": cbc.ORG_ADDRESS_CITY,
+    "street": f"{cbc.ORG_ADDRESS_STREET_NAME} {cbc.ORG_ADDRESS_HOUSE_NUMBER}",
+    "city": f"{cbc.ORG_ADDRESS_CITY_ZIPCODE} {cbc.ORG_ADDRESS_CITY_NAME}",
+    "country": cbc.ORG_ADDRESS_COUNTRY,
     "email": "info@" + cbc.DOMAIN,
     "website": "www." + cbc.DOMAIN,
 }
 
 GENO_QRBILL_CREDITOR = {
     "name": cbc.ORG_NAME,
-    "line1": cbc.ORG_ADDRESS_STREET,
-    "line2": cbc.ORG_ADDRESS_CITY,
+    "street": cbc.ORG_ADDRESS_STREET_NAME,
+    "house_num": cbc.ORG_ADDRESS_HOUSE_NUMBER,
+    "pcode": cbc.ORG_ADDRESS_CITY_ZIPCODE,
+    "city": cbc.ORG_ADDRESS_CITY_NAME,
+    "country": cbc.ORG_ADDRESS_COUNTRY,
 }
 
 FINANCIAL_ACCOUNTING_DEFAULT_BACKEND = "dummy"
@@ -971,6 +985,8 @@ SHARE_PLOT = True
 WAGTAIL_SITE_NAME = cbc.SITE_NICKNAME + " Portal"
 WAGTAILADMIN_BASE_URL = BASE_URL
 WAGTAIL_FRONTEND_LOGIN_URL = LOGIN_URL
+WAGTAILDOCS_EXTENSIONS = ["csv", "docx", "key", "odt", "pdf", "pptx", "rtf", "txt", "xlsx", "zip"]
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10_000
 
 ## Silence warning about MySQL constraints
 SILENCED_SYSTEM_CHECKS = [

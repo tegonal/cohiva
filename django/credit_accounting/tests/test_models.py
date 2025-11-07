@@ -11,6 +11,7 @@ from .base import CreditAccountingTestCase
 
 
 def patch_render_qrbill(dummy, context, output_pdf_file, base_pdf_file):
+    ## Use existing template
     return render_qrbill(
         None,
         context,
@@ -52,3 +53,38 @@ class AccountTests(CreditAccountingTestCase):
         self.assertEqual(len(mail.outbox[0].attachments), 1)
         self.assertEqual(mail.outbox[0].attachments[0][0], "QR_Rechnung_Vendor1_V1_Acc1.pdf")
         self.assertEqual(mail.outbox[0].attachments[0][2], "application/pdf")
+
+    @patch("credit_accounting.models.render_qrbill")
+    def test_create_qrbill(self, mock_render):
+        self.credit_accounts[0].create_qrbill()
+        context = mock_render.call_args.args[1]
+        self.assertEqual(context["qr_creditor"], self.vendors[0].qr_address)
+        self.assertEqual(
+            context["qr_debtor"],
+            {
+                "name": "V1_Acc1",
+                "street": "Vendor-Street",
+                "house_num": "8",
+                "pcode": "9999",
+                "city": "Vendor-City",
+                "country": "Schweiz",
+            },
+        )
+
+    @patch("credit_accounting.models.render_qrbill")
+    def test_create_qrbill_with_debtor_address(self, mock_render):
+        self.credit_accounts[1].create_qrbill()
+        context = mock_render.call_args.args[1]
+        self.assertEqual(context["qr_creditor"], self.vendors[0].qr_address)
+        self.assertEqual(context["qr_debtor"], self.account_owner_address)
+
+    @patch("credit_accounting.models.render_qrbill")
+    def test_create_qrbill_without_vendor_address(self, mock_render):
+        self.credit_accounts[3].create_qrbill()
+        context = mock_render.call_args.args[1]
+        self.assertEqual(
+            context["qr_creditor"],
+            {
+                "name": "Vendor2",
+            },
+        )
