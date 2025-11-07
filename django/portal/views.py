@@ -4,12 +4,12 @@ import logging
 
 from django import forms
 from django.conf import settings
-
-# Auth
 from django.contrib import auth
 from django.contrib.auth.decorators import login_required  # , user_passes_test
+from django.core.handlers.wsgi import WSGIRequest
 from django.db.models import Q
 from django.http import (
+    Http404,
     HttpResponse,
     HttpResponseBadRequest,
     HttpResponseNotFound,
@@ -22,6 +22,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.debug import sensitive_post_parameters
 from django_tables2 import RequestConfig
 from oauth2_provider.decorators import protected_resource
+from wagtail.models import Site as WagtailSite
+from wagtail.views import serve as wagtail_serve
 
 import portal.auth as portal_auth
 from geno.models import Address, Building, Tenant
@@ -245,6 +247,19 @@ def home(request, message=None):
     # return view(request)
     # check_address_user_auth()
     return redirect("/portal/home/")
+
+
+def portal_cms_serve(request: WSGIRequest, path: str = ""):
+    # Manually assign the "portal" site to requests that are routed to this view
+    portal_site = WagtailSite.objects.filter(
+        Q(hostname__startswith="portal") | Q(hostname__endswith="portal")
+    ).first()
+    if portal_site:
+        request._wagtail_site = portal_site
+    else:
+        raise Http404("Keine Portal Site im CMS gefunden.")
+    print("CMS serve " + path)
+    return wagtail_serve(request, path)
 
 
 @protected_resource(scopes=["username", "email", "realname"])

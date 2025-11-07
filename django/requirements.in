@@ -76,7 +76,8 @@ mailmanclient
 rocketchat-API
 
 ## CMS
-wagtail < 6.0
+wagtail >= 6.3, < 7.1
+wagtailmenus
 
 ## Celery (async tasks)
 celery[redis]

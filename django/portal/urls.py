@@ -1,7 +1,7 @@
+from django.conf import settings
 from django.contrib.auth import views as auth_views
-from django.urls import path
+from django.urls import path, re_path
 
-# from wagtail import urls as wagtail_urls
 from . import views as portal_views
 
 app_name = "portal"
@@ -47,5 +47,10 @@ urlpatterns = [
         portal_views.rocket_chat_webhook,
         name="rocket_chat_webhook",
     ),
-    path("", portal_views.home, name="portal-home"),
+    path("", portal_views.home, name="portal-home"),  # Handle root ("/")
 ]
+if "cms" in settings.COHIVA_FEATURES:
+    ## Let the CMS handle everything else (only URLs that end with a "/" to not break APPEND_SLASH)
+    urlpatterns += [
+        re_path(r"^(?P<path>.*/)$", portal_views.portal_cms_serve, name="portal-cms"),
+    ]

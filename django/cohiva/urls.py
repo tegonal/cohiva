@@ -16,18 +16,10 @@ Including another URLconf
 """
 
 from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from django.views.generic.base import RedirectView
-
-## django-filer
-
-if "cms" in settings.COHIVA_FEATURES:
-    from wagtail import urls as wagtail_urls
-    from wagtail.admin import urls as wagtailadmin_urls
-    from wagtail.documents import urls as wagtaildocs_urls
-
-# from schema_graph.views import Schema
 
 admin.site.site_header = settings.GENO_NAME + " – Cohiva"
 admin.site.site_title = "Cohiva " + settings.COHIVA_SITE_NICKNAME
@@ -94,19 +86,24 @@ if "api" in settings.COHIVA_FEATURES:
         path("dj-rest-auth/", include("dj_rest_auth.urls")),
     ]
 
-if "cms" in settings.COHIVA_FEATURES:
-    # Wagtail
-    urlpatterns += [
-        path("cms/", include(wagtailadmin_urls)),
-        path("documents/", include(wagtaildocs_urls)),
-    ]
-    if "portal" in settings.COHIVA_FEATURES:
-        urlpatterns += [
-            path("portal/", include(wagtail_urls)),
-        ]
+
+## Serve media files through the test server (don't do that for production!)
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 ## Must be last to be able to handle root/wildcard URLs.
 if "website" in settings.COHIVA_FEATURES:
     urlpatterns += [
         path("", include("website.urls")),
+    ]
+if "cms" in settings.COHIVA_FEATURES:
+    ## Let the CMS handle everything that didn't match until now
+    from wagtail import urls as wagtail_urls
+    from wagtail.admin import urls as wagtailadmin_urls
+    from wagtail.documents import urls as wagtaildocs_urls
+
+    urlpatterns += [
+        path("cms/", include(wagtailadmin_urls)),
+        path("documents/", include(wagtaildocs_urls)),
+        path("", include(wagtail_urls)),
     ]

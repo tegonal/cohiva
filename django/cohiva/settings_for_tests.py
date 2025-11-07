@@ -5,6 +5,8 @@ import warnings
 
 from django.utils.deprecation import RemovedInDjango51Warning
 
+import cohiva.base_config_example as cbc_test
+
 ## Load settings
 from .settings import *  # noqa: F403
 from .settings import DATABASES, GENO_FINANCE_ACCOUNTS, MEDIA_ROOT, SMEDIA_ROOT
@@ -35,3 +37,12 @@ GENO_FORMAL = True
 RESERVATION_BLOCKER_RULES = []
 GENO_FINANCE_ACCOUNTS["default_debtor"]["iban"] = "CH7730000001250094239"
 DEMO = False
+
+GENO_QRBILL_CREDITOR = {
+    "name": cbc_test.ORG_NAME,
+    "street": cbc_test.ORG_ADDRESS_STREET_NAME,
+    "house_num": cbc_test.ORG_ADDRESS_HOUSE_NUMBER,
+    "pcode": cbc_test.ORG_ADDRESS_CITY_ZIPCODE,
+    "city": cbc_test.ORG_ADDRESS_CITY_NAME,
+    "country": cbc_test.ORG_ADDRESS_COUNTRY,
+}

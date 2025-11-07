@@ -204,6 +204,7 @@ if "cms" in cbc.FEATURES:
         "wagtail",
         "modelcluster",
         "taggit",
+        "wagtailmenus",
     )
 
 if "website" in cbc.FEATURES:
@@ -248,7 +249,7 @@ MIDDLEWARE += (
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     ## For django-datetime-widget
     "django.middleware.locale.LocaleMiddleware",
-    #'wagtail.contrib.redirects.middleware.RedirectMiddleware',
+    "wagtail.contrib.redirects.middleware.RedirectMiddleware",
 )
 
 # TEST_RUNNER = 'django.test.runner.DiscoverRunner'
@@ -268,6 +269,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "cohiva.context_processors.baseconfig",
                 "geno.context_processors.featurelist",
+                "wagtailmenus.context_processors.wagtailmenus",
             ],
         },
     },
@@ -672,6 +674,8 @@ SHARE_PLOT = True
 WAGTAIL_SITE_NAME = cbc.SITE_NICKNAME + " Portal"
 WAGTAILADMIN_BASE_URL = BASE_URL
 WAGTAIL_FRONTEND_LOGIN_URL = LOGIN_URL
+WAGTAILDOCS_EXTENSIONS = ["csv", "docx", "key", "odt", "pdf", "pptx", "rtf", "txt", "xlsx", "zip"]
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10_000
 
 ## Silence warning about MySQL constraints
 SILENCED_SYSTEM_CHECKS = [
