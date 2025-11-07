@@ -304,15 +304,15 @@ class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
             share_stats.append(
                 {
                     "type": str(share_type),
-                    "quantity": stat["quantity"],
-                    "value": stat["value"],
+                    "quantity": nformat(stat["quantity"], 0),
+                    "value": nformat(stat["value"]),
                     "last_date": stat["last_date"],
                 }
             )
             total_value += stat["value"]
 
         context["share_stats"] = share_stats
-        context["total_value"] = total_value
+        context["total_value"] = nformat(total_value)
 
         # Check for non-members with shares (warning)
         non_members = []

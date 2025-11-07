@@ -60,13 +60,13 @@
             <div class="flex justify-between">
               <dt class="text-sm text-font-light dark:text-font-dark">{% trans "Anzahl" %}</dt>
               <dd class="text-sm font-medium text-font-important-light dark:text-font-important-dark">
-                {{ stat.quantity|floatformat:0 }}
+                {{ stat.quantity }}
               </dd>
             </div>
             <div class="flex justify-between">
               <dt class="text-sm text-font-light dark:text-font-dark">{% trans "Summe CHF" %}</dt>
               <dd class="text-sm font-medium text-font-important-light dark:text-font-important-dark">
-                {{ stat.value|floatformat:2 }}
+                {{ stat.value }}
               </dd>
             </div>
             {% if stat.last_date %}
@@ -89,7 +89,7 @@
           {% trans "TOTAL" %}
         </h3>
         <p class="text-xl font-bold text-primary-600 dark:text-primary-400">
-          {% blocktrans with value=total_value|floatformat:2 %}CHF {{ value }}{% endblocktrans %}
+          {% blocktrans with value=total_value %}CHF {{ value }}{% endblocktrans %}
         </p>
       </div>
     </div>
