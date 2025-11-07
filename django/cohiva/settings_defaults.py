@@ -252,9 +252,7 @@ MIDDLEWARE += (
 )
 
 if "cms" in cbc.FEATURES:
-    MIDDLEWARE += (
-        "wagtail.contrib.redirects.middleware.RedirectMiddleware",
-    )
+    MIDDLEWARE += ("wagtail.contrib.redirects.middleware.RedirectMiddleware",)
 
 # TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 
@@ -281,7 +279,6 @@ if "cms" in cbc.FEATURES:
     TEMPLATES[0]["OPTIONS"]["context_processors"] += [
         "wagtailmenus.context_processors.wagtailmenus",
     ]
-
 
 
 # Python dotted path to the WSGI application used by Django's runserver.
