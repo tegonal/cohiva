@@ -249,8 +249,12 @@ MIDDLEWARE += (
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     ## For django-datetime-widget
     "django.middleware.locale.LocaleMiddleware",
-    "wagtail.contrib.redirects.middleware.RedirectMiddleware",
 )
+
+if "cms" in cbc.FEATURES:
+    MIDDLEWARE += (
+        "wagtail.contrib.redirects.middleware.RedirectMiddleware",
+    )
 
 # TEST_RUNNER = 'django.test.runner.DiscoverRunner'
 
@@ -269,11 +273,16 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "cohiva.context_processors.baseconfig",
                 "geno.context_processors.featurelist",
-                "wagtailmenus.context_processors.wagtailmenus",
             ],
         },
     },
 ]
+if "cms" in cbc.FEATURES:
+    TEMPLATES[0]["OPTIONS"]["context_processors"] += [
+        "wagtailmenus.context_processors.wagtailmenus",
+    ]
+
+
 
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = "cohiva.wsgi.application"
