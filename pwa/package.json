@@ -41,7 +41,7 @@
     "browser-lang": "^0.2.1",
     "lit": "^3.3.1",
     "oidc-client-ts": "^3.3.0",
-    "pinia": "^2.3.1",
+    "pinia": "^3.0.0",
     "quasar": "^2.18.5",
     "tippy.js": "^6.3.7",
     "vue": "^3.5.22",
