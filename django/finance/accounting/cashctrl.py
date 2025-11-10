@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+import time
 import urllib.parse
 
 import requests
@@ -21,8 +22,8 @@ logger = logging.getLogger("finance_accounting")
 
 
 class BookTransaction:
-    _inserted_transaction_ids = []
-    _deleted_transaction_ids = []
+
+    MAX_CALLS_PER_SECOND = 8
 
     def __init__(self, cct_book_ref, book_type_id, _api_token, _cct_tenant, _api_host):
         self.cct_book_ref = cct_book_ref
@@ -30,6 +31,21 @@ class BookTransaction:
         self._api_token = _api_token
         self._cct_tenant = _cct_tenant
         self._api_host = _api_host
+        self._inserted_transaction_ids = []
+        self._deleted_transaction_ids = []
+        self._account_cache = {}
+        self._last_rest_call = None
+
+    def _throttle_calls(self):
+        # Ensure we do not exceed MAX_CALLS_PER_SECOND
+        if self._last_rest_call:
+            elapsed = datetime.datetime.now() - self._last_rest_call
+            wait_time = 1.0 / self.MAX_CALLS_PER_SECOND
+            if elapsed.total_seconds() < wait_time:
+                sleep_time = wait_time - elapsed.total_seconds()
+                logger.debug(f"Throttling CashCtrl API calls, sleeping for {sleep_time} seconds")
+                time.sleep(sleep_time)
+        self._last_rest_call = datetime.datetime.now()
 
     def close(self):
         # for inserted transactions still in array, delete on CashCtrl via API as rollback
@@ -38,6 +54,7 @@ class BookTransaction:
         # Normalize and strip possible book prefix (e.g. 'cct_...')
         self._delete(self._inserted_transaction_ids)
         self._inserted_transaction_ids.clear()
+        self._account_cache = {}
 
         # deleted transactions can be ignored as they were not yet saved to CashCtrl
         self._deleted_transaction_ids.clear()
@@ -55,7 +72,7 @@ class BookTransaction:
             self._deleted_transaction_ids.append(transaction)
 
     def create(self, transaction):
-        # Expecting two splits: debit and credit
+        # Expecting two or more accounts involved in the transaction
         if not getattr(transaction, "splits", None) or len(transaction.splits) < 2:
             raise ValueError("transaction must contain at least two splits (debit and credit)")
         elif len(transaction.splits) == 2:
@@ -64,7 +81,7 @@ class BookTransaction:
             return self._create_collective_transaction(transaction)
 
     def _create_collective_transaction(self, transaction):
-        # Expecting two splits: debit and credit
+        # Expecting more than two splits
         if not getattr(transaction, "splits", None) or len(transaction.splits) <= 2:
             raise ValueError("transaction must contain at least two splits")
 
@@ -76,9 +93,8 @@ class BookTransaction:
             split_items_o.append({"accountId": cct_account, credit_type: amount})
 
         payload = dict(
-            dateAdded="2025-11-06",
+            dateAdded=datetime.date.today().strftime('%Y-%m-%d'),
             title="API generated collective entry",
-            sequenceNumberId="1000",
             items=json.dumps(split_items_o),
         )
 
@@ -148,6 +164,10 @@ class BookTransaction:
         elif isinstance(account_nbr, int):
             account_nbr = str(account_nbr)
 
+        # Check cache first
+        if account_nbr in self._account_cache:
+            return self._account_cache[account_nbr]
+
         # Build filter as the CashCtrl REST API expects and URL-encode it
         filter_json = json.dumps([{"comparison": "eq", "field": "number", "value": account_nbr}])
         rest = "account/list.json?filter=" + urllib.parse.quote_plus(filter_json)
@@ -164,6 +184,7 @@ class BookTransaction:
             # Try to extract account id or code
             if isinstance(candidate, list) and candidate and len(candidate) == 1:
                 acct = candidate[0]
+                self._account_cache[account_nbr] = acct.get("id")
                 return acct.get("id")
 
         # TODO Throw exception if account not found
@@ -201,11 +222,13 @@ class BookTransaction:
 
     def _construct_request_get(self, rest_service):
         url = self._get_api_url() + rest_service
+        self._throttle_calls()
         return requests.get(url, auth=HTTPBasicAuth(self._api_token or "", ""))
 
     def _construct_request_post(self, rest_service, payload=None):
         url = self._get_api_url() + rest_service
 
+        self._throttle_calls()
         return requests.post(
             url,
             data=payload,
