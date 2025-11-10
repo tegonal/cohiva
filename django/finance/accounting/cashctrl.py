@@ -126,7 +126,8 @@ class BookTransaction:
         cct_account_debit = self.get_cct_account(transaction.splits[0].account)
         cct_account_credit = self.get_cct_account(transaction.splits[1].account)
 
-        attributes = f"amount={transaction.splits[1].amount}&creditId={cct_account_credit}&debitId={cct_account_debit}&title={urllib.parse.quote_plus(getattr(transaction, 'description', ''))}&dateAdded={datetime.datetime.now()}&notes={urllib.parse.quote_plus('Added through API"')}"
+        amount_str = f"{transaction.splits[1].amount:.2f}" if isinstance(transaction.splits[1].amount, float) else str(transaction.splits[1].amount)
+        attributes = f"amount={amount_str}&creditId={cct_account_credit}&debitId={cct_account_debit}&title={urllib.parse.quote_plus(getattr(transaction, 'description', ''))}&dateAdded={datetime.datetime.now()}&notes={urllib.parse.quote_plus('Added through API"')}"
 
         # Call create endpoint
         response = self._construct_request_post("journal/create.json?" + attributes, None)
@@ -134,7 +135,7 @@ class BookTransaction:
         data = response.json()
         self._raise_for_error(
             response,
-            f"create:{cct_account_debit}:{cct_account_credit}:{transaction.splits[1].amount}",
+            f"create:{cct_account_debit}:{cct_account_credit}:{amount_str}",
         )
 
         txn_id = None
