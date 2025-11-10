@@ -90,11 +90,13 @@ class BookTransaction:
             cct_account = self.get_cct_account(split.account)
             credit_type = "debit" if split.amount > 0 else "credit"
             amount = abs(split.amount)
-            split_items_o.append({"accountId": cct_account, credit_type: amount})
+            # amount may be int, Decimal, or float; convert to string to avoid json serialization issues
+            amount_str = f"{amount:.2f}"
+            split_items_o.append({"accountId": cct_account, credit_type: amount_str})
 
         payload = dict(
             dateAdded=datetime.date.today().strftime('%Y-%m-%d'),
-            title="API generated collective entry",
+            title=getattr(transaction, 'description', ''),
             items=json.dumps(split_items_o),
         )
 
