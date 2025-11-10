@@ -102,7 +102,7 @@ dill==0.4.0
     # via pylint
 dj-rest-auth==7.0.1
     # via -r requirements.in
-django==4.2.25
+django==4.2.26
     # via
     #   -r requirements.in
     #   dj-rest-auth
@@ -115,14 +115,19 @@ django==4.2.25
     #   django-oauth-toolkit
     #   django-permissionedforms
     #   django-polymorphic
+    #   django-stubs-ext
     #   django-tables2
     #   django-taggit
+    #   django-tasks
     #   django-treebeard
     #   django-unfold
     #   djangorestframework
     #   djangosaml2idp
     #   easy-thumbnails
+    #   laces
     #   wagtail
+django-cogwheels==0.3
+    # via wagtailmenus
 django-cors-headers==4.7.0
     # via -r requirements.in
 django-crispy-forms==2.4
@@ -147,9 +152,13 @@ django-select2-forms==3.0.0
     # via -r requirements.in
 django-sortedm2m==4.0.0
     # via django-select2-forms
+django-stubs-ext==5.1.3
+    # via django-tasks
 django-tables2==2.7.5
     # via -r requirements.in
-django-taggit==4.0.0
+django-taggit==6.1.0
+    # via wagtail
+django-tasks==0.7.0
     # via wagtail
 django-treebeard==4.7.1
     # via wagtail
@@ -188,8 +197,6 @@ greenlet==3.2.4
     # via sqlalchemy
 html2text==2025.4.15
     # via -r requirements.in
-html5lib==1.1
-    # via wagtail
 icalendar==6.3.1
     # via
     #   caldav
@@ -221,7 +228,7 @@ kiwisolver==1.4.7
     # via matplotlib
 kombu==5.5.4
     # via celery
-l18n==2021.3
+laces==0.1.2
     # via wagtail
 lxml==5.4.0
     # via
@@ -294,7 +301,7 @@ pyopenssl==24.2.1
     # via pysaml2
 pyparsing==3.2.5
     # via matplotlib
-pypdf==6.0.0
+pypdf==6.1.3
     # via -r requirements.in
 pysaml2==7.5.2
     # via djangosaml2idp
@@ -314,7 +321,6 @@ pytz==2025.2
     #   datetime
     #   django-datetime-widget
     #   djangosaml2idp
-    #   l18n
     #   piecash
     #   pysaml2
     #   vobject
@@ -397,6 +403,8 @@ typing-extensions==4.13.2
     #   astroid
     #   caldav
     #   djlint
+    #   django-stubs-ext
+    #   django-tasks
     #   jwcrypto
     #   multidict
     #   pylint
@@ -420,16 +428,19 @@ vine==5.1.0
     #   kombu
 vobject==0.9.9
     # via caldav
-wagtail==5.2.8
+wagtail==7.0.3
+    # via
+    #   -r requirements.in
+    #   wagtailmenus
+wagtailmenus==4.0.4
     # via -r requirements.in
 wcwidth==0.2.13
     # via prompt-toolkit
 webencodings==0.5.1
     # via
     #   cssselect2
-    #   html5lib
     #   tinycss2
-willow==1.6.3
+willow==1.11.0
     # via
     #   wagtail
     #   willow

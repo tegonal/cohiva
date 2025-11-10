@@ -1573,17 +1573,10 @@ def create_qrbill(
     email_subject=None,
     dry_run=True,
 ):
-    if address.organization:
-        bill_name = address.organization
-    else:
-        bill_name = "%s %s" % (address.first_name, address.name)
-
     if render:
         context["qr_account"] = settings.FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]["iban"]
         context["qr_ref_number"] = ref_number
-        context["qr_bill_name"] = bill_name
-        context["qr_addr_line1"] = address.street
-        context["qr_addr_line2"] = address.city
+        context["qr_debtor"] = address
         try:
             invoice_doctype = DocumentType.objects.get(name="invoice")
             render_qrbill(invoice_doctype.template, context, output_filename)
@@ -1601,12 +1594,10 @@ def create_qrbill(
     mail_recipient = None
     if email_template:
         if settings.DEBUG or settings.DEMO:
-            recipient = settings.TEST_MAIL_RECIPIENT
             email_copy = None
         else:
-            recipient = address.email
             email_copy = settings.GENO_DEFAULT_EMAIL
-        mail_recipient = '"%s" <%s>' % (bill_name, recipient)
+        mail_recipient = address.get_mail_recipient()
         if not address.email:
             messages.append("KEIN EMAIL GESENDET! Grund: Keine Email-Adresse für %s" % (address))
         else:
@@ -1621,7 +1612,7 @@ def create_qrbill(
                     raise TypeError(f"Invalid type for email template: {type(email_template)}")
                 mail_text = html2text(mail_text_html)
                 email_sender = f'"{settings.GENO_NAME}" <{settings.SERVER_EMAIL}>'
-                if email_copy and recipient != email_copy:
+                if email_copy:
                     bcc = [
                         email_copy,
                     ]
@@ -1777,16 +1768,12 @@ def render_qrbill(
         raise RuntimeError("render_qrbill(): 'qr_account' not found in context.")
     if "qr_ref_number" not in context:
         raise RuntimeError("render_qrbill(): 'qr_ref_number' not found in context.")
-    if "qr_bill_name" not in context:
-        raise RuntimeError("render_qrbill(): 'qr_bill_name' not found in context.")
-    if "qr_addr_line1" not in context:
-        raise RuntimeError("render_qrbill(): 'qr_addr_line1' not found in context.")
-    if "qr_addr_line2" not in context:
-        raise RuntimeError("render_qrbill(): 'qr_addr_line2' not found in context.")
     if "qr_amount" not in context:
         raise RuntimeError("render_qrbill(): 'qr_amount' not found in context.")
     if "qr_extra_info" not in context:
         raise RuntimeError("render_qrbill(): 'qr_extra_info' not found in context.")
+    if "qr_debtor" not in context:
+        raise RuntimeError("render_qrbill(): 'qr_debtor' not found in context.")
     if "qr_creditor" not in context:
         context["qr_creditor"] = geno_settings.QRBILL_CREDITOR
 
@@ -1804,12 +1791,8 @@ def render_qrbill(
     bill = QRBill(
         account=context["qr_account"],
         reference_number=context["qr_ref_number"],
-        creditor=context["qr_creditor"],
-        debtor={
-            "name": context["qr_bill_name"],
-            "line1": context["qr_addr_line1"],
-            "line2": context["qr_addr_line2"],
-        },
+        creditor=build_structured_qrbill_address(context["qr_creditor"]),
+        debtor=build_structured_qrbill_address(context["qr_debtor"]),
         amount=context["qr_amount"],
         # due_date=YYYY-MM-DD,
         additional_information=context["qr_extra_info"],
@@ -1837,6 +1820,52 @@ def render_qrbill(
 
     ## Cleanup
     remove_temp_files(temp_files)
+
+
+def build_structured_qrbill_address(adr):
+    if isinstance(adr, dict):
+        ## Assume it's already built
+        return adr
+    if not isinstance(adr, Address):
+        raise TypeError("Expecting an Address")
+    if adr.organization:
+        name = adr.organization
+    elif adr.first_name:
+        name = f"{adr.first_name} {adr.name}"
+    else:
+        name = adr.name
+    country = transform_qrbill_country(adr.country)
+    return {
+        "name": name,
+        "street": adr.street_name,
+        "house_num": adr.house_number,
+        "pcode": adr.city_zipcode,
+        "city": adr.city_name,
+        "country": country,
+    }
+
+
+def transform_qrbill_country(country):
+    country = (country or "").strip()
+    if country.lower() in ("schweiz", "suisse", "svizzera", "svizra", "switzerland"):
+        return "CH"
+    if country.lower() in (
+        "fürstentum liechtenstein",
+        "fuerstentum liechtenstein",
+        "liechtenstein",
+    ):
+        return "LI"
+    if country.lower() in ("deutschland", "germany"):
+        return "DE"
+    if country.lower() in ("österreich", "oesterreich", "austria"):
+        return "AT"
+    if country.lower() in ("frankreich", "france"):
+        return "FR"
+    if country.lower() in ("italien", "italia", "italy"):
+        return "IT"
+    if country.lower() in ("spanien", "españa", "espana", "spain"):
+        return "ES"
+    return country
 
 
 def get_duplicate_invoices():

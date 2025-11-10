@@ -7,6 +7,7 @@ from urllib.parse import quote
 from django.utils.deprecation import RemovedInDjango51Warning
 
 import cohiva.base_config as cbc
+import cohiva.base_config_example as cbc_test
 from finance.accounting import AccountKey
 
 ## Load settings
@@ -30,10 +31,12 @@ IS_RUNNING_TESTS = True
 
 ## Default settings for tests, which are overwritten temporarily by specific tests, if needed.
 GENO_FORMAL = True
+DEMO = False
 RESERVATION_BLOCKER_RULES = []
 FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]["iban"] = "CH7730000001250094239"
 
 FINANCIAL_ACCOUNTING_CASHCTRL_LIVE_TESTS = False
+
 FINANCIAL_ACCOUNTING_DEFAULT_BACKEND = "dummy_test"
 FINANCIAL_ACCOUNTING_BACKENDS = {
     "gnucash_test": {
@@ -68,4 +71,12 @@ FINANCIAL_ACCOUNTING_BACKENDS = {
             "SAVE_TRANSACTIONS": False,
         },
     },
+}
+GENO_QRBILL_CREDITOR = {
+    "name": cbc_test.ORG_NAME,
+    "street": cbc_test.ORG_ADDRESS_STREET_NAME,
+    "house_num": cbc_test.ORG_ADDRESS_HOUSE_NUMBER,
+    "pcode": cbc_test.ORG_ADDRESS_CITY_ZIPCODE,
+    "city": cbc_test.ORG_ADDRESS_CITY_NAME,
+    "country": cbc_test.ORG_ADDRESS_COUNTRY,
 }

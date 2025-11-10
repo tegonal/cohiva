@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
         ("contenttypes", "0002_remove_content_type_name"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ("geno", "0012_alter_bankaccount_options_alter_contract_options_and_more"),
-        ("credit_accounting", "0002_initial"),
+        ("credit_accounting", "0003_remove_vendor_qr_line1_remove_vendor_qr_line2_and_more"),
     ]
 
     operations = [

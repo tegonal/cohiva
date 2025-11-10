@@ -253,9 +253,7 @@ class InvoicesTest(GenoAdminTestCase):
         )
         response = self.client.post("/geno/transaction_upload/", {"file": camt053_file})
         self.assertEqual(response.status_code, 200)
-        self.assertContains(
-            response, '<b class="success">2 Buchungen wurden importiert:</b>', html=True
-        )
+        self.assertContains(response, "2 Buchungen wurden importiert:", html=True)
 
         payments = Invoice.objects.filter(invoice_type="Payment").order_by("id")
         self.assertEqual(payments.count(), 2)

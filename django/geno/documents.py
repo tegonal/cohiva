@@ -245,10 +245,6 @@ class DocumentTemplate:
         return c
 
     def add_qrbill_context(self, recipient, ctx):
-        if recipient.address.organization:
-            bill_name = recipient.address.organization
-        else:
-            bill_name = "%s %s" % (recipient.address.first_name, recipient.address.name)
         ctx["qr_account"] = self.context_options["qrbill_account"]
         ctx["qr_extra_info"] = Template(self.context_options["qrbill_info"]).render(Context(ctx))
         if self.context_options["qrbill_rental_unit_in_extra_info"] and recipient.contract:
@@ -300,9 +296,7 @@ class DocumentTemplate:
             invoice_category = None
             ref_number = None
         ctx["qr_ref_number"] = ref_number
-        ctx["qr_bill_name"] = bill_name
-        ctx["qr_addr_line1"] = recipient.address.street
-        ctx["qr_addr_line2"] = recipient.address.city
+        ctx["qr_debtor"] = recipient.address
         if ctx.get("bill_amount", None):
             ctx["qr_amount"] = Decimal(ctx["bill_amount"])
         else:
