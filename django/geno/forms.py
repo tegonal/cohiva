@@ -142,7 +142,7 @@ class TransactionFormInvoice(forms.Form):
             return cleaned_data
 
         # Validate amount is not greater than invoice amount
-        if amount and invoice.total_amount and amount > invoice.total_amount:
+        if amount and invoice.amount and amount > invoice.amount:
             self.add_error(
                 "amount",
                 f"Betrag darf nicht grösser sein als Rechnungsbetrag ({invoice.total_amount}).",

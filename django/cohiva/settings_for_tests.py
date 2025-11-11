@@ -34,6 +34,9 @@ GENO_FORMAL = True
 DEMO = False
 RESERVATION_BLOCKER_RULES = []
 FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]["iban"] = "CH7730000001250094239"
+
+FINANCIAL_ACCOUNTING_CASHCTRL_LIVE_TESTS = False
+
 FINANCIAL_ACCOUNTING_DEFAULT_BACKEND = "dummy_test"
 FINANCIAL_ACCOUNTING_BACKENDS = {
     "gnucash_test": {
@@ -50,7 +53,9 @@ FINANCIAL_ACCOUNTING_BACKENDS = {
     "cashctrl_test": {
         "BACKEND": "finance.accounting.CashctrlBook",
         "OPTIONS": {
-            # TODO
+            "API_HOST": "cashctrl123.com",
+            "API_TOKEN": "123test",
+            "TENANT": "cohiva-test",
         },
     },
     "dummy_test": {

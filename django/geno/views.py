@@ -3317,8 +3317,8 @@ class TransactionManualView(CohivaAdminViewMixin, FormView):
             with AccountingManager() as book:
                 to_account = Account.from_settings(AccountKey.DEFAULT_DEBTOR_MANUAL)
                 from_account = Account.from_settings(AccountKey.MEMBER_FEE)
-                description = ("Mitgliederbeitrag %s %s" % (fee_year, member[0]),)
-                amount = "80.00"
+                description = "Mitgliederbeitrag %s %s" % (fee_year, member[0])
+                amount = 80.00
                 book.add_transaction(
                     amount, from_account, to_account, form.cleaned_data["date"], description
                 )

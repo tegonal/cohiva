@@ -31,6 +31,9 @@ ORG_ADDRESS_COUNTRY = "Schweiz"
 
 ADMINS = (("Hans Muster", "info@example.com"),)
 
+CASHCTRL_API_TOKEN = ""
+CASHCTRL_TENANT = ""
+
 FEATURES = [
     "api",
     "portal",
