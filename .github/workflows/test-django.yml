@@ -31,14 +31,15 @@ jobs:
       # 1. Build only the stage that contains code + deps
       - name: Build test image
         run: |
+          cd django && \
           docker build \
             --target cohiva-platform-django \
             -t cohiva:test \
-            .
 
       # 2. Run the test script inside that image
       - name: Run Django tests
         run: |
+          cd django && \
           docker run --rm \
             -e DJANGO_SETTINGS_MODULE=your_project.settings_test \
             -e DATABASE_URL=mysql://root:root@mariadb:3306/test_db \
