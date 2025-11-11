@@ -28,6 +28,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Initialize submodules
+        run: git submodule update --init --recursive
+
       # 1. Build only the stage that contains code + deps
       - name: Build test image
         run: |
