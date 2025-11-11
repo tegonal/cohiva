@@ -11,10 +11,10 @@ from finance.accounting import (
     Transaction,
 )
 
+
 class CashctrlBookTestCase(TestCase):
     cohiva_test_endpoint = "https://cohiva-test.cashctrl123.com/api/v1/"
     endpoint_is_mocked = True
-
 
     @classmethod
     def setUpClass(cls):
