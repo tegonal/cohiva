@@ -32,7 +32,7 @@ jobs:
       - name: Build test image
         run: |
           cd django && \
-          docker build \
+          docker build . \
             --target cohiva-platform-django \
             -t cohiva:test \
 
@@ -41,8 +41,6 @@ jobs:
         run: |
           cd django && \
           docker run --rm \
-            -e DJANGO_SETTINGS_MODULE=your_project.settings_test \
-            -e DATABASE_URL=mysql://root:root@mariadb:3306/test_db \
             --network host \
             cohiva:test \
             ./run-test.sh
