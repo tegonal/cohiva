@@ -11,10 +11,10 @@ from finance.accounting import (
     Transaction,
 )
 
-
 class CashctrlBookTestCase(TestCase):
     cohiva_test_endpoint = "https://cohiva-test.cashctrl123.com/api/v1/"
     endpoint_is_mocked = True
+
 
     @classmethod
     def setUpClass(cls):
@@ -247,7 +247,7 @@ class CashctrlBookTestCase(TestCase):
             )
             called_url = mock_post.call_args[0][0]
             assert (
-                f"{self.cohiva_test_endpoint}journal/create.json?amount=100.0&creditId=1237&debitId=1477&title=Test+CashCtrl+add_transaction&dateAdded="
+                f"{self.cohiva_test_endpoint}journal/create.json?amount=100.00&creditId=1237&debitId=1477&title=Test+CashCtrl+add_transaction&dateAdded="
                 in called_url
             )
 
@@ -341,16 +341,16 @@ class CashctrlBookTestCase(TestCase):
             assert f"{self.cohiva_test_endpoint}journal/create.json" in called_url
             form_data_constructed = mock_post.call_args[1]
             self.assertEqual(
-                "API generated collective entry", form_data_constructed["data"]["title"]
+                "Split or collective transaction test", form_data_constructed["data"]["title"]
             )
             self.assertIn(
-                '"accountId": 1477, "debit": 800', form_data_constructed["data"]["items"]
+                '"accountId": 1477, "debit": "800.00"', form_data_constructed["data"]["items"]
             )
             self.assertIn(
-                '"accountId": 1237, "credit": 500', form_data_constructed["data"]["items"]
+                '"accountId": 1237, "credit": "500.00"', form_data_constructed["data"]["items"]
             )
             self.assertIn(
-                '"accountId": 1497, "credit": 300', form_data_constructed["data"]["items"]
+                '"accountId": 1497, "credit": "300.00"', form_data_constructed["data"]["items"]
             )
 
     @patch("finance.accounting.cashctrl.requests.get")
