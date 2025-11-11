@@ -16,6 +16,13 @@ WORKDIR /cohiva
 COPY . .
 RUN chmod +x ./install_dependencies.sh
 RUN ./install_dependencies.sh -e docker
+# install gunicorn (if not already installed via dependencies script)
+RUN pip install --no-cache-dir gunicorn
+# optional gunicorn tuning vars
+ENV GUNICORN_WORKERS=2 \
+    GUNICORN_BIND=0.0.0.0:8000 \
+    GUNICORN_TIMEOUT=120
+EXPOSE 8000
 
 FROM cohiva-platform-django AS cohiva-platform-app
 
@@ -23,4 +30,5 @@ FROM cohiva-platform-django AS cohiva-platform-app
 
 # run the application
 
-CMD ["./runserver.sh"]
+# replace Django dev server with gunicorn (adjust cohiva.wsgi if your WSGI module differs)
+CMD ["sh", "-c", "gunicorn cohiva.wsgi:application --workers ${GUNICORN_WORKERS} --bind ${GUNICORN_BIND} --timeout ${GUNICORN_TIMEOUT}"]
