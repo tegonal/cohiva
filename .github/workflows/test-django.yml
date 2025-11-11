@@ -44,6 +44,7 @@ jobs:
       # 2. Run the test script inside that image
       - name: Run Django tests
         run: |
+          set -e
           cd django && \
           docker run --rm \
             --network host \
