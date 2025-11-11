@@ -46,4 +46,4 @@ jobs:
           docker run --rm \
             --network host \
             cohiva:test \
-            ./run-test.sh
+            /cohiva/run-test.sh
