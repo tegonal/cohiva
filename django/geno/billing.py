@@ -1697,7 +1697,8 @@ def create_qrbill_rent(
     context["invoice_date"] = invoice_date.strftime("%d.%m.%Y")
     context["invoice_duedate"] = None
     context["invoice_nr"] = None
-    context["show_liegenschaft"] = False
+    context["liegenschaft"] = contract.get_building_label()
+    context["show_liegenschaft"] = bool(context["liegenschaft"])
     context["sect_generic"] = False
     context["generic_info"] = None
     context["s_generic_total"] = None
