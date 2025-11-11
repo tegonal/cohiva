@@ -6,7 +6,7 @@ set -e
 # if called from CI (GitHub Actions), copy the base_config_for_tests.py to base_config.py
 if [ -n "$GITHUB_ACTIONS" ] ; then
     touch cohiva/settings.py
-    touch cohiva/base_config.py
+    cp cohiva/base_config_for_tests.py cohiva/base_config.py
 fi
 
 ## Show warnings?
