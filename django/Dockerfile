@@ -1,5 +1,5 @@
 # we use the default debian package
-FROM python:3.12 AS cohiva-platform-os
+FROM python:3.13 AS cohiva-platform-os
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
