@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-# if caled from CI (GitHub Actions), copy the base_config_for_tests.py to base_config.py
+# if called from CI (GitHub Actions), copy the base_config_for_tests.py to base_config.py
 if [ -n "$GITHUB_ACTIONS" ] ; then
     cp cohiva/base_config_for_tests.py cohiva/base_config.py
 fi
