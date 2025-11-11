@@ -1,5 +1,5 @@
 #
-name: Create and publish a Docker image (django)
+name: Create and publish a Docker image (pwa)
 
 # Configures this workflow to run every time a change is pushed to the branch called `release`.
 on:
@@ -50,7 +50,7 @@ jobs:
         with:
           context: ./pwa
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/cohiva-pwa:${{ steps.meta.outputs.tags }}
+          tags: ghcr.io/${{ github.repository_owner }}/cohiva-pwa:${{ steps.meta.outputs.version }}
           labels: ${{ steps.meta.outputs.labels }}
 
       # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built. It increases supply chain security for people who consume the image. For more information, see [Using artifact attestations to establish provenance for builds](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds).
