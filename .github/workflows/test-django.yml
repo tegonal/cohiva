@@ -1,0 +1,47 @@
+name: Django Tests on PR
+
+# trigger: every pull-request
+on:
+  pull_request:
+    branches: [develop]
+  workflow_dispatch: # allow manual trigger
+
+jobs:
+  test:
+    runs-on: [self-hosted] # uses your self-hosted runner pool
+
+    services:
+      mariadb:
+        image: mariadb:10.9
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: test_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      # 1. Build only the stage that contains code + deps
+      - name: Build test image
+        run: |
+          docker build \
+            --target cohiva-platform-django \
+            -t cohiva:test \
+            .
+
+      # 2. Run the test script inside that image
+      - name: Run Django tests
+        run: |
+          docker run --rm \
+            -e DJANGO_SETTINGS_MODULE=your_project.settings_test \
+            -e DATABASE_URL=mysql://root:root@mariadb:3306/test_db \
+            --network host \
+            cohiva:test \
+            ./run-test.sh
