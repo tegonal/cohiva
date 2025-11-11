@@ -48,5 +48,6 @@ jobs:
           docker run --rm \
             --network host \
             -e GITHUB_ACTIONS=true \
+            -e COVERAGE=true \
             cohiva:test \
             /cohiva/run-tests.sh
