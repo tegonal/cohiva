@@ -1,5 +1,10 @@
 #!/usr/bin/bash
-#
+
+# if caled from CI (GitHub Actions), copy the base_config_for_tests.py to base_config.py
+if [ -n "$GITHUB_ACTIONS" ] ; then
+    cp cohiva/base_config_for_tests.py cohiva/base_config.py
+fi
+
 ## Show warnings?
 export PYTHONWARNINGS=always
 
@@ -13,7 +18,7 @@ COVERAGE=""
 #COVERAGE="coverage run --append $COVERAGE_OPT"
 
 ## Base test command
-TESTCMD="./manage.py test --settings=cohiva.settings_for_tests"
+TESTCMD="./manage.py test finance.tests --settings=cohiva.settings_for_tests"
 
 ## Full test suite incl. migrations
 $COVERAGE $TESTCMD 2>&1 | tee test.log
