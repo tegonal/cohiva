@@ -6,7 +6,7 @@ from urllib.parse import quote
 
 from django.utils.deprecation import RemovedInDjango51Warning
 
-import cohiva.base_config as cbc
+import cohiva.base_config_for_tests as cbc
 import cohiva.base_config_example as cbc_test
 from finance.accounting import AccountKey
 
