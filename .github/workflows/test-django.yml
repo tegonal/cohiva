@@ -25,6 +25,9 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=3
+        volumes:
+          # mount your repo file into the init directory
+          - ${{ github.workspace }}/init_test.sql:/docker-entrypoint-initdb.d/init.sql:ro
 
     steps:
       - name: Checkout
