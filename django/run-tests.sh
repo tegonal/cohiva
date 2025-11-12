@@ -18,6 +18,11 @@ INSTALL_DIR=`grep "^INSTALL_DIR = " cohiva/base_config.py | cut -d \" -f 2`
 COVERAGE_OPT=""
 #COVERAGE_OPT="--source $INSTALL_DIR/django"
 COVERAGE=""
+
+if [ -n "$GITHUB_ACTIONS" ] ; then
+    COVERAGE_OPT="--source '/cohiva/'"
+    COVERAGE="coverage run --append $COVERAGE_OPT"
+fi
 #COVERAGE="coverage run $COVERAGE_OPT"
 #COVERAGE="coverage run --append $COVERAGE_OPT"
 
@@ -45,8 +50,8 @@ set -e
 #$COVERAGE $TESTCMD --keepdb credit_accounting.tests.test_models
 
 if [ -n "$COVERAGE" ] ; then
-    #coverage report
-    coverage html 2>&1 | tee coverage.log
+    coverage report
+    #coverage html 2>&1 | tee coverage.log
 fi
 
 ## Cleanup
