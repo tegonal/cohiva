@@ -58,24 +58,28 @@ echo ""
 # Copy src/assets/
 if [ -d "$GENERATED_DIR/src/assets" ]; then
   echo "[startup]    Copying src/assets/"
+  mkdir -p /app/src/assets/
   cp -r "$GENERATED_DIR/src/assets"/* /app/src/assets/
 fi
 
 # Copy src/css/
 if [ -d "$GENERATED_DIR/src/css" ]; then
   echo "[startup]    Copying src/css/"
+  mkdir -p /app/src/css/
   cp -r "$GENERATED_DIR/src/css"/* /app/src/css/
 fi
 
 # Copy src-pwa/
 if [ -d "$GENERATED_DIR/src-pwa" ]; then
   echo "[startup]    Copying src-pwa/"
+  mkdir -p /app/src-pwa/
   cp -r "$GENERATED_DIR/src-pwa"/* /app/src-pwa/
 fi
 
 # Copy public/
 if [ -d "$GENERATED_DIR/public" ]; then
   echo "[startup]    Copying public/"
+  mkdir -p /app/public/
   cp -r "$GENERATED_DIR/public"/* /app/public/
 fi
 
