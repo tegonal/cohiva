@@ -26,3 +26,4 @@ GRANT ALL PRIVILEGES ON `test_cohiva_gnucash_test`.* TO 'cohiva'@'%';
 
 -- Flush privileges to ensure grants take effect
 FLUSH PRIVILEGES;
+
