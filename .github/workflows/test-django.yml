@@ -45,10 +45,11 @@ jobs:
       - name: Run Django tests
         run: |
           set -e
-          cd django && \
+          cd django
           docker run --rm \
             --network host \
             -e GITHUB_ACTIONS=true \
             -e COVERAGE=true \
             cohiva:test \
-            /cohiva/run-tests.sh
+            sh -c "/cohiva/setup.py && /cohiva/run-tests.sh"
+          exit $?
