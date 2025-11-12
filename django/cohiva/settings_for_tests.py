@@ -6,12 +6,13 @@ from urllib.parse import quote
 
 from django.utils.deprecation import RemovedInDjango51Warning
 
-import cohiva.base_config as cbc
+import cohiva.base_config_for_tests as cbc
 import cohiva.base_config_example as cbc_test
 from finance.accounting import AccountKey
 
 ## Load settings
 from .settings import *  # noqa: F403
+from .settings_defaults import *  # noqa: F403
 from .settings import FINANCIAL_ACCOUNTS, MEDIA_ROOT, SMEDIA_ROOT
 
 ## Redirect (S)MEDIA_ROOT for running tests (files will be deleted by run-tests.sh):
