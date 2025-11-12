@@ -1,3 +1,6 @@
+## For backwards compatibility with Python 3.9 (to support the | operator for types)
+from __future__ import annotations
+
 import datetime
 import logging
 import uuid

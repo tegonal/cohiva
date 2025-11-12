@@ -83,6 +83,9 @@ LOGGING["handlers"]["reservation"]["level"] = "INFO"
 LOGGING["handlers"]["credit_accounting"]["filename"] = (
     cbc.INSTALL_DIR + "/django-production/log/credit_accounting.log"
 )
+LOGGING["handlers"]["finance_accounting"]["filename"] = (
+    cbc.INSTALL_DIR + "/django-production/log/finance_accounting.log"
+)
 
 ## Use a different database number for production
 CELERY_BROKER_URL = "redis://localhost:6379/1"

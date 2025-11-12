@@ -1,3 +1,6 @@
+## For backwards compatibility with Python 3.9 (to support the | operator for types)
+from __future__ import annotations
+
 import datetime
 import json
 import logging
@@ -22,7 +25,6 @@ logger = logging.getLogger("finance_accounting")
 
 
 class BookTransaction:
-
     MAX_CALLS_PER_SECOND = 8
 
     def __init__(self, cct_book_ref, book_type_id, _api_token, _cct_tenant, _api_host):
@@ -95,8 +97,8 @@ class BookTransaction:
             split_items_o.append({"accountId": cct_account, credit_type: amount_str})
 
         payload = dict(
-            dateAdded=datetime.date.today().strftime('%Y-%m-%d'),
-            title=getattr(transaction, 'description', ''),
+            dateAdded=datetime.date.today().strftime("%Y-%m-%d"),
+            title=getattr(transaction, "description", ""),
             items=json.dumps(split_items_o),
         )
 
@@ -126,7 +128,11 @@ class BookTransaction:
         cct_account_debit = self.get_cct_account(transaction.splits[0].account)
         cct_account_credit = self.get_cct_account(transaction.splits[1].account)
 
-        amount_str = f"{transaction.splits[1].amount:.2f}" if isinstance(transaction.splits[1].amount, float) else str(transaction.splits[1].amount)
+        amount_str = (
+            f"{transaction.splits[1].amount:.2f}"
+            if isinstance(transaction.splits[1].amount, float)
+            else str(transaction.splits[1].amount)
+        )
         attributes = f"amount={amount_str}&creditId={cct_account_credit}&debitId={cct_account_debit}&title={urllib.parse.quote_plus(getattr(transaction, 'description', ''))}&dateAdded={datetime.datetime.now()}&notes={urllib.parse.quote_plus('Added through API"')}"
 
         # Call create endpoint

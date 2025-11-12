@@ -1,6 +1,6 @@
 services:
   mariadb:
-    image: mariadb:11.4
+    image: mariadb:11.8
     container_name: cohiva-dev-mariadb
     restart: unless-stopped
     environment:
