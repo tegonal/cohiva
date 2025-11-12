@@ -29,6 +29,11 @@ jobs:
           --health-timeout=5s
           --health-retries=3
 
+      redis:
+        image: redis:latest
+        ports:
+          - 127.0.0.1:6379:6379
+
     steps:
       - uses: kacus/github-action-container-cleanup@v1.0.1
       - name: Checkout
