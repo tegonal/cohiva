@@ -1488,6 +1488,10 @@ class Contract(GenoBase):
                     names.append("%s %s" % (a.first_name, a.name))
             return "%05d, %s" % (self.id, "/".join(names))
 
+    def get_building_label(self):
+        ru = self.rental_units.first()
+        return ru.building.name if ru else None
+
     def list_rental_units(self, short=False, exclude_minor=False, as_list=False):
         units = []
         if exclude_minor:

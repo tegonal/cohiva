@@ -10,7 +10,7 @@ PROJECT = "cohiva"
 DEPLOY_DEST_PRODUCTION = cbc.INSTALL_DIR + "/django-production"
 
 ## Project and apps to deploy
-MODULES = (PROJECT, "geno")
+MODULES = (PROJECT, "geno", "finance")
 if "website" in cbc.FEATURES:
     MODULES += ("website",)
 if "portal" in cbc.FEATURES:

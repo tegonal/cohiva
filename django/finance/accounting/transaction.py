@@ -1,3 +1,6 @@
+## For backwards compatibility with Python 3.9 (to support the | operator for types)
+from __future__ import annotations
+
 import datetime
 from dataclasses import dataclass
 from decimal import Decimal
@@ -7,7 +10,7 @@ from .account import Account
 
 @dataclass
 class Transaction:
-    splits: list["Split"]
+    splits: list[Split]
     date: datetime.date | datetime.datetime | str
     description: str = ""
     currency: str = "CHF"
