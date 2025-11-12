@@ -6,23 +6,18 @@ CREATE DATABASE IF NOT EXISTS `cohiva_django_test`
 
 -- Create test database for automated tests (also with correct collation)
 -- This database is automatically created/destroyed during test runs
-CREATE DATABASE IF NOT EXISTS `test_cohiva_django_test`
-    CHARACTER SET utf8mb4
-    COLLATE utf8mb4_unicode_ci;
 
 CREATE DATABASE IF NOT EXISTS `cohiva_gnucash_test`
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_unicode_ci;
 
-CREATE DATABASE IF NOT EXISTS `test_cohiva_gnucash_test`
-    CHARACTER SET utf8mb4
-    COLLATE utf8mb4_unicode_ci;
 
 -- Grant permissions
 GRANT ALL PRIVILEGES ON `cohiva_django_test`.* TO 'cohiva'@'%';
-GRANT ALL PRIVILEGES ON `test_cohiva_django_test`.* TO 'cohiva'@'%';
 GRANT ALL PRIVILEGES ON `cohiva_gnucash_test`.* TO 'cohiva'@'%';
-GRANT ALL PRIVILEGES ON `test_cohiva_gnucash_test`.* TO 'cohiva'@'%';
+
+GRANT SHOW DATABASES ON *.* TO 'cohiva'@'%';
+GRANT CREATE TABLESPACE ON *.* TO 'cohiva'@'%';
 
 -- Flush privileges to ensure grants take effect
 FLUSH PRIVILEGES;
