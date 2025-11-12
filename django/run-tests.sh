@@ -22,7 +22,7 @@ COVERAGE=""
 #COVERAGE="coverage run --append $COVERAGE_OPT"
 
 ## Base test command
-TESTCMD="./manage.py test finance.tests --settings=cohiva.settings_for_tests"
+TESTCMD="./manage.py test --settings=cohiva.settings_for_tests"
 
 ## Full test suite incl. migrations
 $COVERAGE $TESTCMD 2>&1 | tee test.log

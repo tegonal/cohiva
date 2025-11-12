@@ -22,7 +22,7 @@ jobs:
           MARIADB_USER: cohiva
           MARIADB_PASSWORD: cohiva_password
         ports:
-          - 3306:3306
+          - 127.0.0.1:3306:3306
         options: >-
           --health-cmd="healthcheck.sh --connect --innodb_initialized"
           --health-interval=10s
