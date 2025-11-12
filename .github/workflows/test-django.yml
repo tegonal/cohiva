@@ -25,13 +25,17 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=3
-        volumes:
-          # mount your repo file into the init directory
-          - ${{ github.workspace }}/django/scripts/mariadb/init_test.sql:/docker-entrypoint-initdb.d/init.sql:ro
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Execute init-script on MariaDB
+        run: |
+          docker exec -i $(docker ps -qf "ancestor=mariadb:11.8") \
+          mariadb -u root -p$MARIADB_ROOT_PASSWORD cohiva < ${{ github.workspace }}/django/scripts/mariadb/init_test.sql
+        env:
+          MARIADB_ROOT_PASSWORD: itsASecretToEveryone
 
       - name: Initialize submodules
         run: git submodule update --init --recursive
