@@ -16,6 +16,7 @@ CREATE DATABASE IF NOT EXISTS `cohiva_gnucash_test`
 GRANT ALL PRIVILEGES ON `cohiva_django_test`.* TO 'cohiva'@'%';
 GRANT ALL PRIVILEGES ON `cohiva_gnucash_test`.* TO 'cohiva'@'%';
 
+GRANT CREATE, DROP ON *.* TO 'cohiva'@'%';
 GRANT SHOW DATABASES ON *.* TO 'cohiva'@'%';
 GRANT CREATE TABLESPACE ON *.* TO 'cohiva'@'%';
 
