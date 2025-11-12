@@ -39,7 +39,7 @@ jobs:
           cd django && \
           docker build . \
             --target cohiva-platform-django \
-            -t cohiva:test \
+            -t cohiva:test
 
       # 2. Run the test script inside that image
       - name: Run Django tests
@@ -51,5 +51,5 @@ jobs:
             -e GITHUB_ACTIONS=true \
             -e COVERAGE=true \
             cohiva:test \
-            sh -c "/cohiva/setup.py && /cohiva/run-tests.sh"
+            sh -c "cp /cohiva/cohiva/base_config_for_tests.py /cohiva/cohiva/base_config.py && /cohiva/setup.py --use-default-certs && /cohiva/run-tests.sh"
           exit $?
