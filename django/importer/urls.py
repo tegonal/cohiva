@@ -10,6 +10,7 @@ app_name = "importer"
 
 urlpatterns = [
     path("upload/", views.upload_import, name="upload"),
+    path("upload/member-address/", views.upload_member_address_import, name="upload_member_address"),
     path("job/<int:job_id>/", views.import_job_detail, name="detail"),
 ]
 

@@ -186,7 +186,7 @@ class ExcelImporter:
         logger.debug(f"Processing row data: {row_data}")
 
 
-def process_import_job(import_job_id: int) -> Dict:
+def process_import_job(import_job_id: int, importer_class=None) -> Dict:
     """
     Process an import job by ID.
 
@@ -194,11 +194,31 @@ def process_import_job(import_job_id: int) -> Dict:
 
     Args:
         import_job_id: ID of the ImportJob to process
+        importer_class: Optional importer class to use (defaults to ExcelImporter)
 
     Returns:
         Dictionary with processing results
     """
     import_job = ImportJob.objects.get(id=import_job_id)
-    importer = ExcelImporter(import_job)
+
+    if importer_class is None:
+        importer_class = ExcelImporter
+
+    importer = importer_class(import_job)
     return importer.process()
+
+
+def process_member_address_import(import_job_id: int) -> Dict:
+    """
+    Process a member/address import job by ID.
+
+    Args:
+        import_job_id: ID of the ImportJob to process
+
+    Returns:
+        Dictionary with processing results
+    """
+    from .member_address_importer import MemberAddressImporter
+    return process_import_job(import_job_id, MemberAddressImporter)
+
 
