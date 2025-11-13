@@ -102,7 +102,7 @@ class ExcelImporterTest(TestCase):
             # Process the import
             importer = ExcelImporter(job)
 
-            with self.assertRaises(Exception):
+            with self.assertRaises(Exception):  # noqa: B017
                 importer.process()
 
             # Verify job status

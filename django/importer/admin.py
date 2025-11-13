@@ -4,7 +4,7 @@ Admin interface for the importer app.
 
 from django.contrib import admin, messages
 from django.shortcuts import redirect
-from django.urls import path, reverse
+from django.urls import path
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
@@ -36,7 +36,6 @@ class ImportJobAdmin(admin.ModelAdmin):
         "status_badge",
         "records_imported",
         "file_link",
-        "process_button",
     )
     list_filter = ("status", "import_type", "created_at")
     search_fields = ("id", "created_by__username", "created_by__email")
@@ -107,6 +106,7 @@ class ImportJobAdmin(admin.ModelAdmin):
         return format_html(
             '<span style="color: {}; font-weight: bold;">●</span> {}',
             color,
+            '<span style="color: {}; font-weight: bold;">●</span> {}',
             obj.get_status_display(),
         )
 
@@ -115,39 +115,14 @@ class ImportJobAdmin(admin.ModelAdmin):
     def file_link(self, obj):
         """Display clickable file link."""
         if obj.file:
-            return format_html('<a href="{}">{}</a>', obj.file.url, obj.file.name)
+            # just return the first 30 characters of the file name for display
+            file_name = obj.file.name[:30] + "..." if len(obj.file.name) > 30 else obj.file.name
+            return format_html('<a href="{}">{}</a>', obj.file.url, file_name)
         return "-"
 
     file_link.short_description = _("Datei")
 
-    def process_button(self, obj):
-        """Display process button for pending imports."""
-        if obj.status == "pending":
-            url = reverse("admin:importer_importjob_process", args=[obj.id])
-            return format_html(
-                '<a class="button" href="{}" style="padding: 5px 10px; background: #417690; color: white; text-decoration: none; border-radius: 4px;">{}</a>',
-                url,
-                _("Import verarbeiten"),
-            )
-        elif obj.status == "processing":
-            return format_html(
-                '<span style="color: blue;">⏳ {}</span>',
-                _("Wird verarbeitet..."),
-            )
-        elif obj.status == "completed":
-            return format_html(
-                '<span style="color: green;">✓ {}</span>',
-                _("Abgeschlossen"),
-            )
-        elif obj.status == "failed":
-            return format_html(
-                '<span style="color: red;">✗ {}</span>',
-                _("Fehlgeschlagen"),
-            )
-        return "-"
-
-    process_button.short_description = _("Aktion")
-
+    @admin.display(description=_("Import Job ausführen"))
     def process_import_view(self, request, job_id):
         """Process an import job."""
         import_job = self.get_object(request, job_id)
