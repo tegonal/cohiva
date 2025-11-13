@@ -5,13 +5,13 @@ Management command to process pending member/address imports.
 from django.core.management.base import BaseCommand, CommandError
 
 from importer.models import ImportJob
-from importer.services import process_member_address_import
+from importer.services import process_import_job
 
 
 class Command(BaseCommand):
-    """Process pending member/address import jobs."""
+    """Process pending import jobs."""
 
-    help = "Process pending member/address import jobs"
+    help = "Process pending import jobs"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -36,7 +36,7 @@ class Command(BaseCommand):
                 job = ImportJob.objects.get(id=job_id)
                 self.stdout.write(f"Processing import job {job_id}...")
 
-                results = process_member_address_import(job_id)
+                results = process_import_job(job_id)
 
                 self.stdout.write(
                     self.style.SUCCESS(
@@ -77,7 +77,7 @@ class Command(BaseCommand):
             for job in pending_jobs:
                 try:
                     self.stdout.write(f"Processing job {job.id}...")
-                    results = process_member_address_import(job.id)
+                    results = process_import_job(job.id)
                     success_total += results["success_count"]
                     error_total += results["error_count"]
 

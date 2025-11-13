@@ -6,7 +6,10 @@ from django.contrib import admin, messages
 from django.shortcuts import redirect
 from django.urls import path
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
+from unfold.decorators import action
+from unfold.enums import ActionVariant
 
 from .models import ImportJob, ImportRecord
 from .services import process_import_job
@@ -82,18 +85,6 @@ class ImportJobAdmin(admin.ModelAdmin):
         ),
     )
 
-    def get_urls(self):
-        """Add custom URLs for processing imports."""
-        urls = super().get_urls()
-        custom_urls = [
-            path(
-                "<int:job_id>/process/",
-                self.admin_site.admin_view(self.process_import_view),
-                name="importer_importjob_process",
-            ),
-        ]
-        return custom_urls + urls
-
     def status_badge(self, obj):
         """Display status with color coding."""
         colors = {
@@ -106,7 +97,6 @@ class ImportJobAdmin(admin.ModelAdmin):
         return format_html(
             '<span style="color: {}; font-weight: bold;">●</span> {}',
             color,
-            '<span style="color: {}; font-weight: bold;">●</span> {}',
             obj.get_status_display(),
         )
 
@@ -117,13 +107,22 @@ class ImportJobAdmin(admin.ModelAdmin):
         if obj.file:
             # just return the first 30 characters of the file name for display
             file_name = obj.file.name[:30] + "..." if len(obj.file.name) > 30 else obj.file.name
-            return format_html('<a href="{}">{}</a>', obj.file.url, file_name)
+            return format_html('<a href="{}" title="{}">{}</a>', obj.file.url, obj.file.name, file_name)
         return "-"
 
     file_link.short_description = _("Datei")
 
-    @admin.display(description=_("Import Job ausführen"))
-    def process_import_view(self, request, job_id):
+    actions_list = [
+        "process_import_job",
+    ]
+
+    @action(
+        description=str(_("Import Job ausführen")),
+        icon="database_upload",
+        url_path="process-import-job",
+        variant=ActionVariant.PRIMARY,
+    )
+    def process_import_job(self, request, job_id):
         """Process an import job."""
         import_job = self.get_object(request, job_id)
 

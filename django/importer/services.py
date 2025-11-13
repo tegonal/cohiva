@@ -216,17 +216,3 @@ def process_import_job(import_job_id: int, importer_class=None) -> dict:
     importer = importer_class(import_job)
     return importer.process()
 
-
-def process_member_address_import(import_job_id: int) -> dict:
-    """
-    Process a member/address import job by ID.
-
-    Args:
-        import_job_id: ID of the ImportJob to process
-
-    Returns:
-        dictionary with processing results
-    """
-    from .importer_member_address import ImporterMemberAddress
-
-    return process_import_job(import_job_id, ImporterMemberAddress)

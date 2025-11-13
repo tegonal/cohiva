@@ -125,7 +125,7 @@ class ImporterTenantProperty(ExcelImporter):
         Returns:
             RentalUnit instance
         """
-        unit_number = row_data.get("Nummer", "").strip()
+        unit_number = str(row_data.get("Nummer", "")).strip()
         if not unit_number:
             raise ValidationError("Nummer (RentalUnit name) ist erforderlich")
 
