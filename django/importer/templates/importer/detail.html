@@ -1,0 +1,197 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="container" style="max-width: 1200px; margin: 20px auto;">
+    <h1>{% trans "Import Job Details" %} #{{ import_job.id }}</h1>
+
+    <div class="module" style="margin-top: 20px;">
+        <h2>{% trans "Job Information" %}</h2>
+        <table style="width: 100%; margin: 20px;">
+            <tr>
+                <th style="text-align: left; width: 200px;">{% trans "Status" %}:</th>
+                <td>
+                    <span style="{% if import_job.status == 'completed' %}color: green;{% elif import_job.status == 'failed' %}color: red;{% elif import_job.status == 'processing' %}color: blue;{% else %}color: gray;{% endif %} font-weight: bold;">
+                        {{ import_job.get_status_display }}
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <th style="text-align: left;">{% trans "Created at" %}:</th>
+                <td>{{ import_job.created_at }}</td>
+            </tr>
+            <tr>
+                <th style="text-align: left;">{% trans "Created by" %}:</th>
+                <td>{{ import_job.created_by }}</td>
+            </tr>
+            <tr>
+                <th style="text-align: left;">{% trans "File" %}:</th>
+                <td>
+                    {% if import_job.file %}
+                    <a href="{{ import_job.file.url }}" download>{{ import_job.file.name }}</a>
+                    {% else %}
+                    -
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <th style="text-align: left;">{% trans "Records imported" %}:</th>
+                <td>{{ import_job.records_imported }}</td>
+            </tr>
+            {% if import_job.error_message %}
+            <tr>
+                <th style="text-align: left; vertical-align: top;">{% trans "Error message" %}:</th>
+                <td><pre style="background: #fee; padding: 10px; border-radius: 4px;">{{ import_job.error_message }}</pre></td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+
+    {% if import_job.records.exists %}
+    <div class="module" style="margin-top: 30px;">
+        <h2>{% trans "Import Records" %}</h2>
+        <table style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>{% trans "Row" %}</th>
+                    <th>{% trans "Status" %}</th>
+                    <th>{% trans "Data" %}</th>
+                    <th>{% trans "Error" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in import_job.records.all %}
+                <tr style="{% if not record.success %}background-color: #fee;{% endif %}">
+                    <td>{{ record.row_number }}</td>
+                    <td>
+                        {% if record.success %}
+                        <span style="color: green;">✓</span>
+                        {% else %}
+                        <span style="color: red;">✗</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <details>
+                            <summary style="cursor: pointer;">{% trans "View data" %}</summary>
+                            <pre style="margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 4px; font-size: 11px;">{{ record.data|pprint }}</pre>
+                        </details>
+                    </td>
+                    <td>
+                        {% if record.error_message %}
+                        <span style="color: red; font-size: 12px;">{{ record.error_message }}</span>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if import_job.result_data %}
+    <div class="module" style="margin-top: 30px;">
+        <h2>{% trans "Processing Results" %}</h2>
+        <pre style="padding: 20px; background: #f5f5f5; border-radius: 4px; overflow: auto;">{{ import_job.result_data|pprint }}</pre>
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 20px;">
+        <p>
+            <a href="{% url 'importer:upload' %}">« {% trans "Back to upload" %}</a> |
+            <a href="{% url 'admin:index' %}">{% trans "Admin home" %}</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="container" style="max-width: 1200px; margin: 20px auto;">
+    <h1>{% trans "Excel Import" %}</h1>
+
+    <div class="module" style="margin-top: 20px;">
+        <h2>{% trans "Upload Excel File" %}</h2>
+        <form method="post" enctype="multipart/form-data" style="padding: 20px;">
+            {% csrf_token %}
+
+            {% if messages %}
+            <div class="messagelist">
+                {% for message in messages %}
+                <div class="{% if message.tags %}{{ message.tags }}{% endif %}" style="padding: 10px; margin-bottom: 10px; border-radius: 4px;">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="form-row">
+                <div>
+                    <label for="{{ form.file.id_for_label }}">{{ form.file.label }}:</label>
+                    {{ form.file }}
+                    {% if form.file.errors %}
+                        <ul class="errorlist">
+                        {% for error in form.file.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                        </ul>
+                    {% endif %}
+                    <p class="help" style="color: #666; font-size: 12px; margin-top: 5px;">
+                        {% trans "Supported formats: .xlsx, .xls (max 10MB)" %}
+                    </p>
+                </div>
+            </div>
+
+            <div class="submit-row" style="margin-top: 20px;">
+                <input type="submit" value="{% trans 'Upload and Process' %}" class="default">
+            </div>
+        </form>
+    </div>
+
+    {% if recent_jobs %}
+    <div class="module" style="margin-top: 30px;">
+        <h2>{% trans "Recent Import Jobs" %}</h2>
+        <table style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>{% trans "ID" %}</th>
+                    <th>{% trans "Date" %}</th>
+                    <th>{% trans "File" %}</th>
+                    <th>{% trans "Status" %}</th>
+                    <th>{% trans "Records" %}</th>
+                    <th>{% trans "Actions" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in recent_jobs %}
+                <tr>
+                    <td>{{ job.id }}</td>
+                    <td>{{ job.created_at|date:"Y-m-d H:i" }}</td>
+                    <td>{{ job.file.name|truncatechars:40 }}</td>
+                    <td>
+                        <span style="{% if job.status == 'completed' %}color: green;{% elif job.status == 'failed' %}color: red;{% elif job.status == 'processing' %}color: blue;{% else %}color: gray;{% endif %} font-weight: bold;">
+                            {{ job.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ job.records_imported }}</td>
+                    <td>
+                        <a href="{% url 'importer:detail' job.id %}">{% trans "Details" %}</a>
+                        {% if job.file %}
+                        | <a href="{{ job.file.url }}" download>{% trans "Download" %}</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <div style="margin-top: 20px;">
+        <p><a href="{% url 'admin:index' %}">« {% trans "Back to admin" %}</a></p>
+    </div>
+</div>
+{% endblock %}
+
