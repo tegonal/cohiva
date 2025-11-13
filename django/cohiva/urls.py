@@ -55,6 +55,11 @@ if "report" in settings.COHIVA_FEATURES:
         # path('api/v1/report/', include('report.api_urls')),
     ]
 
+if "importer" in settings.COHIVA_FEATURES:
+    urlpatterns += [
+        path("importer/", include("importer.urls")),
+    ]
+
 if "portal" in settings.COHIVA_FEATURES:
     from portal.auth import CohivaAuthorizationView
 
