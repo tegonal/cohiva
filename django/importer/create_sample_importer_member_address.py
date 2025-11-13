@@ -6,7 +6,6 @@ members and addresses from legacy systems.
 """
 
 import openpyxl
-from datetime import date
 
 # Create a new workbook
 workbook = openpyxl.Workbook()
@@ -238,4 +237,3 @@ filename = "sample_member_address_import.xlsx"
 workbook.save(filename)
 print(f"Sample Excel file created: {filename}")
 print(f"Contains {len(sample_data)} sample records with all required columns.")
-

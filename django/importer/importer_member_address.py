@@ -5,19 +5,22 @@ This module handles the import of member and address data from Excel files
 with the specific column structure from the legacy system.
 """
 
+from __future__ import annotations
+
 import logging
 from datetime import datetime
-from typing import Dict, Optional
 
 from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 
 from geno.models import Address, BankAccount, Member
+
 from .services import ExcelImporter
 
 logger = logging.getLogger(__name__)
 
 
-class MemberAddressImporter(ExcelImporter):
+class ImporterMemberAddress(ExcelImporter):
     """
     Specialized importer for Member and Address data.
 
@@ -45,19 +48,19 @@ class MemberAddressImporter(ExcelImporter):
         "Divers": "Divers",
     }
 
-    def _process_single_row(self, row_data: Dict):
+    def _process_single_row(self, row_data: dict):
         """
         Process a single row and create/update Address and Member records.
 
         Args:
-            row_data: Dictionary containing the row data from Excel
+            row_data: dictionary containing the row data from Excel
 
         Raises:
             ValidationError: If the row data is invalid
         """
         # Validate required fields
         if not row_data.get("P_nachname") and not row_data.get("P_vorname"):
-            raise ValidationError("Mindestens Vor- oder Nachname erforderlich")
+            raise ValidationError(_("Mindestens Vor- oder Nachname erforderlich"))
 
         # Check if this is an organization
         is_organization = bool(row_data.get("P_ansprechperson"))
@@ -71,12 +74,12 @@ class MemberAddressImporter(ExcelImporter):
 
         logger.info(f"Successfully processed {address}")
 
-    def _create_or_update_address(self, row_data: Dict, is_organization: bool) -> Address:
+    def _create_or_update_address(self, row_data: dict, is_organization: bool) -> Address:
         """
         Create or update an Address record from row data.
 
         Args:
-            row_data: Dictionary containing the row data
+            row_data: dictionary containing the row data
             is_organization: Whether this is an organization
 
         Returns:
@@ -113,8 +116,8 @@ class MemberAddressImporter(ExcelImporter):
 
         # Map basic fields - Ensure all have defaults
         if is_organization:
-            address.organization = row_data.get("P_ansprechperson") or ""
-            address.name = row_data.get("P_nachname") or ""
+            address.organization = row_data.get("P_nachname") or ""
+            address.name = row_data.get("P_ansprechperson") or ""
             address.first_name = row_data.get("P_vorname") or ""
         else:
             address.organization = ""
@@ -153,10 +156,11 @@ class MemberAddressImporter(ExcelImporter):
         address.country = row_data.get("P_land") or "Schweiz"
 
         # Contact fields - Priority: P_telp/P_mobilep for private, P_telg/P_mobileg for office
-        p_telp = row_data.get("P_telp") or ""
-        p_mobilep = row_data.get("P_mobilep") or ""
-        p_telg = row_data.get("P_telg") or ""
-        p_mobileg = row_data.get("P_mobileg") or ""
+        # Clean phone numbers to remove extra leading zeros
+        p_telp = self._clean_phone_number(row_data.get("P_telp") or "")
+        p_mobilep = self._clean_phone_number(row_data.get("P_mobilep") or "")
+        p_telg = self._clean_phone_number(row_data.get("P_telg") or "")
+        p_mobileg = self._clean_phone_number(row_data.get("P_mobileg") or "")
 
         address.telephone = p_telp or p_mobilep
         address.mobile = p_mobilep if p_telp else ""
@@ -202,12 +206,12 @@ class MemberAddressImporter(ExcelImporter):
 
         return address
 
-    def _create_or_update_member(self, row_data: Dict, address: Address):
+    def _create_or_update_member(self, row_data: dict, address: Address):
         """
         Create or update a Member record.
 
         Args:
-            row_data: Dictionary containing the row data
+            row_data: dictionary containing the row data
             address: Associated Address instance
         """
         # Try to find existing member
@@ -221,19 +225,19 @@ class MemberAddressImporter(ExcelImporter):
         # Parse join date from X_heute
         date_join = self._parse_date(row_data.get("X_heute"))
         if not date_join:
-            raise ValidationError("Eintrittsdatum (X_heute) fehlt oder ist ungültig")
+            raise ValidationError(str(_("Eintrittsdatum (X_heute) fehlt oder ist ungültig")))
 
         member.date_join = date_join
 
         # Save member
         member.save()
 
-    def _process_bank_accounts(self, row_data: Dict, address: Address):
+    def _process_bank_accounts(self, row_data: dict, address: Address):
         """
         Process bank account information and link to address.
 
         Args:
-            row_data: Dictionary containing the row data
+            row_data: dictionary containing the row data
             address: Associated Address instance
         """
         # Primary bank account (DD - Direct Debit)
@@ -246,7 +250,9 @@ class MemberAddressImporter(ExcelImporter):
             iban, financial_institution = self._parse_bank_account_string(zs_dd)
 
             if iban:
-                bank_account = self._get_or_create_bank_account(iban, holder_dd, financial_institution)
+                bank_account = self._get_or_create_bank_account(
+                    iban, holder_dd, financial_institution
+                )
                 address.bankaccount = bank_account
                 address.save()
 
@@ -271,26 +277,28 @@ class MemberAddressImporter(ExcelImporter):
 
         # Extract IBAN (Swiss IBAN: CH followed by 2 digits and up to 17 alphanumeric characters, may have spaces)
         # Pattern allows for optional spaces between characters
-        iban_pattern = r'CH\s*\d{2}[\s\dA-Z]{1,23}'
+        iban_pattern = r"CH\s*\d{2}[\s\dA-Z]{1,23}"
         iban_match = re.search(iban_pattern, bank_string, re.IGNORECASE)
         if iban_match:
             # Remove all spaces and uppercase
-            iban = re.sub(r'\s+', '', iban_match.group()).upper()
+            iban = re.sub(r"\s+", "", iban_match.group()).upper()
         else:
             iban = ""
 
         # Extract financial institution (usually the first part before first comma)
         financial_institution = ""
-        parts = bank_string.split(',')
+        parts = bank_string.split(",")
         if parts:
             first_part = parts[0].strip()
             # Remove common patterns like "Konto-Nr.", "Clearing-Nr." etc.
-            if not re.search(r'(Konto|Clearing|IBAN)', first_part, re.IGNORECASE):
+            if not re.search(r"(Konto|Clearing|IBAN)", first_part, re.IGNORECASE):
                 financial_institution = first_part
 
         return (iban, financial_institution)
 
-    def _get_or_create_bank_account(self, iban: str, account_holder: str = "", financial_institution: str = "") -> Optional[BankAccount]:
+    def _get_or_create_bank_account(
+        self, iban: str, account_holder: str = "", financial_institution: str = ""
+    ) -> BankAccount | None:
         """
         Get or create a BankAccount instance.
 
@@ -321,12 +329,12 @@ class MemberAddressImporter(ExcelImporter):
         bank_account.save()
         return bank_account
 
-    def _get_primary_email(self, row_data: Dict) -> str:
+    def _get_primary_email(self, row_data: dict) -> str:
         """
         Extract primary email from row data.
 
         Args:
-            row_data: Dictionary containing the row data
+            row_data: dictionary containing the row data
 
         Returns:
             Email address or empty string
@@ -397,10 +405,11 @@ class MemberAddressImporter(ExcelImporter):
 
         # Remove common prefixes like "Postfach", "PF", etc.
         import re
-        postfach_cleaned = re.sub(r'^(Postfach|postfach|PF|Pf|pf)\s*', '', postfach)
+
+        postfach_cleaned = re.sub(r"^(Postfach|postfach|PF|Pf|pf)\s*", "", postfach)
 
         # Extract number
-        number_match = re.search(r'\d+', postfach_cleaned)
+        number_match = re.search(r"\d+", postfach_cleaned)
         if number_match:
             return (True, number_match.group())
 
@@ -436,7 +445,48 @@ class MemberAddressImporter(ExcelImporter):
         # If no clear split, assume it's all city name
         return ("", plzort)
 
-    def _parse_date(self, date_str) -> Optional[datetime.date]:
+    def _clean_phone_number(self, phone: str) -> str:
+        """
+        Clean phone number by removing extra leading zeros.
+
+        Swiss phone numbers follow the pattern: 0XX YYY ZZ AA
+        If there's an additional leading 0, strip it.
+
+        Args:
+            phone: Phone number string
+
+        Returns:
+            Cleaned phone number
+        """
+        import re
+
+        if not phone:
+            return ""
+
+        phone = phone.strip()
+
+        # Remove all whitespace and common separators for analysis
+        phone_digits = re.sub(r"[\s\-./()]", "", phone)
+
+        # Check if it matches Swiss pattern with extra leading zero: 00XX...
+        # Swiss numbers start with 0XX (where XX is 2 digits), so 00XX is invalid
+        if re.match(r"^00\d{2}", phone_digits):
+            # Remove the first 0
+            phone_digits = phone_digits[1:]
+
+            # Try to reconstruct with original formatting style
+            # If original had spaces, try to maintain similar formatting
+            if " " in phone or "-" in phone or "/" in phone or "." in phone:
+                # Format as: 0XX YYY ZZ AA (standard Swiss format)
+                if len(phone_digits) >= 10:
+                    return f"{phone_digits[:3]} {phone_digits[3:6]} {phone_digits[6:8]} {phone_digits[8:]}"
+                else:
+                    return phone_digits
+            return phone_digits
+
+        return phone
+
+    def _parse_date(self, date_str) -> datetime.date | None:
         """
         Parse date from various formats.
 
@@ -452,7 +502,7 @@ class MemberAddressImporter(ExcelImporter):
         # If already a date/datetime object
         if isinstance(date_str, datetime):
             return date_str.date()
-        if hasattr(date_str, 'date'):
+        if hasattr(date_str, "date"):
             return date_str.date()
 
         # Try parsing string formats
@@ -478,4 +528,3 @@ class MemberAddressImporter(ExcelImporter):
 
         logger.warning(f"Could not parse date: {date_str}")
         return None
-

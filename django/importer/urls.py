@@ -1,16 +1,11 @@
 """
 URL configuration for the importer app.
+
+Note: This app only uses Django Admin for managing imports.
+No custom URLs are needed.
 """
-
-from django.urls import path
-
-from . import views
 
 app_name = "importer"
 
-urlpatterns = [
-    path("upload/", views.upload_import, name="upload"),
-    path("upload/member-address/", views.upload_member_address_import, name="upload_member_address"),
-    path("job/<int:job_id>/", views.import_job_detail, name="detail"),
-]
-
+# Empty URL patterns - all functionality is in Django Admin
+urlpatterns = []

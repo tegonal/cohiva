@@ -1,5 +1,8 @@
 """
-Tests for importer views.
+Tests for importer admin interface.
+
+Note: The importer app only uses Django Admin for managing imports.
+All functionality is tested through the admin interface.
 """
 
 from django.contrib.auth import get_user_model
@@ -11,34 +14,29 @@ from ..models import ImportJob
 User = get_user_model()
 
 
-class ImporterViewsTest(TestCase):
-    """Tests for importer views."""
+class ImporterAdminTest(TestCase):
+    """Tests for importer admin interface."""
 
     def setUp(self):
-        """Set up test client and user."""
+        """Set up test client and admin user."""
         self.client = Client()
-        self.user = User.objects.create_user(
-            username="testuser", email="test@example.com", password="testpass123"
+        self.admin_user = User.objects.create_superuser(
+            username="admin", email="admin@example.com", password="adminpass123"
         )
-        self.client.login(username="testuser", password="testpass123")
+        self.client.login(username="admin", password="adminpass123")
 
-    def test_upload_view_get(self):
-        """Test GET request to upload view."""
-        response = self.client.get(reverse("importer:upload"))
+    def test_admin_import_job_list(self):
+        """Test that import job list is accessible in admin."""
+        response = self.client.get(reverse("admin:importer_importjob_changelist"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Upload Excel File")
 
-    def test_upload_view_requires_login(self):
-        """Test that upload view requires login."""
-        self.client.logout()
-        response = self.client.get(reverse("importer:upload"))
-        self.assertEqual(response.status_code, 302)  # Redirect to login
-
-    def test_import_job_detail_view(self):
-        """Test import job detail view."""
-        job = ImportJob.objects.create(created_by=self.user, status="completed")
-        response = self.client.get(reverse("importer:detail", args=[job.id]))
+    def test_admin_import_job_add(self):
+        """Test that import job add page is accessible in admin."""
+        response = self.client.get(reverse("admin:importer_importjob_add"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Import Job Details")
-# Tests module for importer app
 
+    def test_admin_import_job_change(self):
+        """Test that import job change page is accessible in admin."""
+        job = ImportJob.objects.create(created_by=self.admin_user, status="pending")
+        response = self.client.get(reverse("admin:importer_importjob_change", args=[job.id]))
+        self.assertEqual(response.status_code, 200)

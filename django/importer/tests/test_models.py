@@ -67,4 +67,3 @@ class ImportRecordModelTest(TestCase):
             success=True,
         )
         self.assertIn("Row 1", str(record))
-

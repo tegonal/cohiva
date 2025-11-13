@@ -3,11 +3,11 @@ Business logic for processing Excel imports.
 """
 
 import logging
-from typing import Dict, List
 
 import openpyxl
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.utils.translation import gettext_lazy as _
 
 from .models import ImportJob, ImportRecord
 
@@ -28,12 +28,12 @@ class ExcelImporter:
         self.workbook = None
         self.worksheet = None
 
-    def process(self) -> Dict:
+    def process(self) -> dict:
         """
         Process the import job.
 
         Returns:
-            Dictionary with processing results
+            dictionary with processing results
         """
         try:
             self.import_job.status = "processing"
@@ -78,7 +78,7 @@ class ExcelImporter:
         except Exception as e:
             raise ValidationError(f"Failed to load Excel file: {str(e)}")
 
-    def _extract_data(self) -> List[Dict]:
+    def _extract_data(self) -> list[dict]:
         """
         Extract data from the worksheet.
 
@@ -99,7 +99,7 @@ class ExcelImporter:
         # Process data rows
         for row_idx, row in enumerate(rows[1:], start=2):
             row_data = {}
-            for col_idx, (header, value) in enumerate(zip(headers, row)):
+            for header, value in zip(headers, row):
                 if header:  # Skip columns without headers
                     row_data[str(header).strip()] = value
             if any(row_data.values()):  # Skip completely empty rows
@@ -108,7 +108,7 @@ class ExcelImporter:
 
         return data
 
-    def _process_rows(self, data: List[Dict]) -> Dict:
+    def _process_rows(self, data: list[dict]) -> dict:
         """
         Process extracted rows.
 
@@ -116,7 +116,7 @@ class ExcelImporter:
             data: List of row dictionaries to process
 
         Returns:
-            Dictionary with processing statistics
+            dictionary with processing statistics
         """
         results = {
             "total_rows": len(data),
@@ -154,27 +154,25 @@ class ExcelImporter:
                     success=False,
                 )
                 results["error_count"] += 1
-                results["errors"].append(
-                    {"row": row_number, "error": str(e), "data": row_data}
-                )
+                results["errors"].append({"row": row_number, "error": str(e), "data": row_data})
 
         return results
 
-    def _process_single_row(self, row_data: Dict):
+    def _process_single_row(self, row_data: dict):
         """
         Process a single row of data.
 
         Override this method in subclasses to implement specific business logic.
 
         Args:
-            row_data: Dictionary containing the row data
+            row_data: dictionary containing the row data
 
         Raises:
             ValidationError: If the row data is invalid
         """
         # Default implementation: just validate that row has some data
         if not row_data:
-            raise ValidationError("Row has no data")
+            raise ValidationError(str(_("Zeile hat keine Daten")))
 
         # Add your custom processing logic here
         # For example:
@@ -186,7 +184,7 @@ class ExcelImporter:
         logger.debug(f"Processing row data: {row_data}")
 
 
-def process_import_job(import_job_id: int, importer_class=None) -> Dict:
+def process_import_job(import_job_id: int, importer_class=None) -> dict:
     """
     Process an import job by ID.
 
@@ -194,21 +192,32 @@ def process_import_job(import_job_id: int, importer_class=None) -> Dict:
 
     Args:
         import_job_id: ID of the ImportJob to process
-        importer_class: Optional importer class to use (defaults to ExcelImporter)
+        importer_class: Optional importer class to use (defaults to auto-detect based on import_type)
 
     Returns:
-        Dictionary with processing results
+        dictionary with processing results
     """
     import_job = ImportJob.objects.get(id=import_job_id)
 
     if importer_class is None:
-        importer_class = ExcelImporter
+        # Auto-detect importer based on import_type
+        if import_job.import_type == "member_address":
+            from .importer_member_address import ImporterMemberAddress
+
+            importer_class = ImporterMemberAddress
+        elif import_job.import_type == "tenant_property":
+            from .importer_tenant_property import ImporterTenantProperty
+
+            importer_class = ImporterTenantProperty
+        else:
+            # Default fallback
+            importer_class = ExcelImporter
 
     importer = importer_class(import_job)
     return importer.process()
 
 
-def process_member_address_import(import_job_id: int) -> Dict:
+def process_member_address_import(import_job_id: int) -> dict:
     """
     Process a member/address import job by ID.
 
@@ -216,9 +225,8 @@ def process_member_address_import(import_job_id: int) -> Dict:
         import_job_id: ID of the ImportJob to process
 
     Returns:
-        Dictionary with processing results
+        dictionary with processing results
     """
-    from .member_address_importer import MemberAddressImporter
-    return process_import_job(import_job_id, MemberAddressImporter)
+    from .importer_member_address import ImporterMemberAddress
 
-
+    return process_import_job(import_job_id, ImporterMemberAddress)

@@ -13,7 +13,7 @@ class ImportJobForm(forms.ModelForm):
 
     class Meta:
         model = ImportJob
-        fields = ["file"]
+        fields = ["import_type", "file"]
         widgets = {
             "file": forms.FileInput(attrs={"accept": ".xlsx,.xls"}),
         }
@@ -25,10 +25,9 @@ class ImportJobForm(forms.ModelForm):
             # Check file extension
             if not file.name.lower().endswith((".xlsx", ".xls")):
                 raise forms.ValidationError(
-                    _("Please upload a valid Excel file (.xlsx or .xls)")
+                    _("Bitte laden Sie eine gültige Excel-Datei hoch (.xlsx oder .xls)")
                 )
             # Check file size (limit to 10MB)
             if file.size > 10 * 1024 * 1024:
-                raise forms.ValidationError(_("File size cannot exceed 10MB"))
+                raise forms.ValidationError(_("Dateigrösse darf 10MB nicht überschreiten"))
         return file
-

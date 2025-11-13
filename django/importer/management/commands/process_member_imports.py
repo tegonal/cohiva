@@ -89,12 +89,10 @@ class Command(BaseCommand):
                     )
                 except Exception as e:
                     failed_jobs.append((job.id, str(e)))
-                    self.stdout.write(
-                        self.style.ERROR(f"  ✗ Job {job.id} failed: {str(e)}")
-                    )
+                    self.stdout.write(self.style.ERROR(f"  ✗ Job {job.id} failed: {str(e)}"))
 
             # Summary
-            self.stdout.write("\n" + "="*60)
+            self.stdout.write("\n" + "=" * 60)
             self.stdout.write(
                 self.style.SUCCESS(
                     f"Processed {count} jobs: {success_total} total records imported"
@@ -102,23 +100,17 @@ class Command(BaseCommand):
             )
 
             if error_total > 0:
-                self.stdout.write(
-                    self.style.WARNING(f"Total errors: {error_total}")
-                )
+                self.stdout.write(self.style.WARNING(f"Total errors: {error_total}"))
 
             if failed_jobs:
                 self.stdout.write(
-                    self.style.ERROR(
-                        f"Failed jobs: {', '.join([str(j[0]) for j in failed_jobs])}"
-                    )
+                    self.style.ERROR(f"Failed jobs: {', '.join([str(j[0]) for j in failed_jobs])}")
                 )
 
         else:
             # No arguments provided
             self.stdout.write(
-                self.style.WARNING(
-                    "Please specify --job-id <ID> or --all to process imports"
-                )
+                self.style.WARNING("Please specify --job-id <ID> or --all to process imports")
             )
 
             # Show pending jobs
@@ -134,4 +126,3 @@ class Command(BaseCommand):
                     )
                 if count > 10:
                     self.stdout.write(f"  ... and {count - 10} more")
-

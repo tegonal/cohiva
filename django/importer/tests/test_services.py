@@ -115,11 +115,11 @@ class ExcelImporterTest(TestCase):
 
     def test_process_import_job_by_id(self):
         """Test processing an import job by ID."""
-        # Create test Excel file
+        # Create test Excel file with proper member_address columns
         test_data = [
-            ["Name", "Value"],
-            ["Test 1", 100],
-            ["Test 2", 200],
+            ["P_nachname", "P_vorname", "email"],
+            ["Müller", "Hans", "hans.mueller@example.com"],
+            ["Schmidt", "Anna", "anna.schmidt@example.com"],
         ]
         excel_path = self.create_test_excel_file(test_data)
 
@@ -128,6 +128,7 @@ class ExcelImporterTest(TestCase):
             with open(excel_path, "rb") as f:
                 job = ImportJob.objects.create(
                     created_by=self.user,
+                    import_type="member_address",  # Set import type
                     file=SimpleUploadedFile("test.xlsx", f.read()),
                 )
 
@@ -141,4 +142,3 @@ class ExcelImporterTest(TestCase):
         finally:
             # Clean up
             Path(excel_path).unlink(missing_ok=True)
-
