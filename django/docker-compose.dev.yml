@@ -62,6 +62,24 @@ services:
       MP_SMTP_AUTH_ACCEPT_ANY: "1"
       MP_SMTP_AUTH_ALLOW_INSECURE: "1"
 
+  cohiva:
+    image: ghcr.io/tegonal/cohiva:v0
+    container_name: cohiva
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=cohiva.settings_docker_compose
+      - COHIVA_INSTANCE_PATH=/instance_files/override_files
+    volumes:
+      - ./instance_files/override_files:/instance_files/override_files:ro  
+      - static_data:/tmp/static                            # Collected static files
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   mariadb_data:
     name: cohiva-dev-mariadb-data
@@ -69,3 +87,5 @@ volumes:
     name: cohiva-dev-redis-data
   mailpit_data:
     name: cohiva-dev-mailpit-data
+  static_data:
+    name: cohiva-dev-static-data

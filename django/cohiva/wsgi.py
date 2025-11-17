@@ -11,8 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-project = "cohiva"
-
-os.environ["DJANGO_SETTINGS_MODULE"] = "%s.settings_production" % project
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cohiva.settings_production')
 
 application = get_wsgi_application()

@@ -22,7 +22,6 @@ RUN pip install --no-cache-dir gunicorn whitenoise
 ENV GUNICORN_WORKERS=2 \
     GUNICORN_BIND=0.0.0.0:8000 \
     GUNICORN_TIMEOUT=120 \
-    DJANGO_SETTINGS_MODULE=cohiva.settings_docker \
     DJANGO_DEBUG=1
 EXPOSE 8000
 
@@ -30,6 +29,14 @@ FROM cohiva-platform-django AS cohiva-platform-app
 
 # Create directory for static files
 RUN mkdir -p /tmp/static
+RUN mkdir -p /instance_files/override_files
+
+# Create directories for instance-specific files and logs
+RUN mkdir -p /var/www/cohiva/django-test/log
+RUN mkdir -p /var/www/cohiva/django-production/log
+
+# Set environment variable for instance path to match docker-compose
+ENV COHIVA_INSTANCE_PATH=/instance_files/override_files
 
 # Use debug WSGI wrapper without unsupported static-map
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--log-level", "debug", "cohiva.wsgi_debug:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--log-level", "info", "cohiva.wsgi:application"]
