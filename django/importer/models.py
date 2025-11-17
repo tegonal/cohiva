@@ -6,10 +6,12 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from geno.models import GenoBase
+
 User = get_user_model()
 
 
-class ImportJob(models.Model):
+class ImportJob(GenoBase):
     """Track import jobs and their status."""
 
     STATUS_CHOICES = [
@@ -23,16 +25,7 @@ class ImportJob(models.Model):
         ("member_address", _("Mitglieder und Adressen")),
         ("tenant_property", _("Mieter und Liegenschaften")),
     ]
-
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Erstellt am"))
-    updated_at = models.DateTimeField(auto_now=True, verbose_name=_("Aktualisiert am"))
-    created_by = models.ForeignKey(
-        User,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        verbose_name=_("Erstellt von"),
-    )
+    name = models.CharField(max_length=255, verbose_name=_("Name des Import-Jobs"), blank=True)
     import_type = models.CharField(
         max_length=20,
         choices=IMPORT_TYPE_CHOICES,
@@ -53,15 +46,14 @@ class ImportJob(models.Model):
     class Meta:
         verbose_name = _("Import-Auftrag")
         verbose_name_plural = _("Import-Aufträge")
-        ordering = ["-created_at"]
 
     def __str__(self):
         return (
-            f"Import Job {self.id} - {self.status} ({self.created_at.strftime('%Y-%m-%d %H:%M')})"
+            f"Import Job {self.id} - {self.status}"
         )
 
 
-class ImportRecord(models.Model):
+class ImportRecord(GenoBase):
     """Track individual records from an import."""
 
     job = models.ForeignKey(
@@ -70,9 +62,9 @@ class ImportRecord(models.Model):
         related_name="records",
         verbose_name=_("Import-Auftrag"),
     )
+    name = models.CharField(max_length=255, verbose_name=_("Name"), blank=True, )
     row_number = models.IntegerField(verbose_name=_("Zeilennummer"))
     data = models.JSONField(verbose_name=_("Daten"))
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Erstellt am"))
     error_message = models.TextField(blank=True, verbose_name=_("Fehlermeldung"))
     success = models.BooleanField(default=False, verbose_name=_("Erfolgreich"))
 
