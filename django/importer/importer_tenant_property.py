@@ -28,6 +28,28 @@ class ImporterTenantProperty(ExcelImporter):
     Handles Excel files with property and tenant information.
     """
 
+    def _has_existing(self, row_data: dict) -> bool:
+        """
+        Check if an RentalUnit already exists based on import_id.
+
+        Args:
+            row_data: dictionary containing the row data from Excel
+        Raises:
+            ValidationError: If a record already exists
+        """
+        unit_id = row_data.get("Id", "")
+        import_id = f"legacy_{self.import_job.id}_{unit_id}"
+
+        # Check by import_id
+        if import_id:
+            if RentalUnit.objects.filter(import_id=import_id).exists():
+                raise ValidationError(
+                    _("Mietobjekt mit Import-ID %(import_id)s existiert bereits."),
+                    params={"import_id": import_id},
+                )
+
+        return False
+
     def _process_single_row(self, row_data: dict):
         """
         Process a single row and create/update Building, RentalUnit, and Contract records.

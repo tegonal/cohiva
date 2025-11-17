@@ -34,6 +34,7 @@ class ImportJobAdmin(GenoBaseAdmin):
         "status_badge",
         "records_imported",
         "file_link",
+        "override_existing"
     ]
     list_filter = ["status", "import_type"]
     search_fields = ["id", "name"]
@@ -52,6 +53,7 @@ class ImportJobAdmin(GenoBaseAdmin):
                     "name",
                     "file",
                     "import_type",
+                    "override_existing",
                     "status",
                 )
             },

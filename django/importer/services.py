@@ -130,9 +130,13 @@ class ExcelImporter:
             try:
                 with transaction.atomic():
                     # Process the row (customize this based on your needs)
+                    if not self.import_job.override_existing:
+                        # check for existing records
+                        self._has_existing(row_data)
+
                     self._process_single_row(row_data)
 
-                    # Record success
+                    # Import executed and record success
                     ImportRecord.objects.create(
                         job=self.import_job,
                         row_number=row_number,
@@ -157,6 +161,20 @@ class ExcelImporter:
                 results["errors"].append({"row": row_number, "error": str(e), "data": row_data})
 
         return results
+
+    def _has_existing(self, row_data: dict):
+        """
+        Check if a record already exists based on the row data.
+
+        Override this method in subclasses to implement specific existence checks.
+
+        Args:
+            row_data: dictionary containing the row data
+        Raises:
+            ValidationError: If a record already exists
+        """
+        # Default implementation: no existence check
+        pass
 
     def _process_single_row(self, row_data: dict):
         """

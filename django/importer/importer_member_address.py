@@ -48,6 +48,37 @@ class ImporterMemberAddress(ExcelImporter):
         "Divers": "Divers",
     }
 
+    def _has_existing(self, row_data: dict) -> bool:
+        """
+        Check if an Address already exists based on import_id or email.
+
+        Args:
+            row_data: dictionary containing the row data from Excel
+        Raises:
+            ValidationError: If a record already exists
+        """
+        person_number = row_data.get("P_nr")
+        import_id = f"legacy_{self.import_job.id}_{person_number}" if person_number else None
+
+        # Check by import_id
+        if import_id:
+            if Address.objects.filter(import_id=import_id).exists():
+                raise ValidationError(
+                    _("Adresse mit Import-ID %(import_id)s existiert bereits."),
+                    params={"import_id": import_id},
+                )
+
+        # Check by email
+        email = self._get_primary_email(row_data)
+        if email:
+            if Address.objects.filter(email=email).exists():
+                raise ValidationError(
+                    _("Adresse mit E-Mail %(email)s existiert bereits."),
+                    params={"email": email},
+                )
+
+        return False
+
     def _process_single_row(self, row_data: dict):
         """
         Process a single row and create/update Address and Member records.
@@ -58,6 +89,8 @@ class ImporterMemberAddress(ExcelImporter):
         Raises:
             ValidationError: If the row data is invalid
         """
+
+
         # Validate required fields
         if not row_data.get("P_nachname") and not row_data.get("P_vorname"):
             raise ValidationError(_("Mindestens Vor- oder Nachname erforderlich"))

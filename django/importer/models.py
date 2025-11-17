@@ -42,6 +42,11 @@ class ImportJob(GenoBase):
     records_imported = models.IntegerField(default=0, verbose_name=_("Importierte Datensätze"))
     error_message = models.TextField(blank=True, verbose_name=_("Fehlermeldung"))
     result_data = models.JSONField(null=True, blank=True, verbose_name=_("Ergebnisdaten"))
+    override_existing = models.BooleanField(
+        default=False,
+        verbose_name=_("Vorhandene Datensätze überschreiben"),
+        help_text=_("Wenn aktiviert, werden vorhandene Datensätze mit den importierten Daten überschrieben."),
+    )
 
     class Meta:
         verbose_name = _("Import-Auftrag")
