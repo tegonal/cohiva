@@ -1,3 +1,3 @@
 #@ Version: 1.2.0
 tag	file	relativeTarget	tagFilter	hasPlaceholder	sha512
-v1.5.3	.github/workflows/gt-update.yml	../.github/workflows/gt-update.yml	.*	true	732dc3375eee7294fdbf02b1a52987589da704539b4c76733f909abeee53b4dcb2dab0fcf2eafa2177740efd529e483ee914159c33701cea2f2cd471847bb452
+v1.6.0	.github/workflows/gt-update.yml	../.github/workflows/gt-update.yml	.*	true	21d0abb6e8bd1e022a58fc4b43dca15437b3c9fd750117c9d9ac2ba89cb50eaec008702a651af1d886909c7e6cab4c799a645e1e941e03f4715f02b059451f23
