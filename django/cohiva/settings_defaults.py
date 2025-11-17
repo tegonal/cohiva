@@ -459,13 +459,6 @@ SMEDIA_ROOT = cbc.INSTALL_DIR + "/django-test/smedia"
 # Examples: "http://media.lawrence.com/media/", "http://example.com/media/"
 MEDIA_URL = "/media/"
 
-# ensure log directory exists before configuring LOGGING
-LOG_DIR = os.path.join(cbc.INSTALL_DIR, "django-test", "log")
-os.makedirs(LOG_DIR, exist_ok=True)
-# also ensure production log dir exists (used when production settings override LOGGING)
-PROD_LOG_DIR = os.path.join(cbc.INSTALL_DIR, "django-production", "log")
-os.makedirs(PROD_LOG_DIR, exist_ok=True)
-
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
 # the site admins on every HTTP 500 error when DEBUG=False.
@@ -497,37 +490,37 @@ LOGGING = {
         "access_intern": {
             "level": "DEBUG",
             "class": "logging.FileHandler",
-            "filename": f"{LOG_DIR}/access_intern.log",
+            "filename": cbc.INSTALL_DIR + "/django-test/log/access_intern.log",
             "formatter": "verbose",
         },
         "access_portal": {
             "level": "DEBUG",
             "class": "logging.FileHandler",
-            "filename": f"{LOG_DIR}/access_portal.log",
+            "filename": cbc.INSTALL_DIR + "/django-test/log/access_portal.log",
             "formatter": "verbose",
         },
         "geno": {
             "level": "DEBUG",
             "class": "logging.FileHandler",
-            "filename": f"{LOG_DIR}/geno.log",
+            "filename": cbc.INSTALL_DIR + "/django-test/log/geno.log",
             "formatter": "verbose",
         },
         "reservation": {
             "level": "DEBUG",
             "class": "logging.FileHandler",
-            "filename": f"{LOG_DIR}/reservation.log",
+            "filename": cbc.INSTALL_DIR + "/django-test/log/reservation.log",
             "formatter": "verbose",
         },
         "credit_accounting": {
             "level": "DEBUG",
             "class": "logging.FileHandler",
-            "filename": f"{LOG_DIR}/credit_accounting.log",
+            "filename": cbc.INSTALL_DIR + "/django-test/log/credit_accounting.log",
             "formatter": "verbose",
         },
         "finance_accounting": {
             "level": "DEBUG",
             "class": "logging.FileHandler",
-            "filename": f"{LOG_DIR}/finance_accounting.log",
+            "filename": cbc.INSTALL_DIR + "/django-test/log/finance_accounting.log",
             "formatter": "verbose",
         },
     },
@@ -626,52 +619,22 @@ GENO_CARDDAV_URI = None
 GENO_CARDDAV_USER = None
 GENO_CARDDAV_PASS = None
 
-# derive street name/number robustly
-_street_name = getattr(cbc, "ORG_ADDRESS_STREET_NAME", None)
-_house_number = getattr(cbc, "ORG_ADDRESS_HOUSE_NUMBER", None)
-if not _street_name or _house_number is None:
-    _street_full = getattr(cbc, "ORG_ADDRESS_STREET", "").strip()
-    if _street_full:
-        _parts = _street_full.rsplit(" ", 1)
-        if not _street_name:
-            _street_name = _parts[0]
-        if _house_number is None:
-            _house_number = _parts[1] if len(_parts) > 1 else ""
-_street_value = f"{_street_name} {_house_number}".strip()
-
-# derive city zip/name robustly
-_city_zip = getattr(cbc, "ORG_ADDRESS_CITY_ZIPCODE", None)
-_city_name = getattr(cbc, "ORG_ADDRESS_CITY_NAME", None)
-if not _city_zip or not _city_name:
-    _city_full = getattr(cbc, "ORG_ADDRESS_CITY", "") or getattr(cbc, "ORG_CITY", "")
-    _city_full = str(_city_full).strip()
-    if _city_full:
-        _parts = _city_full.split(None, 1)
-        if len(_parts) == 2:
-            _city_zip = _city_zip or _parts[0]
-            _city_name = _city_name or _parts[1]
-        else:
-            # single token -> assume it's the city name if zip is unknown
-            if not _city_name:
-                _city_name = _parts[0]
-_city_value = " ".join(filter(None, [_city_zip, _city_name]))
-
 GENO_ORG_INFO = {
     "name": cbc.ORG_NAME,
-    "street": _street_value,
-    "city": _city_value,
-    "country": getattr(cbc, "ORG_ADDRESS_COUNTRY", ""),
+    "street": f"{cbc.ORG_ADDRESS_STREET_NAME} {cbc.ORG_ADDRESS_HOUSE_NUMBER}",
+    "city": f"{cbc.ORG_ADDRESS_CITY_ZIPCODE} {cbc.ORG_ADDRESS_CITY_NAME}",
+    "country": cbc.ORG_ADDRESS_COUNTRY,
     "email": "info@" + cbc.DOMAIN,
     "website": "www." + cbc.DOMAIN,
 }
 
 GENO_QRBILL_CREDITOR = {
     "name": cbc.ORG_NAME,
-    "street": _street_name or "",
-    "house_num": _house_number or "",
-    "pcode": _city_zip or "",
-    "city": _city_name or "",
-    "country": getattr(cbc, "ORG_ADDRESS_COUNTRY", ""),
+    "street": cbc.ORG_ADDRESS_STREET_NAME,
+    "house_num": cbc.ORG_ADDRESS_HOUSE_NUMBER,
+    "pcode": cbc.ORG_ADDRESS_CITY_ZIPCODE,
+    "city": cbc.ORG_ADDRESS_CITY_NAME,
+    "country": cbc.ORG_ADDRESS_COUNTRY,
 }
 
 FINANCIAL_ACCOUNTING_DEFAULT_BACKEND = "dummy"
@@ -687,6 +650,14 @@ FINANCIAL_ACCOUNTING_BACKENDS = {
             "IGNORE_SQLALCHEMY_WARNINGS": True,
         },
     },
+    "cashctrl": {
+        "BACKEND": "finance.accounting.CashctrlBook",
+        "OPTIONS": {
+            "API_HOST": "cashctrl.com",
+            "API_TOKEN": f"{cbc.CASHCTRL_API_TOKEN}",
+            "TENANT": f"{cbc.CASHCTRL_TENANT}",
+        },
+    },
     "dummy": {
         "BACKEND": "finance.accounting.DummyBook",
         "OPTIONS": {
@@ -695,18 +666,6 @@ FINANCIAL_ACCOUNTING_BACKENDS = {
         },
     },
 }
-# Add CashCtrl backend only if credentials are configured
-_CASHCTRL_API_TOKEN = getattr(cbc, "CASHCTRL_API_TOKEN", None) or os.getenv("CASHCTRL_API_TOKEN")
-_CASHCTRL_TENANT = getattr(cbc, "CASHCTRL_TENANT", None) or os.getenv("CASHCTRL_TENANT")
-if _CASHCTRL_API_TOKEN and _CASHCTRL_TENANT:
-    FINANCIAL_ACCOUNTING_BACKENDS["cashctrl"] = {
-        "BACKEND": "finance.accounting.CashctrlBook",
-        "OPTIONS": {
-            "API_HOST": "cashctrl.com",
-            "API_TOKEN": f"{_CASHCTRL_API_TOKEN}",
-            "TENANT": f"{_CASHCTRL_TENANT}",
-        },
-    }
 
 FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT = False
 FINANCIAL_ACCOUNTS = {
@@ -1449,3 +1408,23 @@ UNFOLD = {
 # Crispy Forms Configuration for Unfold
 CRISPY_TEMPLATE_PACK = "unfold_crispy"
 CRISPY_ALLOWED_TEMPLATE_PACKS = ["unfold_crispy"]
+
+
+# Add WhiteNoise for static file serving
+MIDDLEWARE = [
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+] + list(MIDDLEWARE)
+
+# Static files configuration
+STATIC_ROOT = "/tmp/static"  # Temporary location for collected static files
+STATIC_URL = "/static/"
+
+# Use simpler WhiteNoise backend without compression
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.StaticFilesStorage",
+    },
+}
