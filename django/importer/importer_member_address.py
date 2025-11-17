@@ -90,7 +90,6 @@ class ImporterMemberAddress(ExcelImporter):
             ValidationError: If the row data is invalid
         """
 
-
         # Validate required fields
         if not row_data.get("P_nachname") and not row_data.get("P_vorname"):
             raise ValidationError(_("Mindestens Vor- oder Nachname erforderlich"))

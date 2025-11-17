@@ -6,15 +6,14 @@ from django.contrib import admin, messages
 from django.shortcuts import redirect
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
-from unfold.admin import ModelAdmin
 
 from geno.admin import GenoBaseAdmin
+
 from .models import ImportJob, ImportRecord
 from .services import process_import_job
 
 
 class ImportRecordInline(admin.TabularInline):
-
     model = ImportRecord
     extra = 0
     readonly_fields = ("row_number", "data", "error_message", "success")
@@ -26,7 +25,6 @@ class ImportRecordInline(admin.TabularInline):
 
 @admin.register(ImportJob)
 class ImportJobAdmin(GenoBaseAdmin):
-
     list_display = [
         "id",
         "name",
@@ -34,7 +32,7 @@ class ImportJobAdmin(GenoBaseAdmin):
         "status_badge",
         "records_imported",
         "file_link",
-        "override_existing"
+        "override_existing",
     ]
     list_filter = ["status", "import_type"]
     search_fields = ["id", "name"]
@@ -71,7 +69,6 @@ class ImportJobAdmin(GenoBaseAdmin):
     )
 
     def status_badge(self, obj):
-
         colors = {
             "pending": "gray",
             "processing": "blue",
@@ -91,7 +88,9 @@ class ImportJobAdmin(GenoBaseAdmin):
         if obj.file:
             # just return the first 30 characters of the file name for display
             file_name = obj.file.name[:30] + "..." if len(obj.file.name) > 30 else obj.file.name
-            return format_html('<a href="{}" title="{}">{}</a>', obj.file.url, obj.file.name, file_name)
+            return format_html(
+                '<a href="{}" title="{}">{}</a>', obj.file.url, obj.file.name, file_name
+            )
         return "-"
 
     file_link.short_description = _("Datei")
@@ -123,9 +122,9 @@ class ImportJobAdmin(GenoBaseAdmin):
                 results = process_import_job(import_job.id)
                 self.message_user(
                     request,
-                    _("Import erfolgreich verarbeitet: {} Datensätze importiert, {} Fehler").format(
-                        results["success_count"], results["error_count"]
-                    ),
+                    _(
+                        "Import erfolgreich verarbeitet: {} Datensätze importiert, {} Fehler"
+                    ).format(results["success_count"], results["error_count"]),
                     level=messages.SUCCESS,
                 )
             except Exception as e:
@@ -148,10 +147,11 @@ class ImportJobAdmin(GenoBaseAdmin):
 
 @admin.register(ImportRecord)
 class ImportRecordAdmin(GenoBaseAdmin):
-
     list_display = ["id", "job", "row_number", "success"]
     list_filter = ["success", "job__status"]
-    search_fields = ["job__id",]
+    search_fields = [
+        "job__id",
+    ]
     readonly_fields = ["job", "row_number", "data", "error_message", "success"]
 
     def has_add_permission(self, request):

@@ -174,7 +174,6 @@ class ExcelImporter:
             ValidationError: If a record already exists
         """
         # Default implementation: no existence check
-        pass
 
     def _process_single_row(self, row_data: dict):
         """
@@ -233,4 +232,3 @@ def process_import_job(import_job_id: int, importer_class=None) -> dict:
 
     importer = importer_class(import_job)
     return importer.process()
-

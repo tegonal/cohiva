@@ -4,15 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('importer', '0001_initial'),
+        ("importer", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='importjob',
-            name='override_existing',
-            field=models.BooleanField(default=False, help_text='Wenn aktiviert, werden vorhandene Datensätze mit den importierten Daten überschrieben.', verbose_name='Vorhandene Datensätze überschreiben'),
+            model_name="importjob",
+            name="override_existing",
+            field=models.BooleanField(
+                default=False,
+                help_text="Wenn aktiviert, werden vorhandene Datensätze mit den importierten Daten überschrieben.",
+                verbose_name="Vorhandene Datensätze überschreiben",
+            ),
         ),
     ]
