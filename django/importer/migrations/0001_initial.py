@@ -39,7 +39,7 @@ class Migration(migrations.Migration):
                             ("tenant_property_it_wgn", "Mieter und Liegenschaften (IT-WGN)"),
                         ],
                         default="member_address",
-                        max_length=20,
+                        max_length=40,
                         verbose_name="Import-Typ",
                     ),
                 ),

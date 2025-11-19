@@ -27,7 +27,7 @@ class ImportJob(GenoBase):
     ]
     name = models.CharField(max_length=255, verbose_name=_("Name des Import-Jobs"), blank=True)
     import_type = models.CharField(
-        max_length=20,
+        max_length=40,
         choices=IMPORT_TYPE_CHOICES,
         default="member_address",
         verbose_name=_("Import-Typ"),
