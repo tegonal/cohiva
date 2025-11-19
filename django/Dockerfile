@@ -38,5 +38,9 @@ RUN mkdir -p /var/www/cohiva/django-production/log
 # Set environment variable for instance path to match docker-compose
 ENV COHIVA_INSTANCE_PATH=/instance_files/override_files
 
-# Use debug WSGI wrapper without unsupported static-map
+# Create entrypoint script for initialization
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--log-level", "info", "cohiva.wsgi:application"]
