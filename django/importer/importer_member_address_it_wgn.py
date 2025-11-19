@@ -20,7 +20,7 @@ from .services import ExcelImporter
 logger = logging.getLogger(__name__)
 
 
-class ImporterMemberAddress(ExcelImporter):
+class ImporterMemberAddressITWGN(ExcelImporter):
     """
     Specialized importer for Member and Address data.
 

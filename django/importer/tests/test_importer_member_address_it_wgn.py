@@ -11,13 +11,13 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 
 from geno.models import Address, Member
-from importer.importer_member_address import ImporterMemberAddress
+from importer.importer_member_address_it_wgn import ImporterMemberAddressITWGN
 from importer.models import ImportJob
 
 User = get_user_model()
 
 
-class ImporterMemberAddressTest(TestCase):
+class ImporterMemberAddressITWGNTest(TestCase):
     """Test cases for ImporterMemberAddress."""
 
     def setUp(self):
@@ -156,7 +156,7 @@ class ImporterMemberAddressTest(TestCase):
         import_job = ImportJob.objects.create(file=excel_file, created_by=self.user)
 
         # Process import
-        importer = ImporterMemberAddress(import_job)
+        importer = ImporterMemberAddressITWGN(import_job)
         results = importer.process()
 
         # Check results
@@ -238,7 +238,7 @@ class ImporterMemberAddressTest(TestCase):
         excel_file = self.create_test_excel(rows)
         import_job = ImportJob.objects.create(file=excel_file, created_by=self.user)
 
-        importer = ImporterMemberAddress(import_job)
+        importer = ImporterMemberAddressITWGN(import_job)
         results = importer.process()
 
         self.assertEqual(results["success_count"], 1)
@@ -309,7 +309,7 @@ class ImporterMemberAddressTest(TestCase):
         excel_file = self.create_test_excel(rows)
         import_job = ImportJob.objects.create(file=excel_file, created_by=self.user)
 
-        importer = ImporterMemberAddress(import_job)
+        importer = ImporterMemberAddressITWGN(import_job)
         results = importer.process()
 
         self.assertEqual(results["success_count"], 1)
@@ -394,7 +394,7 @@ class ImporterMemberAddressTest(TestCase):
         import_job_existing.file = excel_file
         import_job_existing.save()
 
-        importer = ImporterMemberAddress(import_job_existing)
+        importer = ImporterMemberAddressITWGN(import_job_existing)
         results = importer.process()
 
         self.assertEqual(results["success_count"], 1)
@@ -465,7 +465,7 @@ class ImporterMemberAddressTest(TestCase):
         excel_file = self.create_test_excel(rows)
         import_job = ImportJob.objects.create(file=excel_file, created_by=self.user)
 
-        importer = ImporterMemberAddress(import_job)
+        importer = ImporterMemberAddressITWGN(import_job)
         results = importer.process()
 
         # Should fail
@@ -534,7 +534,7 @@ class ImporterMemberAddressTest(TestCase):
         excel_file = self.create_test_excel(rows)
         import_job = ImportJob.objects.create(file=excel_file, created_by=self.user)
 
-        importer = ImporterMemberAddress(import_job)
+        importer = ImporterMemberAddressITWGN(import_job)
         results = importer.process()
 
         self.assertEqual(results["success_count"], 1)

@@ -12,13 +12,13 @@ from django.test import TestCase
 from openpyxl import Workbook
 
 from geno.models import Address, Building, Contract, RentalUnit
-from importer.importer_tenant_property import ImporterTenantProperty
+from importer.importer_tenant_property_it_wgn import ImporterTenantPropertyITWGN
 from importer.models import ImportJob
 
 User = get_user_model()
 
 
-class ImporterTenantPropertyTest(TestCase):
+class ImporterTenantPropertyITWGNTest(TestCase):
     """Test cases for ImporterTenantProperty."""
 
     def setUp(self):
@@ -124,7 +124,7 @@ class ImporterTenantPropertyTest(TestCase):
             file=excel_file, created_by=self.user, import_type="tenant_property"
         )
 
-        importer = ImporterTenantProperty(import_job)
+        importer = ImporterTenantPropertyITWGN(import_job)
         results = importer.process()
 
         self.assertEqual(results["success_count"], 1)
@@ -190,7 +190,7 @@ class ImporterTenantPropertyTest(TestCase):
             file=excel_file, created_by=self.user, import_type="tenant_property"
         )
 
-        importer = ImporterTenantProperty(import_job)
+        importer = ImporterTenantPropertyITWGN(import_job)
         results = importer.process()
 
         self.assertEqual(results["success_count"], 1)
@@ -267,7 +267,7 @@ class ImporterTenantPropertyTest(TestCase):
             file=excel_file, created_by=self.user, import_type="tenant_property"
         )
 
-        importer = ImporterTenantProperty(import_job)
+        importer = ImporterTenantPropertyITWGN(import_job)
         results = importer.process()
 
         self.assertEqual(results["success_count"], 1)
@@ -343,7 +343,7 @@ class ImporterTenantPropertyTest(TestCase):
             file=excel_file, created_by=self.user, import_type="tenant_property"
         )
 
-        importer = ImporterTenantProperty(import_job)
+        importer = ImporterTenantPropertyITWGN(import_job)
         results = importer.process()
 
         self.assertEqual(results["success_count"], 2)
@@ -408,7 +408,7 @@ class ImporterTenantPropertyTest(TestCase):
             file=excel_file, created_by=self.user, import_type="tenant_property"
         )
 
-        importer = ImporterTenantProperty(import_job)
+        importer = ImporterTenantPropertyITWGN(import_job)
         results = importer.process()
 
         self.assertEqual(results["success_count"], 1)

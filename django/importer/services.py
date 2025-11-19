@@ -218,14 +218,14 @@ def process_import_job(import_job_id: int, importer_class=None) -> dict:
 
     if importer_class is None:
         # Auto-detect importer based on import_type
-        if import_job.import_type == "member_address":
-            from .importer_member_address import ImporterMemberAddress
+        if import_job.import_type == "member_address_it_wgn":
+            from .importer_member_address_it_wgn import ImporterMemberAddressITWGN
 
-            importer_class = ImporterMemberAddress
-        elif import_job.import_type == "tenant_property":
-            from .importer_tenant_property import ImporterTenantProperty
+            importer_class = ImporterMemberAddressITWGN
+        elif import_job.import_type == "tenant_property_it_wgn":
+            from .importer_tenant_property_it_wgn import ImporterTenantPropertyITWGN
 
-            importer_class = ImporterTenantProperty
+            importer_class = ImporterTenantPropertyITWGN
         else:
             # Default fallback
             importer_class = ExcelImporter

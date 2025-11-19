@@ -68,6 +68,7 @@ class ImportJobAdmin(GenoBaseAdmin):
         ),
     )
 
+    @admin.display(description=_("Status"))
     def status_badge(self, obj):
         colors = {
             "pending": "gray",
@@ -82,8 +83,7 @@ class ImportJobAdmin(GenoBaseAdmin):
             obj.get_status_display(),
         )
 
-    status_badge.short_description = _("Status")
-
+    @admin.display(description=_("Datei"))
     def file_link(self, obj):
         if obj.file:
             # just return the first 30 characters of the file name for display
@@ -92,8 +92,6 @@ class ImportJobAdmin(GenoBaseAdmin):
                 '<a href="{}" title="{}">{}</a>', obj.file.url, obj.file.name, file_name
             )
         return "-"
-
-    file_link.short_description = _("Datei")
 
     @admin.display(description=_("Import Job ausführen"))
     def call_process_import_job(self, request, queryset):

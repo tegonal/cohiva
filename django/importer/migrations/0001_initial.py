@@ -35,8 +35,8 @@ class Migration(migrations.Migration):
                     "import_type",
                     models.CharField(
                         choices=[
-                            ("member_address", "Mitglieder und Adressen"),
-                            ("tenant_property", "Mieter und Liegenschaften"),
+                            ("member_address_it_wgn", "Mitglieder und Adressen (IT-WGN)"),
+                            ("tenant_property_it_wgn", "Mieter und Liegenschaften (IT-WGN)"),
                         ],
                         default="member_address",
                         max_length=20,

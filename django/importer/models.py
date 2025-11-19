@@ -22,8 +22,8 @@ class ImportJob(GenoBase):
     ]
 
     IMPORT_TYPE_CHOICES = [
-        ("member_address", _("Mitglieder und Adressen")),
-        ("tenant_property", _("Mieter und Liegenschaften")),
+        ("member_address_it_wgn", _("Mitglieder und Adressen (IT-WGN)")),
+        ("tenant_property_it_wgn", _("Mieter und Liegenschaften (IT-WGN)")),
     ]
     name = models.CharField(max_length=255, verbose_name=_("Name des Import-Jobs"), blank=True)
     import_type = models.CharField(

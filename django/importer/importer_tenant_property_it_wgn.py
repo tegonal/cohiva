@@ -21,7 +21,7 @@ from .services import ExcelImporter
 logger = logging.getLogger(__name__)
 
 
-class ImporterTenantProperty(ExcelImporter):
+class ImporterTenantPropertyITWGN(ExcelImporter):
     """
     Specialized importer for Tenant and Property data (Buildings, RentalUnits, Contracts).
 
