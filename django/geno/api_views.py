@@ -267,23 +267,26 @@ class QRBill(APIView):
             ## Create invoice for difference (Forderungen>Nebenkosten [1104] -> Forderungen>Mieter [1102])
 
             ## Add invoice, this will save the book, i.e. also the transaction above.
-            invoice = add_invoice(
-                None,
-                self.invoice_category,
-                self.invoice_category.name,
-                self.invoice_date,
-                total_amount,
-                book=book,
-                contract=self.contract,
-                dry_run=self.dry_run,
-                comment=comment,
-            )
-            if isinstance(invoice, str):
+            try:
+                invoice = add_invoice(
+                    None,
+                    self.invoice_category,
+                    self.invoice_category.name,
+                    self.invoice_date,
+                    total_amount,
+                    book=book,
+                    contract=self.contract,
+                    dry_run=self.dry_run,
+                    comment=comment,
+                )
+            except Exception as e:
                 logger.error(
                     "Could not create invoice for contract %s (id=%s): %s"
-                    % (self.contract, request.data["contract_id"], invoice)
+                    % (self.contract, request.data["contract_id"], e)
                 )
-                raise ValidationError("Konnte Rechnungs-Objekt nicht erzeugen: %s" % invoice)
+                raise ValidationError(
+                    f"Konnte Rechnungs-Objekt für Vertrag ID {self.contract.id} nicht erzeugen."
+                )
             logger.info(
                 "%sAdded invoice %s for contract %s (id=%s): CHF %s / %s"
                 % (

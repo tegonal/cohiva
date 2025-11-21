@@ -3723,7 +3723,6 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
                 comment.append("%s CHF %s" % (line["text"], line["total"]))
 
         if not lines_count:
-            print("Error")
             messages.error(
                 self.request,
                 "Keine Rechnungspositionen eingegeben! Bitte mindestens eine Zeile ausfüllen.",
@@ -3737,23 +3736,21 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
                 ## Send email
                 email_template = "email_invoice.html"
 
-            invoice = add_invoice(
-                None,
-                invoice_category,
-                invoice_category.name,
-                invoice_date,
-                total_amount,
-                address=address,
-                comment="/".join(comment),
-            )
-            if isinstance(invoice, str):
-                messages.error(
-                    self.request, "Konnte Rechnungs-Objekt nicht erzeugen: %s" % invoice
+            try:
+                invoice = add_invoice(
+                    None,
+                    invoice_category,
+                    invoice_category.name,
+                    invoice_date,
+                    total_amount,
+                    address=address,
+                    comment="/".join(comment),
                 )
-                self.error_flag = True
-            else:
                 invoice_id = invoice.id
-
+            except Exception as e:
+                messages.error(self.request, f"Konnte Rechnungs-Objekt nicht erzeugen: {e}")
+                self.error_flag = True
+                invoice_id = None
         else:
             ## Test/Preview
             dry_run = True

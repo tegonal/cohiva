@@ -29,7 +29,7 @@ ORG_ADDRESS_CITY_ZIPCODE = "3000"
 ORG_ADDRESS_CITY_NAME = "Bern"
 ORG_ADDRESS_COUNTRY = "Schweiz"
 
-ADMINS = (("Hans Muster", "info@example.com"),)
+ADMINS = (("Hans Muster", "admin@example.tld"),)
 
 CASHCTRL_API_TOKEN = ""
 CASHCTRL_TENANT = ""
