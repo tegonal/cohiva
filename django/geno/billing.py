@@ -59,6 +59,14 @@ from .utils import (
 logger = logging.getLogger("geno")
 
 
+class InvoiceCreationError(Exception):
+    pass
+
+
+class DuplicateInvoiceError(Exception):
+    pass
+
+
 def create_invoices(
     dry_run=True, reference_date=None, single_contract=None, building_ids=None, download_only=None
 ):
@@ -91,9 +99,15 @@ def create_invoices(
                 "single_contract": single_contract,
                 "dry_run": dry_run,
             }
-            result, result_messages = create_monthly_invoices(
-                book, contract, reference_date, invoice_category, options
-            )
+            try:
+                result, result_messages = create_monthly_invoices(
+                    book, contract, reference_date, invoice_category, options
+                )
+            except InvoiceCreationError as e:
+                logger.error("Could not create invoice for contract {contract}: {e}")
+                messages.append(f"FEHLER beim Erzeugen der Rechnungen für {contract}: {e}")
+                messages.append("VERARBEITUNG ABGEBROCHEN!")
+                break
             messages.extend(result_messages)
             if isinstance(result, str):
                 return result
@@ -114,7 +128,7 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
     month = reference_date.month
     year = reference_date.year
     stop = False
-    count = 0
+    billed_months_count = 0
     messages = []
     while not stop:
         invoices = Invoice.objects.filter(
@@ -159,23 +173,6 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
             billing_contract = contract.billing_contract
             billing_contract_info = "%s (Rechnungs-Vertrag: %s)" % (contract, billing_contract)
             is_additional_invoice = True
-            ## Add dummy invoice to prevent creation of further invoices
-            invoice = Invoice(
-                name="Platzhalter: Inkasso läuft über Vertrag %s" % (billing_contract),
-                invoice_type="Invoice",
-                invoice_category=invoice_category,
-                year=year,
-                month=month,
-                contract=contract,
-                date=invoice_date,
-                amount=Decimal(0.0),
-            )
-            if not dry_run:
-                invoice.save()
-            messages.append(
-                "Platzhalter-Montasrechnung %d.%d hinzugefügt: %s."
-                % (month, year, billing_contract_info)
-            )
         else:
             billing_contract = contract
             billing_contract_info = "%s" % (contract)
@@ -235,11 +232,41 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
             ru_list.append(ru.name)
 
         if factor > 0.0:
-            count += 1
             if factor != 1.0:
                 factor_txt = " (Faktor %.2f)" % factor
             else:
                 factor_txt = ""
+
+            if (
+                sum_rent_net
+                or sum_nk
+                or sum_nk_flat
+                or sum_nk_electricity
+                or contract.rent_reduction
+                or contract.rent_reservation
+            ):
+                if not contract.main_contract and not contract.contractors.first():
+                    raise InvoiceCreationError("Vertrag hat keine Vertragspartner/Adresse.")
+                billed_months_count += 1
+                if is_additional_invoice:
+                    # Add a placeholder invoice for the contract that is billed through
+                    # `billing_contract`, to prevent creation of further invoices
+                    invoice = Invoice(
+                        name=f"Platzhalter: Inkasso läuft über Vertrag {billing_contract}",
+                        invoice_type="Invoice",
+                        invoice_category=invoice_category,
+                        year=year,
+                        month=month,
+                        contract=contract,
+                        date=invoice_date,
+                        amount=Decimal(0.0),
+                    )
+                    if not dry_run:
+                        invoice.save()
+                    messages.append(
+                        "Platzhalter-Monatsrechnung %d.%d hinzugefügt: %s."
+                        % (month, year, billing_contract_info)
+                    )
 
             if sum_rent_net > 0.0:
                 description = "Nettomiete %02d.%d für %s%s" % (
@@ -249,7 +276,7 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     factor_txt,
                 )
                 invoice_value = sum_rent_net * factor
-                r = add_invoice(
+                add_invoice(
                     rent_account_key,
                     invoice_category,
                     description,
@@ -262,11 +289,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     is_additional=is_additional_invoice,
                     dry_run=dry_run,
                 )
-                if not isinstance(r, str):
-                    messages.append(
-                        "Montasrechnung hinzugefügt: %s für %s."
-                        % (description, billing_contract_info)
-                    )
+                messages.append(
+                    "Monatsrechnung hinzugefügt: %s für %s." % (description, billing_contract_info)
+                )
 
             if sum_nk > 0.0:
                 description = "Nebenkosten %02d.%d für %s%s" % (
@@ -276,7 +301,7 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     factor_txt,
                 )
                 invoice_value = sum_nk * factor
-                r = add_invoice(
+                add_invoice(
                     AccountKey.NK,
                     invoice_category,
                     description,
@@ -289,11 +314,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     is_additional=is_additional_invoice,
                     dry_run=dry_run,
                 )
-                if not isinstance(r, str):
-                    messages.append(
-                        "Montasrechnung hinzugefügt: %s für %s."
-                        % (description, billing_contract_info)
-                    )
+                messages.append(
+                    "Monatsrechnung hinzugefügt: %s für %s." % (description, billing_contract_info)
+                )
 
             if sum_nk_flat > 0.0:
                 description = "Nebenkosten pauschal %02d.%d für %s%s" % (
@@ -303,7 +326,7 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     factor_txt,
                 )
                 invoice_value = sum_nk_flat * factor
-                r = add_invoice(
+                add_invoice(
                     AccountKey.NK_FLAT,
                     invoice_category,
                     description,
@@ -316,11 +339,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     is_additional=is_additional_invoice,
                     dry_run=dry_run,
                 )
-                if not isinstance(r, str):
-                    messages.append(
-                        "Montasrechnung hinzugefügt: %s für %s."
-                        % (description, billing_contract_info)
-                    )
+                messages.append(
+                    "Monatsrechnung hinzugefügt: %s für %s." % (description, billing_contract_info)
+                )
 
             if sum_nk_electricity > 0.0:
                 description = "Strompauschale %02d.%d für %s%s" % (
@@ -330,7 +351,7 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     factor_txt,
                 )
                 invoice_value = sum_nk_electricity * factor
-                r = add_invoice(
+                add_invoice(
                     AccountKey.STROM,
                     invoice_category,
                     description,
@@ -343,11 +364,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     is_additional=is_additional_invoice,
                     dry_run=dry_run,
                 )
-                if not isinstance(r, str):
-                    messages.append(
-                        "Montasrechnung hinzugefügt: %s für %s."
-                        % (description, billing_contract_info)
-                    )
+                messages.append(
+                    "Monatsrechnung hinzugefügt: %s für %s." % (description, billing_contract_info)
+                )
 
             ## Rent reduction
             if contract.rent_reduction:
@@ -358,7 +377,7 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     factor_txt,
                 )
                 invoice_value = -1 * contract.rent_reduction * factor
-                r = add_invoice(
+                add_invoice(
                     AccountKey.RENT_REDUCTION,
                     invoice_category,
                     description,
@@ -371,11 +390,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     is_additional=is_additional_invoice,
                     dry_run=dry_run,
                 )
-                if not isinstance(r, str):
-                    messages.append(
-                        "Montasrechnung hinzugefügt: %s für %s."
-                        % (description, billing_contract_info)
-                    )
+                messages.append(
+                    "Monatsrechnung hinzugefügt: %s für %s." % (description, billing_contract_info)
+                )
                 rent_info.append(
                     {
                         "text": "Mietzinsreduktion",
@@ -396,7 +413,7 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     factor_txt,
                 )
                 invoice_value = -1 * contract.rent_reservation * factor
-                r = add_invoice(
+                add_invoice(
                     AccountKey.RENT_RESERVATION,
                     invoice_category,
                     description,
@@ -409,11 +426,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     is_additional=is_additional_invoice,
                     dry_run=dry_run,
                 )
-                if not isinstance(r, str):
-                    messages.append(
-                        "Montasrechnung hinzugefügt: %s für %s."
-                        % (description, billing_contract_info)
-                    )
+                messages.append(
+                    "Monatsrechnung hinzugefügt: %s für %s." % (description, billing_contract_info)
+                )
                 rent_info.append(
                     {
                         "text": "Mietzinsvorbehalt",
@@ -475,7 +490,7 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
             year -= 1
         else:
             month -= 1
-    return count, messages
+    return billed_months_count, messages
 
 
 def pay_invoice(invoice, date, amount):
@@ -497,7 +512,7 @@ def add_payment(date, amount, person, invoice=None, note=None, cash=False):
         description = f"Zahlung {invoice.invoice_category} {invoice.id}"
     try:
         with AccountingManager() as book:
-            r = add_invoice_obj(
+            add_invoice_obj(
                 book,
                 "Payment",
                 invoice.invoice_category,
@@ -511,8 +526,6 @@ def add_payment(date, amount, person, invoice=None, note=None, cash=False):
                 invoice.year,
                 invoice.month,
             )
-            if isinstance(r, str):
-                raise RuntimeError(r)
     except Exception as e:
         return f"Konnte Rechnung nicht erstellen: {e}"
 
@@ -574,7 +587,7 @@ def add_invoice(
 ):
     if contract:
         if address:
-            raise RuntimeError("Can't specify address AND contract.")
+            raise InvoiceCreationError("Can't specify address AND contract.")
         address = contract.get_contact_address()
 
     income_account = get_income_account(invoice_category, account_key, contract)
@@ -584,7 +597,7 @@ def add_invoice(
         messages = []
         with AccountingManager(messages) as book:
             if not book:
-                return messages[-1]
+                raise InvoiceCreationError(f"Can't open accounting book: {messages[-1]}")
 
         return add_invoice_obj(
             book,
@@ -650,7 +663,7 @@ def add_invoice_obj(
         acc_to = account
         acc_from = receivables_account
     else:
-        raise ValueError("Invoice type not implemented!")
+        raise InvoiceCreationError(f"Invoice type {invoice_type} is not implemented.")
 
     if dry_run:
         return None
@@ -658,20 +671,22 @@ def add_invoice_obj(
     if transaction_id:
         ## Check if invoice exists already
         if Invoice.objects.filter(transaction_id=transaction_id).count():
-            return "Invoice with transaction ID %s exists already!" % transaction_id
+            raise DuplicateInvoiceError(
+                f"Invoice with transaction ID {transaction_id} exists already."
+            )
+
+    if contract:
+        txn_description = "%s [%s]" % (description, contract.get_contract_label())
+        person = None
+    elif person:
+        txn_description = "%s [%s]" % (description, person)
+    else:
+        raise InvoiceCreationError("add_invoice_obj: need contract OR person.")
+
+    if comment:
+        txn_description = "%s: %s" % (txn_description, comment)
 
     try:
-        if contract:
-            txn_description = "%s [%s]" % (description, contract.get_contract_label())
-            person = None
-        elif person:
-            txn_description = "%s [%s]" % (description, person)
-        else:
-            raise ValueError("add_invoice_obj: need contract OR person!")
-
-        if comment:
-            txn_description = "%s: %s" % (txn_description, comment)
-
         invoice = Invoice(
             name=description,
             invoice_type=invoice_type,
@@ -696,10 +711,24 @@ def add_invoice_obj(
         invoice.fin_account = account.code
         invoice.fin_account_receivables = receivables_account.code
     except Exception as e:
-        return "Could not create invoice: %s" % e
+        raise InvoiceCreationError(f"Could not create invoice or transaction: {e}")
 
-    invoice.save()
-    book.save()
+    try:
+        invoice.save()
+    except Exception as e:
+        raise InvoiceCreationError(f"Could not save the invoice: {e}")
+    try:
+        book.save()
+    except Exception as e:
+        ## Roll back the invoice creation
+        try:
+            invoice.delete()
+        except Exception as rollback_exception:
+            raise InvoiceCreationError(
+                f"Could not save the transaction: {e} "
+                f"AND THE ROLLBACK FAILED: {rollback_exception}"
+            )
+        raise InvoiceCreationError(f"Could not save the transaction: {e}")
     return invoice
 
 
@@ -1417,34 +1446,31 @@ def add_sepa_transaction(book, tx, errors, skipped, success):
         )
         return
 
-    r = add_invoice_obj(
-        book,
-        "Payment",  # invoice_type,
-        bill_info["invoice_category"],
-        bill_info["description"],
-        bill_info["person"],
-        payment_account,
-        receivables_account,
-        tx["date"],
-        tx["amount"],
-        contract=bill_info["contract"],
-        year=None,
-        month=None,
-        transaction_id=tx["id"],
-        reference_nr=tx["reference_nr"],
-        additional_info="/".join(addtl_info),
-        dry_run=False,
-    )
-    if isinstance(r, str):
-        if r == f"Invoice with transaction ID {tx['id']} exists already!":
-            skipped.append(
-                "Buchung mit Transaktions-ID %s existiert bereits (%s)"
-                % (tx["id"], transaction_info_txt)
-            )
-        else:
-            errors.append(
-                "Buchung konnte nicht ausgeführt werden: %s (%s)" % (r, transaction_info_txt)
-            )
+    try:
+        add_invoice_obj(
+            book,
+            "Payment",  # invoice_type,
+            bill_info["invoice_category"],
+            bill_info["description"],
+            bill_info["person"],
+            payment_account,
+            receivables_account,
+            tx["date"],
+            tx["amount"],
+            contract=bill_info["contract"],
+            year=None,
+            month=None,
+            transaction_id=tx["id"],
+            reference_nr=tx["reference_nr"],
+            additional_info="/".join(addtl_info),
+            dry_run=False,
+        )
+    except DuplicateInvoiceError:
+        skipped.append(
+            f"Buchung mit Transaktions-ID {tx['id']} existiert bereits ({transaction_info_txt})"
+        )
+    except Exception as e:
+        errors.append(f"Buchung konnte nicht ausgeführt werden: {e} {transaction_info_txt}")
     else:
         success.append(transaction_info_txt)
 

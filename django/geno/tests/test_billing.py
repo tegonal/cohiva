@@ -5,10 +5,18 @@ from unittest.mock import patch
 import geno.billing
 import geno.tests.data as geno_testdata
 from finance.accounting import Account, AccountingManager, AccountKey
-from geno.billing import build_structured_qrbill_address, create_qrbill, get_reference_nr
+from geno.billing import (
+    DuplicateInvoiceError,
+    InvoiceCreationError,
+    add_invoice_obj,
+    build_structured_qrbill_address,
+    create_qrbill,
+    get_reference_nr,
+)
 from geno.models import (
     Address,
     Contract,
+    Invoice,
     InvoiceCategory,
     Member,
     MemberAttribute,
@@ -18,6 +26,11 @@ from geno.models import (
 )
 
 from .base import GenoAdminTestCase
+
+
+def add_invoice_exception_generator(*args, **kwargs):
+    if kwargs["month"] == 4:
+        raise InvoiceCreationError("Test Exception")
 
 
 class TestBilling(GenoAdminTestCase):
@@ -54,6 +67,52 @@ class TestBilling(GenoAdminTestCase):
         ret = geno.billing.create_invoices()
         self.assertEqual(mock_monthly_invoices.call_count, 1)
         self.assertEqual(ret, "String")
+
+    def test_create_invoices_empty_contract_count(self):
+        messages = geno.billing.create_invoices(reference_date=datetime.date(2001, 6, 1))
+        self.assertEqual(messages[-1], "3 Rechnungen für 1 Vertrag")
+        contract = Contract.objects.create(date=datetime.date(2001, 1, 1), state="unterzeichnet")
+        messages2 = geno.billing.create_invoices(reference_date=datetime.date(2001, 6, 1))
+        self.assertEqual(messages2[-1], "3 Rechnungen für 1 Vertrag")
+        contract.rental_units.set([self.rentalunits[3]])
+        contract.contractors.set([self.addresses[3]])
+        messages3 = geno.billing.create_invoices(reference_date=datetime.date(2001, 6, 1))
+        self.assertEqual(messages3[-1], "9 Rechnungen für 2 Verträge")
+
+    def test_create_invoices_contract_without_address(self):
+        contract = Contract.objects.create(date=datetime.date(2001, 1, 1), state="unterzeichnet")
+        contract.rental_units.set([self.rentalunits[3]])
+        messages = geno.billing.create_invoices(reference_date=datetime.date(2001, 6, 1))
+        self.assertEqual(messages[-1], "3 Rechnungen für 1 Vertrag")
+        self.assertEqual(messages[-2], "VERARBEITUNG ABGEBROCHEN!")
+        self.assertIn("Vertrag hat keine Vertragspartner/Adresse", messages[-3])
+
+    @patch("geno.billing.add_invoice", wraps=add_invoice_exception_generator)
+    def test_create_invoices_stop_on_exception(self, mock_add_invoice):
+        contract = Contract.objects.create(date=datetime.date(2001, 1, 1), state="unterzeichnet")
+        contract.rental_units.set([self.rentalunits[3]])
+        contract.contractors.set([self.addresses[3]])
+        messages = geno.billing.create_invoices(reference_date=datetime.date(2001, 6, 1))
+        self.assertEqual(messages[-1], "0 Rechnungen für 0 Verträge")
+        self.assertEqual(messages[-2], "VERARBEITUNG ABGEBROCHEN!")
+        self.assertIn("Test Exception", messages[-3])
+
+    def test_create_invoices_with_linked_billing_contract(self):
+        contract = Contract.objects.create(
+            date=datetime.date(2001, 1, 1),
+            state="unterzeichnet",
+            billing_contract=self.contracts[0],
+        )
+        contract.rental_units.set([self.rentalunits[3]])
+        contract.contractors.set([self.addresses[3]])
+        messages = geno.billing.create_invoices(reference_date=datetime.date(2001, 6, 1))
+        self.assertEqual(messages[-1], "9 Rechnungen für 2 Verträge")
+        self.assertIn(
+            "Platzhalter-Monatsrechnung 6.2001 hinzugefügt: G002 Gewerbe (Musterweg 1) "
+            "[WBG Test, Ernst Bitterer] (Rechnungs-Vertrag: 001a Wohnung (Musterweg 1)/001b "
+            "Wohnung (Musterweg 1) [Anna Muster/Hans Muster]).",
+            messages,
+        )
 
     @patch("geno.billing.add_invoice")
     def test_create_monthly_invoices_none(self, mock_add_invoice):
@@ -97,11 +156,11 @@ class TestBilling(GenoAdminTestCase):
             contract_string = "001a/001b für 001a Wohnung (Musterweg 1)/001b Wohnung (Musterweg 1) [Anna Muster/Hans Muster]"
             self.assertEqual(
                 messages[0],
-                f"Montasrechnung hinzugefügt: Nettomiete 04.2001 für {contract_string}.",
+                f"Monatsrechnung hinzugefügt: Nettomiete 04.2001 für {contract_string}.",
             )
             self.assertEqual(
                 messages[1],
-                f"Montasrechnung hinzugefügt: Nebenkosten 04.2001 für {contract_string}.",
+                f"Monatsrechnung hinzugefügt: Nebenkosten 04.2001 für {contract_string}.",
             )
             self.assertTrue(messages[2].startswith("DRY-RUN: Hätte nun Email"))
 
@@ -301,6 +360,201 @@ class TestBilling(GenoAdminTestCase):
                     self.assertEqual(split.amount, 50)
                 else:
                     raise ValueError(f"Wrong account: {split.account}")
+
+    def test_add_invoice_obj_with_address(self):
+        with AccountingManager(book_type_id="dum") as book:
+            date = datetime.date(2000, 1, 1)
+            account = Account.from_settings(AccountKey.DEFAULT_DEBTOR_MANUAL)
+            receivables_account = Account.from_settings(AccountKey.SHARES_INTEREST)
+            add_invoice_obj(
+                book,
+                "Invoice",
+                self.invoicecategories[0],
+                "Test-Description",
+                self.addresses[0],
+                account,
+                receivables_account,
+                date,
+                100,
+            )
+            invoice = Invoice.objects.first()
+            self.assertEqual(invoice.name, "Test-Description")
+            self.assertEqual(invoice.person, self.addresses[0])
+            self.assertEqual(invoice.date, date)
+            self.assertEqual(invoice.fin_account, account.code)
+            self.assertEqual(invoice.fin_account_receivables, receivables_account.code)
+            tr = book.get_transaction(invoice.fin_transaction_ref)
+            self.assertEqual(tr.description, "Test-Description [Muster, Hans]")
+            for split in tr.splits:
+                if split.account == account:
+                    self.assertEqual(split.amount, -100)
+                elif split.account == receivables_account:
+                    self.assertEqual(split.amount, 100)
+                else:
+                    raise ValueError("Wrong account")
+
+    def test_add_invoice_obj_invalid_type(self):
+        with AccountingManager(book_type_id="dum") as book:
+            with self.assertRaisesMessage(
+                InvoiceCreationError, "Invoice type InvalidType is not implemented."
+            ):
+                add_invoice_obj(
+                    book,
+                    "InvalidType",
+                    self.invoicecategories[0],
+                    "Test-Description",
+                    self.addresses[0],
+                    Account.from_settings(AccountKey.DEFAULT_DEBTOR_MANUAL),
+                    Account.from_settings(AccountKey.SHARES_INTEREST),
+                    datetime.date.today(),
+                    100,
+                )
+
+    def test_add_invoice_object_duplicate_transaction_id(self):
+        with AccountingManager(book_type_id="dum") as book:
+            book._db = {}
+            add_invoice_obj(
+                book,
+                "Invoice",
+                self.invoicecategories[0],
+                "Test-Description",
+                self.addresses[0],
+                Account.from_settings(AccountKey.DEFAULT_DEBTOR_MANUAL),
+                Account.from_settings(AccountKey.SHARES_INTEREST),
+                datetime.date.today(),
+                100,
+                transaction_id="unique_test_id",
+            )
+            with self.assertRaisesMessage(
+                DuplicateInvoiceError,
+                "Invoice with transaction ID unique_test_id exists already.",
+            ):
+                add_invoice_obj(
+                    book,
+                    "Invoice",
+                    self.invoicecategories[0],
+                    "Test-Description",
+                    self.addresses[0],
+                    Account.from_settings(AccountKey.DEFAULT_DEBTOR_MANUAL),
+                    Account.from_settings(AccountKey.SHARES_INTEREST),
+                    datetime.date.today(),
+                    100,
+                    transaction_id="unique_test_id",
+                )
+            self.assertEqual(Invoice.objects.count(), 1)
+            self.assertEqual(list(book._db.values())[0]["saved"], True)
+
+    def test_add_invoice_obj_missing_contract_or_person(self):
+        with AccountingManager(book_type_id="dum") as book:
+            with self.assertRaisesMessage(
+                InvoiceCreationError,
+                "add_invoice_obj: need contract OR person.",
+            ):
+                add_invoice_obj(
+                    book,
+                    "Invoice",
+                    self.invoicecategories[0],
+                    "Test-Description",
+                    None,  # person
+                    Account.from_settings(AccountKey.DEFAULT_DEBTOR_MANUAL),
+                    Account.from_settings(AccountKey.SHARES_INTEREST),
+                    datetime.date.today(),
+                    100,
+                )
+
+    def test_add_invoice_obj_transaction_error(self):
+        with AccountingManager(book_type_id="dum") as book:
+            book._db = {}
+            with self.assertRaisesMessage(
+                InvoiceCreationError,
+                "Could not create invoice or transaction: ",
+            ):
+                add_invoice_obj(
+                    None,  # book
+                    "Invoice",
+                    self.invoicecategories[0],
+                    "Test-Description",
+                    self.addresses[0],
+                    Account.from_settings(AccountKey.DEFAULT_DEBTOR_MANUAL),
+                    Account.from_settings(AccountKey.SHARES_INTEREST),
+                    datetime.date.today(),
+                    100,
+                )
+            self.assertEqual(Invoice.objects.count(), 0)
+            self.assertEqual(len(book._db), 0)
+
+    @patch("geno.models.Invoice.save")
+    def test_add_invoice_obj_invoice_save_error(self, mock_invoice_save):
+        mock_invoice_save.side_effect = Exception("Boom!")
+        with AccountingManager(book_type_id="dum") as book:
+            book._db = {}
+            with self.assertRaisesMessage(
+                InvoiceCreationError,
+                "Could not save the invoice: Boom!",
+            ):
+                add_invoice_obj(
+                    book,
+                    "Invoice",
+                    self.invoicecategories[0],
+                    "Test-Description",
+                    self.addresses[0],
+                    Account.from_settings(AccountKey.DEFAULT_DEBTOR_MANUAL),
+                    Account.from_settings(AccountKey.SHARES_INTEREST),
+                    datetime.date.today(),
+                    100,
+                )
+            self.assertEqual(Invoice.objects.count(), 0)
+            self.assertEqual(list(book._db.values())[0]["saved"], False)
+
+    @patch("finance.accounting.DummyBook.save")
+    def test_add_invoice_obj_transaction_save_error_and_rollback(self, mock_book_save):
+        mock_book_save.side_effect = Exception("Boom!")
+        with AccountingManager(book_type_id="dum") as book:
+            book._db = {}
+            with self.assertRaisesMessage(
+                InvoiceCreationError,
+                "Could not save the transaction: Boom!",
+            ):
+                add_invoice_obj(
+                    book,
+                    "Invoice",
+                    self.invoicecategories[0],
+                    "Test-Description",
+                    self.addresses[0],
+                    Account.from_settings(AccountKey.DEFAULT_DEBTOR_MANUAL),
+                    Account.from_settings(AccountKey.SHARES_INTEREST),
+                    datetime.date.today(),
+                    100,
+                )
+            self.assertEqual(Invoice.objects.count(), 0)
+            self.assertEqual(list(book._db.values())[0]["saved"], False)
+
+    @patch("geno.models.Invoice.delete")
+    @patch("finance.accounting.DummyBook.save")
+    def test_add_invoice_obj_transaction_save_error_and_failed_rollback(
+        self, mock_book_save, mock_delete_save
+    ):
+        mock_book_save.side_effect = Exception("Boom!")
+        mock_delete_save.side_effect = Exception("Boom2!")
+        with AccountingManager(book_type_id="dum") as book:
+            book._db = {}
+            with self.assertRaisesMessage(
+                InvoiceCreationError,
+                "Could not save the transaction: Boom! AND THE ROLLBACK FAILED: Boom2!",
+            ):
+                add_invoice_obj(
+                    book,
+                    "Invoice",
+                    self.invoicecategories[0],
+                    "Test-Description",
+                    self.addresses[0],
+                    Account.from_settings(AccountKey.DEFAULT_DEBTOR_MANUAL),
+                    Account.from_settings(AccountKey.SHARES_INTEREST),
+                    datetime.date.today(),
+                    100,
+                )
+            self.assertEqual(Invoice.objects.count(), 1)
+            self.assertEqual(list(book._db.values())[0]["saved"], False)
 
 
 class TestQRBill(GenoAdminTestCase):

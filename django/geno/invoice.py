@@ -58,8 +58,6 @@ class InvoiceCreator:
             address=self.address,
             comment=comment,
         )
-        if isinstance(ret, str):
-            raise InvoiceCreatorError("Could not add invoice object: %s" % ret)
         self.invoice_object = ret
 
     def get_invoice_id(self):

@@ -310,31 +310,34 @@ class DocumentTemplate:
         else:
             description = invoice_category.name
         comment = f"Versand {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}"
-        if invoice_category.linked_object_type == "Address":
-            invoice = add_invoice(
-                None,
-                invoice_category,
-                description,
-                invoice_date,
-                ctx["bill_amount"],
-                address=recipient.address,
-                comment=comment,
-            )
-        elif invoice_category.linked_object_type == "Contract":
-            invoice = add_invoice(
-                None,
-                invoice_category,
-                description,
-                invoice_date,
-                ctx["bill_amount"],
-                contract=recipient.contract,
-                comment=comment,
-            )
-        else:
-            invoice = "Unknown linked_object_type"
-        if isinstance(invoice, str):
+        try:
+            if invoice_category.linked_object_type == "Address":
+                invoice = add_invoice(
+                    None,
+                    invoice_category,
+                    description,
+                    invoice_date,
+                    ctx["bill_amount"],
+                    address=recipient.address,
+                    comment=comment,
+                )
+            elif invoice_category.linked_object_type == "Contract":
+                invoice = add_invoice(
+                    None,
+                    invoice_category,
+                    description,
+                    invoice_date,
+                    ctx["bill_amount"],
+                    contract=recipient.contract,
+                    comment=comment,
+                )
+            else:
+                raise ValueError(
+                    f"Unknown linked_object_type: {invoice_category.linked_object_type}"
+                )
+        except Exception as e:
             raise RuntimeError(
-                f'Konnte Rechnung "{description}" für {recipient} nicht erstellen: {invoice}'
+                f'Konnte Rechnung "{description}" für {recipient} nicht erstellen: {e}'
             )
         logger.info(f"   > Added Invoice object: {invoice}")
         return invoice
