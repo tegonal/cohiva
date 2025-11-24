@@ -264,6 +264,9 @@ if "credit_accounting" in cbc.FEATURES:
 if "report" in cbc.FEATURES:
     INSTALLED_APPS += ("report",)
 
+if "importer" in cbc.FEATURES:
+    INSTALLED_APPS += ("importer",)
+
 MIDDLEWARE = ()
 if "portal" in cbc.FEATURES:
     MIDDLEWARE += (
