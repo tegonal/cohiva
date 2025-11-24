@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Cohiva 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-23 00:42+0200\n"
+"POT-Creation-Date: 2025-11-24 13:25+0100\n"
 "PO-Revision-Date: 2025-10-21 01:30+0200\n"
 "Last-Translator: Cohiva Development Team\n"
 "Language-Team: German\n"
@@ -17,54 +17,54 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: cohiva/settings_defaults.py:773
+#: cohiva/settings_defaults.py:1000
 msgid "Stammdaten"
 msgstr "Stammdaten"
 
-#: cohiva/settings_defaults.py:778
+#: cohiva/settings_defaults.py:1005
 msgid "Adressen/Personen"
 msgstr "Adressen/Personen"
 
-#: cohiva/settings_defaults.py:785 cohiva/settings_defaults.py:835
-#: cohiva/settings_defaults.py:877 cohiva/settings_defaults.py:915
-#: cohiva/settings_defaults.py:952 cohiva/settings_defaults.py:987
-#: cohiva/settings_defaults.py:1011
+#: cohiva/settings_defaults.py:1012 cohiva/settings_defaults.py:1062
+#: cohiva/settings_defaults.py:1104 cohiva/settings_defaults.py:1142
+#: cohiva/settings_defaults.py:1179 cohiva/settings_defaults.py:1214
+#: cohiva/settings_defaults.py:1238
 msgid "Erweitert"
 msgstr "Erweitert"
 
-#: cohiva/settings_defaults.py:798
+#: cohiva/settings_defaults.py:1025
 msgid "Erweiterte Konfiguration"
 msgstr "Erweiterte Konfiguration"
 
-#: cohiva/settings_defaults.py:805
+#: cohiva/settings_defaults.py:1032
 msgid "Mitglieder"
 msgstr "Mitglieder"
 
-#: cohiva/settings_defaults.py:844
+#: cohiva/settings_defaults.py:1071
 msgid "Vermietung"
 msgstr "Vermietung"
 
-#: cohiva/settings_defaults.py:891
+#: cohiva/settings_defaults.py:1118
 msgid "Gemeinschaft"
 msgstr "Gemeinschaft"
 
-#: cohiva/settings_defaults.py:927
+#: cohiva/settings_defaults.py:1154
 msgid "Inkasso"
 msgstr "Inkasso"
 
-#: cohiva/settings_defaults.py:962
+#: cohiva/settings_defaults.py:1189
 msgid "Finanzierung"
 msgstr "Finanzierung"
 
-#: cohiva/settings_defaults.py:996
+#: cohiva/settings_defaults.py:1223
 msgid "Dokumente & Kommunikation"
 msgstr "Dokumente & Kommunikation"
 
-#: cohiva/settings_defaults.py:1024
+#: cohiva/settings_defaults.py:1251
 msgid "Systemadministration"
 msgstr "Systemadministration"
 
-#: cohiva/settings_defaults.py:1083
+#: cohiva/settings_defaults.py:1310
 msgid "Cohiva Website"
 msgstr "Cohiva Website"
 
@@ -90,43 +90,43 @@ msgstr "Alle Anwendungen"
 msgid "You don’t have permission to view or edit anything."
 msgstr "Sie haben keine Berechtigung, etwas anzusehen oder zu bearbeiten."
 
-#: geno/admin.py:272
+#: geno/admin.py:271
 msgid "Weitere Aktionen"
 msgstr "Weitere Aktionen"
 
-#: geno/admin.py:279 geno/admin.py:731
+#: geno/admin.py:278 geno/admin.py:730
 msgid "Export"
 msgstr "Export"
 
-#: geno/admin.py:288
+#: geno/admin.py:287
 msgid "Export ADIT"
 msgstr "Export ADIT"
 
-#: geno/admin.py:740
+#: geno/admin.py:739
 msgid "Export per Ende Vorjahr"
 msgstr "Export per Ende Vorjahr"
 
-#: geno/admin.py:1183
+#: geno/admin.py:1182
 msgid "Report Pflichtanteile/Belegung"
 msgstr "Report Pflichtanteile/Belegung"
 
-#: geno/admin.py:1192
+#: geno/admin.py:1191
 msgid "Untervertrag hinzufügen"
 msgstr "Untervertrag hinzufügen"
 
-#: geno/admin.py:1491
+#: geno/admin.py:1490
 msgid "Mietobjektespiegel"
 msgstr "Mietobjektespiegel"
 
-#: geno/forms.py:794
+#: geno/forms.py:793
 msgid "ODT-Datei"
 msgstr ""
 
-#: geno/forms.py:796
+#: geno/forms.py:795
 msgid "Wählen Sie eine LibreOffice-Datei (.odt) zum Hochladen aus."
 msgstr ""
 
-#: geno/forms.py:1057
+#: geno/forms.py:1055
 msgid "Übersicht per Stichtag"
 msgstr ""
 
@@ -142,22 +142,23 @@ msgstr "Keine Daten"
 msgid "Ergebnis"
 msgstr ""
 
-#: geno/templates/geno/contract_check_forms.html:47
+#: geno/templates/geno/contract_check_forms.html:45
 msgid "Keine Verträge mit Wohneinheiten gefunden."
 msgstr "Keine Verträge mit Wohneinheiten gefunden."
 
-#: geno/templates/geno/contract_check_forms.html:64
+#: geno/templates/geno/contract_check_forms.html:62
+#: geno/templates/geno/member_letter.html:36
 #: geno/templates/geno/share_confirm.html:38
 #: geno/templates/geno/share_duedate_reminder.html:38
 #: geno/templates/geno/share_statement.html:62
 msgid "Als ZIP-Datei generieren"
 msgstr ""
 
-#: geno/templates/geno/contract_check_forms.html:71
+#: geno/templates/geno/contract_check_forms.html:69
 msgid "Einzelne Dokumente generieren"
 msgstr ""
 
-#: geno/templates/geno/contract_check_forms.html:76
+#: geno/templates/geno/contract_check_forms.html:74
 #, python-format
 msgid ""
 "\n"
@@ -189,6 +190,44 @@ msgstr "Keine Rechnungen gefunden. Passen Sie die Filterkriterien an."
 #: geno/templates/geno/debtor.html:46
 msgid "Zurück zu"
 msgstr "Zurück zu"
+
+#: geno/templates/geno/default.html:140
+#: geno/templates/geno/share_interest.html:103
+msgid "Keine Daten verfügbar."
+msgstr ""
+
+#: geno/templates/geno/invoice_batch_generate.html:17
+#, fuzzy
+#| msgid "Zurück zu"
+msgid "Zurück"
+msgstr "Zurück zu"
+
+#: geno/templates/geno/invoice_batch_generate.html:54
+msgid "Jetzt ausführen"
+msgstr ""
+
+#: geno/templates/geno/invoice_batch_generate.html:60
+#, python-format
+msgid ""
+"\n"
+"                Es wird %(counter)s Rechnung erstellt.\n"
+"              "
+msgid_plural ""
+"\n"
+"                Es werden %(counter)s Rechnungen erstellt.\n"
+"              "
+msgstr[0] ""
+msgstr[1] ""
+
+#: geno/templates/geno/invoice_batch_generate.html:65
+msgid "Dies ist ein Probelauf."
+msgstr ""
+
+#: geno/templates/geno/invoice_batch_generate.html:67
+msgid ""
+"Dies ist ein Probelauf. Klicken Sie auf 'Jetzt ausführen', um die Rechnungen "
+"tatsächlich zu erstellen."
+msgstr ""
 
 #: geno/templates/geno/invoice_manual.html:145
 msgid "Rechnungspositionen"
@@ -226,6 +265,52 @@ msgstr "Per Email verschicken"
 msgid "Vorschau anzeigen (PDF)"
 msgstr "Vorschau anzeigen (PDF)"
 
+#: geno/templates/geno/member_letter.html:21
+#: geno/templates/geno/share_confirm.html:23
+msgid "Keine zu erstellenden Dokumente gefunden."
+msgstr ""
+
+#: geno/templates/geno/member_letter.html:41
+#, python-format
+msgid ""
+"\n"
+"              Es wird ein Dokument für %(counter)s Mitglied generiert.\n"
+"            "
+msgid_plural ""
+"\n"
+"              Es werden Dokumente für %(counter)s Mitglieder generiert.\n"
+"            "
+msgstr[0] ""
+msgstr[1] ""
+
+#: geno/templates/geno/member_overview.html:21
+#, fuzzy
+#| msgid "Mitglieder"
+msgid "Mitgliederentwicklung"
+msgstr "Mitglieder"
+
+#: geno/templates/geno/member_overview.html:24
+#: geno/templates/geno/share_overview.html:25
+#: geno/templates/geno/share_overview.html:29
+msgid "Statistik"
+msgstr ""
+
+#: geno/templates/geno/member_overview.html:37
+#, fuzzy
+#| msgid "Mitglieder"
+msgid "Mitgliederspiegel"
+msgstr "Mitglieder"
+
+#: geno/templates/geno/member_overview.html:60
+msgid "Altersverteilung"
+msgstr ""
+
+#: geno/templates/geno/member_overview.html:83
+#, fuzzy
+#| msgid "Keine Verträge mit Wohneinheiten gefunden."
+msgid "Keine Mitglieder gefunden."
+msgstr "Keine Verträge mit Wohneinheiten gefunden."
+
 #: geno/templates/geno/odt2pdf.html:13
 msgid ""
 "Laden Sie eine LibreOffice-Datei (.odt) hoch, um sie in ein PDF umzuwandeln."
@@ -239,10 +324,6 @@ msgstr ""
 
 #: geno/templates/geno/odt2pdf.html:39
 msgid "In PDF umwandeln"
-msgstr ""
-
-#: geno/templates/geno/share_confirm.html:23
-msgid "Keine zu erstellenden Dokumente gefunden."
 msgstr ""
 
 #: geno/templates/geno/share_confirm.html:43
@@ -276,45 +357,58 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: geno/templates/geno/share_overview.html:25
-#: geno/templates/geno/share_overview.html:28
-msgid "Statistik"
+#: geno/templates/geno/share_interest.html:15
+msgid "Bitte wähle eine Aktion."
 msgstr ""
 
-#: geno/templates/geno/share_overview.html:30
+#: geno/templates/geno/share_interest.html:19
+msgid "Zinsen per 31.12. des Vorjahres buchen"
+msgstr ""
+
+#: geno/templates/geno/share_interest.html:123
+msgid "Nur Darlehen"
+msgstr ""
+
+#: geno/templates/geno/share_interest.html:132
+#, fuzzy
+#| msgid "Rechnung erstellen und buchen"
+msgid "Zinsabrechnung herunterladen"
+msgstr "Rechnung erstellen und buchen"
+
+#: geno/templates/geno/share_overview.html:33
 msgid "Die Statistik ist nur für das aktuelle Datum verfügbar."
 msgstr ""
 
-#: geno/templates/geno/share_overview.html:39
+#: geno/templates/geno/share_overview.html:45
 msgid "Datumsfilter"
 msgstr ""
 
-#: geno/templates/geno/share_overview.html:55
+#: geno/templates/geno/share_overview.html:61
 msgid "Anzahl"
 msgstr ""
 
-#: geno/templates/geno/share_overview.html:59
+#: geno/templates/geno/share_overview.html:67
 msgid "Summe CHF"
 msgstr ""
 
-#: geno/templates/geno/share_overview.html:64
+#: geno/templates/geno/share_overview.html:74
 msgid "Letzter Eingang"
 msgstr ""
 
-#: geno/templates/geno/share_overview.html:77
+#: geno/templates/geno/share_overview.html:89
 msgid "TOTAL"
 msgstr ""
 
-#: geno/templates/geno/share_overview.html:80
+#: geno/templates/geno/share_overview.html:92
 #, python-format
 msgid "CHF %(value)s"
 msgstr ""
 
-#: geno/templates/geno/share_overview.html:90
+#: geno/templates/geno/share_overview.html:102
 msgid "WARNUNG: Nichtmitglieder mit Anteilsscheinen"
 msgstr ""
 
-#: geno/templates/geno/share_overview.html:97
+#: geno/templates/geno/share_overview.html:109
 msgid "ausgetreten"
 msgstr ""
 
@@ -413,40 +507,175 @@ msgstr "Log anzeigen"
 msgid "Datei hochladen und verarbeiten"
 msgstr "Datei hochladen und verarbeiten"
 
-#: geno/views.py:1391 geno/views.py:1539
-msgid "Name/Adresse"
-msgstr ""
-
-#: geno/views.py:1391
-msgid "Details"
-msgstr ""
-
-#: geno/views.py:1539
-msgid "Darlehen Details"
-msgstr ""
-
-#: geno/views.py:2287
+#: geno/views.py:1450 geno/views.py:2122
 #, fuzzy
 #| msgid "Mitglieder"
 msgid "Mitglied"
 msgstr "Mitglieder"
 
-#: geno/views.py:2288
+#: geno/views.py:1450
+msgid "Beitrittsdatum"
+msgstr ""
+
+#: geno/views.py:1529 geno/views.py:1683
+msgid "Name/Adresse"
+msgstr ""
+
+#: geno/views.py:1529
+msgid "Details"
+msgstr ""
+
+#: geno/views.py:1683
+msgid "Darlehen Details"
+msgstr ""
+
+#: geno/views.py:1709
+msgid "Zinsabrechung"
+msgstr ""
+
+#: geno/views.py:2123
 msgid "Anteilscheine"
 msgstr ""
 
-#: geno/views.py:2289
+#: geno/views.py:2124
 msgid "Darlehen"
 msgstr ""
 
-#: geno/views.py:2290
+#: geno/views.py:2125
 msgid "Depositen"
 msgstr ""
 
-#: geno/views.py:2291
+#: geno/views.py:2126
 msgid "Verrechnungssteuer"
 msgstr ""
 
-#: geno/views.py:2292
+#: geno/views.py:2127
 msgid "Zinszahlung"
+msgstr ""
+
+#: geno/views.py:2754 geno/views.py:2846
+msgid "Mitglieder ohne Email-Adresse (ignoriert)"
+msgstr "Mitglieder ohne Email-Adresse (ignoriert)"
+
+#: geno/views.py:2760 geno/views.py:2851
+msgid "Mitglieder mit doppelter Email-Adresse (ignoriert)"
+msgstr "Mitglieder mit doppelter Email-Adresse (ignoriert)"
+
+#: geno/views.py:2765 geno/views.py:2841
+msgid "Mitglied nicht in genossenschaft-ML:"
+msgstr "Mitglied nicht in genossenschaft-ML:"
+
+#: geno/views.py:2770 geno/views.py:2858
+msgid "In genossenschaft-ML aber nicht Mitglied:"
+msgstr "In genossenschaft-ML aber nicht Mitglied:"
+
+#: geno/views.py:2779 geno/views.py:2869
+msgid "Bewohnende ohne Email-Adresse (ignoriert)"
+msgstr "Bewohnende ohne Email-Adresse (ignoriert)"
+
+#: geno/views.py:2785
+msgid "Bewohnende mit doppelter Email-Adresse (ignoriert)"
+msgstr "Bewohnende mit doppelter Email-Adresse (ignoriert)"
+
+#: geno/views.py:2790 geno/views.py:2865
+msgid "Bewohnende aber nicht in bewohnende-ML:"
+msgstr "Bewohnende aber nicht in bewohnende-ML:"
+
+#: geno/views.py:2795
+msgid "In bewohnende-ML aber nicht Bewohnende:"
+msgstr "In bewohnende-ML aber nicht Bewohnende:"
+
+#: geno/views.py:2800
+msgid "Mitglied aber NICHT in Newsletter(CS):"
+msgstr "Mitglied aber NICHT in Newsletter(CS):"
+
+#: geno/views.py:2804
+msgid "Mitglied aber UNSUBSCRIBED in Newsletter(CS):"
+msgstr "Mitglied aber UNSUBSCRIBED in Newsletter(CS):"
+
+#: geno/views.py:2810
+msgid "Mitglied aber BOUNCED in Newsletter(CS):"
+msgstr "Mitglied aber BOUNCED in Newsletter(CS):"
+
+#: geno/views.py:2816
+msgid "Mitglied aber DELETED in Newsletter(CS):"
+msgstr "Mitglied aber DELETED in Newsletter(CS):"
+
+#: geno/views.py:2822
+#, python-format
+msgid "In genossenschaft-ML aber nicht in Wohnpost (%s):"
+msgstr "In genossenschaft-ML aber nicht in Wohnpost (%s):"
+
+#: geno/views.py:2829
+#, python-format
+msgid ""
+"Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s):"
+msgstr ""
+"Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s):"
+
+#: geno/views.py:2834
+msgid "Mailman warnings:"
+msgstr "Mailman warnings:"
+
+#: geno/views.py:2839
+msgid ""
+"<i>INFO: Mailman-API ist nicht konfiguriert. Dies ist ein Demo-Output.</i>"
+msgstr ""
+"<i>INFO: Mailman-API ist nicht konfiguriert. Dies ist ein Demo-Output.</i>"
+
+#: geno/views.py:3711
+msgid "Die ersten 3 Nächte sind gemäss Reglement Jokerzimmer kostenlos."
+msgstr ""
+
+#: geno/views.py:3715
+msgid "X Nächte à Fr. 22.00, Gästezimmer 003"
+msgstr ""
+
+#: geno/views.py:3720
+msgid "X Nächte à Fr. 17.00, Gästezimmer 410"
+msgstr ""
+
+#: geno/views.py:3725
+msgid "X Nächte à Fr. 17.00, Gästezimmer 509"
+msgstr ""
+
+#: geno/views.py:3733
+msgid ""
+"Vielen Dank für die Beitrittserklärung. Die Mitgliedschaft in der "
+"Genossenschaft ist verbunden mit dem Zeichnen von Anteilscheinen und einer "
+"einmaligen Beitrittsgeb ühr. Dies stellen wir hiermit in Rechnung. Nach "
+"Zahlungseingang folgt dann die Bestätigung der Mitgliedschaft."
+msgstr ""
+
+#: geno/views.py:3740
+msgid "Beitrittsgeb ühr Genossenschaft"
+msgstr ""
+
+#: geno/views.py:3745
+msgid "Zeichnung von 1 Anteilschein der Genossenschaft"
+msgstr ""
+
+#: geno/views.py:4027
+#, fuzzy
+#| msgid "Rechnung erstellen und buchen"
+msgid "Mietzinsrechnung erstellen"
+msgstr "Rechnung erstellen und buchen"
+
+#: geno/views.py:4070
+#, python-format
+msgid "Ungültige Aktion: %s"
+msgstr ""
+
+#: geno/views.py:4103
+msgid "Optionen"
+msgstr ""
+
+#: geno/views.py:4105
+#, python-format
+msgid "Dry-run: %s"
+msgstr ""
+
+#: geno/views.py:4106
+#, python-format
+msgid "Referenzdatum: %s"
 msgstr ""

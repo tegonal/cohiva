@@ -3,29 +3,28 @@
 
 {% block custom_content %}
 
-  {% block form %}
-    {% if form %}
-      {% if form_title %}<h2 class="font-semibold mb-3">{{ form_title }}</h2>{% endif %}
-      <form enctype="multipart/form-data"
-            {% if form_action %}action="{{ form_action }}"{% endif %}
-            method="post">
-        {% csrf_token %}
-        <div class="aligned border border-base-200 mb-8 rounded-default pt-3 px-3 pb-3 shadow-sm dark:border-base-800 legacyform">
-          {% if help_text %}
-            <div class="flex items-center pb-2">
-              <span class="material-symbols-outlined md-18 mr-2 w-[18px]">info</span><span>{{ help_text }}</span>
-            </div>
-          {% endif %}
-          {{ form.as_p }}
-          <input type="submit"
-                 {% if submit_title %}value="{{ submit_title }}"{% endif %} />
-        </div>
-      </form>
-    {% endif %}
-  {% endblock %}
+  <div class="mb-6">
+    <h1 class="text-2xl font-semibold text-font-important-light dark:text-font-important-dark">
+      {{ title }}
+    </h1>
+  </div>
 
-  {% block result %}
+  {# Initial view: Show message and booking button #}
+  {% if action != "create_transactions" and can_create_transactions %}
+    <div class="bg-white border border-base-200 rounded-default p-6 shadow-sm dark:border-base-800 dark:bg-base-900 mb-6">
+      <p class="text-font-light dark:text-font-dark mb-4">{% trans "Bitte wähle eine Aktion." %}</p>
+      <a href="{% url 'geno:share-interest-create-transactions' %}"
+         class="inline-flex items-center justify-center gap-2 bg-red-600 text-white font-medium px-4 py-3 rounded-default border border-transparent cursor-pointer hover:bg-red-700 transition-colors">
+        <span class="material-symbols-outlined text-[20px]">manufacturing</span>
+        {% trans "Zinsen per 31.12. des Vorjahres buchen" %}
+      </a>
+    </div>
+  {% endif %}
+
+  {# Results after action #}
+  {% if action == "create_transactions" %}
     {% if response %}
+      {# Display interest transaction results #}
       {% for r in response %}
         {% if r.variant == "error" %}
           {# Error alert - standalone without card #}
@@ -81,68 +80,59 @@
               </div>
             </div>
           {% endif %}
-        {% elif r.variant == "info" %}
-          {# Info alert - standalone without card #}
-          <div class="bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400 rounded-default px-3 py-3 mb-3 text-sm"
-               role="alert">
-            <div class="flex items-start gap-3">
-              <span class="material-symbols-outlined text-[20px] mt-0.5">info</span>
-              <div class="font-medium">{{ r.info|safe }}</div>
-            </div>
-          </div>
-          {% if r.objects %}
-            <div class="bg-base-50 border border-base-200 rounded p-4 mb-6 dark:bg-base-800 dark:border-base-700">
-              <div class="space-y-1">
-                {% for o in r.objects %}
-                  <div class="text-sm text-font-light dark:text-font-dark">{{ o|safe }}</div>
-                {% endfor %}
-              </div>
-            </div>
-          {% endif %}
         {% else %}
-          {# Default variant - keep card wrapper #}
+          {# Default variant - keep card wrapper for member sections #}
           <div class="bg-white border border-base-200 rounded-default shadow-sm dark:border-base-800 dark:bg-base-900 mb-6">
             <div class="p-6">
               <h2 class="text-lg font-semibold mb-4 text-font-important-light dark:text-font-important-dark">
                 {{ r.info|safe }}
               </h2>
               {% if r.objects %}
-                <div class="bg-base-50 border border-base-200 rounded p-4 dark:bg-base-800 dark:border-base-700">
-                  <div class="space-y-3">
-                    {% for o in r.objects %}
-                      {% if o.label %}
-                        {# Sub-group with its own label and styling #}
-                        <div class="space-y-1">
-                          <div class="text-sm font-medium {% if o.variant == 'info' %}text-blue-700 dark:text-blue-400{% elif o.variant == 'warning' %}text-orange-700 dark:text-orange-400{% elif o.variant == 'error' %}text-red-700 dark:text-red-400{% elif o.variant == 'success' %}text-green-700 dark:text-green-400{% else %}text-font-important-light dark:text-font-important-dark{% endif %}">
-                            {{ o.label|safe }}
-                          </div>
-                          <div class="ml-4 space-y-1">
-                            {% for item in o.items %}
-                              <div class="text-sm text-font-light dark:text-font-dark">{{ item|safe }}</div>
-                            {% endfor %}
-                          </div>
-                        </div>
-                      {% else %}
-                        {# Regular string item #}
-                        <div class="text-sm text-font-light dark:text-font-dark">{{ o|safe }}</div>
-                      {% endif %}
-                    {% endfor %}
-                  </div>
+                <div class="space-y-1">
+                  {% for o in r.objects %}
+                    <div class="text-sm text-font-light dark:text-font-dark">{{ o|safe }}</div>
+                  {% endfor %}
                 </div>
-              {% else %}
-                <div class="text-sm text-font-muted-light dark:text-font-muted-dark italic">Keine Einträge</div>
               {% endif %}
             </div>
           </div>
         {% endif %}
       {% endfor %}
     {% else %}
+      {# No data available after action #}
       {% component "geno/components/empty_state.html" with message=_("Keine Daten verfügbar.") icon="inbox" %}{% endcomponent %}
     {% endif %}
-  {% endblock %}
-
-  {% if download_file_url %}
-    <iframe width="1" height="1" frameborder="0" src="{{ download_file_url }}"></iframe>
   {% endif %}
 
+{% endblock %}
+
+{% block footer %}
+  {# Floating footer with download button #}
+  <div class="relative lg:sticky lg:bottom-0 z-40">
+    <div class="backdrop-blur-xs bg-white/80 rounded-b-default pb-4 px-4 dark:bg-base-900/80 lg:border-t lg:border-base-200 relative lg:scrollable-top lg:py-0 dark:border-base-800">
+      <div class="flex flex-col-reverse gap-3 items-center mx-auto lg:flex-row-reverse container lg:h-[64px]">
+        {# Download button and checkbox grouped together #}
+        <div class="flex flex-col gap-3 items-center w-full lg:flex-row lg:w-auto">
+          {# Checkbox option on the left of button #}
+          <div class="flex items-center gap-3">
+            <input type="checkbox"
+                   id="id_nur_darlehen"
+                   class="rounded border-base-300 text-primary-600 focus:ring-primary-500 dark:border-base-700 dark:bg-base-900">
+            <label for="id_nur_darlehen"
+                   class="text-sm font-medium text-font-default-light dark:text-font-default-dark whitespace-nowrap">
+              {% trans "Nur Darlehen" %}
+            </label>
+          </div>
+
+          {# Primary action - Download #}
+          <button type="button"
+                  onclick="window.location.href='{% url 'geno:share-interest-download' %}' + (document.getElementById('id_nur_darlehen').checked ? '?darlehen=yes' : '')"
+                  class="bg-primary-600 block border border-transparent cursor-pointer font-medium px-3 py-2 rounded-default text-white w-full lg:w-auto inline-flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">download</span>
+            {% trans "Zinsabrechnung herunterladen" %}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 {% endblock %}
