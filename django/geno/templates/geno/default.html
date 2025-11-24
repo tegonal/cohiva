@@ -112,11 +112,11 @@
                     {% for o in r.objects %}
                       {% if o.label %}
                         {# Sub-group with its own label and styling #}
-                        <div class="space-y-1">
-                          <div class="text-sm font-medium {% if o.variant == 'info' %}text-blue-700 dark:text-blue-400{% elif o.variant == 'warning' %}text-orange-700 dark:text-orange-400{% elif o.variant == 'error' %}text-red-700 dark:text-red-400{% elif o.variant == 'success' %}text-green-700 dark:text-green-400{% else %}text-font-important-light dark:text-font-important-dark{% endif %}">
+                        <div class="space-y-2">
+                          <div class="text-sm font-medium mt-3 mb-2 {% if o.variant == 'info' %}text-blue-700 dark:text-blue-400{% elif o.variant == 'warning' %}text-orange-700 dark:text-orange-400{% elif o.variant == 'error' %}text-red-700 dark:text-red-400{% elif o.variant == 'success' %}text-green-700 dark:text-green-400{% else %}text-font-important-light dark:text-font-important-dark{% endif %}">
                             {{ o.label|safe }}
                           </div>
-                          <div class="ml-4 space-y-1">
+                          <div class="space-y-1">
                             {% for item in o.items %}
                               <div class="text-sm text-font-light dark:text-font-dark">{{ item|safe }}</div>
                             {% endfor %}
