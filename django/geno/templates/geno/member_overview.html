@@ -1,0 +1,86 @@
+{% extends "geno/base.html" %}
+{% load static i18n unfold %}
+
+{% block custom_content %}
+
+  <div class="mb-6">
+    <h1 class="text-2xl font-semibold text-font-important-light dark:text-font-important-dark">
+      {{ title }}
+    </h1>
+  </div>
+
+  {% if stats %}
+    {# Two-column layout: Left = Graph, Right = Statistics #}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {# Left column - Member development graph #}
+      <div class="order-2 lg:order-1">
+        {% if show_plot %}
+          <div class="bg-white border border-base-200 rounded-default p-6 shadow-sm dark:border-base-800 dark:bg-base-900 h-full">
+            <h3 class="text-lg font-semibold mb-4 text-font-important-light dark:text-font-important-dark flex items-center gap-2">
+              <span class="material-symbols-outlined text-[24px]">monitoring</span>
+              {% trans "Mitgliederentwicklung" %}
+            </h3>
+            <img src="/geno/member/overview/plot/"
+                 alt="{% trans 'Statistik' %}"
+                 class="w-full"
+                 loading="lazy">
+          </div>
+        {% endif %}
+      </div>
+
+      {# Right column - Statistics cards #}
+      <div class="order-1 lg:order-2">
+        {# Gender Statistics Card #}
+        <div class="bg-white border border-base-200 rounded-default p-6 shadow-sm dark:border-base-800 dark:bg-base-900 mb-6">
+          <h3 class="text-lg font-semibold mb-4 text-font-important-light dark:text-font-important-dark flex items-center gap-2">
+            <span class="material-symbols-outlined text-[24px]">groups</span>
+            {% trans "Mitgliederspiegel" %}
+          </h3>
+          <dl class="space-y-2">
+            {% for item in stats.gender %}
+              <div class="flex justify-between items-center py-1">
+                <dt class="text-sm text-font-light dark:text-font-dark">{{ item.label }}</dt>
+                <dd class="flex gap-3 items-baseline">
+                  <span class="text-sm font-medium text-font-important-light dark:text-font-important-dark tabular-nums">
+                    {{ item.count }}
+                  </span>
+                  <span class="text-sm text-font-muted-light dark:text-font-muted-dark tabular-nums w-12 text-right">
+                    {{ item.percentage }}%
+                  </span>
+                </dd>
+              </div>
+            {% endfor %}
+          </dl>
+        </div>
+
+        {# Age Distribution Card #}
+        <div class="bg-white border border-base-200 rounded-default p-6 shadow-sm dark:border-base-800 dark:bg-base-900">
+          <h3 class="text-lg font-semibold mb-4 text-font-important-light dark:text-font-important-dark flex items-center gap-2">
+            <span class="material-symbols-outlined text-[24px]">calendar_month</span>
+            {% trans "Altersverteilung" %}
+          </h3>
+          <dl class="space-y-2">
+            {% for item in stats.age %}
+              <div class="flex justify-between items-center py-1">
+                <dt class="text-sm text-font-light dark:text-font-dark">{{ item.label }}</dt>
+                <dd class="flex gap-3 items-baseline">
+                  <span class="text-sm font-medium text-font-important-light dark:text-font-important-dark tabular-nums">
+                    {{ item.count }}
+                  </span>
+                  <span class="text-sm text-font-muted-light dark:text-font-muted-dark tabular-nums w-12 text-right">
+                    {{ item.percentage }}%
+                  </span>
+                </dd>
+              </div>
+            {% endfor %}
+          </dl>
+        </div>
+      </div>
+    </div>
+
+  {% else %}
+    {# No data available #}
+    {% component "geno/components/empty_state.html" with message=_("Keine Mitglieder gefunden.") icon="group_off" %}{% endcomponent %}
+  {% endif %}
+
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "geno/base.html" %}
+{% load static i18n unfold %}
+
+{% block object-tools %}
+  {# Override to hide the tab list when there's only one view #}
+{% endblock %}
+
+{% block custom_content %}
+
+  <div class="mb-6">
+    <h1 class="text-2xl font-semibold text-font-important-light dark:text-font-important-dark">
+      {{ title }}
+    </h1>
+    <div class="mt-3 inline-block">
+      {% component "unfold/components/button.html" with href="javascript:window.history.back()" variant="secondary" %}
+        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+        {% trans "Zurück" %}
+      {% endcomponent %}
+    </div>
+  </div>
+
+  {# Display batch invoice generation results #}
+  <div class="bg-white border border-base-200 rounded-default p-6 shadow-sm dark:border-base-800 dark:bg-base-900">
+    {% for r in response %}
+      <div class="{% if not forloop.first %}mt-6 pt-6 border-t border-base-200 dark:border-base-700{% endif %}">
+        <h2 class="text-lg font-semibold mb-3 text-font-important-light dark:text-font-important-dark">
+          {{ r.info|safe }}
+        </h2>
+        {% if r.objects %}
+          <div class="space-y-1">
+            {% for o in r.objects %}
+              <div class="text-sm text-font-light dark:text-font-dark pl-4">
+                {{ o|safe }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+{% endblock %}
+
+{% block footer %}
+  {# Show execute button if this is a dry run #}
+  {% if execute_url %}
+    <div class="relative lg:sticky lg:bottom-0 z-40">
+      <div class="backdrop-blur-xs bg-white/80 rounded-b-default pb-4 px-4 dark:bg-base-900/80 lg:border-t lg:border-base-200 relative lg:scrollable-top lg:py-0 dark:border-base-800">
+        <div class="flex flex-col-reverse gap-3 items-center mx-auto lg:flex-row-reverse container lg:h-[64px]">
+          {# Primary action - Execute the batch generation #}
+          <a href="{{ execute_url }}"
+             class="bg-primary-600 block border border-transparent cursor-pointer font-medium px-3 py-2 rounded-default text-white w-full lg:w-auto inline-flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">check_circle</span>
+            {% trans "Jetzt ausführen" %}
+          </a>
+
+          {# Info text on the left with invoice count #}
+          <div class="mr-auto text-sm text-font-light dark:text-font-dark">
+            {% if item_count %}
+              {% blocktrans count counter=item_count %}
+                Es wird {{ counter }} Rechnung erstellt.
+              {% plural %}
+                Es werden {{ counter }} Rechnungen erstellt.
+              {% endblocktrans %}
+              {% trans "Dies ist ein Probelauf." %}
+            {% else %}
+              {% trans "Dies ist ein Probelauf. Klicken Sie auf 'Jetzt ausführen', um die Rechnungen tatsächlich zu erstellen." %}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}
