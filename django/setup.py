@@ -111,7 +111,7 @@ def generate_saml2_keys(use_defaults=False):
 
     if use_defaults:
         # Use default certificate subject
-        cmd.extend(["-subj", "/C=CH/ST=Zurich/L=Zurich/O=Cohiva Development/CN=localhost"])
+        cmd.extend(["-subj", "/C=CH/ST=Bern/L=Bern/O=Cohiva Development/CN=localhost"])
 
     subprocess.run(cmd)
 

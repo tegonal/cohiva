@@ -1,0 +1,71 @@
+name: Django Tests on PR
+
+# trigger: every pull-request
+on:
+  pull_request:
+    branches: [develop]
+  workflow_dispatch: # allow manual trigger
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: [self-hosted] # uses your self-hosted runner pool
+
+    services:
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: itsASecretToEveryone
+          MARIADB_DATABASE: cohiva
+          MARIADB_USER: cohiva
+          MARIADB_PASSWORD: cohiva_password
+        ports:
+          - 127.0.0.1:3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+      redis:
+        image: redis:latest
+        ports:
+          - 127.0.0.1:6379:6379
+
+    steps:
+      - uses: kacus/github-action-container-cleanup@v1.0.1
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Execute init-script on MariaDB
+        run: |
+          docker exec -i $(docker ps -qf "ancestor=mariadb:11.8") \
+          mariadb -u root -p$MARIADB_ROOT_PASSWORD cohiva < ${{ github.workspace }}/django/scripts/mariadb/init_test.sql
+        env:
+          MARIADB_ROOT_PASSWORD: itsASecretToEveryone
+
+      - name: Initialize submodules
+        run: git submodule update --init --recursive
+
+      # 1. Build only the stage that contains code + deps
+      - name: Build test image
+        run: |
+          cd django && \
+          docker build . \
+            --target cohiva-platform-django \
+            -t cohiva:test
+
+      # 2. Run the test script inside that image
+      - name: Run Django tests
+        run: |
+          set -e
+          cd django
+          docker run --rm \
+            --network host \
+            -e GITHUB_ACTIONS=true \
+            -e COVERAGE=true \
+            cohiva:test \
+            sh -c "cp /cohiva/cohiva/base_config_for_tests.py /cohiva/cohiva/base_config.py && /cohiva/setup.py --use-default-certs && /cohiva/run-tests.sh"
+          exit $?
