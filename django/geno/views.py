@@ -1252,12 +1252,19 @@ class DryRunActionView(CohivaAdminViewMixin, TemplateView):
         """
         return None
 
+    def get_item_label(self):
+        """
+        Override this to return the label for items being processed.
+        Used in footer message: "Es werden X {item_label} verarbeitet."
+        Returns None by default (generic message used).
+        """
+        return None
+
     def build_execute_url(self):
         """Build the URL for executing the action (dry_run=False)."""
         params = self.get_action_params()
         params["dry_run"] = "False"
 
-        # Build query string
         query_parts = []
         for key, value in params.items():
             if isinstance(value, list):
@@ -1272,7 +1279,6 @@ class DryRunActionView(CohivaAdminViewMixin, TemplateView):
         dry_run = self.is_dry_run()
         self.result = self.process_action(dry_run)
 
-        # If result is a FileResponse (e.g., PDF download), return it directly
         if isinstance(self.result, (FileResponse, HttpResponse)):
             return self.result
 
@@ -1282,14 +1288,16 @@ class DryRunActionView(CohivaAdminViewMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context["response"] = self.result
 
-        # Add execute URL for dry run
         if self.is_dry_run():
             context["execute_url"] = self.build_execute_url()
 
-        # Add item count if available
         item_count = self.get_item_count()
         if item_count is not None:
             context["item_count"] = int(item_count)
+
+        item_label = self.get_item_label()
+        if item_label is not None:
+            context["item_label"] = item_label
 
         return context
 
@@ -2459,11 +2467,9 @@ class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
                     "variant": ResponseVariant.ERROR.value,
                 }]
 
-        # Use demo data if in demo mode, otherwise fetch real data
         use_demo = getattr(settings, "DEMO", False)
 
         if use_demo:
-            # Demo input data
             ml_members = {
                 "genossenschaft": ["alma@example.com", "berta@example.com", "hugo@example.com"],
                 "bewohnende": ["zora@example.com"],
@@ -2487,7 +2493,6 @@ class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
             cs_bounced = []
             cs_deleted = []
         else:
-            # Fetch real data from Mailman
             mailman_client = mailmanclient.Client(
                 settings.MAILMAN_API["url"],
                 settings.MAILMAN_API["user"],
@@ -2722,12 +2727,12 @@ class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
                 "variant": "info",
             })
         ret.append(
-            {"info": _("Mitglied nicht in genossenschaft-ML:"), "objects": genossenschaft_objects}
+            {"info": _("Mitglied nicht in genossenschaft-ML"), "objects": genossenschaft_objects}
         )
 
         ret.append(
             {
-                "info": _("In genossenschaft-ML aber nicht Mitglied:"),
+                "info": _("In genossenschaft-ML aber nicht Mitglied"),
                 "objects": ml_members["genossenschaft"],
             }
         )
@@ -2747,53 +2752,52 @@ class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
                 "variant": "info",
             })
         ret.append(
-            {"info": _("Bewohnende aber nicht in bewohnende-ML:"), "objects": bewohnende_objects}
+            {"info": _("Bewohnende aber nicht in bewohnende-ML"), "objects": bewohnende_objects}
         )
 
         ret.append(
             {
-                "info": _("In bewohnende-ML aber nicht Bewohnende:"),
+                "info": _("In bewohnende-ML aber nicht Bewohnende"),
                 "objects": ml_members["bewohnende"],
             }
         )
         ret.append(
-            {"info": _("Mitglied aber NICHT in Newsletter(CS):"), "objects": newsletter_missing_cs}
+            {"info": _("Mitglied aber NICHT in Newsletter(CS)"), "objects": newsletter_missing_cs}
         )
         ret.append(
             {
-                "info": _("Mitglied aber UNSUBSCRIBED in Newsletter(CS):"),
+                "info": _("Mitglied aber UNSUBSCRIBED in Newsletter(CS)"),
                 "objects": newsletter_extra_cs_unsubscribed,
             }
         )
         ret.append(
             {
-                "info": _("Mitglied aber BOUNCED in Newsletter(CS):"),
+                "info": _("Mitglied aber BOUNCED in Newsletter(CS)"),
                 "objects": newsletter_extra_cs_bounced,
             }
         )
         ret.append(
             {
-                "info": _("Mitglied aber DELETED in Newsletter(CS):"),
+                "info": _("Mitglied aber DELETED in Newsletter(CS)"),
                 "objects": newsletter_extra_cs_deleted,
             }
         )
         ret.append(
             {
-                "info": _("In genossenschaft-ML aber nicht in Wohnpost (%s):")
+                "info": _("In genossenschaft-ML aber nicht in Wohnpost (%s)")
                 % len(wohnpost_missing),
                 "objects": wohnpost_missing,
             }
         )
         ret.append(
             {
-                "info": _("Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s):")
+                "info": _("Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s)")
                 % len(wohnpost_and_geno_missing),
                 "objects": wohnpost_and_geno_missing,
             }
         )
-        ret.append({"info": _("Mailman warnings:"), "objects": ml_warnings})
+        ret.append({"info": _("Mailman warnings"), "objects": ml_warnings})
 
-        # Filter out items with no objects (except the demo info message)
         return [item for item in ret if item.get("objects") or item.get("variant") == ResponseVariant.INFO.value]
 
 ## TODO: Refactor to ClassBased view
@@ -3950,7 +3954,7 @@ class InvoiceBatchGenerateView(DryRunActionView):
         "geno.add_invoice",
         "geno.view_rentalunit",
     )
-    template_name = "geno/invoice_batch_generate.html"
+    # Uses generic dry_run_action.html template
     action = "create"
     navigation_view_name = (
         "geno.views.InvoiceBatchView"  # Use this for navigation rendering (active tabs etc.)
@@ -3969,14 +3973,15 @@ class InvoiceBatchGenerateView(DryRunActionView):
             last_section = self.result[-1]
             if last_section.get("objects"):
                 objects = last_section["objects"]
-                # Check if last item is the invoice count summary (e.g., "98 Rechnungen")
                 if objects and isinstance(objects[-1], str) and "Rechnungen" in objects[-1]:
                     invoice_count_text = objects[-1]
-                    # Remove it from the list to avoid duplicate display
                     last_section["objects"] = objects[:-1]
-                    # Extract just the number
                     return int(invoice_count_text.split()[0])
         return None
+
+    def get_item_label(self):
+        """Return 'Rechnung' as the item label."""
+        return _("Rechnung")
 
     def process_action(self, dry_run):
         """Process invoice generation with given dry_run mode."""
@@ -4041,16 +4046,7 @@ class InvoiceBatchGenerateView(DryRunActionView):
             resp = FileResponse(pdf_file, content_type="application/pdf")
             resp["Content-Disposition"] = "attachment; filename=%s" % invoices
             return resp
-        if dry_run:
-            urltmpl = '<a href="?dry_run=False&date={date}&buildings[]={buildings}">AUSFÜHREN</a>.'
-            invoices.append(
-                "DRY-RUN: Zum effektiv ausführen, hier klicken: "
-                + urltmpl.format(
-                    date=self.request.GET.get("date", ""),
-                    buildings=self.request.GET.get("buildings[]", ""),
-                )
-            )
-        ret.append({"info": "Rechnungen in Buchhaltung erstellen:", "objects": invoices})
+        ret.extend(invoices)
         return ret
 
 
