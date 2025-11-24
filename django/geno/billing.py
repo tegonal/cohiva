@@ -12,6 +12,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.db.models import Q
 from django.template import Context, loader
 from django.utils.html import escape
+from django.utils.translation import gettext_lazy as _
 from html2text import html2text
 
 ## For QR bill and svg -> pdf
@@ -23,6 +24,7 @@ from svglib.svglib import svg2rlg
 import geno.settings as geno_settings
 from cohiva.utils.pdf import PdfGenerator
 from cohiva.utils.strings import pluralize
+from cohiva.views.admin import CohivaAdminViewMixin, ResponseVariant
 from finance.accounting import (
     Account,
     AccountingBook,
@@ -81,6 +83,9 @@ def create_invoices(
 
     messages = []
     count = {"invoices": 0, "contracts": 0}
+    all_regular_invoices = []
+    all_placeholder_invoices = []
+
     with AccountingManager(messages) as book:
         if not book:
             return messages
@@ -91,19 +96,60 @@ def create_invoices(
                 "single_contract": single_contract,
                 "dry_run": dry_run,
             }
-            result, result_messages = create_monthly_invoices(
+            result_tuple = create_monthly_invoices(
                 book, contract, reference_date, invoice_category, options
             )
-            messages.extend(result_messages)
-            if isinstance(result, str):
-                return result
+
+            if download_only:
+                return result_tuple[0]
+
+            result, regular_invoices, placeholder_invoices, email_messages = result_tuple
+
             if result > 0:
                 count["invoices"] += result
                 count["contracts"] += 1
-    messages.append(
-        f"{pluralize(count['invoices'], 'Rechnung', 'Rechnungen')} für "
-        f"{pluralize(count['contracts'], 'Vertrag', 'Verträge')}"
-    )
+                all_regular_invoices.extend(regular_invoices)
+                all_placeholder_invoices.extend(placeholder_invoices)
+            messages.extend(email_messages)
+
+    invoice_objects = []
+    if all_regular_invoices:
+        invoice_objects.append(
+            {
+                "label": str(_("Monatsrechnungen hinzugefügt")),
+                "items": all_regular_invoices,
+                "variant": ResponseVariant.DEFAULT.value,
+            }
+        )
+    if all_placeholder_invoices:
+        invoice_objects.append(
+            {
+                "label": str(_("Platzhalter-Monatsrechnungen hinzugefügt")),
+                "items": all_placeholder_invoices,
+                "variant": ResponseVariant.INFO.value,
+            }
+        )
+
+    if invoice_objects:
+        messages.append(
+            CohivaAdminViewMixin.make_response_item(
+                str(_("Rechnungen in Buchhaltung erstellen")), objects=invoice_objects
+            )
+        )
+
+    if count["invoices"] > 0:
+        summary_msg = str(
+            _("%(invoice_count)s für %(contract_count)s")
+        ) % {
+            "invoice_count": pluralize(count["invoices"], "Rechnung", "Rechnungen"),
+            "contract_count": pluralize(count["contracts"], "Vertrag", "Verträge"),
+        }
+        messages.append(
+            CohivaAdminViewMixin.make_response_item(
+                summary_msg, variant=ResponseVariant.INFO
+            )
+        )
+
     return messages
 
 
@@ -115,6 +161,8 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
     year = reference_date.year
     stop = False
     count = 0
+    regular_invoices = []
+    placeholder_invoices = []
     messages = []
     while not stop:
         invoices = Invoice.objects.filter(
@@ -172,9 +220,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
             )
             if not dry_run:
                 invoice.save()
-            messages.append(
-                "Platzhalter-Montasrechnung %d.%d hinzugefügt: %s."
-                % (month, year, billing_contract_info)
+            placeholder_invoices.append(
+                str(_("%(month)d.%(year)d: %(contract)s"))
+                % {"month": month, "year": year, "contract": billing_contract_info}
             )
         else:
             billing_contract = contract
@@ -263,9 +311,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     dry_run=dry_run,
                 )
                 if not isinstance(r, str):
-                    messages.append(
-                        "Montasrechnung hinzugefügt: %s für %s."
-                        % (description, billing_contract_info)
+                    regular_invoices.append(
+                        str(_("%(description)s für %(contract)s"))
+                        % {"description": description, "contract": billing_contract_info}
                     )
 
             if sum_nk > 0.0:
@@ -290,9 +338,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     dry_run=dry_run,
                 )
                 if not isinstance(r, str):
-                    messages.append(
-                        "Montasrechnung hinzugefügt: %s für %s."
-                        % (description, billing_contract_info)
+                    regular_invoices.append(
+                        str(_("%(description)s für %(contract)s"))
+                        % {"description": description, "contract": billing_contract_info}
                     )
 
             if sum_nk_flat > 0.0:
@@ -317,9 +365,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     dry_run=dry_run,
                 )
                 if not isinstance(r, str):
-                    messages.append(
-                        "Montasrechnung hinzugefügt: %s für %s."
-                        % (description, billing_contract_info)
+                    regular_invoices.append(
+                        str(_("%(description)s für %(contract)s"))
+                        % {"description": description, "contract": billing_contract_info}
                     )
 
             if sum_nk_electricity > 0.0:
@@ -344,9 +392,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     dry_run=dry_run,
                 )
                 if not isinstance(r, str):
-                    messages.append(
-                        "Montasrechnung hinzugefügt: %s für %s."
-                        % (description, billing_contract_info)
+                    regular_invoices.append(
+                        str(_("%(description)s für %(contract)s"))
+                        % {"description": description, "contract": billing_contract_info}
                     )
 
             ## Rent reduction
@@ -372,9 +420,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     dry_run=dry_run,
                 )
                 if not isinstance(r, str):
-                    messages.append(
-                        "Montasrechnung hinzugefügt: %s für %s."
-                        % (description, billing_contract_info)
+                    regular_invoices.append(
+                        str(_("%(description)s für %(contract)s"))
+                        % {"description": description, "contract": billing_contract_info}
                     )
                 rent_info.append(
                     {
@@ -410,9 +458,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     dry_run=dry_run,
                 )
                 if not isinstance(r, str):
-                    messages.append(
-                        "Montasrechnung hinzugefügt: %s für %s."
-                        % (description, billing_contract_info)
+                    regular_invoices.append(
+                        str(_("%(description)s für %(contract)s"))
+                        % {"description": description, "contract": billing_contract_info}
                     )
                 rent_info.append(
                     {
@@ -475,7 +523,8 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
             year -= 1
         else:
             month -= 1
-    return count, messages
+
+    return count, regular_invoices, placeholder_invoices, messages
 
 
 def pay_invoice(invoice, date, amount):

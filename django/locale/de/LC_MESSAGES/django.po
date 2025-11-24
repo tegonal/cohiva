@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Cohiva 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-24 13:25+0100\n"
+"POT-Creation-Date: 2025-11-25 00:23+0100\n"
 "PO-Revision-Date: 2025-10-21 01:30+0200\n"
 "Last-Translator: Cohiva Development Team\n"
 "Language-Team: German\n"
@@ -118,6 +118,34 @@ msgstr "Untervertrag hinzufügen"
 msgid "Mietobjektespiegel"
 msgstr "Mietobjektespiegel"
 
+#: geno/billing.py:119
+msgid "Monatsrechnungen hinzugefügt"
+msgstr "Monatsrechnungen hinzugefügt"
+
+#: geno/billing.py:127
+msgid "Platzhalter-Monatsrechnungen hinzugefügt"
+msgstr "Platzhalter-Monatsrechnungen hinzugefügt"
+
+#: geno/billing.py:136
+msgid "Rechnungen in Buchhaltung erstellen"
+msgstr "Rechnungen in Buchhaltung erstellen"
+
+#: geno/billing.py:142
+#, python-format
+msgid "%(invoice_count)s für %(contract_count)s"
+msgstr "%(invoice_count)s für %(contract_count)s"
+
+#: geno/billing.py:224
+#, python-format
+msgid "%(month)d.%(year)d: %(contract)s"
+msgstr "%(month)d.%(year)d: %(contract)s"
+
+#: geno/billing.py:315 geno/billing.py:342 geno/billing.py:369
+#: geno/billing.py:396 geno/billing.py:424 geno/billing.py:462
+#, python-format
+msgid "%(description)s für %(contract)s"
+msgstr "%(description)s für %(contract)s"
+
 #: geno/forms.py:793
 msgid "ODT-Datei"
 msgstr ""
@@ -192,41 +220,42 @@ msgid "Zurück zu"
 msgstr "Zurück zu"
 
 #: geno/templates/geno/default.html:140
+#: geno/templates/geno/dry_run_action.html:137
 #: geno/templates/geno/share_interest.html:103
 msgid "Keine Daten verfügbar."
 msgstr ""
 
-#: geno/templates/geno/invoice_batch_generate.html:17
+#: geno/templates/geno/dry_run_action.html:18
 #, fuzzy
 #| msgid "Zurück zu"
 msgid "Zurück"
 msgstr "Zurück zu"
 
-#: geno/templates/geno/invoice_batch_generate.html:54
+#: geno/templates/geno/dry_run_action.html:152
 msgid "Jetzt ausführen"
 msgstr ""
 
-#: geno/templates/geno/invoice_batch_generate.html:60
+#: geno/templates/geno/dry_run_action.html:159
 #, python-format
 msgid ""
 "\n"
-"                Es wird %(counter)s Rechnung erstellt.\n"
-"              "
+"                  Es wird %(counter)s %(item_label)s verarbeitet.\n"
+"                "
 msgid_plural ""
 "\n"
-"                Es werden %(counter)s Rechnungen erstellt.\n"
-"              "
+"                  Es werden %(counter)s %(item_label)s verarbeitet.\n"
+"                "
 msgstr[0] ""
 msgstr[1] ""
 
-#: geno/templates/geno/invoice_batch_generate.html:65
+#: geno/templates/geno/dry_run_action.html:165
 msgid "Dies ist ein Probelauf."
 msgstr ""
 
-#: geno/templates/geno/invoice_batch_generate.html:67
+#: geno/templates/geno/dry_run_action.html:167
 msgid ""
-"Dies ist ein Probelauf. Klicken Sie auf 'Jetzt ausführen', um die Rechnungen "
-"tatsächlich zu erstellen."
+"Dies ist ein Probelauf. Klicken Sie auf 'Jetzt ausführen', um die Aktion "
+"tatsächlich auszuführen."
 msgstr ""
 
 #: geno/templates/geno/invoice_manual.html:145
@@ -507,139 +536,139 @@ msgstr "Log anzeigen"
 msgid "Datei hochladen und verarbeiten"
 msgstr "Datei hochladen und verarbeiten"
 
-#: geno/views.py:1450 geno/views.py:2122
+#: geno/views.py:1458 geno/views.py:2130
 #, fuzzy
 #| msgid "Mitglieder"
 msgid "Mitglied"
 msgstr "Mitglieder"
 
-#: geno/views.py:1450
+#: geno/views.py:1458
 msgid "Beitrittsdatum"
 msgstr ""
 
-#: geno/views.py:1529 geno/views.py:1683
+#: geno/views.py:1537 geno/views.py:1691
 msgid "Name/Adresse"
 msgstr ""
 
-#: geno/views.py:1529
+#: geno/views.py:1537
 msgid "Details"
 msgstr ""
 
-#: geno/views.py:1683
+#: geno/views.py:1691
 msgid "Darlehen Details"
 msgstr ""
 
-#: geno/views.py:1709
+#: geno/views.py:1717
 msgid "Zinsabrechung"
 msgstr ""
 
-#: geno/views.py:2123
+#: geno/views.py:2131
 msgid "Anteilscheine"
 msgstr ""
 
-#: geno/views.py:2124
+#: geno/views.py:2132
 msgid "Darlehen"
 msgstr ""
 
-#: geno/views.py:2125
+#: geno/views.py:2133
 msgid "Depositen"
 msgstr ""
 
-#: geno/views.py:2126
+#: geno/views.py:2134
 msgid "Verrechnungssteuer"
 msgstr ""
 
-#: geno/views.py:2127
+#: geno/views.py:2135
 msgid "Zinszahlung"
 msgstr ""
 
-#: geno/views.py:2754 geno/views.py:2846
+#: geno/views.py:2824
+msgid ""
+"<i>INFO: Mailman-API ist nicht konfiguriert. Dies ist ein Demo-Output.</i>"
+msgstr ""
+"<i>INFO: Mailman-API ist nicht konfiguriert. Dies ist ein Demo-Output.</i>"
+
+#: geno/views.py:2832
 msgid "Mitglieder ohne Email-Adresse (ignoriert)"
 msgstr "Mitglieder ohne Email-Adresse (ignoriert)"
 
-#: geno/views.py:2760 geno/views.py:2851
+#: geno/views.py:2838
 msgid "Mitglieder mit doppelter Email-Adresse (ignoriert)"
 msgstr "Mitglieder mit doppelter Email-Adresse (ignoriert)"
 
-#: geno/views.py:2765 geno/views.py:2841
-msgid "Mitglied nicht in genossenschaft-ML:"
-msgstr "Mitglied nicht in genossenschaft-ML:"
+#: geno/views.py:2843
+msgid "Mitglied nicht in genossenschaft-ML"
+msgstr "Mitglied nicht in genossenschaft-ML"
 
-#: geno/views.py:2770 geno/views.py:2858
-msgid "In genossenschaft-ML aber nicht Mitglied:"
-msgstr "In genossenschaft-ML aber nicht Mitglied:"
+#: geno/views.py:2848
+msgid "In genossenschaft-ML aber nicht Mitglied"
+msgstr "In genossenschaft-ML aber nicht Mitglied"
 
-#: geno/views.py:2779 geno/views.py:2869
+#: geno/views.py:2857
 msgid "Bewohnende ohne Email-Adresse (ignoriert)"
 msgstr "Bewohnende ohne Email-Adresse (ignoriert)"
 
-#: geno/views.py:2785
+#: geno/views.py:2863
 msgid "Bewohnende mit doppelter Email-Adresse (ignoriert)"
 msgstr "Bewohnende mit doppelter Email-Adresse (ignoriert)"
 
-#: geno/views.py:2790 geno/views.py:2865
-msgid "Bewohnende aber nicht in bewohnende-ML:"
-msgstr "Bewohnende aber nicht in bewohnende-ML:"
+#: geno/views.py:2868
+msgid "Bewohnende aber nicht in bewohnende-ML"
+msgstr "Bewohnende aber nicht in bewohnende-ML"
 
-#: geno/views.py:2795
-msgid "In bewohnende-ML aber nicht Bewohnende:"
-msgstr "In bewohnende-ML aber nicht Bewohnende:"
+#: geno/views.py:2873
+msgid "In bewohnende-ML aber nicht Bewohnende"
+msgstr "In bewohnende-ML aber nicht Bewohnende"
 
-#: geno/views.py:2800
-msgid "Mitglied aber NICHT in Newsletter(CS):"
-msgstr "Mitglied aber NICHT in Newsletter(CS):"
+#: geno/views.py:2878
+msgid "Mitglied aber NICHT in Newsletter(CS)"
+msgstr "Mitglied aber NICHT in Newsletter(CS)"
 
-#: geno/views.py:2804
-msgid "Mitglied aber UNSUBSCRIBED in Newsletter(CS):"
-msgstr "Mitglied aber UNSUBSCRIBED in Newsletter(CS):"
+#: geno/views.py:2882
+msgid "Mitglied aber UNSUBSCRIBED in Newsletter(CS)"
+msgstr "Mitglied aber UNSUBSCRIBED in Newsletter(CS)"
 
-#: geno/views.py:2810
-msgid "Mitglied aber BOUNCED in Newsletter(CS):"
-msgstr "Mitglied aber BOUNCED in Newsletter(CS):"
+#: geno/views.py:2888
+msgid "Mitglied aber BOUNCED in Newsletter(CS)"
+msgstr "Mitglied aber BOUNCED in Newsletter(CS)"
 
-#: geno/views.py:2816
-msgid "Mitglied aber DELETED in Newsletter(CS):"
-msgstr "Mitglied aber DELETED in Newsletter(CS):"
+#: geno/views.py:2894
+msgid "Mitglied aber DELETED in Newsletter(CS)"
+msgstr "Mitglied aber DELETED in Newsletter(CS)"
 
-#: geno/views.py:2822
+#: geno/views.py:2900
 #, python-format
-msgid "In genossenschaft-ML aber nicht in Wohnpost (%s):"
-msgstr "In genossenschaft-ML aber nicht in Wohnpost (%s):"
+msgid "In genossenschaft-ML aber nicht in Wohnpost (%s)"
+msgstr "In genossenschaft-ML aber nicht in Wohnpost (%s)"
 
-#: geno/views.py:2829
+#: geno/views.py:2907
 #, python-format
 msgid ""
-"Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s):"
+"Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s)"
 msgstr ""
-"Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s):"
+"Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s)"
 
-#: geno/views.py:2834
-msgid "Mailman warnings:"
-msgstr "Mailman warnings:"
+#: geno/views.py:2912
+msgid "Mailman warnings"
+msgstr "Mailman warnings"
 
-#: geno/views.py:2839
-msgid ""
-"<i>INFO: Mailman-API ist nicht konfiguriert. Dies ist ein Demo-Output.</i>"
-msgstr ""
-"<i>INFO: Mailman-API ist nicht konfiguriert. Dies ist ein Demo-Output.</i>"
-
-#: geno/views.py:3711
+#: geno/views.py:3749
 msgid "Die ersten 3 Nächte sind gemäss Reglement Jokerzimmer kostenlos."
 msgstr ""
 
-#: geno/views.py:3715
+#: geno/views.py:3753
 msgid "X Nächte à Fr. 22.00, Gästezimmer 003"
 msgstr ""
 
-#: geno/views.py:3720
+#: geno/views.py:3758
 msgid "X Nächte à Fr. 17.00, Gästezimmer 410"
 msgstr ""
 
-#: geno/views.py:3725
+#: geno/views.py:3763
 msgid "X Nächte à Fr. 17.00, Gästezimmer 509"
 msgstr ""
 
-#: geno/views.py:3733
+#: geno/views.py:3771
 msgid ""
 "Vielen Dank für die Beitrittserklärung. Die Mitgliedschaft in der "
 "Genossenschaft ist verbunden mit dem Zeichnen von Anteilscheinen und einer "
@@ -647,35 +676,39 @@ msgid ""
 "Zahlungseingang folgt dann die Bestätigung der Mitgliedschaft."
 msgstr ""
 
-#: geno/views.py:3740
+#: geno/views.py:3778
 msgid "Beitrittsgeb ühr Genossenschaft"
 msgstr ""
 
-#: geno/views.py:3745
+#: geno/views.py:3783
 msgid "Zeichnung von 1 Anteilschein der Genossenschaft"
 msgstr ""
 
-#: geno/views.py:4027
+#: geno/views.py:4065
 #, fuzzy
 #| msgid "Rechnung erstellen und buchen"
 msgid "Mietzinsrechnung erstellen"
 msgstr "Rechnung erstellen und buchen"
 
-#: geno/views.py:4070
+#: geno/views.py:4100
+msgid "Rechnung"
+msgstr ""
+
+#: geno/views.py:4109
 #, python-format
 msgid "Ungültige Aktion: %s"
 msgstr ""
 
-#: geno/views.py:4103
+#: geno/views.py:4142
 msgid "Optionen"
 msgstr ""
 
-#: geno/views.py:4105
+#: geno/views.py:4144
 #, python-format
 msgid "Dry-run: %s"
 msgstr ""
 
-#: geno/views.py:4106
+#: geno/views.py:4145
 #, python-format
 msgid "Referenzdatum: %s"
 msgstr ""
