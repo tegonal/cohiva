@@ -2,6 +2,14 @@
 Django default production settings for Cohiva.
 
 To change settings, overwrite them in settings_production.py
+
+NOTE: Settings are cascaded in the following order (settings in the later files override/extend
+      settings in the earlier files):
+
+  1. settings_defaults.py (default base settings)
+  2. settings.py (custom base settings)
+  3. settings_production_defaults.py (default production settings)
+  4. settings_production.py (custom production settings)
 """
 
 from urllib.parse import quote
@@ -9,7 +17,7 @@ from urllib.parse import quote
 import cohiva.base_config as cbc
 
 from .settings import *  # noqa: F403
-from .settings import DATABASES, FINANCIAL_ACCOUNTING_BACKENDS, LOGGING
+from .settings import DATABASES, FINANCIAL_ACCOUNTING_BACKENDS, LOGGING, STORAGES
 
 # Disable debugging
 DEBUG = False
@@ -21,6 +29,12 @@ PORTAL_SECONDARY_HOST = "portal2." + cbc.DOMAIN
 # Media file storage
 MEDIA_ROOT = cbc.INSTALL_DIR + "/django-production/media"
 SMEDIA_ROOT = cbc.INSTALL_DIR + "/django-production/smedia"
+
+if getattr(cbc, "USE_WHITENOISE", False):
+    # Use whitenoise to serve static files in production
+    STORAGES["staticfiles"]["BACKEND"] = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    # STORAGES["staticfiles"]["BACKEND"] = "whitenoise.storage.CompressedStaticFilesStorage"
+    # STORAGES["staticfiles"]["BACKEND"] = "whitenoise.storage.StaticFilesStorage"
 
 # Use production databases
 DATABASES["default"]["NAME"] = cbc.DB_PREFIX + "_django"
@@ -89,22 +103,3 @@ LOGGING["handlers"]["finance_accounting"]["filename"] = (
 
 ## Use a different database number for production
 CELERY_BROKER_URL = "redis://localhost:6379/1"
-
-# Add WhiteNoise for static file serving
-MIDDLEWARE = [
-    'whitenoise.middleware.WhiteNoiseMiddleware',
-] + list(MIDDLEWARE)
-
-# Static files configuration
-STATIC_ROOT = "/tmp/static"  # Temporary location for collected static files
-STATIC_URL = "/static/"
-
-# Use simpler WhiteNoise backend without compression
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.StaticFilesStorage",
-    },
-}

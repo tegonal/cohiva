@@ -19,10 +19,11 @@ RUN ./install_dependencies.sh -e docker
 # install gunicorn and whitenoise (if not already installed via dependencies script)
 RUN pip install --no-cache-dir gunicorn whitenoise
 # optional gunicorn tuning vars
-ENV GUNICORN_WORKERS=2 \
-    GUNICORN_BIND=0.0.0.0:8000 \
-    GUNICORN_TIMEOUT=120 \
-    DJANGO_DEBUG=1
+ENV GUNICORN_WORKERS=2
+ENV GUNICORN_BIND=0.0.0.0:8000
+ENV GUNICORN_LOG_LEVEL=info
+#ENV GUNICORN_TIMEOUT=120
+#ENV DJANGO_DEBUG=1
 EXPOSE 8000
 
 FROM cohiva-platform-django AS cohiva-platform-app
@@ -43,4 +44,6 @@ COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--log-level", "info", "cohiva.wsgi:application"]
+#ENV GUNICORN_CMD_ARGS="--workers ${GUNICORN_WORKERS} --bind ${GUNICORN_BIND} --timeout ${GUNICORN_TIMEOUT}"
+ENV GUNICORN_CMD_ARGS="--workers ${GUNICORN_WORKERS} --bind ${GUNICORN_BIND} --log-level ${GUNICORN_LOG_LEVEL}}"
+CMD ["gunicorn", "cohiva.wsgi:application"]
