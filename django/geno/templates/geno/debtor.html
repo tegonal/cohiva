@@ -1,5 +1,5 @@
 {% extends "geno/base.html" %}
-{% load static i18n unfold crispy_forms_tags %}
+{% load static i18n unfold crispy_forms_tags django_tables2 %}
 
 {% block custom_content %}
 
@@ -26,11 +26,10 @@
 </div>
 {% endcomponent %}
 
-{# Table using custom table component with footer support #}
-{% if table_data %}
+{# Table using django_tables2 with Unfold styling #}
+{% if table %}
   {% component "unfold/components/card.html" %}
-  {% component "geno/components/table_with_footer.html" with table=table_data card_included=1 striped=1 %}
-{% endcomponent %}
+  <div class="-m-6">{% render_table table %}</div>
 {% endcomponent %}
 {% else %}
 {% component "geno/components/empty_state.html" with message=_("Keine Rechnungen gefunden. Passen Sie die Filterkriterien an.") icon="search" %}
