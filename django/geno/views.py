@@ -3040,6 +3040,7 @@ class MailWizardView(CohivaAdminViewMixin, FormView):
     title = _("Dokumente erstellen/versenden")
     step_title = _("Schritt 1 - Empfänger:innen filtern")
     form_action = reverse_lazy("geno:mail-wizard-start")
+    back_url = None  # No back button on step 1
     permission_required = "geno.send_mail"
     template_name = "geno/member_send_mail.html"
     form_class = MemberMailForm
@@ -3054,6 +3055,7 @@ class MailWizardView(CohivaAdminViewMixin, FormView):
             {
                 "response": self.result,
                 "attrs_button": {"form": "mail-wizard-form"},
+                "back_url": self.back_url,
             }
         )
         # Override title to show step
@@ -3088,6 +3090,7 @@ class MailWizardView(CohivaAdminViewMixin, FormView):
 class MailWizardSelectView(MailWizardView):
     step_title = _("Schritt 2 - Empfänger:innen auswählen")
     form_action = reverse_lazy("geno:mail-wizard-select")
+    back_url = reverse_lazy("geno:mail-wizard-start")
 
     def get(self, request, *args, **kwargs):
         if "members" not in request.session:
@@ -3110,6 +3113,7 @@ class MailWizardActionView(MailWizardView):
     step_title = _("Schritt 3 - Aktionen ausführen")
     form_class = MemberMailActionForm
     form_action = reverse_lazy("geno:mail-wizard-action")
+    back_url = reverse_lazy("geno:mail-wizard-select")
 
     def get_initial(self):
         return {"email_copy": settings.GENO_DEFAULT_EMAIL}
