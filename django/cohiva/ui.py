@@ -129,10 +129,13 @@ class MenuItem:
     def determine_missing_values(self):
         if self._type == "model":
             if not self._cls:
-                if self._app_label:
-                    self._cls = apps.get_model(self._app_label, self._value)
-                else:
-                    self._cls = apps.get_model(self._value)
+                try:
+                    if self._app_label:
+                        self._cls = apps.get_model(self._app_label, self._value)
+                    else:
+                        self._cls = apps.get_model(self._value)
+                except LookupError:
+                    return
             if not self._permission:
                 self._permission = f"{self._cls._meta.app_label}.view_{self._cls._meta.model_name}"
             if not self._title:
@@ -158,9 +161,12 @@ class MenuItem:
 
     def get_link(self):
         if self._type == "model":
-            link = reverse(
-                f"admin:{self._cls._meta.app_label}_{self._cls._meta.model_name}_changelist"
-            )
+            if self._cls:
+                link = reverse(
+                    f"admin:{self._cls._meta.app_label}_{self._cls._meta.model_name}_changelist"
+                )
+            else:
+                return None
         elif self._type == "view":
             try:
                 link = reverse(self._value)

@@ -1,12 +1,19 @@
 """
-Django default settings for Cohiva.
+Django default base settings for Cohiva.
 
 To change settings, overwrite them in settings.py or settings_production.py
+
+NOTE: Settings are cascaded in the following order (settings in the later files override/extend
+      settings in the earlier files):
+
+  1. settings_defaults.py (default base settings)
+  2. settings.py (custom base settings)
+  3. settings_production_defaults.py (default production settings)
+  4. settings_production.py (custom production settings)
 """
 
 import datetime
 import locale
-import os
 from pathlib import Path
 from urllib.parse import quote
 
@@ -276,8 +283,10 @@ if "portal" in cbc.FEATURES:
         "portal.middleware.SecondaryPortalMiddleware",
         "oauth2_provider.middleware.OAuth2TokenMiddleware",  ## For Oauth2 token authentication
     )
+MIDDLEWARE += ("django.middleware.security.SecurityMiddleware",)
+if getattr(cbc, "USE_WHITENOISE", False):
+    MIDDLEWARE += ("whitenoise.middleware.WhiteNoiseMiddleware",)
 MIDDLEWARE += (
-    "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     # LocaleMiddleware MUST be after SessionMiddleware (needs session data for language preferences)
     # and BEFORE CommonMiddleware (needs to process language before URL resolution)
@@ -429,11 +438,9 @@ STORAGES = {
     },
     "staticfiles": {
         "BACKEND": "cohiva.storage.CacheBustingStaticFilesStorage",
+        # BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage",
     },
 }
-
-## For production, use ManifestStaticFilesStorage instead (requires collectstatic):
-##STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
 
 # Additional locations of static files
 # STATICFILES_DIRS = (
@@ -587,16 +594,18 @@ SITE_ID = 1
 ## django-filer - https://django-filer.readthedocs.io/en/latest/settings.html
 FILER_ENABLE_PERMISSIONS = True
 FILER_IS_PUBLIC_DEFAULT = False
-FILER_SERVERS = {
-    "private": {
-        "main": {
-            "ENGINE": "filer.server.backends.xsendfile.ApacheXSendfileServer",
-        },
-        "thumbnails": {
-            "ENGINE": "filer.server.backends.xsendfile.ApacheXSendfileServer",
-        },
-    },
-}
+## Use upstream Apache to serve private files with X-Sendfile
+## (instead of the default filer.server.backends.default.DefaultServer backend)
+# FILER_SERVERS = {
+#    "private": {
+#        "main": {
+#            "ENGINE": "filer.server.backends.xsendfile.ApacheXSendfileServer",
+#        },
+#        "thumbnails": {
+#            "ENGINE": "filer.server.backends.xsendfile.ApacheXSendfileServer",
+#        },
+#    },
+# }
 
 ## Celery with redis
 CELERY_BROKER_URL = "redis://localhost:6379/0"
