@@ -153,6 +153,12 @@
         {% component "unfold/components/button.html" with submit=1 attrs=attrs_button %}
           {% trans "Weiter" %}
         {% endcomponent %}
+        {# Back button (shown on steps 2 and 3) #}
+        {% if back_url %}
+          {% component "unfold/components/button.html" with href=back_url variant="default" %}
+            {% trans "Zurück" %}
+          {% endcomponent %}
+        {% endif %}
       {% endif %}
     </div>
   </div>

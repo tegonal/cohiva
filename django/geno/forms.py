@@ -220,7 +220,7 @@ class MemberMailForm(forms.Form):
                         Div(
                             Div("select_attributeA", css_class="mb-4"),
                             Div("select_attributeA_value", css_class="mb-4"),
-                            css_class="p-3 border border-gray-200 dark:border-gray-700 rounded",
+                            css_class="p-3 border border-base-200 dark:border-base-800 rounded",
                         ),
                         css_class="mb-4",
                     ),
@@ -229,7 +229,7 @@ class MemberMailForm(forms.Form):
                         Div(
                             Div("select_attributeB", css_class="mb-4"),
                             Div("select_attributeB_value", css_class="mb-4"),
-                            css_class="p-3 border border-gray-200 dark:border-gray-700 rounded",
+                            css_class="p-3 border border-base-200 dark:border-base-800 rounded",
                         ),
                         css_class="mb-4",
                     ),
@@ -592,7 +592,7 @@ class MemberMailActionForm(forms.Form):
                     Div(
                         Div("change_attribute", css_class="mb-4"),
                         Div("change_attribute_value", css_class="mb-4"),
-                        css_class="p-3 border border-gray-200 dark:border-gray-700 rounded",
+                        css_class="p-3 border border-base-200 dark:border-base-800 rounded",
                     ),
                     css_class="mb-4",
                 ),
@@ -605,7 +605,7 @@ class MemberMailActionForm(forms.Form):
                     Div(
                         Div("change_genattribute", css_class="mb-4"),
                         Div("change_genattribute_value", css_class="mb-4"),
-                        css_class="p-3 border border-gray-200 dark:border-gray-700 rounded",
+                        css_class="p-3 border border-base-200 dark:border-base-800 rounded",
                     ),
                     css_class="mb-4",
                 ),
