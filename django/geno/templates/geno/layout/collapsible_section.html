@@ -1,0 +1,18 @@
+{% load i18n %}
+
+<div class="collapsible-section my-4 border border-gray-200 dark:border-gray-700 rounded-md{% if css_class %} {{ css_class }}{% endif %}" x-data="{ open: {% if not collapsed %}true{% else %}false{% endif %} }">
+  <button type="button"
+          @click="open = !open"
+          class="w-full flex items-center gap-2 px-4 py-3 text-left bg-gray-50 dark:bg-gray-800 rounded-t-md"
+          :class="{ 'rounded-b-md': !open }">
+    <span class="material-symbols-outlined text-gray-500 transition-transform text-xl"
+          :class="{ 'rotate-180': open }">
+      expand_more
+    </span>
+    <span class="text-sm font-semibold">{{ heading }}</span>
+  </button>
+
+  <div x-show="open" x-collapse class="p-4">
+    {{ fields_html|safe }}
+  </div>
+</div>
