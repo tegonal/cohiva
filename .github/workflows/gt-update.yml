@@ -5,7 +5,7 @@
 #  \__/\__/\_, /\___/_//_/\_,_/_/         It is licensed under European Union Public License v. 1.2
 #         /___/                           Please report bugs and contribute back your improvements
 #
-#                                         Version: v1.4.4
+#                                         Version: v1.6.1
 ###################################
 name: "gt update"
 on:
@@ -48,7 +48,9 @@ jobs:
           ./install.sh && result=true || (echo >&2 "installation failed"; exit 1) && \
           false || cd "$currentDir" && rm -r "$tmpDir" && "${result:-false}"
           # end install.doc.sh
-      - uses: actions/checkout@v5
+      #gt-placeholder-gh-action-checkout-1-start
+      - uses: actions/checkout@v6
+      #gt-placeholder-gh-action-checkout-1-end
       - id: set-matrix
         run: |
           (readarray -t REMOTES; IFS=','; echo "matrix={ 'remote': [ ${REMOTES[*]} ] }" >> "$GITHUB_OUTPUT") < <( gt remote list | sed -E "s/(.*)/'\1'/")
@@ -87,7 +89,9 @@ jobs:
           ./install.sh && result=true || (echo >&2 "installation failed"; exit 1) && \
           false || cd "$currentDir" && rm -r "$tmpDir" && "${result:-false}"
           # end install.doc.sh
-      - uses: actions/checkout@v5
+      #gt-placeholder-gh-action-checkout-2-start
+      - uses: actions/checkout@v6
+      #gt-placeholder-gh-action-checkout-2-end
       - name: reset gpg keys
         run: gt reset --gpg-only true -r "${{ matrix.remote }}"
       - name: gt update
@@ -135,7 +139,9 @@ jobs:
     name: "Check signing-key"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      #gt-placeholder-gh-action-checkout-3-start
+      - uses: actions/checkout@v6
+      #gt-placeholder-gh-action-checkout-3-end
       - name: check if signing key already are or will expire within the next 3 months
         run: |
           set -euo pipefail
