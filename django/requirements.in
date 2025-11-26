@@ -90,4 +90,6 @@ pylint
 coverage
 djlint
 
+gunicorn==21.2.0
+whitenoise==6.6.0
 #EOF

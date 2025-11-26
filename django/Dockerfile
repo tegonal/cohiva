@@ -17,7 +17,7 @@ COPY . .
 RUN chmod +x ./install_dependencies.sh
 RUN ./install_dependencies.sh -e docker
 # install gunicorn and whitenoise (if not already installed via dependencies script)
-RUN pip install --no-cache-dir gunicorn whitenoise
+# RUN pip install --no-cache-dir gunicorn whitenoise
 # optional gunicorn tuning vars
 ENV GUNICORN_WORKERS=2 \
     GUNICORN_BIND=0.0.0.0:8000 \

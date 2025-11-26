@@ -89,22 +89,3 @@ LOGGING["handlers"]["finance_accounting"]["filename"] = (
 
 ## Use a different database number for production
 CELERY_BROKER_URL = "redis://localhost:6379/1"
-
-# Add WhiteNoise for static file serving
-MIDDLEWARE = [
-    'whitenoise.middleware.WhiteNoiseMiddleware',
-] + list(MIDDLEWARE)
-
-# Static files configuration
-STATIC_ROOT = "/tmp/static"  # Temporary location for collected static files
-STATIC_URL = "/static/"
-
-# Use simpler WhiteNoise backend without compression
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.StaticFilesStorage",
-    },
-}

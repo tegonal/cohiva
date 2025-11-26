@@ -9,23 +9,6 @@ import os
 # Instance-specific configuration
 COHIVA_INSTANCE_PATH = os.environ.get('COHIVA_INSTANCE_PATH', '/instance_files/override_files')
 
-# Override database settings for Docker Compose networking
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": cbc.DB_PREFIX + "_django_test",
-        "USER": cbc.DB_PREFIX,
-        "PASSWORD": cbc.DB_PASSWORD,
-        "HOST": "mariadb",  # Use Docker Compose service name
-        "PORT": "3306",
-        "OPTIONS": {
-            "sql_mode": "traditional,ALLOW_INVALID_DATES",
-            "charset": "utf8mb4",
-            "collation": "utf8mb4_unicode_ci",
-        },
-    }
-}
-
 # Override Celery broker for Docker Compose networking
 CELERY_BROKER_URL = "redis://redis:6379/0"
 
@@ -38,10 +21,12 @@ ALLOWED_HOSTS = ALLOWED_HOSTS + [
     "0.0.0.0",
 ]
 
-# Add instance templates to template directories (highest priority)
-TEMPLATES[0]['DIRS'] = [
-    os.path.join(COHIVA_INSTANCE_PATH, 'templates'),
-] + TEMPLATES[0]['DIRS']
+# Add Docker IPs if configured
+if hasattr(cbc, "DOCKER_IP"):
+    if isinstance(cbc.DOCKER_IP, list):
+        ALLOWED_HOSTS.extend(cbc.DOCKER_IP)
+    else:
+        ALLOWED_HOSTS.append(cbc.DOCKER_IP)
 
 # Add instance static files
 if os.path.exists(os.path.join(COHIVA_INSTANCE_PATH, 'static')):

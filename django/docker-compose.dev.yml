@@ -62,31 +62,31 @@ services:
       MP_SMTP_AUTH_ACCEPT_ANY: "1"
       MP_SMTP_AUTH_ALLOW_INSECURE: "1"
 
-  cohiva:
-    image: ghcr.io/tegonal/cohiva:v0
-    container_name: cohiva
-    ports:
-      - "8000:8000"
-    environment:
-      - DJANGO_SETTINGS_MODULE=cohiva.settings_docker_compose
-      - COHIVA_INSTANCE_PATH=/instance_files/override_files
-      - DB_HOST=mariadb
-      - DB_ROOT_PASSWORD=root
-      - DB_USER=cohiva
-      - DB_PASSWORD=c0H1v4
-      - DB_NAME=cohiva_django_test
-      - SUPERUSER_USERNAME=mikel
-      - SUPERUSER_EMAIL=mikel.cordovilla@tegonal.com
-      - SUPERUSER_PASSWORD=admin123
-    volumes:
-      - ./instance_files/override_files:/instance_files/override_files:ro
-      - static_data:/tmp/static                            # Collected static files
-    depends_on:
-      mariadb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
+#  cohiva:
+#    image: ghcr.io/tegonal/cohiva:v0
+#    container_name: cohiva
+#    ports:
+#      - "8000:8000"
+#    environment:
+#      - DJANGO_SETTINGS_MODULE=cohiva.settings_docker_compose
+#      - COHIVA_INSTANCE_PATH=/instance_files/override_files
+#      - DB_HOST=mariadb
+#      - DB_ROOT_PASSWORD=root
+#      - DB_USER=cohiva
+#      - DB_PASSWORD=c0H1v4
+#      - DB_NAME=cohiva_django_test
+#      - SUPERUSER_USERNAME=mikel
+#      - SUPERUSER_EMAIL=mikel.cordovilla@tegonal.com
+#      - SUPERUSER_PASSWORD=admin123
+#    volumes:
+#      - ./instance_files/override_files:/instance_files/override_files:ro
+#      - static_data:/tmp/static                            # Collected static files
+#    depends_on:
+#      mariadb:
+#        condition: service_healthy
+#      redis:
+#        condition: service_healthy
+#    restart: unless-stopped
 
 volumes:
   mariadb_data:
