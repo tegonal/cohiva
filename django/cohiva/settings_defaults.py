@@ -56,6 +56,8 @@ ALLOWED_HOSTS = [
     "test." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
     PORTAL_SECONDARY_HOST,
 ]
+if hasattr(cbc, "DOCKER_IP"):
+    ALLOWED_HOSTS.append(cbc.DOCKER_IP)
 # Developer hosts for debugging
 INTERNAL_IPS = ("localhost", "127.0.0.1")
 
@@ -114,8 +116,6 @@ if "portal" in cbc.FEATURES:
     import saml2.saml
 
     SAML_IDP_DJANGO_USERNAME_FIELD = "email"
-    SAML_AUTHN_SIGN_ALG = saml2.xmldsig.SIG_RSA_SHA256
-    SAML_AUTHN_DIGEST_ALG = saml2.xm
     SAML_AUTHN_SIGN_ALG = saml2.xmldsig.SIG_RSA_SHA256
     SAML_AUTHN_DIGEST_ALG = saml2.xmldsig.DIGEST_SHA256
     SAML_ENCRYPT_AUTHN_RESPONSE = True

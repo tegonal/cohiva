@@ -84,12 +84,14 @@ wagtailmenus
 ## Celery (async tasks)
 celery[redis]
 
+## For running in production (docker)
+gunicorn
+whitenoise
+
 ## For development
 ruff
 pylint
 coverage
 djlint
 
-gunicorn==21.2.0
-whitenoise==6.6.0
 #EOF

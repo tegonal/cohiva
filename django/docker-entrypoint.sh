@@ -3,8 +3,8 @@ set -e
 
 echo "🔄 Initializing Cohiva application..."
 
-# Step 0: Overlay instance-specific files
-echo "Step 0: Overlaying instance-specific files..."
+# Step 0a: Overlay instance-specific files
+echo "Step 0a: Overlaying instance-specific files..."
 echo "Debug: COHIVA_INSTANCE_PATH = $COHIVA_INSTANCE_PATH"
 echo "Debug: Contents of /instance_files:"
 ls -la /instance_files/ || echo "Directory /instance_files does not exist"
@@ -13,28 +13,32 @@ ls -la "$COHIVA_INSTANCE_PATH" || echo "Directory $COHIVA_INSTANCE_PATH does not
 
 if [ -d "$COHIVA_INSTANCE_PATH" ]; then
     echo "Found instance files in $COHIVA_INSTANCE_PATH"
-    
+
     # Copy instance files over application files if they exist
     find "$COHIVA_INSTANCE_PATH" -type f | while read -r file; do
         # Get relative path from instance root
         rel_path="${file#$COHIVA_INSTANCE_PATH/}"
         dest_path="/cohiva/$rel_path"
-        
+
         echo "  Processing: $file -> $dest_path"
-        
+
         # Create destination directory if it doesn't exist
         mkdir -p "$(dirname "$dest_path")"
-        
+
         # Copy instance file over application file
         cp "$file" "$dest_path"
         echo "  ✅ Overridden: $rel_path"
     done
-    
+
     echo "File overlay completed!"
 else
     echo "No instance files found in $COHIVA_INSTANCE_PATH"
 fi
 echo ""
+
+# Step 0b: Run setup to create directories and files that are still missing from default templates
+echo "Step 0b: Running setup to create missing directories and files..."
+python setup.py
 
 # Wait for database to be ready
 echo "⏳ Waiting for database to be ready..."
