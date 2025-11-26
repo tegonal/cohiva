@@ -3,7 +3,7 @@ FROM python:3.13 AS cohiva-platform-os
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
-RUN apt-get update && apt-get install -y build-essential libmariadb-dev libfreetype-dev libjpeg-dev libffi-dev poppler-utils xmlsec1 libreoffice-writer
+RUN apt-get update && apt-get install -y build-essential libmariadb-dev libfreetype-dev libjpeg-dev libffi-dev poppler-utils xmlsec1 libreoffice-writer mariadb-client mariadb-client-compat
 RUN apt-get install -y locales && sed -i '/^#.*de_CH.UTF-8/s/^# *//' /etc/locale.gen && locale-gen de_CH.UTF-8 && update-locale LANG=de_CH.UTF-8
 
 # set the container-wide default
@@ -16,11 +16,31 @@ WORKDIR /cohiva
 COPY . .
 RUN chmod +x ./install_dependencies.sh
 RUN ./install_dependencies.sh -e docker
+# install gunicorn and whitenoise (if not already installed via dependencies script)
+# RUN pip install --no-cache-dir gunicorn whitenoise
+# optional gunicorn tuning vars
+ENV GUNICORN_WORKERS=2 \
+    GUNICORN_BIND=0.0.0.0:8000 \
+    GUNICORN_TIMEOUT=120 \
+    DJANGO_DEBUG=1
+EXPOSE 8000
 
 FROM cohiva-platform-django AS cohiva-platform-app
 
-# run configuration
+# Create directory for static files
+RUN mkdir -p /tmp/static
+RUN mkdir -p /instance_files/override_files
 
-# run the application
+# Create directories for instance-specific files and logs
+RUN mkdir -p /var/www/cohiva/django-test/log
+RUN mkdir -p /var/www/cohiva/django-production/log
 
-CMD ["./runserver.sh"]
+# Set environment variable for instance path to match docker-compose
+ENV COHIVA_INSTANCE_PATH=/instance_files/override_files
+
+# Create entrypoint script for initialization
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--log-level", "info", "cohiva.wsgi:application"]
