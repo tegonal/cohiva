@@ -5,7 +5,7 @@
 #  \__/\__/\_, /\___/_//_/\_,_/_/         It is licensed under Creative Commons Zero v1.0 Universal
 #         /___/                           Please report bugs and contribute back your improvements
 #
-#                                         Version: v3.2.0
+#                                         Version: v5.0.2
 ###################################
 name: Cleanup
 
@@ -14,6 +14,13 @@ on:
     branches:
       - main
       - develop
+#gt-placeholder-trigger-end
+
+#gt-placeholder-permissions.v2-start
+permissions:
+  contents: read
+  pull-requests: write
+#gt-placeholder-permissions.v2-end
 
 jobs:
   build:
