@@ -6,7 +6,6 @@ To change settings, overwrite them in settings.py or settings_production.py
 
 import datetime
 import locale
-import os
 from pathlib import Path
 from urllib.parse import quote
 

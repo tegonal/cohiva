@@ -3,11 +3,12 @@ Settings for Docker Compose development environment.
 Inherits from settings_defaults and overrides necessary configurations.
 """
 
-from .settings_defaults import *
 import os
 
+from .settings_defaults import *
+
 # Instance-specific configuration
-COHIVA_INSTANCE_PATH = os.environ.get('COHIVA_INSTANCE_PATH', '/instance_files/override_files')
+COHIVA_INSTANCE_PATH = os.environ.get("COHIVA_INSTANCE_PATH", "/instance_files/override_files")
 
 # Override Celery broker for Docker Compose networking
 CELERY_BROKER_URL = "redis://redis:6379/0"
@@ -29,10 +30,10 @@ if hasattr(cbc, "DOCKER_IP"):
         ALLOWED_HOSTS.append(cbc.DOCKER_IP)
 
 # Add instance static files
-if os.path.exists(os.path.join(COHIVA_INSTANCE_PATH, 'static')):
+if os.path.exists(os.path.join(COHIVA_INSTANCE_PATH, "static")):
     STATICFILES_DIRS = [
-        os.path.join(COHIVA_INSTANCE_PATH, 'static'),
-    ] + list(getattr(globals(), 'STATICFILES_DIRS', []))
+        os.path.join(COHIVA_INSTANCE_PATH, "static"),
+    ] + list(getattr(globals(), "STATICFILES_DIRS", []))
 
 # Static files configuration for Docker Compose
 STATIC_ROOT = "/tmp/static"
@@ -40,7 +41,7 @@ STATIC_URL = "/static/"
 
 # WhiteNoise for static file serving
 MIDDLEWARE = [
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
 ] + list(MIDDLEWARE)
 
 STORAGES = {
@@ -60,7 +61,7 @@ EMAIL_HOST_PASSWORD = ""
 EMAIL_USE_TLS = False
 
 # Override media configuration for instance files
-MEDIA_ROOT = os.path.join(COHIVA_INSTANCE_PATH, 'media')
+MEDIA_ROOT = os.path.join(COHIVA_INSTANCE_PATH, "media")
 
 # Force DEBUG mode for development
 DEBUG = True

@@ -4,14 +4,13 @@ This assumes the database is accessible via localhost (port forwarded from docke
 """
 
 from .settings_defaults import *
-import os
 
 # Add WhiteNoise for static file serving
 MIDDLEWARE = [
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
 ] + list(MIDDLEWARE)
 
-# Static files configuration 
+# Static files configuration
 STATIC_ROOT = "/tmp/static"  # Temporary location for collected static files
 STATIC_URL = "/static/"
 
