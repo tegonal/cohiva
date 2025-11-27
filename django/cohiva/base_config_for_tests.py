@@ -29,6 +29,7 @@ CASHCTRL_API_TOKEN = ""
 CASHCTRL_TENANT = ""
 
 FEATURES = [
+FEATURES = [
     "api",
     "portal",
     "reservation",
@@ -36,4 +37,5 @@ FEATURES = [
     "credit_accounting",
     "website",
     "cms",
+    "importer",
 ]
