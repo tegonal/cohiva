@@ -156,6 +156,11 @@ def logout(request):
 
 
 class PasswordResetViewHostbased(auth.views.PasswordResetView):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.from_email = settings.GENO_DEFAULT_EMAIL
+
     def get_form_kwargs(self):
         """Add hostname to kwargs."""
         kwargs = super().get_form_kwargs()
