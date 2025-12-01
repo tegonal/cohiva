@@ -1049,92 +1049,24 @@ class DebtorView(CohivaAdminViewMixin, TemplateView):
         return form
 
     def debtor_list(self):
-        from django.utils.safestring import mark_safe
+        from django_tables2 import RequestConfig
 
-        from .models import Contract
+        from .tables import InvoiceOverviewTable
 
         if self.request.POST.get("consolidate"):
             consolidate_invoices()
         data = invoice_overview(self.request.session["invoice_filter"])
 
-        # Format data for Unfold table component
-        # Unfold expects: {"headers": [...], "rows": [[col1, col2, ...], ...]}
-        headers = [
-            "Link",
-            "Vertrag/Person/Org.",
-            "Gefordert",
-            "Bezahlt",
-            "Saldo",
-            "Offene Forderung seit",
-            "Letzte Zahlung",
-        ]
-        rows = []
+        # Create django_tables2 table with sorting and pagination
+        table = InvoiceOverviewTable(data)
+        RequestConfig(self.request, paginate={"per_page": 50}).configure(table)
 
-        total_billed_sum = 0
-        total_paid_sum = 0
-        total_receivable = 0  # positive values (Forderungen)
-        total_payable = 0  # negative values (Verbindlichkeiten / Vorauszahlungen)
-
-        for item in data:
-            obj_type = "c" if type(item["obj"]) is Contract else "p"
-            link = mark_safe(
-                f'<a href="/geno/debtor/detail/{obj_type}/{item["obj"].pk}/" '
-                f'class="text-primary-600 dark:text-primary-400 hover:underline" '
-                f'aria-label="Details für {item["name"]}">Details</a>'
-            )
-
-            total_billed_sum += item["total_billed"]
-            total_paid_sum += item["total_paid"]
-            if item["total"] > 0:
-                total_receivable += item["total"]
-            else:
-                total_payable += item["total"]
-
-            # Color-code saldo values: red for receivables, green for payables
-            saldo_value = item["total"]
-            if saldo_value > 0:
-                saldo_class = "text-red-600 dark:text-red-400 font-semibold"
-            elif saldo_value < 0:
-                saldo_class = "text-green-600 dark:text-green-400 font-semibold"
-            else:
-                saldo_class = "text-gray-500 dark:text-gray-400"
-
-            rows.append(
-                [
-                    link,
-                    item["name"],
-                    f'<div class="text-right">{item["total_billed"]:.2f}</div>',
-                    f'<div class="text-right">{item["total_paid"]:.2f}</div>',
-                    f'<div class="text-right {saldo_class}">{saldo_value:.2f}</div>',
-                    f'<div class="text-center">{item["open_bill_date"].strftime("%d.%m.%Y") if item["open_bill_date"] else ""}</div>',
-                    f'<div class="text-center">{item["last_payment_date"].strftime("%d.%m.%Y") if item["last_payment_date"] else ""}</div>',
-                ]
-            )
-
-        # Add footer row with totals
-        footer = [
-            "<strong>Summe</strong>",
-            f"<strong>{len(data)} Einträge</strong>",
-            f'<div class="text-right"><strong>{total_billed_sum:.2f}</strong></div>',
-            f'<div class="text-right"><strong>{total_paid_sum:.2f}</strong></div>',
-            mark_safe(
-                f'<div class="text-right">'
-                f'<div class="text-red-600 dark:text-red-400">{total_receivable:.2f}</div>'
-                f'<div class="text-green-600 dark:text-green-400">{total_payable:.2f}</div>'
-                f'<div class="border-t border-base-300 dark:border-base-700 mt-1 pt-1 font-bold">'
-                f"{total_receivable + total_payable:.2f}</div>"
-                f"</div>"
-            ),
-            "",
-            "",
-        ]
-
-        table_data = {"headers": headers, "rows": rows, "footer": footer}
-
-        return {"title": "Debitoren", "table_data": table_data, "invoice_table": True}
+        return {"title": "Debitoren", "table": table, "invoice_table": True}
 
     def debtor_detail(self, key_type, key):
-        from django.utils.safestring import mark_safe
+        from django_tables2 import RequestConfig
+
+        from .tables import InvoiceDetailTable
 
         if key_type == "c":
             obj = Contract.objects.get(pk=key)
@@ -1144,58 +1076,13 @@ class DebtorView(CohivaAdminViewMixin, TemplateView):
             consolidate_invoices(obj)
         data = invoice_detail(obj, self.request.session["invoice_filter"])
 
-        # Format data for Unfold table component
-        headers = [
-            "Link",
-            "Datum",
-            "Nummer",
-            "Beschreibung",
-            "Rechnung",
-            "Zahlung",
-            "Saldo",
-            "K",
-            "Zusatzinfo",
-        ]
-        rows = []
-
-        for item in data:
-            link_text = "Zahlung" if item["obj"].invoice_type == "Payment" else "Rechnung"
-            link = mark_safe(
-                f'<a href="/admin/geno/invoice/{item["obj"].pk}/" '
-                f'class="text-primary-600 dark:text-primary-400 hover:underline" '
-                f'aria-label="{link_text} {item["number"]}">{link_text}</a>'
-            )
-
-            # Color-code balance values
-            balance_value = item["balance"]
-            if balance_value > 0:
-                balance_class = "text-red-600 dark:text-red-400 font-semibold"
-            elif balance_value < 0:
-                balance_class = "text-green-600 dark:text-green-400 font-semibold"
-            else:
-                balance_class = "text-gray-500 dark:text-gray-400"
-
-            rows.append(
-                [
-                    link,
-                    f'<div class="text-center">{item["date"].strftime("%d.%m.%Y") if item["date"] else ""}</div>',
-                    f'<div class="text-center">{str(item["number"])}</div>',
-                    item["note"],
-                    f'<div class="text-right">{item["billed"]:.2f}</div>'
-                    if item["billed"]
-                    else "",
-                    f'<div class="text-right">{item["paid"]:.2f}</div>' if item["paid"] else "",
-                    f'<div class="text-right {balance_class}">{balance_value:.2f}</div>',
-                    f'<div class="text-center">{item["consolidated"]}</div>',
-                    item["extra_info"] or "",
-                ]
-            )
-
-        table_data = {"headers": headers, "rows": rows}
+        # Create django_tables2 table with sorting and pagination
+        table = InvoiceDetailTable(data)
+        RequestConfig(self.request, paginate={"per_page": 50}).configure(table)
 
         return {
             "title": "Detailansicht: %s" % (obj),
-            "table_data": table_data,
+            "table": table,
             "invoice_table": True,
             "breadcrumbs": [{"name": "Debitoren", "href": "/geno/debtor/"}],
         }
