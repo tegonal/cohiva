@@ -15,7 +15,6 @@ from unfold.widgets import (
     UnfoldAdminRadioSelectWidget,
     UnfoldAdminSelect2MultipleWidget,
     UnfoldAdminSelect2Widget,
-    UnfoldAdminSelectMultipleWidget,
     UnfoldAdminSelectWidget,
     UnfoldAdminTextareaWidget,
     UnfoldAdminTextInputWidget,
@@ -165,7 +164,7 @@ class TransactionFormInvoice(forms.Form):
 class MemberMailForm(forms.Form):
     def get_attribute_value_choices(self):
         from django.utils.translation import gettext_lazy as _
-        
+
         choices_attval = [("--OHNE--", _("ist nicht vorhanden"))]
         for v in (
             MemberAttribute.objects.order_by("value").values_list("value", flat=True).distinct()
@@ -175,7 +174,7 @@ class MemberMailForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         from crispy_forms.helper import FormHelper
-        from crispy_forms.layout import Div, HTML, Layout
+        from crispy_forms.layout import HTML, Div, Layout
         from django.utils.translation import gettext_lazy as _
 
         from geno.layout_helpers import (
@@ -479,7 +478,8 @@ class MemberMailForm(forms.Form):
         label=_("Mit Vertrag in Liegenschaft(en)"),
         required=False,
         queryset=Building.objects.filter(active=True).order_by("name"),
-        widget=UnfoldAdminSelectMultipleWidget(),
+        widget=UnfoldAdminSelect2MultipleWidget(),
+        help_text=_("Tippen um zu suchen, mehrere Einträge möglich"),
     )
 
 
@@ -487,6 +487,7 @@ class MemberMailSelectForm(forms.Form):
     def __init__(self, *args, **kwargs):
         from crispy_forms.helper import FormHelper
         from crispy_forms.layout import Div, Layout
+        from django.contrib.admin.widgets import FilteredSelectMultiple
         from django.utils.translation import gettext_lazy as _
 
         members = kwargs.pop("members")
@@ -498,7 +499,11 @@ class MemberMailSelectForm(forms.Form):
         self.fields["select_members"] = forms.MultipleChoiceField(
             choices=choices,
             label=_("Empfänger auswählen"),
-            widget=UnfoldAdminSelectMultipleWidget(),
+            widget=FilteredSelectMultiple(
+                verbose_name=_("Empfänger"),
+                is_stacked=False,
+                attrs={"size": "20"},
+            ),
         )
 
         self.helper = FormHelper()
@@ -512,7 +517,7 @@ class MemberMailSelectForm(forms.Form):
 class MemberMailActionForm(forms.Form):
     def __init__(self, *args, **kwargs):
         from crispy_forms.helper import FormHelper
-        from crispy_forms.layout import Div, HTML, Layout
+        from crispy_forms.layout import HTML, Div, Layout
         from django.utils.translation import gettext_lazy as _
 
         from geno.layout_helpers import ConditionalDiv, UnfoldSectionHeading, UnfoldSeparator
@@ -537,8 +542,9 @@ class MemberMailActionForm(forms.Form):
         self.fields["template_files"] = forms.MultipleChoiceField(
             choices=choices,
             label=_("Vorlagen Dokumente/Anhänge"),
-            widget=UnfoldAdminSelectMultipleWidget(),
+            widget=UnfoldAdminSelect2MultipleWidget(),
             required=False,
+            help_text=_("Tippen um zu suchen, mehrere Einträge möglich"),
         )
 
         template_mail_choices = []
@@ -580,6 +586,14 @@ class MemberMailActionForm(forms.Form):
             ),
             UnfoldSeparator(),
             UnfoldSectionHeading(_("Attribute ändern")),
+            HTML(
+                '<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">{}</p>'.format(
+                    _(
+                        "Setzt oder aktualisiert ein Attribut bei allen ausgewählten "
+                        "Empfängern. Bestehende Werte werden überschrieben."
+                    )
+                )
+            ),
             Div("change_attributes", css_class="mb-4"),
             ConditionalDiv(
                 "attribute-settings",
