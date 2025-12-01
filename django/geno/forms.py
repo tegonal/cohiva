@@ -1031,6 +1031,7 @@ class InvoiceFilterForm(forms.Form):
         # Add Crispy Forms helper for Unfold styling
         # Responsive grid layout: search full-width, then 2-column rows
         self.helper = FormHelper()
+        self.helper.form_tag = False  # Form tag handled in template
         self.helper.form_class = ""
         self.helper.layout = Layout(
             # Row 1: Search field (full width)
