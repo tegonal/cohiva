@@ -32,9 +32,9 @@ SMEDIA_ROOT = cbc.INSTALL_DIR + "/django-production/smedia"
 
 if getattr(cbc, "USE_WHITENOISE", False):
     # Use whitenoise to serve static files in production
-    STORAGES["staticfiles"]["BACKEND"] = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    # STORAGES["staticfiles"]["BACKEND"] = "whitenoise.storage.CompressedManifestStaticFilesStorage"
     # STORAGES["staticfiles"]["BACKEND"] = "whitenoise.storage.CompressedStaticFilesStorage"
-    # STORAGES["staticfiles"]["BACKEND"] = "whitenoise.storage.StaticFilesStorage"
+    STORAGES["staticfiles"]["BACKEND"] = "whitenoise.storage.StaticFilesStorage"
 
 # Use production databases
 DATABASES["default"]["NAME"] = cbc.DB_PREFIX + "_django"

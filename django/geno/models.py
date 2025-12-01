@@ -252,7 +252,7 @@ class Address(GenoBase):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        help_text="Z.B. für Rückzahlung Nebenkosten",
+        help_text="Z.B. für Auszahlung Zinsen",
     )
     interest_action = models.CharField(
         "Standard-Zinsvergütung",
@@ -1442,7 +1442,7 @@ class Contract(GenoBase):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        help_text="Bankverbindung der Person/Organisation",
+        help_text="Z.B. für Rückzahlung Nebenkosten",
     )
 
     ## Reverse relation to Documents
