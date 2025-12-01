@@ -136,12 +136,6 @@ class ImportJobAdmin(GenoBaseAdmin):
 
     actions = [call_process_import_job]
 
-    def save_model(self, request, obj, form, change):
-        """Set created_by when creating a new import job."""
-        if not change:
-            obj.created_by = request.user
-        super().save_model(request, obj, form, change)
-
 
 @admin.register(ImportRecord)
 class ImportRecordAdmin(GenoBaseAdmin):

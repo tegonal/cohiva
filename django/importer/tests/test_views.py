@@ -37,6 +37,6 @@ class ImporterAdminTest(TestCase):
 
     def test_admin_import_job_change(self):
         """Test that import job change page is accessible in admin."""
-        job = ImportJob.objects.create(created_by=self.admin_user, status="pending")
+        job = ImportJob.objects.create(status="pending")
         response = self.client.get(reverse("admin:importer_importjob_change", args=[job.id]))
         self.assertEqual(response.status_code, 200)

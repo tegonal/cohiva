@@ -120,9 +120,7 @@ class ImporterTenantPropertyITWGNTest(TestCase):
         ]
 
         excel_file = self.create_test_excel(rows)
-        import_job = ImportJob.objects.create(
-            file=excel_file, created_by=self.user, import_type="tenant_property"
-        )
+        import_job = ImportJob.objects.create(file=excel_file, import_type="tenant_property")
 
         importer = ImporterTenantPropertyITWGN(import_job)
         results = importer.process()
@@ -186,9 +184,7 @@ class ImporterTenantPropertyITWGNTest(TestCase):
         ]
 
         excel_file = self.create_test_excel(rows)
-        import_job = ImportJob.objects.create(
-            file=excel_file, created_by=self.user, import_type="tenant_property"
-        )
+        import_job = ImportJob.objects.create(file=excel_file, import_type="tenant_property")
 
         importer = ImporterTenantPropertyITWGN(import_job)
         results = importer.process()
@@ -263,9 +259,7 @@ class ImporterTenantPropertyITWGNTest(TestCase):
         ]
 
         excel_file = self.create_test_excel(rows)
-        import_job = ImportJob.objects.create(
-            file=excel_file, created_by=self.user, import_type="tenant_property"
-        )
+        import_job = ImportJob.objects.create(file=excel_file, import_type="tenant_property")
 
         importer = ImporterTenantPropertyITWGN(import_job)
         results = importer.process()
@@ -339,9 +333,7 @@ class ImporterTenantPropertyITWGNTest(TestCase):
         ]
 
         excel_file = self.create_test_excel(rows)
-        import_job = ImportJob.objects.create(
-            file=excel_file, created_by=self.user, import_type="tenant_property"
-        )
+        import_job = ImportJob.objects.create(file=excel_file, import_type="tenant_property")
 
         importer = ImporterTenantPropertyITWGN(import_job)
         results = importer.process()
@@ -404,9 +396,7 @@ class ImporterTenantPropertyITWGNTest(TestCase):
         ]
 
         excel_file = self.create_test_excel(rows)
-        import_job = ImportJob.objects.create(
-            file=excel_file, created_by=self.user, import_type="tenant_property"
-        )
+        import_job = ImportJob.objects.create(file=excel_file, import_type="tenant_property")
 
         importer = ImporterTenantPropertyITWGN(import_job)
         results = importer.process()

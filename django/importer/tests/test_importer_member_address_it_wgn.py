@@ -153,7 +153,7 @@ class ImporterMemberAddressITWGNTest(TestCase):
         ]
 
         excel_file = self.create_test_excel(rows)
-        import_job = ImportJob.objects.create(file=excel_file, created_by=self.user)
+        import_job = ImportJob.objects.create(file=excel_file)
 
         # Process import
         importer = ImporterMemberAddressITWGN(import_job)
@@ -236,7 +236,7 @@ class ImporterMemberAddressITWGNTest(TestCase):
         ]
 
         excel_file = self.create_test_excel(rows)
-        import_job = ImportJob.objects.create(file=excel_file, created_by=self.user)
+        import_job = ImportJob.objects.create(file=excel_file)
 
         importer = ImporterMemberAddressITWGN(import_job)
         results = importer.process()
@@ -307,7 +307,7 @@ class ImporterMemberAddressITWGNTest(TestCase):
         ]
 
         excel_file = self.create_test_excel(rows)
-        import_job = ImportJob.objects.create(file=excel_file, created_by=self.user)
+        import_job = ImportJob.objects.create(file=excel_file)
 
         importer = ImporterMemberAddressITWGN(import_job)
         results = importer.process()
@@ -327,7 +327,7 @@ class ImporterMemberAddressITWGNTest(TestCase):
         """Test updating an existing address by import_id."""
         # First, create an import job to get an ID
         excel_file_temp = self.create_test_excel([])
-        import_job_existing = ImportJob.objects.create(file=excel_file_temp, created_by=self.user)
+        import_job_existing = ImportJob.objects.create(file=excel_file_temp)
 
         # Create existing address with proper import_id format
         existing = Address.objects.create(
@@ -463,7 +463,7 @@ class ImporterMemberAddressITWGNTest(TestCase):
         ]
 
         excel_file = self.create_test_excel(rows)
-        import_job = ImportJob.objects.create(file=excel_file, created_by=self.user)
+        import_job = ImportJob.objects.create(file=excel_file)
 
         importer = ImporterMemberAddressITWGN(import_job)
         results = importer.process()
@@ -532,7 +532,7 @@ class ImporterMemberAddressITWGNTest(TestCase):
         ]
 
         excel_file = self.create_test_excel(rows)
-        import_job = ImportJob.objects.create(file=excel_file, created_by=self.user)
+        import_job = ImportJob.objects.create(file=excel_file)
 
         importer = ImporterMemberAddressITWGN(import_job)
         results = importer.process()

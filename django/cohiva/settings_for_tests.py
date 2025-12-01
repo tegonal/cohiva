@@ -12,7 +12,7 @@ from finance.accounting import AccountKey
 
 ## Load settings
 from .settings import *  # noqa: F403
-from .settings import FINANCIAL_ACCOUNTS, MEDIA_ROOT, SMEDIA_ROOT
+from .settings import FINANCIAL_ACCOUNTS, INSTALLED_APPS, MEDIA_ROOT, SMEDIA_ROOT
 from .settings_defaults import *  # noqa: F403
 
 ## Redirect (S)MEDIA_ROOT for running tests (files will be deleted by run-tests.sh):
@@ -81,3 +81,6 @@ GENO_QRBILL_CREDITOR = {
     "city": cbc_test.ORG_ADDRESS_CITY_NAME,
     "country": cbc_test.ORG_ADDRESS_COUNTRY,
 }
+
+if "importer" not in INSTALLED_APPS:
+    INSTALLED_APPS += ("importer",)
