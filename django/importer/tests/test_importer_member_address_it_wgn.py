@@ -12,7 +12,7 @@ from django.test import TestCase
 
 from geno.models import Address, Member
 from importer.importer_member_address_it_wgn import ImporterMemberAddressITWGN
-from importer.models import ImportJob
+from importer.models import ImportJob, ImportRecord
 
 User = get_user_model()
 
@@ -392,6 +392,7 @@ class ImporterMemberAddressITWGNTest(TestCase):
         # Use the same import job to generate matching import_id
         excel_file = self.create_test_excel(rows)
         import_job_existing.file = excel_file
+        import_job_existing.override_existing = True
         import_job_existing.save()
 
         importer = ImporterMemberAddressITWGN(import_job_existing)
@@ -407,6 +408,98 @@ class ImporterMemberAddressITWGNTest(TestCase):
         self.assertEqual(address.name, "NewName")
         self.assertEqual(address.first_name, "NewFirst")
         self.assertEqual(address.email, "new@example.com")
+
+    def test_dont_overwrite_existing_address(self):
+        """Test the overwrite flag for an existing address."""
+        # First, create an import job to get an ID
+        excel_file_temp = self.create_test_excel([])
+        import_job_existing = ImportJob.objects.create(file=excel_file_temp)
+
+        # Create existing address with proper import_id format
+        existing = Address.objects.create(
+            name="OldName",
+            first_name="OldFirst",
+            email="old@example.com",
+            import_id=f"legacy_{import_job_existing.id}_1004",
+        )
+
+        rows = [
+            [
+                "new@example.com",
+                "",
+                "",
+                "1004",
+                "",  # Same P_nr -> same import_id when using same job
+                "",
+                "",
+                "Newstrasse 99",
+                "",
+                "8000 Zürich",
+                "Herr",
+                "Herr",
+                "Schweiz",
+                "",
+                "",
+                "",
+                "NewName",
+                "NewFirst",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "new@example.com",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+            ]
+        ]
+
+        # Use the same import job to generate matching import_id
+        excel_file = self.create_test_excel(rows)
+        import_job_existing.file = excel_file
+        import_job_existing.override_existing = False
+        import_job_existing.save()
+
+        importer = ImporterMemberAddressITWGN(import_job_existing)
+        results = importer.process()
+
+        self.assertEqual(results["success_count"], 0)
+        import_record = ImportRecord.objects.get(job=import_job_existing)
+        expected_import_id = f"legacy_{import_job_existing.id}_1004"
+        self.assertEqual(import_record.success, False)
+        self.assertIn(
+            f"Adresse mit Import-ID {expected_import_id} existiert bereits.",
+            import_record.error_message,
+        )
+
+        # Check address was not updated
+        self.assertEqual(Address.objects.filter(import_id=expected_import_id).count(), 1)
+        address = Address.objects.get(import_id=expected_import_id)
+        self.assertEqual(address.id, existing.id)  # Same record
+        self.assertEqual(address.name, "OldName")
+        self.assertEqual(address.first_name, "OldFirst")
+        self.assertEqual(address.email, "old@example.com")
 
     def test_missing_required_fields(self):
         """Test that rows without name fail gracefully."""

@@ -13,7 +13,7 @@ from openpyxl import Workbook
 
 from geno.models import Address, Building, Contract, RentalUnit
 from importer.importer_tenant_property_it_wgn import ImporterTenantPropertyITWGN
-from importer.models import ImportJob
+from importer.models import ImportJob, ImportRecord
 
 User = get_user_model()
 
@@ -396,7 +396,9 @@ class ImporterTenantPropertyITWGNTest(TestCase):
         ]
 
         excel_file = self.create_test_excel(rows)
-        import_job = ImportJob.objects.create(file=excel_file, import_type="tenant_property")
+        import_job = ImportJob.objects.create(
+            file=excel_file, import_type="tenant_property", override_existing=True
+        )
 
         importer = ImporterTenantPropertyITWGN(import_job)
         results = importer.process()
@@ -414,3 +416,80 @@ class ImporterTenantPropertyITWGNTest(TestCase):
         building.refresh_from_db()
         self.assertEqual(building.street_name, "New Street")
         self.assertEqual(building.house_number, "5")
+
+    def test_dont_overwrite_existing_rental_unit(self):
+        """Test the overwrite flag for an existing rental unit."""
+        # Create building and rental unit
+        building = Building.objects.create(
+            name="Existing Building",
+            street_name="Old Street",
+            house_number="99",
+        )
+
+        rental_unit = RentalUnit.objects.create(
+            name="E.1",
+            building=building,
+            rental_type="Wohnung",
+            label="Old Label",
+            rent_netto=Decimal("800.00"),
+        )
+
+        rows = [
+            [
+                "Existing Building",  # Same building name
+                "",
+                "New Street 5",
+                "4000",
+                "Basel",
+                "",
+                "Wohnung",
+                "E.1",  # Same unit number
+                "New Label",  # Updated label
+                "2",
+                "3",
+                "70",
+                "140",
+                "",
+                "",
+                "1100",  # Updated rent
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+            ]
+        ]
+
+        excel_file = self.create_test_excel(rows)
+        import_job = ImportJob.objects.create(
+            file=excel_file, import_type="tenant_property", override_existing=False
+        )
+
+        importer = ImporterTenantPropertyITWGN(import_job)
+        results = importer.process()
+
+        self.assertEqual(results["success_count"], 0)
+        import_record = ImportRecord.objects.get(job=import_job)
+        self.assertEqual(import_record.success, False)
+        self.assertIn(
+            "Mietobjekt E.1 in Liegenschaft Existing Building existiert bereits.",
+            import_record.error_message,
+        )
+
+        # Check that it didn't create a new unit
+        self.assertEqual(RentalUnit.objects.filter(name="E.1").count(), 1)
+
+        rental_unit.refresh_from_db()
+        self.assertEqual(rental_unit.label, "Old Label")
+        self.assertEqual(rental_unit.rent_netto, Decimal("800"))
+
+        # Check building was also updated
+        building.refresh_from_db()
+        self.assertEqual(building.street_name, "Old Street")
+        self.assertEqual(building.house_number, "99")
