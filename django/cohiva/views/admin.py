@@ -1,8 +1,26 @@
 import copy
+from enum import Enum
 
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import classonlymethod
+
+
+class ResponseVariant(str, Enum):
+    """Display variants for response items in templates.
+
+    These control how response items are styled in the UI:
+    - DEFAULT: Regular heading (gray/default styling)
+    - INFO: Blue informational box
+    - SUCCESS: Green success box
+    - WARNING: Yellow warning box
+    - ERROR: Red error box
+    """
+    DEFAULT = "default"
+    INFO = "info"
+    SUCCESS = "success"
+    WARNING = "warning"
+    ERROR = "error"
 
 
 class CohivaAdminViewMixin:
@@ -63,6 +81,33 @@ class CohivaAdminViewMixin:
         if self.navigation_view_name:
             return self.navigation_view_name
         return f"{self.__class__.__module__}.{self.__class__.__name__}"
+
+    @staticmethod
+    def make_response_item(info, objects=None, variant=None):
+        """Helper to create standardized response items.
+
+        Args:
+            info: Main message text (required)
+            objects: List of sub-items to display (optional)
+            variant: ResponseVariant enum for styling (optional, defaults to DEFAULT)
+
+        Returns:
+            dict: Response item with keys 'info', 'objects', and 'variant'
+
+        Example:
+            response = [
+                make_response_item(
+                    "Successfully saved",
+                    objects=["Item 1", "Item 2"],
+                    variant=ResponseVariant.SUCCESS
+                )
+            ]
+        """
+        return {
+            "info": info,
+            "objects": objects or [],
+            "variant": variant.value if variant else ResponseVariant.DEFAULT.value,
+        }
 
     @classonlymethod
     def as_view(cls, **initkwargs):
