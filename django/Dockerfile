@@ -1,9 +1,9 @@
 # we use the default debian package
-FROM python:3.13 AS cohiva-platform-os
+FROM python:3.13-bookworm AS cohiva-platform-os
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
-RUN apt-get update && apt-get install -y build-essential libmariadb-dev libfreetype-dev libjpeg-dev libffi-dev poppler-utils xmlsec1 libreoffice-writer mariadb-client mariadb-client-compat
+RUN apt-get update && apt-get install -y build-essential libmariadb-dev libfreetype-dev libjpeg-dev libffi-dev poppler-utils xmlsec1 libreoffice-writer mariadb-client #mariadb-client-compat
 RUN apt-get install -y locales && sed -i '/^#.*de_CH.UTF-8/s/^# *//' /etc/locale.gen && locale-gen de_CH.UTF-8 && update-locale LANG=de_CH.UTF-8
 
 # set the container-wide default

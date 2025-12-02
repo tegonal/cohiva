@@ -4,63 +4,69 @@
 set -e
 
 # if called from CI (GitHub Actions), copy the base_config_for_tests.py to base_config.py
-if [ -n "$GITHUB_ACTIONS" ] ; then
-    touch cohiva/settings.py
-    cp cohiva/base_config_for_tests.py cohiva/base_config.py
-fi
+#if [ -n "$GITHUB_ACTIONS" ] ; then
+# This is done with setup.py in the workflow already...
+#    touch cohiva/settings.py
+#    cp cohiva/base_config_for_tests.py cohiva/base_config.py
+#fi
 
 ## Show warnings?
 export PYTHONWARNINGS=always
 
-INSTALL_DIR=`grep "^INSTALL_DIR = " cohiva/base_config.py | cut -d \" -f 2`
+INSTALL_DIR=$(grep "^INSTALL_DIR = " cohiva/base_config.py | cut -d \" -f 2)
 
-## Run coverage? No / full / append
-COVERAGE_OPT=""
-#COVERAGE_OPT="--source $INSTALL_DIR/django"
-COVERAGE=""
-
+## Coverage options
+#COVERAGE="true"  # Uncomment to enable coverage
+COVERAGE_OPTS=()
+#COVERAGE_OPTS=(--source "$INSTALL_DIR/django")
+#COVERAGE_OPTS=(--append)
 if [ -n "$GITHUB_ACTIONS" ] ; then
-    COVERAGE_OPT="--source '/cohiva/'"
-    COVERAGE="coverage run --append $COVERAGE_OPT"
+    COVERAGE_OPTS=(--source "/cohiva/")
 fi
-#COVERAGE="coverage run $COVERAGE_OPT"
-#COVERAGE="coverage run --append $COVERAGE_OPT"
+
+if [ -n "$COVERAGE" ] ; then
+    COVERAGE_CMD="coverage run ${COVERAGE_OPTS[*]}"
+else
+    COVERAGE_CMD=""
+fi
 
 ## Base test command
 TESTCMD="./manage.py test --settings=cohiva.settings_for_tests"
+
+## Test options
+TEST_OPTS=""
+TEST_OPTS="--keepdb" # Keep DB (don't run migrations)
+
+## Select test to run (leave emtpy to run all tests)
+SELECTED_TESTS=""
+SELECTED_TESTS="finance.tests geno.tests.test_documents.DocumentSendTest.test_send_member_bill report.tests.test_nk_report.NKReportTest.test_report_minimal_fulloutput_dryrun"
 
 ## Full test suite incl. migrations
 # Run tests and capture the exit code of the test runner even though output is piped to tee.
 # Temporarily disable 'set -e' so the script doesn't abort before we capture the exit code.
 set +e
-$COVERAGE $TESTCMD 2>&1 | tee test.log
+$COVERAGE_CMD $TESTCMD $TEST_OPTS $SELECTED_TESTS 2>&1 | tee test.log
 TEST_EXIT_CODE=${PIPESTATUS[0]}
 # restore 'set -e' behavior
 set -e
 
-## Keep DB (don't run migrations)
-#$COVERAGE $TESTCMD --keepdb 2>&1 | tee test.log
-
-## Run a subset of tests, e.g.
-#$COVERAGE $TESTCMD --keepdb geno.tests
-#$COVERAGE $TESTCMD --keepdb geno.tests.test_registration.TestRegistrationForm
-#$COVERAGE $TESTCMD --keepdb portal.tests
-#$COVERAGE $TESTCMD --keepdb report.tests
-#$COVERAGE $TESTCMD --keepdb report.tests.test_tasks
-#$COVERAGE $TESTCMD --keepdb credit_accounting.tests.test_models
-
-if [ -n "$COVERAGE" ] ; then
-    coverage report
+if [ -n "$COVERAGE_CMD" ] ; then
+  if [ -n "$GITHUB_ACTIONS" ] ; then
+    coverage html 2>&1 | tee coverage.log
+    echo "TODO: Publish coverage report to GitHub"
+  else
     #coverage html 2>&1 | tee coverage.log
+    coverage report
+  fi
 fi
 
 ## Cleanup
 ## TODO: Move this cleanup step to a custom test runner, so it is integrated in
 ##       the ./manage.py test command, and tests also work when run from the
 ##       IDE, for example.
-rm -rf $INSTALL_DIR/django-test/tests
+rm -rf "$INSTALL_DIR"/django-test/tests
 
 # exit with the test runner's exit code so callers (CI, scripts) see the test result
-exit ${TEST_EXIT_CODE:-0}
+exit "${TEST_EXIT_CODE:-0}"
 
 #EOF

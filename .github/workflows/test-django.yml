@@ -2,6 +2,8 @@ name: Django Tests on PR
 
 # trigger: every pull-request
 on:
+  push: ## FOR TESTING PURPOSES ONLY
+    branches: [fix/ci_test]
   pull_request:
     branches: [develop]
   workflow_dispatch: # allow manual trigger
@@ -42,7 +44,14 @@ jobs:
       - name: Execute init-script on MariaDB
         run: |
           docker exec -i $(docker ps -qf "ancestor=mariadb:11.8") \
-          mariadb -u root -p$MARIADB_ROOT_PASSWORD cohiva < ${{ github.workspace }}/django/scripts/mariadb/init_test.sql
+          mariadb -u root -p$MARIADB_ROOT_PASSWORD < ${{ github.workspace }}/django/scripts/mariadb/init_test.sql
+        env:
+          MARIADB_ROOT_PASSWORD: itsASecretToEveryone
+
+      - name: Load GnuCash demo data required for tests
+        run: |
+          docker exec -i $(docker ps -qf "ancestor=mariadb:11.8") \
+          mariadb -u root -p$MARIADB_ROOT_PASSWORD cohiva_gnucash_test < ${{ github.workspace }}/django/demo-data/demo-data-gnucash.sql
         env:
           MARIADB_ROOT_PASSWORD: itsASecretToEveryone
 
