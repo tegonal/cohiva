@@ -14,5 +14,5 @@ CREATE DATABASE IF NOT EXISTS `cohiva_gnucash_test`
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_unicode_ci;
 
-USE `cohiva_gnucash_test`;
-SOURCE demo-data/demo-data-gnucash.sql;
+-- USE `cohiva_gnucash_test`;
+-- SOURCE demo-data/demo-data-gnucash.sql;
