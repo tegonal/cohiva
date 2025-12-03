@@ -100,7 +100,7 @@ dill==0.4.0
     # via pylint
 dj-rest-auth==7.0.1
     # via -r requirements.in
-django==4.2.26
+django==4.2.27
     # via
     #   -r requirements.in
     #   dj-rest-auth
