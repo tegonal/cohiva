@@ -64,7 +64,7 @@
     "eslint": "^9.37.0",
     "eslint-plugin-perfectionist": "^4.15.1",
     "eslint-plugin-vue": "^10.5.0",
-    "globals": "^15.15.0",
+    "globals": "^16.0.0",
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",
     "register-service-worker": "^1.7.2",
