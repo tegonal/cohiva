@@ -1,6 +1,7 @@
 import os
 import zoneinfo
 from io import BytesIO
+from unittest.mock import patch
 from zipfile import ZipFile
 
 from django.conf import settings
@@ -172,11 +173,19 @@ class CohivaTestBase:
                         else:
                             raise AssertionError(f"Text found in PDF: {expected_text_or_list}")
 
-    def assertPDFPages(self, pdffile_or_bytes, npages_expected):
+    def assertPDFPages(
+        self, pdffile_or_bytes, npages_expected, accept_more_pages_than_expected=False
+    ):
         pdf = PdfReader(self.get_filelike(pdffile_or_bytes))
         npages = len(pdf.pages)
-        if npages != npages_expected:
-            raise AssertionError(f"PDF has {npages} pages insted of {npages_expected}")
+        if accept_more_pages_than_expected:
+            if npages < npages_expected:
+                raise AssertionError(
+                    f"PDF has {npages} pages, which is less than the minimum of {npages_expected}"
+                )
+        else:
+            if npages != npages_expected:
+                raise AssertionError(f"PDF has {npages} pages instead of {npages_expected}")
 
     def assertInZIP(self, zipfile_or_bytes, num_files=None, contents=None):
         if contents is None:
@@ -246,3 +255,226 @@ class GenoAdminTestCase(BaseTestCase):
 
     def setUp(self):
         self.client.login(username="superuser", password="secret")
+
+
+def fill_template_effect(template, context, output_format="odt"):
+    odt_path = "/tmp/mock_odtfile.odt"
+    if not os.path.exists(odt_path):
+        with open(odt_path, "wb") as f:
+            f.write(b"ODT mock\n")
+    return odt_path
+
+
+def odt2pdf_effect(odtfile, instance_tag="default"):
+    pdf_path = "/tmp/mock_pdffile.pdf"
+    if not os.path.exists(pdf_path):
+        with open(pdf_path, "wb") as f:
+            f.write(b"%PDF-1.1\n%mock\n")
+    return pdf_path
+
+
+class DocumentCreationMockMixin:
+    """
+    Mixin that patches `fill_template_pod` and `odt2pdf` and provides helper assertions.
+    """
+
+    patch_target_fill_template = "geno.utils.fill_template_pod"
+    patch_target_odt2pdf = "geno.utils.odt2pdf"
+
+    def setUp(self):
+        super().setUp()
+        fill_template_patcher = patch(self.patch_target_fill_template)
+        self.mock_fill_template = fill_template_patcher.start()
+        self.mock_fill_template.side_effect = fill_template_effect
+        self.addCleanup(fill_template_patcher.stop)
+
+        odt2pdf_patcher = patch(self.patch_target_odt2pdf)
+        self.mock_odt2pdf = odt2pdf_patcher.start()
+        self.mock_odt2pdf.side_effect = odt2pdf_effect
+        self.addCleanup(odt2pdf_patcher.stop)
+
+    def reset_mocks(self):
+        self.mock_fill_template.reset_mock()
+        self.mock_odt2pdf.reset_mock()
+
+    def assertMocksCallCount(self, expected_count):
+        self.assertEqual(self.mock_fill_template.call_count, expected_count)
+        self.assertEqual(self.mock_odt2pdf.call_count, expected_count)
+
+    def assertFillTemplateCalledOnce(self):
+        self.mock_fill_template.assert_called_once()
+
+    def assertFillTemplateCalledWith(
+        self, template=None, expected_context_items=None, call_index=None
+    ):
+        if template:
+            self.assertFillTemplateCalledWithTemplate(template, call_index)
+        if expected_context_items:
+            self.assertFillTemplateContextContains(expected_context_items, call_index)
+        if not template and not expected_context_items:
+            raise AssertionError("assertFillTemplateCalledWith called without arguments.")
+
+    def assertFillTemplateCalledWithTemplate(self, template, call_index=None):
+        """
+        Assert that fill_template_pod was called with the given template.
+
+        - If call_index is None: check that *any* call used this template.
+        - If call_index is an integer: check only that specific call.
+        """
+
+        if not self.mock_fill_template.called:
+            raise AssertionError("fill_template_pod was never called.")
+
+        calls = self.mock_fill_template.call_args_list
+
+        # Helper to extract template argument
+        def extract_template(call):
+            args, kwargs = call
+            return kwargs.get("template") or args[0]
+
+        # Check a specific call
+        if call_index is not None:
+            try:
+                call = calls[call_index]
+            except IndexError:
+                raise AssertionError(
+                    f"fill_template_pod was called {len(calls)} times, "
+                    f"but call_index {call_index} was requested."
+                )
+
+            actual_template = extract_template(call)
+            if actual_template != template:
+                raise AssertionError(
+                    f"In call {call_index}, expected template {template!r}, "
+                    f"but got {actual_template!r}."
+                )
+            return  # success
+
+        # No call_index → check ANY call
+        for call in calls:
+            if extract_template(call) == template:
+                return  # success
+
+        # If we reach here → no call matched
+        formatted_calls = "\n".join(
+            f"call[{i}].template = {extract_template(call)!r}" for i, call in enumerate(calls)
+        )
+        raise AssertionError(
+            f"No call to fill_template_pod used template {template!r}.\n\n"
+            f"Templates used in calls:\n{formatted_calls}"
+        )
+
+    def assertFillTemplateContextContains(self, expected_items: dict, call_index=None):
+        """
+        Assert that the context passed to fill_template_pod contains expected_items.
+
+        - If call_index is None: check that *any* call contains the items.
+        - If call_index is an integer: check that specific call.
+        """
+
+        calls = self.mock_fill_template.call_args_list
+
+        def extract_context(call):
+            args, kwargs = call
+            return kwargs.get("context") or args[1]
+
+        # Check a specific call
+        if call_index is not None:
+            try:
+                call = calls[call_index]
+            except IndexError:
+                raise AssertionError(
+                    f"fill_template_pod was called {len(calls)} times, "
+                    f"but call_index {call_index} was requested."
+                )
+
+            context = extract_context(call)
+            for key, value in expected_items.items():
+                if key not in context:
+                    if value is None:
+                        # None means that the key can or should be missing
+                        continue
+                    print(context)
+                    raise AssertionError(f"In call {call_index}, context missing key {key!r}.")
+                if value is None:
+                    if context[key] not in (None, ""):
+                        raise AssertionError(
+                            f"In call {call_index}, expected key {key!r} to be missing, "
+                            f"but got {context[key]}."
+                        )
+                elif context[key] != value and str(context[key]) != str(value):
+                    raise AssertionError(
+                        f"In call {call_index}, key {key!r}: "
+                        f"expected {value!r}, got {context[key]!r}."
+                    )
+            return  # success
+
+        # No call_index → check ANY call
+        for call in calls:
+            context = extract_context(call)
+
+            if all(key in context and context[key] == val for key, val in expected_items.items()):
+                return  # success: at least one call matched
+
+        # If we reach here → no calls matched
+        formatted_calls = "\n".join(
+            f"call[{i}].context = {extract_context(call)}" for i, call in enumerate(calls)
+        )
+        raise AssertionError(
+            "No call to fill_template_pod had a context containing the expected items.\n\n"
+            f"Expected items: {expected_items}\n\n"
+            f"All contexts:\n{formatted_calls}"
+        )
+
+    def assertOdt2PdfCalledOnce(self):
+        self.mock_odt2pdf.assert_called_once()
+
+    def assertOdt2PdfCalledWithFile(self, odtfile, call_index=None):
+        """
+        Assert that odt2pdf was called with the given odtfile.
+
+        - If call_index is None: check that *any* call used this odtfile.
+        - If call_index is an integer: check only that specific call.
+        """
+
+        if not self.mock_odt2pdf.called:
+            raise AssertionError("odt2pdf was never called.")
+
+        calls = self.mock_odt2pdf.call_args_list
+
+        # Helper to extract odtfile argument
+        def extract_odtfile(call):
+            args, kwargs = call
+            return kwargs.get("odtfile") or args[0]
+
+        # Check a specific call
+        if call_index is not None:
+            try:
+                call = calls[call_index]
+            except IndexError:
+                raise AssertionError(
+                    f"odt2pdf was called {len(calls)} times, "
+                    f"but call_index {call_index} was requested."
+                )
+
+            actual_odtfile = extract_odtfile(call)
+            if actual_odtfile != odtfile:
+                raise AssertionError(
+                    f"In call {call_index}, expected odtfile {odtfile!r}, "
+                    f"but got {actual_odtfile!r}."
+                )
+            return  # success
+
+        # No call_index → check ANY call
+        for call in calls:
+            if extract_odtfile(call) == odtfile:
+                return  # success
+
+        # If we reach here → no call matched
+        formatted_calls = "\n".join(
+            f"call[{i}].odtfile = {extract_odtfile(call)!r}" for i, call in enumerate(calls)
+        )
+        raise AssertionError(
+            f"No call to odt2pdf used odtfile {odtfile!r}.\n\n"
+            f"Templates used in calls:\n{formatted_calls}"
+        )

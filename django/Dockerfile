@@ -1,21 +1,50 @@
-# we use the default debian package
-FROM python:3.13-bookworm AS cohiva-platform-os
+# Build stage
+FROM python:3.13-bookworm AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
-RUN apt-get update && apt-get install -y build-essential libmariadb-dev libfreetype-dev libjpeg-dev libffi-dev poppler-utils xmlsec1 libreoffice-writer mariadb-client #mariadb-client-compat
-RUN apt-get install -y locales && sed -i '/^#.*de_CH.UTF-8/s/^# *//' /etc/locale.gen && locale-gen de_CH.UTF-8 && update-locale LANG=de_CH.UTF-8
 
-# set the container-wide default
+# Install build dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends build-essential libmariadb-dev libfreetype-dev libjpeg-dev libffi-dev
+
+# Install python dependencies in /usr/local/
+WORKDIR /cohiva
+COPY . .
+RUN cp /cohiva/requirements-docker.txt /cohiva/requirements.txt   # Use requirements without dev packages
+RUN chmod +x ./install_dependencies.sh
+RUN ./install_dependencies.sh -e docker
+
+# Remove unnecessary stuff from /usr/local/
+RUN find /usr/local/lib -type d -name '__pycache__' -exec rm -rf {} + && \
+    find /usr/local/lib -type f -name '*.dist-info' -exec rm -rf {} +
+
+FROM python:3.13-slim-bookworm AS cohiva-platform-os
+
+# Set environment variables to ensure LibreOffice runs in headless mode
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LIBREOFFICE_HEADLESS=1
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Install runtime dependencies
+    # mariadb-client-compat
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends xmlsec1 libreoffice-writer-nogui mariadb-client locales && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set locale to de_CH.UTF-8
+RUN sed -i '/^#.*de_CH.UTF-8/s/^# *//' /etc/locale.gen && locale-gen de_CH.UTF-8 && update-locale LANG=de_CH.UTF-8
 ENV LANG=de_CH.UTF-8 \
     LC_ALL=de_CH.UTF-8
 
 FROM cohiva-platform-os AS cohiva-platform-django
 
 WORKDIR /cohiva
+COPY --from=builder /usr/local /usr/local
 COPY . .
-RUN chmod +x ./install_dependencies.sh
-RUN ./install_dependencies.sh -e docker
 # optional gunicorn tuning vars
 ENV GUNICORN_WORKERS=2
 ENV GUNICORN_BIND=0.0.0.0:8000
