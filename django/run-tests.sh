@@ -35,11 +35,12 @@ TESTCMD="./manage.py test --settings=cohiva.settings_for_tests"
 
 ## Test options
 TEST_OPTS=""
-TEST_OPTS="--keepdb" # Keep DB (don't run migrations)
+#TEST_OPTS="--keepdb" # Keep DB (don't run migrations)
 
 ## Select test to run (leave emtpy to run all tests)
 SELECTED_TESTS=""
-SELECTED_TESTS="finance.tests geno.tests.test_documents.DocumentSendTest.test_send_member_bill report.tests.test_nk_report.NKReportTest.test_report_minimal_fulloutput_dryrun"
+# Examples:
+#SELECTED_TESTS="finance.tests geno.tests.test_documents.DocumentSendTest.test_send_member_bill"
 
 ## Full test suite incl. migrations
 # Run tests and capture the exit code of the test runner even though output is piped to tee.
@@ -47,7 +48,6 @@ SELECTED_TESTS="finance.tests geno.tests.test_documents.DocumentSendTest.test_se
 set +e
 $COVERAGE_CMD $TESTCMD $TEST_OPTS $SELECTED_TESTS 2>&1 | tee test.log
 TEST_EXIT_CODE=${PIPESTATUS[0]}
-# restore 'set -e' behavior
 set -e
 
 if [ -n "$COVERAGE_CMD" ] ; then

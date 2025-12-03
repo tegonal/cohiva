@@ -21,10 +21,14 @@ from geno.models import (
 )
 from geno.tests import data as geno_testdata
 
-from .base import GenoAdminTestCase
+from .base import DocumentCreationMockMixin, GenoAdminTestCase
 
 
-class DocumentSendTest(GenoAdminTestCase):
+class DocumentSendTest(DocumentCreationMockMixin, GenoAdminTestCase):
+    # Specify correct import paths for patching
+    patch_target_fill_template = "geno.documents.fill_template_pod"
+    patch_target_odt2pdf = "geno.documents.odt2pdf"
+
     def test_select_without_session(self):
         response = self.client.get("/geno/member/send_mail/select/")
         self.assertRedirects(response, "/geno/member/send_mail/")
@@ -82,6 +86,7 @@ class DocumentSendTest(GenoAdminTestCase):
         self.assertEqual(response.status_code, 200)
 
     def form_action_send(self, formal):
+        self.reset_mocks()
         prev_geno_formal = settings.GENO_FORMAL
         settings.GENO_FORMAL = formal
         mail.outbox = []
@@ -106,35 +111,59 @@ class DocumentSendTest(GenoAdminTestCase):
         self.assertEqual(mail.outbox[0].attachments[0][0], "Muster_Anna_Simple.pdf")
         self.assertEqual(mail.outbox[0].attachments[0][2], "application/pdf")
 
+        ## Check document creation (mocked)
+        self.assertMocksCallCount(4)
+
         current_year = datetime.datetime.now().year
-        expected = f"""General:
-<adr-line1>: Anna Muster
-<adr-line2>: Beispielweg 1
-<adr-line3>: 3000 Bern
-<anrede>: Liebe Anna
-Share context:
-Billing context:
-<jahr>: {current_year}
-"""
-        self.assertInPDF(mail.outbox[0].attachments[0][1], expected)
-
-        ## Sie
-        self.assertNotInPDF(mail.outbox[1].attachments[0][1], "<organisation>:")
-        if formal:
-            self.assertInPDF(
-                mail.outbox[1].attachments[0][1], "<anrede>: Sehr geehrter Herr Muster\n"
-            )
-        else:
-            self.assertInPDF(mail.outbox[1].attachments[0][1], "<anrede>: Lieber Herr Muster\n")
-
-        ## Organisation
-        self.assertInPDF(mail.outbox[3].attachments[0][1], "<organisation>: WBG Test")
-        self.assertInPDF(
-            mail.outbox[3].attachments[0][1], "<anrede>: Liebe WBG Test, Lieber Ernst"
+        self.assertFillTemplateCalledWith(
+            call_index=0,
+            expected_context_items={
+                "organisation": None,
+                "vorname": "Anna",
+                "name": "Muster",
+                "strasse": "Beispielweg 1",
+                "wohnort": "3000 Bern",
+                "anrede": "Liebe Anna",
+                "share_count": None,
+                "jahr": f"{current_year}",
+            },
         )
 
+        ## Sie
+        if formal:
+            self.assertFillTemplateCalledWith(
+                call_index=1,
+                expected_context_items={
+                    "organisation": None,
+                    "anrede": "Sehr geehrter Herr Muster",
+                },
+            )
+        else:
+            self.assertFillTemplateCalledWith(
+                call_index=1,
+                expected_context_items={
+                    "organisation": None,
+                    "anrede": "Lieber Herr Muster",
+                },
+            )
+
         ## Organisation ohne Namen
-        self.assertInPDF(mail.outbox[2].attachments[0][1], "<anrede>: Liebe WBG Test\n")
+        self.assertFillTemplateCalledWith(
+            call_index=2,
+            expected_context_items={
+                "organisation": "WBG Test",
+                "anrede": "Liebe WBG Test",
+            },
+        )
+
+        ## Organisation mit Namen
+        self.assertFillTemplateCalledWith(
+            call_index=3,
+            expected_context_items={
+                "organisation": "WBG Test",
+                "anrede": "Liebe WBG Test, Lieber Ernst",
+            },
+        )
 
         settings.GENO_FORMAL = prev_geno_formal
 

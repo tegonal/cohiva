@@ -20,7 +20,7 @@ def check_virtual_env(environment, auto_yes=False):
     """Check if we are in a virtual environment or docker."""
     venv = os.environ.get("VIRTUAL_ENV")
     pip_root_user_mode = None
-    pip_sync_ask = [] if auto_yes else ["--ask"]
+    pip_sync_opts = [] if auto_yes else ["--ask"]
 
     if venv:
         print(f"Checking/installing dependencies in virtual environment '{venv}'...")
@@ -29,13 +29,15 @@ def check_virtual_env(environment, auto_yes=False):
             "Checking/installing dependencies on native environment since we are in docker mode..."
         )
         pip_root_user_mode = "ignore"
-        pip_sync_ask = []
+        pip_sync_opts = [
+            "--pip-args='--no-cache-dir'",
+        ]
     else:
         print("It seems that no Python virtual environment is active.")
         print("Please create and activate a virtual environment first. (see README.md)")
         sys.exit(1)
 
-    return pip_root_user_mode, pip_sync_ask
+    return pip_root_user_mode, pip_sync_opts
 
 
 def get_requirements_file():
@@ -137,10 +139,10 @@ def ensure_sepa_in_requirements(requirements_file):
                 f.write("sepa==0.5.4+mst1\n")
 
 
-def run_pip_sync(requirements_file, pip_sync_ask):
+def run_pip_sync(requirements_file, pip_sync_opts):
     """Run pip-sync to synchronize virtual environment with requirements.txt."""
     print(f"Syncing virtual environment with {requirements_file}...")
-    cmd = ["pip-sync"] + pip_sync_ask + [requirements_file]
+    cmd = ["pip-sync"] + pip_sync_opts + [requirements_file]
     subprocess.run(cmd, check=True)
 
 
@@ -222,7 +224,7 @@ def main():
     print(f"$ENVIRONMENT is set to {args.environment}")
 
     # Check virtual environment
-    pip_root_user_mode, pip_sync_ask = check_virtual_env(args.environment, auto_yes=args.yes)
+    pip_root_user_mode, pip_sync_opts = check_virtual_env(args.environment, auto_yes=args.yes)
 
     # Determine requirements file
     requirements_file = get_requirements_file()
@@ -240,7 +242,7 @@ def main():
     ensure_sepa_in_requirements(requirements_file)
 
     # Sync dependencies
-    run_pip_sync(requirements_file, pip_sync_ask)
+    run_pip_sync(requirements_file, pip_sync_opts)
 
     # Apply patches
     apply_patches()
