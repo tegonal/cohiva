@@ -21,7 +21,13 @@ COVERAGE_OPTS=()
 #COVERAGE_OPTS=(--source "$INSTALL_DIR/django")
 #COVERAGE_OPTS=(--append)
 if [ -n "$GITHUB_ACTIONS" ] ; then
-    COVERAGE_OPTS=(--source "/cohiva/")
+    #COVERAGE_OPTS=(--source "/cohiva/")
+    cat <<EOT >.coveragerc
+[run]
+source = /cohiva/
+relative_files = True
+EOT
+
 fi
 
 if [ -n "$COVERAGE" ] ; then
@@ -40,7 +46,7 @@ TEST_OPTS=""
 ## Select test to run (leave emtpy to run all tests)
 SELECTED_TESTS=""
 # Examples:
-#SELECTED_TESTS="finance.tests geno.tests.test_documents.DocumentSendTest.test_send_member_bill"
+SELECTED_TESTS="finance.tests geno.tests.test_documents.DocumentSendTest.test_send_member_bill"
 
 ## Full test suite incl. migrations
 # Run tests and capture the exit code of the test runner even though output is piped to tee.
@@ -52,11 +58,12 @@ set -e
 
 if [ -n "$COVERAGE_CMD" ] ; then
   if [ -n "$GITHUB_ACTIONS" ] ; then
-    coverage html 2>&1 | tee coverage.log
-    echo "TODO: Publish coverage report to GitHub"
-  else
     #coverage html 2>&1 | tee coverage.log
-    coverage report
+    # Copy the output to the mounted docker host file
+    cp .coverage .coverage_output_for_github_action
+  else
+    coverage html 2>&1 | tee coverage.log
+    #coverage report
   fi
 fi
 
