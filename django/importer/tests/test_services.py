@@ -61,7 +61,6 @@ class ExcelImporterTest(TestCase):
             # Create import job
             with open(excel_path, "rb") as f:
                 job = ImportJob.objects.create(
-                    created_by=self.user,
                     file=SimpleUploadedFile("test.xlsx", f.read()),
                 )
 
@@ -95,7 +94,6 @@ class ExcelImporterTest(TestCase):
             # Create import job
             with open(excel_path, "rb") as f:
                 job = ImportJob.objects.create(
-                    created_by=self.user,
                     file=SimpleUploadedFile("test.xlsx", f.read()),
                 )
 
@@ -127,7 +125,6 @@ class ExcelImporterTest(TestCase):
             # Create import job
             with open(excel_path, "rb") as f:
                 job = ImportJob.objects.create(
-                    created_by=self.user,
                     import_type="member_address",  # Set import type
                     file=SimpleUploadedFile("test.xlsx", f.read()),
                 )

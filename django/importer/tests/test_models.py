@@ -22,16 +22,14 @@ class ImportJobModelTest(TestCase):
     def test_create_import_job(self):
         """Test creating an import job."""
         job = ImportJob.objects.create(
-            created_by=self.user,
             status="pending",
         )
         self.assertEqual(job.status, "pending")
         self.assertEqual(job.records_imported, 0)
-        self.assertEqual(job.created_by, self.user)
 
     def test_import_job_string_representation(self):
         """Test the string representation of ImportJob."""
-        job = ImportJob.objects.create(created_by=self.user)
+        job = ImportJob.objects.create()
         self.assertIn("Import Job", str(job))
         self.assertIn(job.status, str(job))
 
@@ -44,7 +42,7 @@ class ImportRecordModelTest(TestCase):
         self.user = User.objects.create_user(
             username="testuser", email="test@example.com", password="testpass123"
         )
-        self.job = ImportJob.objects.create(created_by=self.user)
+        self.job = ImportJob.objects.create()
 
     def test_create_import_record(self):
         """Test creating an import record."""
