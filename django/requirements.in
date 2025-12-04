@@ -88,10 +88,12 @@ celery[redis]
 gunicorn
 whitenoise
 
-## For development
-ruff
-pylint
+## For tests
 coverage
-djlint
+
+## For development
+#ruff
+#pylint
+#djlint
 
 #EOF

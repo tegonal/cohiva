@@ -1,0 +1,12 @@
+[run]
+relative_files = True
+
+[report]
+omit =
+    cohiva/base_config.py
+    cohiva/settings.py
+    cohiva/settings_production.py
+    cohiva/*example*.py
+    scripts/*
+    website_example/*
+    manage.py

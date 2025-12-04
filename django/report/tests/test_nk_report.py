@@ -264,6 +264,7 @@ class NKReportTest(ReportTestCase):
         self.assertPDFPages(
             f"{settings.SMEDIA_ROOT}/report/{self.report.id}/Nebenkosten-001a-{self.contracts[0].id}.pdf",
             5,
+            accept_more_pages_than_expected=True,  # depending on the font etc. it could be more
         )
         self.assertInPDF(
             f"{settings.SMEDIA_ROOT}/report/{self.report.id}/Nebenkosten-001a-{self.contracts[0].id}.pdf",
