@@ -10,8 +10,11 @@ RUN apt-get update && \
 
 # Install python dependencies in /usr/local/
 WORKDIR /cohiva
-COPY . .
-RUN cp /cohiva/requirements-docker.txt /cohiva/requirements.txt   # Use requirements without dev packages
+# Copy only the necessary files to improve build caching
+COPY requirements-docker.txt requirements.txt
+COPY install_dependencies.sh install.py ./
+COPY geno/python-sepa geno/python-sepa
+COPY cohiva/saml2/*.patch cohiva/saml2/
 RUN chmod +x ./install_dependencies.sh
 RUN ./install_dependencies.sh -e docker
 
@@ -19,6 +22,7 @@ RUN ./install_dependencies.sh -e docker
 RUN find /usr/local/lib -type d -name '__pycache__' -exec rm -rf {} + && \
     find /usr/local/lib -type f -name '*.dist-info' -exec rm -rf {} +
 
+# Runtime stage
 FROM python:3.13-slim-bookworm AS cohiva-platform-os
 
 # Set environment variables to ensure LibreOffice runs in headless mode

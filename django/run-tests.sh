@@ -3,34 +3,38 @@
 # exit on error
 set -e
 
-# if called from CI (GitHub Actions), copy the base_config_for_tests.py to base_config.py
-#if [ -n "$GITHUB_ACTIONS" ] ; then
-# This is done with setup.py in the workflow already...
-#    touch cohiva/settings.py
-#    cp cohiva/base_config_for_tests.py cohiva/base_config.py
-#fi
+## Uncomment to enable coverage
+#COVERAGE="true"
 
 ## Show warnings?
 export PYTHONWARNINGS=always
 
 INSTALL_DIR=$(grep "^INSTALL_DIR = " cohiva/base_config.py | cut -d \" -f 2)
 
+## Normalize flags
+case "${COVERAGE,,}" in
+  true|1|yes|on)
+    COVERAGE="true"
+    ;;
+  *)
+    COVERAGE="false"
+    ;;
+esac
+case "${GITHUB_ACTIONS,,}" in
+  true|1|yes|on)
+    GITHUB_ACTIONS="true"
+    ;;
+  *)
+    GITHUB_ACTIONS="false"
+    ;;
+esac
+
 ## Coverage options
-#COVERAGE="true"  # Uncomment to enable coverage
 COVERAGE_OPTS=()
 #COVERAGE_OPTS=(--source "$INSTALL_DIR/django")
 #COVERAGE_OPTS=(--append)
-if [ -n "$GITHUB_ACTIONS" ] ; then
-    #COVERAGE_OPTS=(--source "/cohiva/")
-    cat <<EOT >.coveragerc
-[run]
-source = /cohiva/
-relative_files = True
-EOT
 
-fi
-
-if [ -n "$COVERAGE" ] ; then
+if [ "$COVERAGE" = "true" ] ; then
     COVERAGE_CMD="coverage run ${COVERAGE_OPTS[*]}"
 else
     COVERAGE_CMD=""
@@ -46,7 +50,7 @@ TEST_OPTS=""
 ## Select test to run (leave emtpy to run all tests)
 SELECTED_TESTS=""
 # Examples:
-SELECTED_TESTS="finance.tests geno.tests.test_documents.DocumentSendTest.test_send_member_bill"
+#SELECTED_TESTS="finance.tests geno.tests.test_documents.DocumentSendTest.test_send_member_bill"
 
 ## Full test suite incl. migrations
 # Run tests and capture the exit code of the test runner even though output is piped to tee.
@@ -57,13 +61,14 @@ TEST_EXIT_CODE=${PIPESTATUS[0]}
 set -e
 
 if [ -n "$COVERAGE_CMD" ] ; then
-  if [ -n "$GITHUB_ACTIONS" ] ; then
-    #coverage html 2>&1 | tee coverage.log
-    # Copy the output to the mounted docker host file
+  if [ "$GITHUB_ACTIONS" = "true" ] ; then
+    # Copy the output to the mounted docker host file because
+    # coverage can't use the mounted file directly in the container.
     cp .coverage .coverage_output_for_github_action
+    #coverage html 2>&1 | tee coverage.log
   else
-    coverage html 2>&1 | tee coverage.log
     #coverage report
+    coverage html 2>&1 | tee coverage.log
   fi
 fi
 

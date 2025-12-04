@@ -2,7 +2,7 @@ name: Post coverage comment
 
 on:
   workflow_run:
-    workflows: ["Django Tests on PR"]
+    workflows: ["Django Tests"]
     types:
       - completed
 

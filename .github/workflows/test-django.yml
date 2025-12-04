@@ -1,13 +1,11 @@
-name: Django Tests on PR
+name: Django Tests
 
-# trigger: every pull-request
 on:
   push:
   pull_request:
     branches:
       - main
       - develop
-      - fix/ci_test
   workflow_dispatch: # allow manual trigger
 
 permissions:
@@ -61,7 +59,6 @@ jobs:
       - name: Initialize submodules
         run: git submodule update --init --recursive
 
-      # 1. Build only the stage that contains code + deps
       - name: Build test image
         run: |
           cd django && \
@@ -69,12 +66,17 @@ jobs:
             --target cohiva-platform-django \
             -t cohiva:test
 
-      # 2. Run the test script inside that image
-      - name: Run Django tests
+      - name: Prepare for coverage report
         run: |
           set -e
           cd django
           touch .coverage
+          ln -sf website_example website
+
+      - name: Run Django tests
+        run: |
+          set -e
+          cd django
           docker run --rm \
             --network host \
             -e GITHUB_ACTIONS=true \
@@ -101,29 +103,3 @@ jobs:
           # If you use a different name, update COMMENT_FILENAME accordingly
           path: python-coverage-comment-action.txt
 
-
-#      - name: Upload coverage to Codecov
-#        uses: codecov/codecov-action@v3.1.0
-#        with:
-#          files: ./django/coverage.xml
-#          fail_ci_if_error: true
-#          verbose: true
-#          flags: unittests
-#          name: codecov-umbrella
-#          token: ${{ secrets.CODECOV_TOKEN }}
-#          directory: ./django/
-#          workdir: ./django/
-#
-#      - name: Upload coverage html report
-#        #uses: actions/upload-artifact@v3
-#        uses: actions/upload-pages-artifact@v3
-#        with:
-#          #name: coverage-html-report
-#          path: ./django/htmlcov/
-#
-#
-#      - name: Publish to GitHub pages
-#        #uses: peaceiris/actions-gh-pages@v3
-#        uses: actions/deploy-pages@v3
-#        #with:
-#        #  artifact_name: coverage-html-report
