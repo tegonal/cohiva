@@ -2,14 +2,17 @@ name: Django Tests on PR
 
 # trigger: every pull-request
 on:
-  push: ## FOR TESTING PURPOSES ONLY
-    branches: [fix/ci_test]
+  push:
   pull_request:
-    branches: [develop]
+    branches:
+      - main
+      - develop
+      - fix/ci_test
   workflow_dispatch: # allow manual trigger
 
 permissions:
-  contents: read
+  pull-requests: write
+  contents: write
 
 jobs:
   test:
@@ -71,10 +74,56 @@ jobs:
         run: |
           set -e
           cd django
+          touch .coverage
           docker run --rm \
             --network host \
             -e GITHUB_ACTIONS=true \
             -e COVERAGE=true \
+            -v ./.coverage:/cohiva/.coverage_output_for_github_action \
+            -v ./htmlcov:/cohiva/htmlcov \
             cohiva:test \
             sh -c "cp /cohiva/cohiva/base_config_for_tests.py /cohiva/cohiva/base_config.py && /cohiva/setup.py --use-default-certs && /cohiva/run-tests.sh"
           exit $?
+
+      - name: Coverage comment
+        id: coverage_comment
+        uses: py-cov-action/python-coverage-comment-action@v3
+        with:
+          COVERAGE_PATH: django
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Store Pull Request comment to be posted
+        uses: actions/upload-artifact@v4
+        if: steps.coverage_comment.outputs.COMMENT_FILE_WRITTEN == 'true'
+        with:
+          # If you use a different name, update COMMENT_ARTIFACT_NAME accordingly
+          name: python-coverage-comment-action
+          # If you use a different name, update COMMENT_FILENAME accordingly
+          path: python-coverage-comment-action.txt
+
+
+#      - name: Upload coverage to Codecov
+#        uses: codecov/codecov-action@v3.1.0
+#        with:
+#          files: ./django/coverage.xml
+#          fail_ci_if_error: true
+#          verbose: true
+#          flags: unittests
+#          name: codecov-umbrella
+#          token: ${{ secrets.CODECOV_TOKEN }}
+#          directory: ./django/
+#          workdir: ./django/
+#
+#      - name: Upload coverage html report
+#        #uses: actions/upload-artifact@v3
+#        uses: actions/upload-pages-artifact@v3
+#        with:
+#          #name: coverage-html-report
+#          path: ./django/htmlcov/
+#
+#
+#      - name: Publish to GitHub pages
+#        #uses: peaceiris/actions-gh-pages@v3
+#        uses: actions/deploy-pages@v3
+#        #with:
+#        #  artifact_name: coverage-html-report
