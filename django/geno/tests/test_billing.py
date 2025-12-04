@@ -153,7 +153,7 @@ class TestBilling(GenoAdminTestCase):
             self.assertEqual(mock_add_invoice.call_count, 2)
             self.assertEqual(ret, 1)
             self.assertEqual(len(messages), 3)
-            contract_string = "001a/001b für 001a Wohnung (Musterweg 1)/001b Wohnung (Musterweg 1) [Anna Muster/Hans Muster]"
+            contract_string = "001a,001b; Musterweg 1 für 001a Wohnung (Musterweg 1)/001b Wohnung (Musterweg 1) [Anna Muster/Hans Muster]"
             self.assertEqual(
                 messages[0],
                 f"Monatsrechnung hinzugefügt: Nettomiete 04.2001 für {contract_string}.",
