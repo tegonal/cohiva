@@ -229,7 +229,7 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                         "total": ru.nk_electricity,
                     }
                 )
-            ru_list.append(ru.name)
+            ru_list.append(ru.name + ", " + ru.building.name)
 
         if factor > 0.0:
             if factor != 1.0:
