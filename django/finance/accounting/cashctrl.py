@@ -133,11 +133,11 @@ class BookTransaction:
             if isinstance(transaction.splits[1].amount, float)
             else str(transaction.splits[1].amount)
         )
-        notes = 'Added through API'
-        description = getattr(transaction, 'description', '')
+        notes = "Added through API"
+        description = getattr(transaction, "description", "")
         # in case description is longer than 250 chars, truncate and append fully to notes
         if description.len > 250:
-            notes += '\n' + description
+            notes += "\n" + description
             description = description[:250]
 
         attributes = f"amount={amount_str}&creditId={cct_account_credit}&debitId={cct_account_debit}&title={urllib.parse.quote_plus(description)}&dateAdded={datetime.datetime.now()}&notes={urllib.parse.quote_plus(notes)}"
