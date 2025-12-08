@@ -592,11 +592,13 @@ class MemberOverviewView(CohivaAdminViewMixin, TemplateView):
         gender_data = []
         for key, count in gender_stat.items():
             percentage = round(float(count) / float(total) * 100.0)
-            gender_data.append({
-                "label": key,
-                "count": count,
-                "percentage": percentage,
-            })
+            gender_data.append(
+                {
+                    "label": key,
+                    "count": count,
+                    "percentage": percentage,
+                }
+            )
 
         # Format age statistics
         age_data = []
@@ -608,21 +610,25 @@ class MemberOverviewView(CohivaAdminViewMixin, TemplateView):
                 label = f"Über {last}"
             else:
                 label = f"{last} - {limit}"
-            age_data.append({
-                "label": label,
-                "count": count,
-                "percentage": percentage,
-            })
+            age_data.append(
+                {
+                    "label": label,
+                    "count": count,
+                    "percentage": percentage,
+                }
+            )
             last = limit
 
         if age_stat["Unbekannt"]:
             count = age_stat["Unbekannt"]
             percentage = round(float(count) / float(total) * 100.0)
-            age_data.append({
-                "label": "Unbekannt",
-                "count": count,
-                "percentage": percentage,
-            })
+            age_data.append(
+                {
+                    "label": "Unbekannt",
+                    "count": count,
+                    "percentage": percentage,
+                }
+            )
 
         return {
             "gender": gender_data,
@@ -1640,8 +1646,10 @@ class ShareInterestView(CohivaAdminViewMixin, TemplateView):
         year = year_current - 1
 
         if self.request.GET.get("darlehen", "") == "yes":
+            opt_darlehen = True
             output_tag = "Darlehenszins"
         else:
+            opt_darlehen = False
             output_tag = "Zinsabrechnung"
 
         ## Spreadsheet
@@ -1690,86 +1698,93 @@ class ShareInterestView(CohivaAdminViewMixin, TemplateView):
         for adr in Address.objects.filter(active=True).order_by("name"):
             try:
                 interest = share_interest_calc(adr, year)
-                for idx in (2, 3, 4):
-                    if interest["total"][idx] > 0:
-                        ## Column A - Name
-                        c = ws.cell(row=row_num + 1, column=1)
-                        c.value = "%s %s" % (adr.name, adr.first_name)
-                        ## Column B - Share type
-                        c = ws.cell(row=row_num + 1, column=2)
-                        share_type = ShareType.objects.get(pk=idx)
-                        c.value = share_type.name
-                        ## Column C - Due date
-                        c = ws.cell(row=row_num + 1, column=3)
-                        c.value = "%s - %s" % (
-                            interest["due_date_min"][idx].strftime("%d.%m.%Y"),
-                            interest["due_date_max"][idx].strftime("%d.%m.%Y"),
-                        )
-                        ## Column D - Amount
-                        c = ws.cell(row=row_num + 1, column=4)
-                        c.value = nformat(interest["end_amount"][idx])
-                        ## Column E - Total days
-                        c = ws.cell(row=row_num + 1, column=5)
-                        c.value = interest["total_days"][idx]
-                        ## Column F - interest rate
-                        c = ws.cell(row=row_num + 1, column=6)
-                        if interest["dates"][idx]:
-                            c.value = nformat(interest["dates"][idx][0]["interest_rate"])
-                        ## Column G - gross interest
-                        c = ws.cell(row=row_num + 1, column=7)
-                        c.value = nformat(interest["total"][idx])
-                        ## Column H - net interest
-                        c = ws.cell(row=row_num + 1, column=8)
-                        c.value = nformat(interest["total"][idx])
-                        if idx in (3,):
-                            ## Column I - tax-free ("steuerfreie Zinsen")
-                            c = ws.cell(row=row_num + 1, column=9)
-                            c.value = nformat(interest["total"][idx])
-                            ## Column J - tax ("Verrechnungssteuer")
-                            c = ws.cell(row=row_num + 1, column=10)
-                            c.value = nformat(0)
-                            ## Column K - actual payment
-                            c = ws.cell(row=row_num + 1, column=11)
-                            c.value = nformat(interest["total"][idx])
-                        else:
-                            ## Column I - tax-free ("steuerfreie Zinsen")
-                            c = ws.cell(row=row_num + 1, column=9)
-                            c.value = nformat(0)
-                            ## Column J - tax ("Verrechnungssteuer")
-                            c = ws.cell(row=row_num + 1, column=10)
-                            c.value = nformat(interest["tax"][idx])
-                            ## Column K - actual payment
-                            c = ws.cell(row=row_num + 1, column=11)
-                            c.value = nformat(interest["pay"][idx])
+            except Exception as e:
+                messages.error(self.request, "FEHLER bei der Zinsberechnung: %s" % str(e))
+                return HttpResponseRedirect(reverse("geno:share-interest"))
+            darlehen_spezial = ""
+            if opt_darlehen:
+                ## Only sum of Darlehen
+                total = interest["total"][2] + interest["total"][4]
+                tax = interest["tax"][2] + interest["tax"][4]
+                pay = interest["pay"][2] + interest["pay"][4]
+                if interest["total"][4] > 0:
+                    darlehen_spezial = "/SPEZIAL"
+            else:
+                ## All
+                total = interest["total_alltypes"]
+                tax = interest["tax_alltypes"]
+                pay = interest["pay_alltypes"]
 
-                        sum_interest = sum_interest + interest["total"][idx]
-                        if idx in (3,):
-                            sum_interest_notax = sum_interest_notax + interest["total"][idx]
-                        else:
-                            sum_interest_tax = sum_interest_tax + interest["tax"][idx]
-                            sum_interest_pay = sum_interest_pay + interest["pay"][idx]
+            if total > 0:
+                if total == pay:
+                    notax = pay
+                else:
+                    notax = 0
+                row = [
+                    str(adr),
+                    "TOTAL%s" % darlehen_spezial,
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    total,
+                    notax,
+                    tax,
+                    pay,
+                ]
+                for col_num in range(len(row)):
+                    c = ws.cell(row=row_num + 1, column=col_num + 1)
+                    c.value = row[col_num]
+                    if not opt_darlehen:
+                        c.font = Font(bold=True)
+                row_num += 1
+                sum_interest += total
+                sum_interest_notax += notax
+                sum_interest_tax += tax
+                sum_interest_pay += pay
+                count += 1
+
+            if total > 0 and not opt_darlehen:
+                for date_list in interest["dates"]:
+                    for d in date_list:
+                        row = [
+                            "",
+                            str(d["type"]),
+                            "%s - %s"
+                            % (d["start"].strftime("%d.%m.%Y"), d["end"].strftime("%d.%m.%Y")),
+                            d["amount"],
+                            d["days"],
+                            d["interest_rate"],
+                            d["interest"],
+                        ]
+                        for col_num in range(len(row)):
+                            c = ws.cell(row=row_num + 1, column=col_num + 1)
+                            c.value = row[col_num]
+                            # c.font = Font(bold = True)
                         row_num += 1
-                        count += 1
-            except Exception:
-                pass
+                row_num += 1
 
-        ## Output summary row
+        ## Sum
         row_num += 1
-        c = ws.cell(row=row_num + 1, column=1)
-        c.value = "Total"
-        c.font = Font(bold=True)
-        c = ws.cell(row=row_num + 1, column=8)
-        c.value = nformat(sum_interest)
-        c.font = Font(bold=True)
-        c = ws.cell(row=row_num + 1, column=9)
-        c.value = nformat(sum_interest_notax)
-        c.font = Font(bold=True)
-        c = ws.cell(row=row_num + 1, column=10)
-        c.value = nformat(sum_interest_tax)
-        c.font = Font(bold=True)
-        c = ws.cell(row=row_num + 1, column=11)
-        c.value = nformat(sum_interest_pay + sum_interest_notax)
-        c.font = Font(bold=True)
+        row = [
+            "Anzahl/Summe:",
+            count,
+            "",
+            "",
+            "",
+            "",
+            "",
+            sum_interest,
+            sum_interest_notax,
+            sum_interest_tax,
+            sum_interest_pay,
+        ]
+        for col_num in range(len(row)):
+            c = ws.cell(row=row_num + 1, column=col_num + 1)
+            c.value = row[col_num]
+            c.font = Font(bold=True)
+        row_num += 1
 
         wb.save(response)
         return response
@@ -2455,17 +2470,18 @@ class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        response = self.check_mailinglists()
-        context["response"] = response
+        context["response"] = self.check_mailinglists()
         return context
 
     def check_mailinglists(self):
         if not hasattr(settings, "MAILMAN_API") or not settings.MAILMAN_API.get("password", None):
             if not getattr(settings, "DEMO", False):
-                return [{
-                    "info": "FEHLER: Mailman-API ist nicht konfiguriert.",
-                    "variant": ResponseVariant.ERROR.value,
-                }]
+                return [
+                    {
+                        "info": "FEHLER: Mailman-API ist nicht konfiguriert.",
+                        "variant": ResponseVariant.ERROR.value,
+                    }
+                ]
 
         use_demo = getattr(settings, "DEMO", False)
 
@@ -2482,7 +2498,10 @@ class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
                 {"name": "Dora Demo", "email": "dora@example.com"},
                 {"name": "Ohnemail, Peter", "email": ""},
                 {"name": "Verein WG Kunterbunt, Hans Muster", "email": "hans.muster@example.com"},
-                {"name": "Verein WG Kunterbunt, Hans Muster (Duplikat)", "email": "hans.muster@example.com"},
+                {
+                    "name": "Verein WG Kunterbunt, Hans Muster (Duplikat)",
+                    "email": "hans.muster@example.com",
+                },
             ]
             demo_bewohnende = [
                 {"name": "Zora Demo", "email": "zora@example.com"},
@@ -2707,25 +2726,35 @@ class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
 
         ## Build response with sub-groups for filtered items
         if use_demo:
-            ret.append({
-                "info": str(_("<i>INFO: Mailman-API ist nicht konfiguriert. Dies ist ein Demo-Output.</i>")),
-                "variant": ResponseVariant.INFO.value,
-            })
+            ret.append(
+                {
+                    "info": str(
+                        _(
+                            "<i>INFO: Mailman-API ist nicht konfiguriert. Dies ist ein Demo-Output.</i>"
+                        )
+                    ),
+                    "variant": ResponseVariant.INFO.value,
+                }
+            )
 
         # Genossenschaft missing
         genossenschaft_objects = list(genossenschaft_missing)
         if genossenschaft_no_email:
-            genossenschaft_objects.append({
-                "label": str(_("Mitglieder ohne Email-Adresse (ignoriert)")),
-                "items": genossenschaft_no_email,
-                "variant": "info",
-            })
+            genossenschaft_objects.append(
+                {
+                    "label": str(_("Mitglieder ohne Email-Adresse (ignoriert)")),
+                    "items": genossenschaft_no_email,
+                    "variant": "info",
+                }
+            )
         if genossenschaft_duplicate:
-            genossenschaft_objects.append({
-                "label": str(_("Mitglieder mit doppelter Email-Adresse (ignoriert)")),
-                "items": genossenschaft_duplicate,
-                "variant": "info",
-            })
+            genossenschaft_objects.append(
+                {
+                    "label": str(_("Mitglieder mit doppelter Email-Adresse (ignoriert)")),
+                    "items": genossenschaft_duplicate,
+                    "variant": "info",
+                }
+            )
         ret.append(
             {"info": _("Mitglied nicht in genossenschaft-ML"), "objects": genossenschaft_objects}
         )
@@ -2740,17 +2769,21 @@ class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
         # Bewohnende missing
         bewohnende_objects = list(bewohnende_missing)
         if bewohnende_no_email:
-            bewohnende_objects.append({
-                "label": str(_("Bewohnende ohne Email-Adresse (ignoriert)")),
-                "items": bewohnende_no_email,
-                "variant": "info",
-            })
+            bewohnende_objects.append(
+                {
+                    "label": str(_("Bewohnende ohne Email-Adresse (ignoriert)")),
+                    "items": bewohnende_no_email,
+                    "variant": "info",
+                }
+            )
         if bewohnende_duplicate:
-            bewohnende_objects.append({
-                "label": str(_("Bewohnende mit doppelter Email-Adresse (ignoriert)")),
-                "items": bewohnende_duplicate,
-                "variant": "info",
-            })
+            bewohnende_objects.append(
+                {
+                    "label": str(_("Bewohnende mit doppelter Email-Adresse (ignoriert)")),
+                    "items": bewohnende_duplicate,
+                    "variant": "info",
+                }
+            )
         ret.append(
             {"info": _("Bewohnende aber nicht in bewohnende-ML"), "objects": bewohnende_objects}
         )
@@ -2791,14 +2824,21 @@ class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
         )
         ret.append(
             {
-                "info": _("Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s)")
+                "info": _(
+                    "Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s)"
+                )
                 % len(wohnpost_and_geno_missing),
                 "objects": wohnpost_and_geno_missing,
             }
         )
         ret.append({"info": _("Mailman warnings"), "objects": ml_warnings})
 
-        return [item for item in ret if item.get("objects") or item.get("variant") == ResponseVariant.INFO.value]
+        return [
+            item
+            for item in ret
+            if item.get("objects") or item.get("variant") == ResponseVariant.INFO.value
+        ]
+
 
 ## TODO: Refactor to ClassBased view
 @login_required

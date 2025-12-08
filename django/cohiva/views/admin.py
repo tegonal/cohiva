@@ -16,6 +16,7 @@ class ResponseVariant(str, Enum):
     - WARNING: Yellow warning box
     - ERROR: Red error box
     """
+
     DEFAULT = "default"
     INFO = "info"
     SUCCESS = "success"

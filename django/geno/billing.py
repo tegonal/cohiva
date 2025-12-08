@@ -110,11 +110,23 @@ def create_invoices(
                 )
             except InvoiceCreationError as e:
                 logger.error("Could not create invoice for contract {contract}: {e}")
-                messages.append(f"FEHLER beim Erzeugen der Rechnungen für {contract}: {e}")
-                messages.append("VERARBEITUNG ABGEBROCHEN!")
+                messages.append(
+                    CohivaAdminViewMixin.make_response_item(
+                        _("FEHLER beim Erzeugen der Rechnungen für {contract}: {e}").format(
+                            contract=contract, e=e
+                        ),
+                        variant=ResponseVariant.ERROR,
+                    )
+                )
+                messages.append(
+                    CohivaAdminViewMixin.make_response_item(
+                        _("VERARBEITUNG ABGEBROCHEN!"), variant=ResponseVariant.ERROR
+                    )
+                )
                 break
 
-            if download_only:
+            if isinstance(result_tuple[0], str):
+                # We got a filename back, so we're done here
                 return result_tuple[0]
 
             result, regular_invoices, placeholder_invoices, email_messages = result_tuple
@@ -151,16 +163,12 @@ def create_invoices(
         )
 
     if count["invoices"] > 0:
-        summary_msg = str(
-            _("%(invoice_count)s für %(contract_count)s")
-        ) % {
+        summary_msg = str(_("%(invoice_count)s für %(contract_count)s")) % {
             "invoice_count": pluralize(count["invoices"], "Rechnung", "Rechnungen"),
             "contract_count": pluralize(count["contracts"], "Vertrag", "Verträge"),
         }
         messages.append(
-            CohivaAdminViewMixin.make_response_item(
-                summary_msg, variant=ResponseVariant.INFO
-            )
+            CohivaAdminViewMixin.make_response_item(summary_msg, variant=ResponseVariant.INFO)
         )
 
     return messages
@@ -173,7 +181,7 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
     month = reference_date.month
     year = reference_date.year
     stop = False
-    count = 0
+    billed_months_count = 0
     regular_invoices = []
     placeholder_invoices = []
     messages = []
@@ -220,23 +228,6 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
             billing_contract = contract.billing_contract
             billing_contract_info = "%s (Rechnungs-Vertrag: %s)" % (contract, billing_contract)
             is_additional_invoice = True
-            ## Add dummy invoice to prevent creation of further invoices
-            invoice = Invoice(
-                name="Platzhalter: Inkasso läuft über Vertrag %s" % (billing_contract),
-                invoice_type="Invoice",
-                invoice_category=invoice_category,
-                year=year,
-                month=month,
-                contract=contract,
-                date=invoice_date,
-                amount=Decimal(0.0),
-            )
-            if not dry_run:
-                invoice.save()
-            placeholder_invoices.append(
-                str(_("%(month)d.%(year)d: %(contract)s"))
-                % {"month": month, "year": year, "contract": billing_contract_info}
-            )
         else:
             billing_contract = contract
             billing_contract_info = "%s" % (contract)
@@ -311,7 +302,7 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
             ):
                 if not contract.main_contract and not contract.contractors.first():
                     raise InvoiceCreationError("Vertrag hat keine Vertragspartner/Adresse.")
-                count += 1
+                billed_months_count += 1
                 if is_additional_invoice:
                     # Add a placeholder invoice for the contract that is billed through
                     # `billing_contract`, to prevent creation of further invoices
@@ -327,9 +318,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     )
                     if not dry_run:
                         invoice.save()
-                    messages.append(
-                        "Platzhalter-Monatsrechnung %d.%d hinzugefügt: %s."
-                        % (month, year, billing_contract_info)
+                    placeholder_invoices.append(
+                        str(_("%(month)d.%(year)d: %(contract)s"))
+                        % {"month": month, "year": year, "contract": billing_contract_info}
                     )
 
             if sum_rent_net > 0.0:
@@ -560,7 +551,7 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
             year -= 1
         else:
             month -= 1
-    return count, regular_invoices, placeholder_invoices, messages
+    return billed_months_count, regular_invoices, placeholder_invoices, messages
 
 
 def pay_invoice(invoice, date, amount):
