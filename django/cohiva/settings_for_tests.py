@@ -12,7 +12,7 @@ from finance.accounting import AccountKey
 
 ## Load settings
 from .settings import *  # noqa: F403
-from .settings import FINANCIAL_ACCOUNTS, INSTALLED_APPS, MEDIA_ROOT, SMEDIA_ROOT
+from .settings import DATABASES, FINANCIAL_ACCOUNTS, INSTALLED_APPS, MEDIA_ROOT, SMEDIA_ROOT
 from .settings_defaults import *  # noqa: F403
 
 ## Redirect (S)MEDIA_ROOT for running tests (files will be deleted by run-tests.sh):
@@ -29,6 +29,13 @@ warnings.filterwarnings("once", category=RemovedInDjango51Warning)
 
 ## Make code aware that this is a test run
 IS_RUNNING_TESTS = True
+
+if os.getenv("SKIP_SLOW", "false") == "true":
+    ## Speed up tests in quick mode
+    PASSWORD_HASHERS = ("django.contrib.auth.hashers.MD5PasswordHasher",)
+    ## Skip migrations and use a test runner that applies selected migrations needed for tests
+    DATABASES["default"]["TEST"] = {"MIGRATE": False}
+    TEST_RUNNER = "cohiva.utils.migrations_for_tests.SelectiveMigrationRunner"
 
 ## Default settings for tests, which are overwritten temporarily by specific tests, if needed.
 GENO_FORMAL = True

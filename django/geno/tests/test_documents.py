@@ -5,6 +5,7 @@ from unittest.mock import patch
 from django.conf import settings
 from django.core import mail
 from django.http import HttpResponse
+from django.test import tag
 
 # from geno.views import send_member_mail_process
 from geno.documents import send_member_mail_process
@@ -20,6 +21,7 @@ from geno.models import (
     Share,
 )
 from geno.tests import data as geno_testdata
+from geno.utils import fill_template_pod, odt2pdf
 
 from .base import DocumentCreationMockMixin, GenoAdminTestCase
 
@@ -173,6 +175,31 @@ class DocumentSendTest(DocumentCreationMockMixin, GenoAdminTestCase):
         self.form_action_list()
         self.form_action_send(formal=False)
         self.form_action_send(formal=True)
+
+
+@tag("slow-test")
+class DocumentCreationTest(GenoAdminTestCase):
+    def test_libreoffice_template_processing_and_odt2pdf(self):
+        content_template = ContentTemplate.objects.get(name="Simple")
+        ctx = self.members[1].name.get_context()
+
+        output_odt_file = fill_template_pod(content_template.file.path, ctx, output_format="odt")
+        self.assertRegex(output_odt_file, r"^/tmp/django_pod_Musterweg/django_pod_\w+\.odt$")
+
+        output_pdf_file = odt2pdf(output_odt_file, "document_creation_test")
+        self.assertRegex(output_pdf_file, r"^/tmp/django_pod_Musterweg/django_pod_\w+\.pdf$")
+
+        current_year = datetime.datetime.now().year
+        expected = f"""General:
+<adr-line1>: Anna Muster
+<adr-line2>: Beispielweg 1
+<adr-line3>: 3000 Bern
+<anrede>: Liebe Anna
+Share context:
+Billing context:
+<jahr>: {current_year}
+"""
+        self.assertInPDF(output_pdf_file, expected)
 
 
 class DocumentFormFilterTest(GenoAdminTestCase):
@@ -411,6 +438,7 @@ class DocumentFormFilterTest(GenoAdminTestCase):
         )
 
 
+@tag("slow-test")
 class DocumentProcessTest(GenoAdminTestCase):
     @classmethod
     def setUpTestData(cls):
