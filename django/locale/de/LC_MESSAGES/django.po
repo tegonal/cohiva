@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Cohiva 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-25 00:23+0100\n"
+"POT-Creation-Date: 2025-12-09 13:58+0100\n"
 "PO-Revision-Date: 2025-10-21 01:30+0200\n"
 "Last-Translator: Cohiva Development Team\n"
 "Language-Team: German\n"
@@ -17,54 +17,54 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: cohiva/settings_defaults.py:1000
+#: cohiva/settings_defaults.py:1013
 msgid "Stammdaten"
 msgstr "Stammdaten"
 
-#: cohiva/settings_defaults.py:1005
+#: cohiva/settings_defaults.py:1018
 msgid "Adressen/Personen"
 msgstr "Adressen/Personen"
 
-#: cohiva/settings_defaults.py:1012 cohiva/settings_defaults.py:1062
-#: cohiva/settings_defaults.py:1104 cohiva/settings_defaults.py:1142
-#: cohiva/settings_defaults.py:1179 cohiva/settings_defaults.py:1214
-#: cohiva/settings_defaults.py:1238
+#: cohiva/settings_defaults.py:1025 cohiva/settings_defaults.py:1075
+#: cohiva/settings_defaults.py:1117 cohiva/settings_defaults.py:1155
+#: cohiva/settings_defaults.py:1192 cohiva/settings_defaults.py:1227
+#: cohiva/settings_defaults.py:1251
 msgid "Erweitert"
 msgstr "Erweitert"
 
-#: cohiva/settings_defaults.py:1025
+#: cohiva/settings_defaults.py:1038
 msgid "Erweiterte Konfiguration"
 msgstr "Erweiterte Konfiguration"
 
-#: cohiva/settings_defaults.py:1032
+#: cohiva/settings_defaults.py:1045
 msgid "Mitglieder"
 msgstr "Mitglieder"
 
-#: cohiva/settings_defaults.py:1071
+#: cohiva/settings_defaults.py:1084
 msgid "Vermietung"
 msgstr "Vermietung"
 
-#: cohiva/settings_defaults.py:1118
+#: cohiva/settings_defaults.py:1131
 msgid "Gemeinschaft"
 msgstr "Gemeinschaft"
 
-#: cohiva/settings_defaults.py:1154
+#: cohiva/settings_defaults.py:1167
 msgid "Inkasso"
 msgstr "Inkasso"
 
-#: cohiva/settings_defaults.py:1189
+#: cohiva/settings_defaults.py:1202
 msgid "Finanzierung"
 msgstr "Finanzierung"
 
-#: cohiva/settings_defaults.py:1223
+#: cohiva/settings_defaults.py:1236
 msgid "Dokumente & Kommunikation"
 msgstr "Dokumente & Kommunikation"
 
-#: cohiva/settings_defaults.py:1251
+#: cohiva/settings_defaults.py:1264
 msgid "Systemadministration"
 msgstr "Systemadministration"
 
-#: cohiva/settings_defaults.py:1310
+#: cohiva/settings_defaults.py:1323
 msgid "Cohiva Website"
 msgstr "Cohiva Website"
 
@@ -106,42 +106,59 @@ msgstr "Export ADIT"
 msgid "Export per Ende Vorjahr"
 msgstr "Export per Ende Vorjahr"
 
-#: geno/admin.py:1182
+#: geno/admin.py:1194
 msgid "Report Pflichtanteile/Belegung"
 msgstr "Report Pflichtanteile/Belegung"
 
-#: geno/admin.py:1191
+#: geno/admin.py:1203
 msgid "Untervertrag hinzufügen"
 msgstr "Untervertrag hinzufügen"
 
-#: geno/admin.py:1490
+#: geno/admin.py:1502
 msgid "Mietobjektespiegel"
 msgstr "Mietobjektespiegel"
 
-#: geno/billing.py:119
+#: geno/billing.py:118
+#, python-brace-format
+msgid "FEHLER beim Erzeugen der Rechnungen für {contract}: {e}"
+msgstr ""
+
+#: geno/billing.py:126
+msgid "VERARBEITUNG ABGEBROCHEN!"
+msgstr ""
+
+#: geno/billing.py:147
+msgid "Email mit QR-Rechnung an:"
+msgstr ""
+
+#: geno/billing.py:154
+msgid "Email-Versand"
+msgstr ""
+
+#: geno/billing.py:161
 msgid "Monatsrechnungen hinzugefügt"
 msgstr "Monatsrechnungen hinzugefügt"
 
-#: geno/billing.py:127
+#: geno/billing.py:169
 msgid "Platzhalter-Monatsrechnungen hinzugefügt"
 msgstr "Platzhalter-Monatsrechnungen hinzugefügt"
 
-#: geno/billing.py:136
+#: geno/billing.py:178
 msgid "Rechnungen in Buchhaltung erstellen"
 msgstr "Rechnungen in Buchhaltung erstellen"
 
-#: geno/billing.py:142
+#: geno/billing.py:183
 #, python-format
 msgid "%(invoice_count)s für %(contract_count)s"
 msgstr "%(invoice_count)s für %(contract_count)s"
 
-#: geno/billing.py:224
+#: geno/billing.py:344
 #, python-format
 msgid "%(month)d.%(year)d: %(contract)s"
 msgstr "%(month)d.%(year)d: %(contract)s"
 
-#: geno/billing.py:315 geno/billing.py:342 geno/billing.py:369
-#: geno/billing.py:396 geno/billing.py:424 geno/billing.py:462
+#: geno/billing.py:370 geno/billing.py:396 geno/billing.py:422
+#: geno/billing.py:448 geno/billing.py:475 geno/billing.py:512
 #, python-format
 msgid "%(description)s für %(contract)s"
 msgstr "%(description)s für %(contract)s"
@@ -154,17 +171,119 @@ msgstr ""
 msgid "Wählen Sie eine LibreOffice-Datei (.odt) zum Hochladen aus."
 msgstr ""
 
-#: geno/forms.py:1055
+#: geno/forms.py:1056
 msgid "Übersicht per Stichtag"
 msgstr ""
 
-#: geno/templates/geno/components/table_with_footer.html:36
-msgid "Expand row"
-msgstr "Zeile erweitern"
+#: geno/tables.py:110
+#, python-format
+msgid "%(count)d Eintrag"
+msgid_plural "%(count)d Einträge"
+msgstr[0] ""
+msgstr[1] ""
 
-#: geno/templates/geno/components/table_with_footer.html:107
-msgid "No data"
-msgstr "Keine Daten"
+#: geno/tables.py:114 geno/tables.py:163
+msgid "Link"
+msgstr ""
+
+#: geno/tables.py:114
+msgid "Summe"
+msgstr ""
+
+#: geno/tables.py:115
+msgid "Vertrag/Person/Org."
+msgstr ""
+
+#: geno/tables.py:118
+msgid "Gefordert"
+msgstr ""
+
+#: geno/tables.py:123
+msgid "Bezahlt"
+msgstr ""
+
+#: geno/tables.py:127 geno/tables.py:173
+msgid "Saldo"
+msgstr ""
+
+#: geno/tables.py:131
+msgid "Offene Forderung seit"
+msgstr ""
+
+#: geno/tables.py:136
+msgid "Letzte Zahlung"
+msgstr ""
+
+#: geno/tables.py:158
+#, fuzzy
+#| msgid "Keine Verträge mit Wohneinheiten gefunden."
+msgid "Keine Debitoren gefunden."
+msgstr "Keine Verträge mit Wohneinheiten gefunden."
+
+#: geno/tables.py:165 geno/templates/geno/invoice_manual.html:155
+msgid "Datum"
+msgstr "Datum"
+
+#: geno/tables.py:169
+msgid "Nummer"
+msgstr ""
+
+#: geno/tables.py:170 geno/templates/geno/invoice_manual.html:158
+msgid "Beschreibung"
+msgstr "Beschreibung"
+
+#: geno/tables.py:171 geno/tables.py:178 geno/views.py:4024
+msgid "Rechnung"
+msgstr ""
+
+#: geno/tables.py:172 geno/tables.py:178
+#, fuzzy
+#| msgid "Zahlung erfassen"
+msgid "Zahlung"
+msgstr "Zahlung erfassen"
+
+#: geno/tables.py:174
+msgid "K"
+msgstr ""
+
+#: geno/tables.py:175
+msgid "Zusatzinfo"
+msgstr ""
+
+#: geno/tables.py:194
+#, fuzzy
+#| msgid "Keine Verträge mit Wohneinheiten gefunden."
+msgid "Keine Rechnungen gefunden."
+msgstr "Keine Verträge mit Wohneinheiten gefunden."
+
+#: geno/templates/geno/components/django_tables2_unfold.html:103
+#: geno/templates/geno/components/django_tables2_unfold.html:140
+msgid "Pagination"
+msgstr ""
+
+#: geno/templates/geno/components/django_tables2_unfold.html:109
+#: geno/templates/geno/components/django_tables2_unfold.html:113
+#: geno/templates/geno/components/django_tables2_unfold.html:145
+#: geno/templates/geno/components/django_tables2_unfold.html:150
+msgid "Previous"
+msgstr ""
+
+#: geno/templates/geno/components/django_tables2_unfold.html:120
+#: geno/templates/geno/components/django_tables2_unfold.html:124
+#: geno/templates/geno/components/django_tables2_unfold.html:178
+#: geno/templates/geno/components/django_tables2_unfold.html:183
+msgid "Next"
+msgstr ""
+
+#: geno/templates/geno/components/django_tables2_unfold.html:133
+#, python-format
+msgid ""
+"\n"
+"                    Showing <span class=\"font-medium\">%(start)s</span> to "
+"<span class=\"font-medium\">%(end)s</span> of <span class=\"font-medium\">"
+"%(total)s</span> results\n"
+"                    "
+msgstr ""
 
 #: geno/templates/geno/contract_check_forms.html:22
 msgid "Ergebnis"
@@ -199,23 +318,23 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: geno/templates/geno/debtor.html:13
+#: geno/templates/geno/debtor.html:15
 msgid "Suchen/Anzeigen"
 msgstr "Suchen/Anzeigen"
 
-#: geno/templates/geno/debtor.html:18
+#: geno/templates/geno/debtor.html:20
 msgid "Rechnungen konsolidieren"
 msgstr "Rechnungen konsolidieren"
 
-#: geno/templates/geno/debtor.html:24
+#: geno/templates/geno/debtor.html:26
 msgid "Filter zurücksetzen"
 msgstr "Filter zurücksetzen"
 
-#: geno/templates/geno/debtor.html:36
+#: geno/templates/geno/debtor.html:38
 msgid "Keine Rechnungen gefunden. Passen Sie die Filterkriterien an."
 msgstr "Keine Rechnungen gefunden. Passen Sie die Filterkriterien an."
 
-#: geno/templates/geno/debtor.html:46
+#: geno/templates/geno/debtor.html:48
 msgid "Zurück zu"
 msgstr "Zurück zu"
 
@@ -261,14 +380,6 @@ msgstr ""
 #: geno/templates/geno/invoice_manual.html:145
 msgid "Rechnungspositionen"
 msgstr "Rechnungspositionen"
-
-#: geno/templates/geno/invoice_manual.html:155
-msgid "Datum"
-msgstr "Datum"
-
-#: geno/templates/geno/invoice_manual.html:158
-msgid "Beschreibung"
-msgstr "Beschreibung"
 
 #: geno/templates/geno/invoice_manual.html:161
 msgid "Betrag"
@@ -536,139 +647,139 @@ msgstr "Log anzeigen"
 msgid "Datei hochladen und verarbeiten"
 msgstr "Datei hochladen und verarbeiten"
 
-#: geno/views.py:1458 geno/views.py:2130
+#: geno/views.py:1351 geno/views.py:2032
 #, fuzzy
 #| msgid "Mitglieder"
 msgid "Mitglied"
 msgstr "Mitglieder"
 
-#: geno/views.py:1458
+#: geno/views.py:1351
 msgid "Beitrittsdatum"
 msgstr ""
 
-#: geno/views.py:1537 geno/views.py:1691
+#: geno/views.py:1430 geno/views.py:1584
 msgid "Name/Adresse"
 msgstr ""
 
-#: geno/views.py:1537
+#: geno/views.py:1430
 msgid "Details"
 msgstr ""
 
-#: geno/views.py:1691
+#: geno/views.py:1584
 msgid "Darlehen Details"
 msgstr ""
 
-#: geno/views.py:1717
+#: geno/views.py:1610
 msgid "Zinsabrechung"
 msgstr ""
 
-#: geno/views.py:2131
+#: geno/views.py:2033
 msgid "Anteilscheine"
 msgstr ""
 
-#: geno/views.py:2132
+#: geno/views.py:2034
 msgid "Darlehen"
 msgstr ""
 
-#: geno/views.py:2133
+#: geno/views.py:2035
 msgid "Depositen"
 msgstr ""
 
-#: geno/views.py:2134
+#: geno/views.py:2036
 msgid "Verrechnungssteuer"
 msgstr ""
 
-#: geno/views.py:2135
+#: geno/views.py:2037
 msgid "Zinszahlung"
 msgstr ""
 
-#: geno/views.py:2824
+#: geno/views.py:2733
 msgid ""
 "<i>INFO: Mailman-API ist nicht konfiguriert. Dies ist ein Demo-Output.</i>"
 msgstr ""
 "<i>INFO: Mailman-API ist nicht konfiguriert. Dies ist ein Demo-Output.</i>"
 
-#: geno/views.py:2832
+#: geno/views.py:2745
 msgid "Mitglieder ohne Email-Adresse (ignoriert)"
 msgstr "Mitglieder ohne Email-Adresse (ignoriert)"
 
-#: geno/views.py:2838
+#: geno/views.py:2753
 msgid "Mitglieder mit doppelter Email-Adresse (ignoriert)"
 msgstr "Mitglieder mit doppelter Email-Adresse (ignoriert)"
 
-#: geno/views.py:2843
+#: geno/views.py:2759
 msgid "Mitglied nicht in genossenschaft-ML"
 msgstr "Mitglied nicht in genossenschaft-ML"
 
-#: geno/views.py:2848
+#: geno/views.py:2764
 msgid "In genossenschaft-ML aber nicht Mitglied"
 msgstr "In genossenschaft-ML aber nicht Mitglied"
 
-#: geno/views.py:2857
+#: geno/views.py:2774
 msgid "Bewohnende ohne Email-Adresse (ignoriert)"
 msgstr "Bewohnende ohne Email-Adresse (ignoriert)"
 
-#: geno/views.py:2863
+#: geno/views.py:2782
 msgid "Bewohnende mit doppelter Email-Adresse (ignoriert)"
 msgstr "Bewohnende mit doppelter Email-Adresse (ignoriert)"
 
-#: geno/views.py:2868
+#: geno/views.py:2788
 msgid "Bewohnende aber nicht in bewohnende-ML"
 msgstr "Bewohnende aber nicht in bewohnende-ML"
 
-#: geno/views.py:2873
+#: geno/views.py:2793
 msgid "In bewohnende-ML aber nicht Bewohnende"
 msgstr "In bewohnende-ML aber nicht Bewohnende"
 
-#: geno/views.py:2878
+#: geno/views.py:2798
 msgid "Mitglied aber NICHT in Newsletter(CS)"
 msgstr "Mitglied aber NICHT in Newsletter(CS)"
 
-#: geno/views.py:2882
+#: geno/views.py:2802
 msgid "Mitglied aber UNSUBSCRIBED in Newsletter(CS)"
 msgstr "Mitglied aber UNSUBSCRIBED in Newsletter(CS)"
 
-#: geno/views.py:2888
+#: geno/views.py:2808
 msgid "Mitglied aber BOUNCED in Newsletter(CS)"
 msgstr "Mitglied aber BOUNCED in Newsletter(CS)"
 
-#: geno/views.py:2894
+#: geno/views.py:2814
 msgid "Mitglied aber DELETED in Newsletter(CS)"
 msgstr "Mitglied aber DELETED in Newsletter(CS)"
 
-#: geno/views.py:2900
+#: geno/views.py:2820
 #, python-format
 msgid "In genossenschaft-ML aber nicht in Wohnpost (%s)"
 msgstr "In genossenschaft-ML aber nicht in Wohnpost (%s)"
 
-#: geno/views.py:2907
+#: geno/views.py:2828
 #, python-format
 msgid ""
 "Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s)"
 msgstr ""
 "Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s)"
 
-#: geno/views.py:2912
+#: geno/views.py:2834
 msgid "Mailman warnings"
 msgstr "Mailman warnings"
 
-#: geno/views.py:3749
+#: geno/views.py:3676
 msgid "Die ersten 3 Nächte sind gemäss Reglement Jokerzimmer kostenlos."
 msgstr ""
 
-#: geno/views.py:3753
+#: geno/views.py:3680
 msgid "X Nächte à Fr. 22.00, Gästezimmer 003"
 msgstr ""
 
-#: geno/views.py:3758
+#: geno/views.py:3685
 msgid "X Nächte à Fr. 17.00, Gästezimmer 410"
 msgstr ""
 
-#: geno/views.py:3763
+#: geno/views.py:3690
 msgid "X Nächte à Fr. 17.00, Gästezimmer 509"
 msgstr ""
 
-#: geno/views.py:3771
+#: geno/views.py:3698
 msgid ""
 "Vielen Dank für die Beitrittserklärung. Die Mitgliedschaft in der "
 "Genossenschaft ist verbunden mit dem Zeichnen von Anteilscheinen und einer "
@@ -676,39 +787,212 @@ msgid ""
 "Zahlungseingang folgt dann die Bestätigung der Mitgliedschaft."
 msgstr ""
 
-#: geno/views.py:3778
+#: geno/views.py:3705
 msgid "Beitrittsgeb ühr Genossenschaft"
 msgstr ""
 
-#: geno/views.py:3783
+#: geno/views.py:3710
 msgid "Zeichnung von 1 Anteilschein der Genossenschaft"
 msgstr ""
 
-#: geno/views.py:4065
+#: geno/views.py:3989
 #, fuzzy
 #| msgid "Rechnung erstellen und buchen"
 msgid "Mietzinsrechnung erstellen"
 msgstr "Rechnung erstellen und buchen"
 
-#: geno/views.py:4100
-msgid "Rechnung"
-msgstr ""
-
-#: geno/views.py:4109
+#: geno/views.py:4033
 #, python-format
 msgid "Ungültige Aktion: %s"
 msgstr ""
 
-#: geno/views.py:4142
+#: geno/views.py:4066
 msgid "Optionen"
 msgstr ""
 
-#: geno/views.py:4144
+#: geno/views.py:4068
 #, python-format
-msgid "Dry-run: %s"
+msgid "Probelauf: %s"
 msgstr ""
 
-#: geno/views.py:4145
+#: geno/views.py:4068
+msgid "Ja"
+msgstr ""
+
+#: geno/views.py:4068
+msgid "Nein"
+msgstr ""
+
+#: geno/views.py:4069
 #, python-format
-msgid "Referenzdatum: %s"
+msgid "Rechungen bis: %s"
+msgstr ""
+
+#: importer/admin.py:48
+#, fuzzy
+#| msgid "Erweiterte Konfiguration"
+msgid "Konfiguration"
+msgstr "Erweiterte Konfiguration"
+
+#: importer/admin.py:60
+msgid "Ergebnisse"
+msgstr ""
+
+#: importer/admin.py:71 importer/models.py:40
+msgid "Status"
+msgstr ""
+
+#: importer/admin.py:86
+msgid "Datei"
+msgstr ""
+
+#: importer/admin.py:96
+msgid "Import Job ausführen"
+msgstr ""
+
+#: importer/admin.py:104
+msgid "Import-Auftrag nicht gefunden."
+msgstr ""
+
+#: importer/admin.py:112
+msgid "Import-Auftrag kann nicht verarbeitet werden. Status: {}"
+msgstr ""
+
+#: importer/admin.py:124
+msgid "Import erfolgreich verarbeitet: {} Datensätze importiert, {} Fehler"
+msgstr ""
+
+#: importer/admin.py:131
+msgid "Import fehlgeschlagen: {}"
+msgstr ""
+
+#: importer/forms.py:28
+msgid "Bitte laden Sie eine gültige Excel-Datei hoch (.xlsx oder .xls)"
+msgstr ""
+
+#: importer/forms.py:32
+msgid "Dateigrösse darf 10MB nicht überschreiten"
+msgstr ""
+
+#: importer/importer_member_address_it_wgn.py:67
+#, python-format
+msgid "Adresse mit Import-ID %(import_id)s existiert bereits."
+msgstr ""
+
+#: importer/importer_member_address_it_wgn.py:76
+#, python-format
+msgid "Adresse mit E-Mail %(email)s existiert bereits."
+msgstr ""
+
+#: importer/importer_member_address_it_wgn.py:95
+msgid "Mindestens Vor- oder Nachname erforderlich"
+msgstr ""
+
+#: importer/importer_member_address_it_wgn.py:260
+msgid "Eintrittsdatum (X_heute) fehlt oder ist ungültig"
+msgstr ""
+
+#: importer/importer_tenant_property_it_wgn.py:47
+#, python-format
+msgid "Mietobjekt mit Import-ID %(import_id)s existiert bereits."
+msgstr ""
+
+#: importer/importer_tenant_property_it_wgn.py:242
+msgid "Verhältnis Gültig-von ist erforderlich für Verträge"
+msgstr ""
+
+#: importer/models.py:18
+msgid "Ausstehend"
+msgstr ""
+
+#: importer/models.py:19
+msgid "In Bearbeitung"
+msgstr ""
+
+#: importer/models.py:20
+msgid "Abgeschlossen"
+msgstr ""
+
+#: importer/models.py:21
+msgid "Fehlgeschlagen"
+msgstr ""
+
+#: importer/models.py:25
+#, fuzzy
+#| msgid "Mitglieder ohne Email-Adresse (ignoriert)"
+msgid "Mitglieder und Adressen (IT-WGN)"
+msgstr "Mitglieder ohne Email-Adresse (ignoriert)"
+
+#: importer/models.py:26
+msgid "Mieter und Liegenschaften (IT-WGN)"
+msgstr ""
+
+#: importer/models.py:28
+msgid "Name des Import-Jobs"
+msgstr ""
+
+#: importer/models.py:33
+msgid "Import-Typ"
+msgstr ""
+
+#: importer/models.py:35
+msgid "Excel-Datei"
+msgstr ""
+
+#: importer/models.py:42
+msgid "Importierte Datensätze"
+msgstr ""
+
+#: importer/models.py:43 importer/models.py:77
+msgid "Fehlermeldung"
+msgstr ""
+
+#: importer/models.py:44
+msgid "Ergebnisdaten"
+msgstr ""
+
+#: importer/models.py:47
+msgid "Vorhandene Datensätze überschreiben"
+msgstr ""
+
+#: importer/models.py:49
+msgid ""
+"Wenn aktiviert, werden vorhandene Datensätze mit den importierten Daten "
+"überschrieben."
+msgstr ""
+
+#: importer/models.py:54 importer/models.py:68
+msgid "Import-Auftrag"
+msgstr ""
+
+#: importer/models.py:55
+msgid "Import-Aufträge"
+msgstr ""
+
+#: importer/models.py:72
+msgid "Name"
+msgstr ""
+
+#: importer/models.py:75
+msgid "Zeilennummer"
+msgstr ""
+
+#: importer/models.py:76
+msgid "Daten"
+msgstr ""
+
+#: importer/models.py:78
+msgid "Erfolgreich"
+msgstr ""
+
+#: importer/models.py:81
+msgid "Import-Datensatz"
+msgstr ""
+
+#: importer/models.py:82
+msgid "Import-Datensätze"
+msgstr ""
+
+#: importer/services.py:192
+msgid "Zeile hat keine Daten"
 msgstr ""

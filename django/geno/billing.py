@@ -2,6 +2,7 @@ import contextlib
 import datetime
 import io
 import logging
+import os.path
 import re
 import tempfile
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
@@ -10,6 +11,7 @@ from smtplib import SMTPException
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.db.models import Q
+from django.http import Http404
 from django.template import Context, loader
 from django.utils.html import escape
 from django.utils.translation import gettext_lazy as _
@@ -93,6 +95,7 @@ def create_invoices(
     count = {"invoices": 0, "contracts": 0}
     all_regular_invoices = []
     all_placeholder_invoices = []
+    all_email_messages = []
 
     with AccountingManager(messages) as book:
         if not book:
@@ -109,7 +112,7 @@ def create_invoices(
                     book, contract, reference_date, invoice_category, options
                 )
             except InvoiceCreationError as e:
-                logger.error("Could not create invoice for contract {contract}: {e}")
+                logger.error(f"Could not create invoice for contract {contract}: {e}")
                 messages.append(
                     CohivaAdminViewMixin.make_response_item(
                         _("FEHLER beim Erzeugen der Rechnungen für {contract}: {e}").format(
@@ -135,7 +138,21 @@ def create_invoices(
                 count["contracts"] += 1
                 all_regular_invoices.extend(regular_invoices)
                 all_placeholder_invoices.extend(placeholder_invoices)
-            messages.extend(email_messages)
+                all_email_messages.extend(email_messages)
+
+    email_objects = []
+    if all_email_messages:
+        email_objects.append(
+            {
+                "label": _("Email mit QR-Rechnung an:"),
+                "items": all_email_messages,
+                "variant": ResponseVariant.INFO.value,
+            }
+        )
+    if email_objects:
+        messages.append(
+            CohivaAdminViewMixin.make_response_item(_("Email-Versand"), objects=email_objects)
+        )
 
     invoice_objects = []
     if all_regular_invoices:
@@ -178,8 +195,13 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
     download_only = options.get("download_only")
     single_contract = options.get("single_contract")
     dry_run = options.get("dry_run")
-    month = reference_date.month
-    year = reference_date.year
+    if contract.date_end and contract.date_end < reference_date:
+        # Don't try to create invoices after the end date of the contract
+        month = contract.date_end.month
+        year = contract.date_end.year
+    else:
+        month = reference_date.month
+        year = reference_date.year
     stop = False
     billed_months_count = 0
     regular_invoices = []
@@ -518,6 +540,8 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                 email_template=None,
                 billing_contract=billing_contract,
             )
+            if not output_filename:
+                raise Http404(f"Konnte Rechnung nicht erzeugen: {invoice_title}: {' '.join(ret)}")
             return output_filename, messages
         elif (
             factor > 0 and sum_rent_total > 0.0 and contract.send_qrbill in ("only_next", "always")
@@ -543,6 +567,10 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
             )
             messages.extend(ret)
             if dry_run and single_contract:
+                if not output_filename:
+                    raise Http404(
+                        f"Konnte Rechnung nicht erzeugen: {invoice_title}: {' '.join(ret)}"
+                    )
                 return output_filename, messages
 
         ## Continue with previous month
@@ -1668,6 +1696,7 @@ def create_qrbill(
             invoice_doctype = DocumentType.objects.get(name="invoice")
             render_qrbill(invoice_doctype.template, context, output_filename)
         except Exception as e:
+            logger.error(f"Could not render QR bill: {e}")
             return (
                 [
                     "Konnte QR-Rechnung nicht erstellen: %s" % e,
@@ -1811,25 +1840,37 @@ def create_qrbill_rent(
         email_subject,
         dry_run,
     )
+    if render and not os.path.isfile(f"/tmp/{output_filename}"):
+        output_filename = None
+        return messages, output_filename
 
     if email_template:
         if mails_sent == 1:
             if dry_run:
-                preview_email_url = f'<a href="/geno/preview/?contract={contract.id}&invoice_category={invoice_category.id}" target="_blank">Vorschau</a>'
-                preview_pdf_url = f'<a href="?single_contract={contract.id}&date={invoice_date.strftime("%Y-%m-%d")}">{output_filename}</a>'
+                preview_email_url = (
+                    f'<a href="/geno/preview/?contract={contract.id}'
+                    f'&invoice_category={invoice_category.id}" target="_blank" '
+                    'class="text-primary-600 dark:text-primary-500"'
+                    ">Mail-Text</a>"
+                )
+                preview_pdf_url = (
+                    f'<a href="?single_contract={contract.id}'
+                    f'&date={invoice_date.strftime("%Y-%m-%d")}" target="_blank" '
+                    'class="text-primary-600 dark:text-primary-500"'
+                    f">{output_filename}</a>"
+                )
                 messages.append(
-                    f"DRY-RUN: Hätte nun Email [{preview_email_url}] mit QR-Rechnung an {escape(mail_recipient)} geschickt. {preview_pdf_url}"
+                    f"{escape(mail_recipient)} - "
+                    f"Vorschau: {preview_email_url} und Anhang {preview_pdf_url}"
                 )
             else:
-                messages.append(
-                    "Email mit QR-Rechnung an %s geschickt. %s"
-                    % (escape(mail_recipient), output_filename)
-                )
+                messages.append("%s - %s" % (escape(mail_recipient), output_filename))
                 if contract.send_qrbill == "only_next":
                     ## Disable sending for next bill
                     contract.send_qrbill = "none"
                     contract.save()
         else:
+            output_filename = None
             messages.append("FEHLER beim Versenden des Emails.")
 
     return messages, output_filename

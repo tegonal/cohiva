@@ -133,7 +133,12 @@ class BookTransaction:
             if isinstance(transaction.splits[1].amount, float)
             else str(transaction.splits[1].amount)
         )
-        attributes = f"amount={amount_str}&creditId={cct_account_credit}&debitId={cct_account_debit}&title={urllib.parse.quote_plus(getattr(transaction, 'description', ''))}&dateAdded={datetime.datetime.now()}&notes={urllib.parse.quote_plus('Added through API"')}"
+        attributes = (
+            f"amount={amount_str}&creditId={cct_account_credit}&debitId={cct_account_debit}"
+            f"&title={urllib.parse.quote_plus(getattr(transaction, 'description', ''))}"
+            f"&dateAdded={datetime.datetime.now()}"
+            f"&notes={urllib.parse.quote_plus('Added through API')}"
+        )
 
         # Call create endpoint
         response = self._construct_request_post("journal/create.json?" + attributes, None)

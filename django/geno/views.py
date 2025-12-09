@@ -3967,7 +3967,7 @@ class InvoiceBatchView(CohivaAdminViewMixin, FormView):
     def get_context_data(self, **kwargs):
         return super().get_context_data(
             **kwargs,
-            submit_title="Mietzinsrechnungen versenden/buchen",
+            submit_title="Mietzinsrechnungen erstellen (Probelauf)",
         )
 
     def get_initial(self):
@@ -4065,8 +4065,8 @@ class InvoiceBatchGenerateView(DryRunActionView):
             {
                 "info": _("Optionen"),
                 "objects": [
-                    _("Dry-run: %s") % dry_run,
-                    _("Referenzdatum: %s") % reference_date,
+                    _("Probelauf: %s") % (_("Ja") if dry_run else _("Nein")),
+                    _("Rechungen bis: %s") % reference_date,
                 ],
             }
         )
@@ -4173,7 +4173,6 @@ class ResidentUnitListView(CohivaAdminViewMixin, TemplateView):
             if n_contracts > 0:
                 if n_contracts > 1:
                     comments.append("ACHTUNG: MEHR ALS 1 VERTRAG!")
-                    print("WARNING: Rental unit %s has %d contracts!" % (ru, n_contracts))
                     logger.warning("Rental unit %s has %d contracts!" % (ru, n_contracts))
                 count = 0
                 contract = contracts.first()
@@ -4282,7 +4281,6 @@ def rental_unit_list_create_documents(request, doc="mailbox"):
         n_contracts = contracts.count()
         if n_contracts > 0:
             if n_contracts > 1:
-                print("WARNING: Rental unit %s has %d contracts!" % (ru, n_contracts))
                 logger.warning("Rental unit %s has %d contracts!" % (ru, n_contracts))
             contract = contracts.first()
             for adr in contract.contractors.all():
