@@ -171,7 +171,7 @@ et-xmlfile==2.0.0
     # via openpyxl
 filetype==1.2.0
     # via willow
-fonttools==4.58.0
+fonttools==4.61.0
     # via matplotlib
 frozenlist==1.6.0
     # via
@@ -360,7 +360,7 @@ tzdata==2025.2
     #   x-wr-timezone
 tzlocal==5.3.1
     # via piecash
-urllib3==2.5.0
+urllib3==2.6.1
     # via requests
 vdirsyncer==0.19.3
     # via -r requirements.in

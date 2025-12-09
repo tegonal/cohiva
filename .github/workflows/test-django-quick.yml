@@ -7,6 +7,10 @@ on:
       - develop
   workflow_dispatch: # allow manual trigger
 
+concurrency:
+  group: django-tests-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
