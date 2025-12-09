@@ -2,6 +2,8 @@ import datetime
 import os
 from unittest.mock import patch
 
+from django.test import tag
+
 import geno.billing
 import geno.tests.data as geno_testdata
 from finance.accounting import Account, AccountingManager, AccountKey
@@ -625,6 +627,7 @@ class TestQRBill(GenoAdminTestCase):
             },
         )
 
+    @tag("slow-test")
     def test_create_qrbill_address(self):
         ref_number = "999"
         context = {}

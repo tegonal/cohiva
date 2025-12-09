@@ -6,6 +6,7 @@ from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models import Sum  # , Q
 from django.template import loader
+from django.test import tag
 
 import geno.tests.data as testdata
 from finance.accounting import AccountingManager, AccountKey
@@ -24,6 +25,7 @@ class InvoicesTest(GenoAdminTestCase):
         super().setUpTestData()
         testdata.create_contracts(cls)
 
+    @tag("slow-test")
     def test_invoices_create_and_delete(self):
         create_invoices(dry_run=False, reference_date=datetime.datetime(2001, 4, 15))
 
@@ -48,6 +50,7 @@ class InvoicesTest(GenoAdminTestCase):
                 with self.assertRaises(KeyError):
                     book.get_transaction(tid)
 
+    @tag("slow-test")
     def test_invoices_when_rental_object_removed(self):
         msgs = create_invoices(dry_run=False, reference_date=datetime.datetime(2001, 4, 15))
         infos = {}
@@ -88,6 +91,7 @@ class InvoicesTest(GenoAdminTestCase):
         self.assertEqual("2 Rechnungen für 1 Vertrag", msgs[-1]["info"])
         self.assert_invoices(3 * 2, 3 * 1100 + 220)
 
+    @tag("slow-test")
     def test_invoices_when_moving_rental_object_to_separate_contract_with_link(self):
         create_invoices(dry_run=False, reference_date=datetime.datetime(2001, 6, 15))
         self.assert_invoices(3 * 2, 3 * 1100 + 3 * 220)

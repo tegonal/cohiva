@@ -48,6 +48,19 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
                     params={"import_id": import_id},
                 )
 
+        # Check by name and building
+        unit_name = row_data.get("Nummer")
+        building_name = row_data.get("Liegenschaft Bezeichnung")
+        if (
+            unit_name
+            and building_name
+            and RentalUnit.objects.filter(name=unit_name, building__name=building_name).exists()
+        ):
+            raise ValidationError(
+                _("Mietobjekt %(unit_name)s in Liegenschaft %(building_name)s existiert bereits."),
+                params={"unit_name": unit_name, "building_name": building_name},
+            )
+
         return False
 
     def _process_single_row(self, row_data: dict):

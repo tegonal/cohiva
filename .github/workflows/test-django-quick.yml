@@ -1,16 +1,14 @@
-name: Django Tests
+name: Quick Django Tests (skip slow tests)
 
 on:
   push:
-  pull_request:
-    branches:
+    branches-ignore: # ignore branches where the full test suite is run
       - main
       - develop
   workflow_dispatch: # allow manual trigger
 
 permissions:
-  pull-requests: write
-  contents: write
+  contents: read
 
 jobs:
   test:
@@ -66,40 +64,15 @@ jobs:
             --target cohiva-platform-django \
             -t cohiva:test
 
-      - name: Prepare for coverage report
-        run: |
-          set -e
-          cd django
-          touch .coverage
-          ln -sf website_example website
-
-      - name: Run Django tests
+      - name: Run Django tests (without coverage and skipping slow tests)
         run: |
           set -e
           cd django
           docker run --rm \
             --network host \
             -e GITHUB_ACTIONS=true \
-            -e COVERAGE=true \
-            -v ./.coverage:/cohiva/.coverage_output_for_github_action \
-            -v ./htmlcov:/cohiva/htmlcov \
+            -e COVERAGE=false \
+            -e SKIP_SLOW=true \
             cohiva:test \
             sh -c "cp /cohiva/cohiva/base_config_for_tests.py /cohiva/cohiva/base_config.py && /cohiva/setup.py --use-default-certs && /cohiva/run-tests.sh"
           exit $?
-
-      - name: Coverage comment
-        id: coverage_comment
-        uses: py-cov-action/python-coverage-comment-action@v3
-        with:
-          COVERAGE_PATH: django
-          GITHUB_TOKEN: ${{ github.token }}
-
-      - name: Store Pull Request comment to be posted
-        uses: actions/upload-artifact@v4
-        if: steps.coverage_comment.outputs.COMMENT_FILE_WRITTEN == 'true'
-        with:
-          # If you use a different name, update COMMENT_ARTIFACT_NAME accordingly
-          name: python-coverage-comment-action
-          # If you use a different name, update COMMENT_FILENAME accordingly
-          path: python-coverage-comment-action.txt
-

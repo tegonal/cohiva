@@ -2,6 +2,7 @@ import datetime
 from unittest.mock import patch
 
 from django.http import FileResponse
+from django.test import tag
 from rest_framework.test import APIRequestFactory
 
 import geno.tests.data as geno_testdata
@@ -300,6 +301,7 @@ class QRBillAPIViewTest(GenoAdminTestCase):
         self.assertTrue(isinstance(ret, FileResponse))
         ret.file_to_stream.close()
 
+    @tag("slow-test")
     def test_get_akonto_qrbill(self):
         request = self.factory.post("/geno/qrbill/", {"contract_id": 0})
         pdf_file = self.view.get_akonto_qrbill(request)
