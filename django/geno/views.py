@@ -3148,7 +3148,9 @@ def send_member_mail_filter_by_invoice(form, member_list):
         if member["id"]:
             count += 1
     if count == 0:
-        errors.append(_("Keine Empfänger:innen gefunden, welche diesen Filterkriterien entsprechen."))
+        errors.append(
+            _("Keine Empfänger:innen gefunden, welche diesen Filterkriterien entsprechen.")
+        )
     return errors
 
 
@@ -3160,6 +3162,7 @@ class MailWizardView(CohivaAdminViewMixin, FormView):
     permission_required = "geno.send_mail"
     template_name = "geno/member_send_mail.html"
     form_class = MemberMailForm
+    last_step = False
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -3172,6 +3175,7 @@ class MailWizardView(CohivaAdminViewMixin, FormView):
                 "response": self.result,
                 "attrs_button": {"form": "mail-wizard-form"},
                 "back_url": self.back_url,
+                "last_step": self.last_step,
             }
         )
         # Override title to show step
@@ -3230,6 +3234,7 @@ class MailWizardActionView(MailWizardView):
     form_class = MemberMailActionForm
     form_action = reverse_lazy("geno:mail-wizard-action")
     back_url = reverse_lazy("geno:mail-wizard-select")
+    last_step = True
 
     def get_initial(self):
         return {"email_copy": settings.GENO_DEFAULT_EMAIL}

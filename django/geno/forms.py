@@ -215,7 +215,11 @@ class MemberMailForm(forms.Form):
                 CollapsibleSection(
                     _("Mitglieder-Attribute"),
                     Div(
-                        HTML('<p class="text-xs font-medium text-gray-500 mb-2">{}</p>'.format(_("Filter A"))),
+                        HTML(
+                            '<p class="text-xs font-medium text-gray-500 mb-2">{}</p>'.format(
+                                _("Filter A")
+                            )
+                        ),
                         Div(
                             Div("select_attributeA", css_class="mb-4"),
                             Div("select_attributeA_value", css_class="mb-4"),
@@ -224,7 +228,11 @@ class MemberMailForm(forms.Form):
                         css_class="mb-4",
                     ),
                     Div(
-                        HTML('<p class="text-xs font-medium text-gray-500 mb-2">{}</p>'.format(_("Filter B"))),
+                        HTML(
+                            '<p class="text-xs font-medium text-gray-500 mb-2">{}</p>'.format(
+                                _("Filter B")
+                            )
+                        ),
                         Div(
                             Div("select_attributeB", css_class="mb-4"),
                             Div("select_attributeB_value", css_class="mb-4"),
@@ -242,9 +250,14 @@ class MemberMailForm(forms.Form):
                     Div("select_flag_04", css_class="mb-4"),
                     Div("select_flag_05", css_class="mb-4"),
                     Div("ignore_join_date", css_class="mb-4"),
-                    *([Div("share_paid_01", css_class="mb-4"), Div("share_unpaid", css_class="mb-4")]
-                      if settings.GENO_ID == "HSG"
-                      else []),
+                    *(
+                        [
+                            Div("share_paid_01", css_class="mb-4"),
+                            Div("share_unpaid", css_class="mb-4"),
+                        ]
+                        if settings.GENO_ID == "HSG"
+                        else []
+                    ),
                     collapsed=True,
                 ),
                 initial_display="none",

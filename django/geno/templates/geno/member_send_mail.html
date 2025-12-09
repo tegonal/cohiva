@@ -141,19 +141,25 @@
           </a>
         {% else %}
           {# Submit button with form attribute #}
-          {% component "unfold/components/button.html" with submit=1 attrs=attrs_button %}
-          {% trans "Weiter" %}
-        {% endcomponent %}
-        {# Back button (shown on steps 2 and 3) #}
-        {% if back_url %}
-          {% component "unfold/components/button.html" with href=back_url variant="default" %}
-          {% trans "Zurück" %}
-        {% endcomponent %}
-      {% endif %}
-    {% endif %}
+          {% if last_step %}
+            {% component "unfold/components/button.html" with submit=1 attrs=attrs_button class="bg-red-600" %}
+            {% trans "Aktion ausführen!" %}
+            {% endcomponent %}
+          {% else %}
+            {% component "unfold/components/button.html" with submit=1 attrs=attrs_button %}
+            {% trans "Weiter" %}
+            {% endcomponent %}
+          {% endif %}
+          {# Back button (shown on steps 2 and 3) #}
+          {% if back_url %}
+            {% component "unfold/components/button.html" with href=back_url variant="default" %}
+            {% trans "Zurück" %}
+            {% endcomponent %}
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
   </div>
-</div>
-</div>
 {% endblock %}
 
 {% block extrajs %}
