@@ -56,14 +56,14 @@
 | finance/accounting/\_\_init\_\_.py                                                                     |        7 |        0 |    100% |           |
 | finance/accounting/account.py                                                                          |       77 |        1 |     99% |        72 |
 | finance/accounting/book.py                                                                             |       96 |        4 |     96% |55, 58, 61, 64 |
-| finance/accounting/cashctrl.py                                                                         |      195 |       23 |     88% |66, 74, 79, 88, 125, 173, 176-179, 183, 205, 216-217, 257-258, 288-291, 300, 304, 314 |
+| finance/accounting/cashctrl.py                                                                         |      196 |       23 |     88% |66, 74, 79, 88, 127, 177, 180-183, 187, 209, 220-221, 261-262, 292-295, 304, 308, 318 |
 | finance/accounting/gnucash.py                                                                          |       55 |        3 |     95% |36, 73, 94 |
 | finance/accounting/manager.py                                                                          |       93 |        0 |    100% |           |
 | finance/accounting/transaction.py                                                                      |       28 |        0 |    100% |           |
 | finance/apps.py                                                                                        |        6 |        0 |    100% |           |
 | finance/tests/\_\_init\_\_.py                                                                          |        0 |        0 |    100% |           |
 | finance/tests/test\_accounting.py                                                                      |      256 |        2 |     99% |    53, 66 |
-| finance/tests/test\_accounting\_cct.py                                                                 |      107 |        2 |     98% |  190, 194 |
+| finance/tests/test\_accounting\_cct.py                                                                 |      124 |        2 |     98% |  191, 195 |
 | finance/tests/test\_accounting\_cct\_live.py                                                           |       49 |       34 |     31% |23-27, 31-32, 35-38, 41-52, 55-67, 70-87, 90-103 |
 | finance/tests/test\_accounting\_gnc.py                                                                 |       62 |        0 |    100% |           |
 | geno/\_\_init\_\_.py                                                                                   |        0 |        0 |    100% |           |
@@ -202,7 +202,7 @@
 | reservation/tests/test\_views.py                                                                       |       10 |        2 |     80% |     21-22 |
 | reservation/urls.py                                                                                    |        4 |        0 |    100% |           |
 | reservation/views.py                                                                                   |      136 |      112 |     18% |22-201, 240-263 |
-|                                                                                              **TOTAL** | **20655** | **5870** | **72%** |           |
+|                                                                                              **TOTAL** | **20673** | **5870** | **72%** |           |
 
 
 ## Setup coverage badge
