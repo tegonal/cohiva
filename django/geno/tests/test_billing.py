@@ -45,23 +45,26 @@ class TestBilling(GenoAdminTestCase):
             name="Mitgliederbeitrag 2001"
         )
 
-    @patch("geno.billing.create_monthly_invoices", return_value=(2, ["Message"]))
+    @patch(
+        "geno.billing.create_monthly_invoices",
+        return_value=(2, ["Invoice1", "Invoice2"], [], ["Message"]),
+    )
     def test_create_invoices_one_contract(self, mock_monthly_invoices):
         ret = geno.billing.create_invoices()
         self.assertEqual(mock_monthly_invoices.call_count, 1)
-        self.assertEqual(len(ret), 2)
-        self.assertEqual(ret[0], "Message")
-        self.assertEqual(ret[1], "2 Rechnungen für 1 Vertrag")
+        self.assertEqual(ret[0]["objects"][0]["items"][0], "Message")
+        self.assertEqual(ret[-1]["info"], "2 Rechnungen für 1 Vertrag")
 
-    @patch("geno.billing.create_monthly_invoices", return_value=(2, []))
+    @patch("geno.billing.create_monthly_invoices", return_value=(2, [], [], []))
     def test_create_invoices_multiple_contracts(self, mock_monthly_invoices):
         Contract.objects.create(date=datetime.date(2001, 1, 1), state="unterzeichnet")
         ret = geno.billing.create_invoices()
         self.assertEqual(mock_monthly_invoices.call_count, 2)
-        self.assertEqual(len(ret), 1)
-        self.assertEqual(ret[0], "4 Rechnungen für 2 Verträge")
+        self.assertEqual(ret[-1]["info"], "4 Rechnungen für 2 Verträge")
 
-    @patch("geno.billing.create_monthly_invoices", return_value=("String", ["Unused Message"]))
+    @patch(
+        "geno.billing.create_monthly_invoices", return_value=("String", [], [], ["Unused Message"])
+    )
     def test_create_invoices_return_string(self, mock_monthly_invoices):
         Contract.objects.create(date=datetime.date(2001, 1, 1), state="unterzeichnet")
         ret = geno.billing.create_invoices()
@@ -70,22 +73,23 @@ class TestBilling(GenoAdminTestCase):
 
     def test_create_invoices_empty_contract_count(self):
         messages = geno.billing.create_invoices(reference_date=datetime.date(2001, 6, 1))
-        self.assertEqual(messages[-1], "3 Rechnungen für 1 Vertrag")
+        self.assertEqual(messages[-1]["info"], "3 Rechnungen für 1 Vertrag")
         contract = Contract.objects.create(date=datetime.date(2001, 1, 1), state="unterzeichnet")
         messages2 = geno.billing.create_invoices(reference_date=datetime.date(2001, 6, 1))
-        self.assertEqual(messages2[-1], "3 Rechnungen für 1 Vertrag")
+        self.assertEqual(messages2[-1]["info"], "3 Rechnungen für 1 Vertrag")
         contract.rental_units.set([self.rentalunits[3]])
         contract.contractors.set([self.addresses[3]])
         messages3 = geno.billing.create_invoices(reference_date=datetime.date(2001, 6, 1))
-        self.assertEqual(messages3[-1], "9 Rechnungen für 2 Verträge")
+        self.assertEqual(messages3[-1]["info"], "9 Rechnungen für 2 Verträge")
 
     def test_create_invoices_contract_without_address(self):
         contract = Contract.objects.create(date=datetime.date(2001, 1, 1), state="unterzeichnet")
         contract.rental_units.set([self.rentalunits[3]])
         messages = geno.billing.create_invoices(reference_date=datetime.date(2001, 6, 1))
-        self.assertEqual(messages[-1], "3 Rechnungen für 1 Vertrag")
-        self.assertEqual(messages[-2], "VERARBEITUNG ABGEBROCHEN!")
-        self.assertIn("Vertrag hat keine Vertragspartner/Adresse", messages[-3])
+        self.assertIn("Vertrag hat keine Vertragspartner/Adresse", messages[0]["info"])
+        self.assertEqual(messages[1]["info"], "VERARBEITUNG ABGEBROCHEN!")
+        self.assertEqual(messages[1]["variant"], "error")
+        self.assertEqual(messages[-1]["info"], "3 Rechnungen für 1 Vertrag")
 
     @patch("geno.billing.add_invoice", wraps=add_invoice_exception_generator)
     def test_create_invoices_stop_on_exception(self, mock_add_invoice):
@@ -93,9 +97,8 @@ class TestBilling(GenoAdminTestCase):
         contract.rental_units.set([self.rentalunits[3]])
         contract.contractors.set([self.addresses[3]])
         messages = geno.billing.create_invoices(reference_date=datetime.date(2001, 6, 1))
-        self.assertEqual(messages[-1], "0 Rechnungen für 0 Verträge")
-        self.assertEqual(messages[-2], "VERARBEITUNG ABGEBROCHEN!")
-        self.assertIn("Test Exception", messages[-3])
+        self.assertIn("Test Exception", messages[0]["info"])
+        self.assertEqual(messages[-1]["info"], "VERARBEITUNG ABGEBROCHEN!")
 
     def test_create_invoices_with_linked_billing_contract(self):
         contract = Contract.objects.create(
@@ -106,12 +109,16 @@ class TestBilling(GenoAdminTestCase):
         contract.rental_units.set([self.rentalunits[3]])
         contract.contractors.set([self.addresses[3]])
         messages = geno.billing.create_invoices(reference_date=datetime.date(2001, 6, 1))
-        self.assertEqual(messages[-1], "9 Rechnungen für 2 Verträge")
+        self.assertEqual(messages[-1]["info"], "9 Rechnungen für 2 Verträge")
+        self.assertEqual(messages[-1]["variant"], "info")
+        self.assertEqual(
+            messages[1]["objects"][1]["label"], "Platzhalter-Monatsrechnungen hinzugefügt"
+        )
         self.assertIn(
-            "Platzhalter-Monatsrechnung 6.2001 hinzugefügt: G002 Gewerbe (Musterweg 1) "
+            "6.2001: G002 Gewerbe (Musterweg 1) "
             "[WBG Test, Ernst Bitterer] (Rechnungs-Vertrag: 001a Wohnung (Musterweg 1)/001b "
-            "Wohnung (Musterweg 1) [Anna Muster/Hans Muster]).",
-            messages,
+            "Wohnung (Musterweg 1) [Anna Muster/Hans Muster])",
+            messages[1]["objects"][1]["items"],
         )
 
     @patch("geno.billing.add_invoice")
@@ -127,12 +134,14 @@ class TestBilling(GenoAdminTestCase):
                 "single_contract": None,
                 "dry_run": True,
             }
-            ret, messages = geno.billing.create_monthly_invoices(
-                book, contract, date, inv_cat, options
+            count, regular_invoices, placeholder_invoices, email_messages = (
+                geno.billing.create_monthly_invoices(book, contract, date, inv_cat, options)
             )
             mock_add_invoice.assert_not_called()
-            self.assertEqual(ret, 0)
-            self.assertEqual(len(messages), 0)
+            self.assertEqual(count, 0)
+            self.assertEqual(len(email_messages), 0)
+            self.assertEqual(len(regular_invoices), 0)
+            self.assertEqual(len(placeholder_invoices), 0)
 
     @patch("geno.billing.add_invoice")
     def test_create_monthly_invoices_one_month(self, mock_add_invoice):
@@ -147,22 +156,23 @@ class TestBilling(GenoAdminTestCase):
                 "single_contract": None,
                 "dry_run": True,
             }
-            ret, messages = geno.billing.create_monthly_invoices(
-                book, contract, date, inv_cat, options
+            count, regular_invoices, placeholder_invoices, email_messages = (
+                geno.billing.create_monthly_invoices(book, contract, date, inv_cat, options)
             )
             self.assertEqual(mock_add_invoice.call_count, 2)
-            self.assertEqual(ret, 1)
-            self.assertEqual(len(messages), 3)
+            self.assertEqual(count, 1)
+            self.assertEqual(len(email_messages), 1)
+            self.assertIn("Vorschau", email_messages[0])
+            self.assertEqual(len(placeholder_invoices), 0)
             contract_string = "001a/001b für 001a Wohnung (Musterweg 1)/001b Wohnung (Musterweg 1) [Anna Muster/Hans Muster]"
             self.assertEqual(
-                messages[0],
-                f"Monatsrechnung hinzugefügt: Nettomiete 04.2001 für {contract_string}.",
+                regular_invoices[0],
+                f"Nettomiete 04.2001 für {contract_string}",
             )
             self.assertEqual(
-                messages[1],
-                f"Monatsrechnung hinzugefügt: Nebenkosten 04.2001 für {contract_string}.",
+                regular_invoices[1],
+                f"Nebenkosten 04.2001 für {contract_string}",
             )
-            self.assertTrue(messages[2].startswith("DRY-RUN: Hätte nun Email"))
 
     @patch("geno.billing.add_invoice")
     def test_create_monthly_invoices_multiple_month(self, mock_add_invoice):
@@ -177,12 +187,14 @@ class TestBilling(GenoAdminTestCase):
                 "single_contract": None,
                 "dry_run": True,
             }
-            ret, messages = geno.billing.create_monthly_invoices(
-                book, contract, date, inv_cat, options
+            count, regular_invoices, placeholder_invoices, email_messages = (
+                geno.billing.create_monthly_invoices(book, contract, date, inv_cat, options)
             )
             self.assertEqual(mock_add_invoice.call_count, 3 * 2)
-            self.assertEqual(ret, 3)
-            self.assertEqual(len(messages), 3 * 3)
+            self.assertEqual(count, 3)
+            self.assertEqual(len(regular_invoices), 3 * 2)
+            self.assertEqual(len(placeholder_invoices), 0)
+            self.assertEqual(len(email_messages), 3)
 
     def test_add_transaction_shares_200(self):
         with AccountingManager(book_type_id="dum") as book:
