@@ -28,6 +28,14 @@ case "${GITHUB_ACTIONS,,}" in
     GITHUB_ACTIONS="false"
     ;;
 esac
+case "${SKIP_SLOW,,}" in
+  true|1|yes|on)
+    SKIP_SLOW="true"
+    ;;
+  *)
+    SKIP_SLOW="false"
+    ;;
+esac
 
 ## Coverage options
 COVERAGE_OPTS=()
@@ -42,6 +50,11 @@ fi
 
 ## Base test command
 TESTCMD="./manage.py test --settings=cohiva.settings_for_tests"
+if [ "$SKIP_SLOW" = "true" ] ; then
+    TESTCMD="${TESTCMD} --exclude-tag=slow-test"
+    export PYTHONDONTWRITEBYTECODE=1
+    export SKIP_SLOW="true"
+fi
 
 ## Test options
 TEST_OPTS=""
@@ -50,7 +63,8 @@ TEST_OPTS=""
 ## Select test to run (leave emtpy to run all tests)
 SELECTED_TESTS=""
 # Examples:
-#SELECTED_TESTS="finance.tests geno.tests.test_documents.DocumentSendTest.test_send_member_bill"
+#SELECTED_TESTS="cohiva.tests credit_accounting.tests finance.tests geno.tests importer.tests portal.tests report.tests reservation.tests"
+#SELECTED_TESTS="geno.tests.test_models.AddressTest finance.tests.test_accounting.TransactionTestCase.test_strings"
 
 ## Full test suite incl. migrations
 # Run tests and capture the exit code of the test runner even though output is piped to tee.
