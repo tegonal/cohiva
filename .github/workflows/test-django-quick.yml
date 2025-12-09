@@ -1,0 +1,78 @@
+name: Quick Django Tests (skip slow tests)
+
+on:
+  push:
+    branches-ignore: # ignore branches where the full test suite is run
+      - main
+      - develop
+  workflow_dispatch: # allow manual trigger
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: [self-hosted] # uses your self-hosted runner pool
+
+    services:
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: itsASecretToEveryone
+          MARIADB_DATABASE: cohiva
+          MARIADB_USER: cohiva
+          MARIADB_PASSWORD: cohiva_password
+        ports:
+          - 127.0.0.1:3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+      redis:
+        image: redis:latest
+        ports:
+          - 127.0.0.1:6379:6379
+
+    steps:
+      - uses: kacus/github-action-container-cleanup@v1.0.1
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Execute init-script on MariaDB
+        run: |
+          docker exec -i $(docker ps -qf "ancestor=mariadb:11.8") \
+          mariadb -u root -p$MARIADB_ROOT_PASSWORD < ${{ github.workspace }}/django/scripts/mariadb/init_test.sql
+        env:
+          MARIADB_ROOT_PASSWORD: itsASecretToEveryone
+
+      - name: Load GnuCash demo data required for tests
+        run: |
+          docker exec -i $(docker ps -qf "ancestor=mariadb:11.8") \
+          mariadb -u root -p$MARIADB_ROOT_PASSWORD cohiva_gnucash_test < ${{ github.workspace }}/django/demo-data/demo-data-gnucash.sql
+        env:
+          MARIADB_ROOT_PASSWORD: itsASecretToEveryone
+
+      - name: Initialize submodules
+        run: git submodule update --init --recursive
+
+      - name: Build test image
+        run: |
+          cd django && \
+          docker build . \
+            --target cohiva-platform-django \
+            -t cohiva:test
+
+      - name: Run Django tests (without coverage and skipping slow tests)
+        run: |
+          set -e
+          cd django
+          docker run --rm \
+            --network host \
+            -e GITHUB_ACTIONS=true \
+            -e COVERAGE=false \
+            -e SKIP_SLOW=true \
+            cohiva:test \
+            sh -c "cp /cohiva/cohiva/base_config_for_tests.py /cohiva/cohiva/base_config.py && /cohiva/setup.py --use-default-certs && /cohiva/run-tests.sh"
+          exit $?

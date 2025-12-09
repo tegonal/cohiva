@@ -5,7 +5,7 @@ from pprint import pprint
 from unittest.mock import patch
 
 from django.conf import settings
-from django.test import Client
+from django.test import Client, tag
 
 import report.tests.data as testdata
 from geno.models import Invoice, InvoiceCategory
@@ -229,6 +229,7 @@ class NKReportTest(ReportTestCase):
         ## Make sure not invoices were created
         self.assertEqual(Invoice.objects.count(), 0)
 
+    @tag("slow-test")
     @patch("requests.post", wraps=redirect_post_request)
     @patch("requests.get", wraps=redirect_get_request)
     def test_report_minimal_fulloutput_dryrun(self, mock_get, mock_post):
@@ -287,6 +288,7 @@ class NKReportTest(ReportTestCase):
             on_page=3,
         )
 
+    @tag("slow-test")
     @patch("requests.post", wraps=redirect_post_request)
     @patch("requests.get", wraps=redirect_get_request)
     def test_report_minimal_fulloutput(self, mock_get, mock_post):
