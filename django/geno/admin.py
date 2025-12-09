@@ -1050,14 +1050,24 @@ class RentalUnitAdmin(GenoBaseAdmin):
     autocomplete_fields = ["building"]
 
 
+@admin.display(description='Als "angeboten" markieren')
+def contract_mark_offered(modeladmin, request, queryset):
+    queryset.update(state="angeboten")
+
+
 @admin.display(description='Als "unterzeichnet" markieren')
 def contract_mark_signed(modeladmin, request, queryset):
     queryset.update(state="unterzeichnet")
 
 
-@admin.display(description='Als "angeboten" markieren')
-def contract_mark_offered(modeladmin, request, queryset):
-    queryset.update(state="angeboten")
+@admin.display(description='Als "geküdigt" markieren')
+def contract_mark_canceled(modeladmin, request, queryset):
+    queryset.update(state="gekuendigt")
+
+
+@admin.display(description='Als "ungültig" markieren')
+def contract_mark_invalid(modeladmin, request, queryset):
+    queryset.update(state="ungueltig")
 
 
 @admin.display(description=("Mietbeginn auf 1. des nächsten Monats setzten"))
@@ -1168,6 +1178,8 @@ class ContractAdmin(GenoBaseAdmin):
     actions = GenoBaseAdmin.actions + [
         contract_mark_signed,
         contract_mark_offered,
+        contract_mark_canceled,
+        contract_mark_invalid,
         contract_set_startdate_nextmonth,
     ]
     filter_horizontal = ["contractors", "children", "rental_units"]

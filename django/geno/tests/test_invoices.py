@@ -4,8 +4,6 @@ from decimal import Decimal
 from django.conf import settings
 from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
-
-# from pprint import pprint
 from django.db.models import Sum  # , Q
 from django.template import loader
 
@@ -51,14 +49,22 @@ class InvoicesTest(GenoAdminTestCase):
                     book.get_transaction(tid)
 
     def test_invoices_when_rental_object_removed(self):
-        msg = create_invoices(dry_run=False, reference_date=datetime.datetime(2001, 4, 15))
-        # print(msg)
-        # print("=====")
-        self.assertIn("Monatsrechnung hinzugefügt: Nettomiete 04.2001 für 001a/001b für", msg[0])
-        self.assertIn("Monatsrechnung hinzugefügt: Nebenkosten 04.2001 für 001a/001b für", msg[1])
-        self.assertIn("Email mit QR-Rechnung an &quot;Anna Muster&quot;", msg[2])
-        self.assertEqual("1 Rechnung für 1 Vertrag", msg[3])
-        self.assertEqual(len(msg), 4)
+        msgs = create_invoices(dry_run=False, reference_date=datetime.datetime(2001, 4, 15))
+        infos = {}
+        for msg in msgs:
+            if "info" in msg:
+                infos[msg["info"]] = msg["objects"]
+        self.assertIn(
+            "Nettomiete 04.2001 für 001a/001b für",
+            infos["Rechnungen in Buchhaltung erstellen"][0]["items"][0],
+        )
+        self.assertIn(
+            "Nebenkosten 04.2001 für 001a/001b für",
+            infos["Rechnungen in Buchhaltung erstellen"][0]["items"][1],
+        )
+        self.assertIn("Email mit QR-Rechnung an:", infos["Email-Versand"][0]["label"])
+        self.assertIn("&quot;Anna Muster&quot;", infos["Email-Versand"][0]["items"][0])
+        self.assertEqual("1 Rechnung für 1 Vertrag", msgs[-1]["info"])
         self.assert_invoices(2, 1100 + 220)
 
         self.assertEmailSent(1, "Mietzinsrechnung 04.2001", "Liebe Anna\n\nAnbei die Rechnung.")
@@ -66,12 +72,20 @@ class InvoicesTest(GenoAdminTestCase):
         rental_unit_to_remove = self.rentalunits[1]
         self.contracts[0].rental_units.remove(rental_unit_to_remove)
 
-        msg = create_invoices(dry_run=False, reference_date=datetime.datetime(2001, 6, 15))
-        # print(msg)
-        # print("=====")
-        self.assertIn("Monatsrechnung hinzugefügt: Nettomiete 06.2001 für 001a für", msg[0])
-        self.assertIn("Monatsrechnung hinzugefügt: Nettomiete 05.2001 für 001a für", msg[2])
-        self.assertEqual("2 Rechnungen für 1 Vertrag", msg[4])
+        msgs = create_invoices(dry_run=False, reference_date=datetime.datetime(2001, 6, 15))
+        infos = {}
+        for msg in msgs:
+            if "info" in msg:
+                infos[msg["info"]] = msg["objects"]
+        self.assertIn(
+            "Nettomiete 06.2001 für 001a für",
+            infos["Rechnungen in Buchhaltung erstellen"][0]["items"][0],
+        )
+        self.assertIn(
+            "Nettomiete 05.2001 für 001a für",
+            infos["Rechnungen in Buchhaltung erstellen"][0]["items"][2],
+        )
+        self.assertEqual("2 Rechnungen für 1 Vertrag", msgs[-1]["info"])
         self.assert_invoices(3 * 2, 3 * 1100 + 220)
 
     def test_invoices_when_moving_rental_object_to_separate_contract_with_link(self):

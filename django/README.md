@@ -91,6 +91,7 @@ Example for Debian 11 (should work on most Debian/Ubuntu based systems):
     sudo apt install xmlsec1          ## for SAML 2.0 IDP
     sudo apt install poppler-utils    ## (optional, for tests)
     sudo apt install libreoffice-writer   ## (optional, for PDF generation)
+    sudo apt install gettext              ## (optional, needed to update translations)
 
 **Note:** If using Docker for development (recommended), you don't need `redis-server` or `mariadb-server` system packages. The bootstrap script automatically detects and offers to install required packages on macOS.
 
@@ -421,7 +422,23 @@ There is a ruff plugin for the PyCharm IDE (see below)
 
 ## Migrations
 
+Create new migration files after model changes:
+
+    ./manage.py makemigrations [--dry-run] [app-names...]
+
+Show all applied and unapplied migrations (`--plan` will print them in the order they would be applied):
+
     ./manage.py showmigrations [--plan]
+
+Apply migrations (`--plan` will only print what it would do):
+
+    ./manage migrate [app-name] [--plan]
+
+## Translations
+
+To update translated strings, you can run
+
+    ./update-translations.sh
 
 ## Tools
 
