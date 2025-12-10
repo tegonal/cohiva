@@ -9,7 +9,7 @@
 | cohiva/apps.py                                                                                         |       12 |        0 |    100% |           |
 | cohiva/base\_config\_for\_tests.py                                                                     |       20 |        0 |    100% |           |
 | cohiva/celery.py                                                                                       |        7 |        1 |     86% |        18 |
-| cohiva/context\_processors.py                                                                          |        3 |        0 |    100% |           |
+| cohiva/context\_processors.py                                                                          |        4 |        0 |    100% |           |
 | cohiva/formats/de/\_\_init\_\_.py                                                                      |        0 |        0 |    100% |           |
 | cohiva/formats/de/formats.py                                                                           |        5 |        0 |    100% |           |
 | cohiva/oauth\_validators.py                                                                            |       13 |        2 |     85% |    14, 29 |
@@ -26,7 +26,7 @@
 | cohiva/utils/pdf.py                                                                                    |       61 |        3 |     95% |23, 42, 51 |
 | cohiva/utils/settings.py                                                                               |       15 |        2 |     87% |    12, 19 |
 | cohiva/utils/strings.py                                                                                |        4 |        0 |    100% |           |
-| cohiva/version.py                                                                                      |        1 |        0 |    100% |           |
+| cohiva/version.py                                                                                      |        4 |        0 |    100% |           |
 | cohiva/views/admin.py                                                                                  |       59 |       22 |     63% |52-53, 56-61, 64-79 |
 | cohiva/views/generic.py                                                                                |       23 |       13 |     43% |14, 17, 20-31 |
 | credit\_accounting/\_\_init\_\_.py                                                                     |        5 |        0 |    100% |           |
@@ -202,7 +202,7 @@
 | reservation/tests/test\_views.py                                                                       |       10 |        2 |     80% |     21-22 |
 | reservation/urls.py                                                                                    |        4 |        0 |    100% |           |
 | reservation/views.py                                                                                   |      136 |      112 |     18% |22-201, 240-263 |
-|                                                                                              **TOTAL** | **20754** | **5873** | **72%** |           |
+|                                                                                              **TOTAL** | **20758** | **5873** | **72%** |           |
 
 
 ## Setup coverage badge
