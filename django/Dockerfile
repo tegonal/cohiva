@@ -57,6 +57,14 @@ ENV GUNICORN_LOG_LEVEL=info
 #ENV DJANGO_DEBUG=1
 EXPOSE 8000
 
+# Set git tag and commit as labels and environment variables
+ARG GIT_TAG=""
+ARG GIT_COMMIT=""
+LABEL org.opencontainers.image.version=${GIT_TAG}
+LABEL org.opencontainers.image.revision=${GIT_COMMIT}
+ENV COHIVA_GIT_TAG=${GIT_TAG}
+ENV COHIVA_GIT_COMMIT=${GIT_COMMIT}
+
 FROM cohiva-platform-django AS cohiva-platform-app
 
 # Create directory for static files

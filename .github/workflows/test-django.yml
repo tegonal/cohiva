@@ -70,6 +70,8 @@ jobs:
         run: |
           cd django && \
           docker build . \
+            --build-arg GIT_TAG=${{ github.ref_name }} \
+            --build-arg GIT_COMMIT=${{ github.sha }} \
             --target cohiva-platform-django \
             -t cohiva:test
 

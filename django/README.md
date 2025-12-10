@@ -411,12 +411,8 @@ There is a ruff plugin for the PyCharm IDE (see below)
     # Run Test-Server
     ./runserver.sh
 
-    # Run tests
-    ./manage.py test [--keepdb]
-
-    # Get coverage
-    coverage run manage.py test [--keepdb]
-    coverage report  # or: html
+    # Run tests (includes cleanup)
+    ./run-tests.sh
 
     # Deploy to production
     ./deploy.py
@@ -440,6 +436,15 @@ Apply migrations (`--plan` will only print what it would do):
 To update translated strings, you can run
 
     ./update-translations.sh
+
+## Docker image
+
+To build the docker image, run
+
+    docker build . \
+      --build-arg GIT_TAG=$(git describe --tags --always) \
+      --build-arg GIT_COMMIT=$(git rev-parse HEAD) \
+      -t cohiva:latest
 
 ## Tools
 

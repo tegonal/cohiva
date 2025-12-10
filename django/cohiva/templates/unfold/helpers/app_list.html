@@ -176,7 +176,14 @@
   </p>
 {% endif %}
 <p class="p-2 text-xs">
-  <a href="https://cohiva.ch/">Cohiva</a> version {{ COHIVA_VERSION }}
+  <a href="https://cohiva.ch/">Cohiva</a>
+  {% if COHIVA_GIT_COMMIT %}
+    <span title="Commit {{ COHIVA_GIT_COMMIT }}">
+  {% endif %}
+      Version {{ COHIVA_VERSION }}{% if COHIVA_GIT_TAG and COHIVA_GIT_TAG != COHIVA_VERSION %}/{{ COHIVA_GIT_TAG}}{% endif %}
+  {% if COHIVA_GIT_COMMIT %}
+    </span>
+  {% endif %}
   <br>
   Config: {{ COHIVA_GENO_ID }}
   {% if COHIVA_DEBUG %}[TEST]{% endif %}
