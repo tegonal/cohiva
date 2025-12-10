@@ -1154,6 +1154,7 @@ class ContractAdmin(GenoBaseAdmin):
         "contractors__organization",
         "children__name__name",
         "children__name__first_name",
+        "rental_units__building__name",
         "rental_units__name",
         "note",
         "comment",
@@ -1161,6 +1162,7 @@ class ContractAdmin(GenoBaseAdmin):
     list_filter = [
         VertragstypFilter,
         "state",
+        "rental_units__building",
         "rental_units__rental_type",
         "rental_units__floor",
         "rental_units__rooms",

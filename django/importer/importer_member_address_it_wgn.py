@@ -199,13 +199,8 @@ class ImporterMemberAddressITWGN(ExcelImporter):
         address.telephoneOffice = p_telg or p_mobileg
         address.telephoneOffice2 = p_mobileg if p_telg else ""
 
-        # Email fields - Priority: P_emailp/P_emailg (fall back to 'email' column)
-        p_emailp = row_data.get("P_emailp") or ""
-        p_emailg = row_data.get("P_emailg") or ""
-        email_fallback = row_data.get("email") or ""
-
-        address.email = p_emailp or email_fallback or p_emailg
-        address.email2 = p_emailg if (p_emailp or email_fallback) else ""
+        address.email = self._get_primary_email(row_data)
+        address.email2 = self._get_secondary_email(row_data, address.email)
 
         # Website
         address.website = row_data.get("P_homepagep") or row_data.get("P_homepageg") or ""
@@ -371,8 +366,36 @@ class ImporterMemberAddressITWGN(ExcelImporter):
         Returns:
             Email address or empty string
         """
-        email = row_data.get("P_emailp", "") or row_data.get("email", "")
-        return email.strip().lower() if email else ""
+        email = (
+            self._clean_emails(row_data.get("P_emailp", ""))
+            or self._clean_emails(row_data.get("email", ""))
+            or self._clean_emails(row_data.get("P_emailg", ""))
+        )
+        return email[0] if email else ""
+
+    def _get_secondary_email(self, row_data: dict, primary_email: str) -> str:
+        """
+        Extract secondary email from row data.
+
+        Args:
+            row_data: dictionary containing the row data
+            primary_email: The already determined primary email
+
+        Returns:
+            Secondary email address or empty string
+        """
+        if not primary_email:
+            return ""
+        for email in self._clean_emails(row_data.get("P_emailg", "")):
+            if email != primary_email:
+                return email
+        for email in self._clean_emails(row_data.get("P_emailp", "")):
+            if email != primary_email:
+                return email
+        for email in self._clean_emails(row_data.get("email", "")):
+            if email != primary_email:
+                return email
+        return ""
 
     def _map_title(self, title_raw: str, is_organization: bool) -> str:
         """
@@ -476,6 +499,15 @@ class ImporterMemberAddressITWGN(ExcelImporter):
 
         # If no clear split, assume it's all city name
         return ("", plzort)
+
+    @classmethod
+    def _clean_emails(cls, email: str) -> list[str]:
+        """Split multiple emails separated by semicolon and remove invalid ones."""
+        if not email or not isinstance(email, str):
+            return []
+        email_addresses = email.split(";")
+        map(lambda x: x.strip().lower(), email_addresses)
+        return list(filter(lambda x: "@" in x, email_addresses))
 
     def _clean_phone_number(self, phone: str) -> str:
         """

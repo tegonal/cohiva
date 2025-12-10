@@ -176,7 +176,7 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
         rental_unit.label = row_data.get("Bezeichnung", "") or ""
 
         # Map rental type
-        type_raw = row_data.get("Objekttyp Bezeichnung", "").strip()
+        type_raw = (row_data.get("Objekttyp Bezeichnung", "") or "").strip()
         rental_unit.rental_type = self._map_rental_type(type_raw)
 
         rental_unit.floor = row_data.get("Etage Nummer", "") or ""
@@ -185,7 +185,6 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
         rental_unit.rooms = self._parse_decimal(row_data.get("Zimmerzahl Anzahl"))
         rental_unit.area = self._parse_decimal(row_data.get("Nutzflaeche"))
         rental_unit.nk = self._parse_decimal(row_data.get("Akonti"))
-        rental_unit.nk_flat = self._parse_decimal(row_data.get("Pauschalen"))
 
         # Parse rent - "Nettomiete" or "Brutto"
         netto = self._parse_decimal(row_data.get("Nettomiete"))
@@ -301,6 +300,15 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
         # Link rental unit
         contract.rental_units.add(rental_unit)
 
+        # Mietzinsvorbehalt (negativ)
+        pauschalen = self._parse_decimal(row_data.get("Pauschalen"))
+        if pauschalen:
+            rent_reservation = -1 * pauschalen
+            if contract.rent_reservation:
+                contract.rent_reservation += rent_reservation
+            else:
+                contract.rent_reservation = rent_reservation
+
         # Additional fields
         mieter_bezeichnung = row_data.get("Mieter Bezeichnung", "")
         if mieter_bezeichnung:
@@ -333,7 +341,7 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
             Address instance or None
         """
         # Parse name from "Mieter Person Person Name Vorname"
-        name_str = row_data.get("Mieter Person Person Name Vorname", "").strip()
+        name_str = (row_data.get("Mieter Person Person Name Vorname", "") or "").strip()
         if not name_str:
             return None
 
@@ -347,7 +355,7 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
             last_name = name_str
 
         # Parse address info from "Mieter Person Person Adresse"
-        address_str = row_data.get("Mieter Person Person Adresse", "").strip()
+        address_str = (row_data.get("Mieter Person Person Adresse", "") or "").strip()
 
         # Build import_id for address
         person_id = row_data.get("Mieter Person Person Id", "")

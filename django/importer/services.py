@@ -2,6 +2,7 @@
 Business logic for processing Excel imports.
 """
 
+import datetime
 import logging
 
 import openpyxl
@@ -127,6 +128,7 @@ class ExcelImporter:
 
         for row_data in data:
             row_number = row_data.pop("_row_number")
+            serialized_row_data = self._serialize(row_data)
             try:
                 with transaction.atomic():
                     # Process the row (customize this based on your needs)
@@ -140,7 +142,7 @@ class ExcelImporter:
                     ImportRecord.objects.create(
                         job=self.import_job,
                         row_number=row_number,
-                        data=row_data,
+                        data=serialized_row_data,
                         success=True,
                     )
                     results["success_count"] += 1
@@ -153,14 +155,28 @@ class ExcelImporter:
                 ImportRecord.objects.create(
                     job=self.import_job,
                     row_number=row_number,
-                    data=row_data,
+                    data=serialized_row_data,
                     error_message=str(e),
                     success=False,
                 )
                 results["error_count"] += 1
-                results["errors"].append({"row": row_number, "error": str(e), "data": row_data})
+                results["errors"].append(
+                    {"row": row_number, "error": str(e), "data": serialized_row_data}
+                )
 
         return results
+
+    @classmethod
+    def _serialize(cls, row_data: dict) -> dict:
+        """Serialize row dictionary values for logging."""
+        serialized = {}
+        for key, value in row_data.items():
+            if isinstance(value, (datetime.date, datetime.datetime)):
+                # datetime objects are not JSON serializable
+                serialized[key] = value.isoformat()
+            else:
+                serialized[key] = value
+        return serialized
 
     def _has_existing(self, row_data: dict):
         """

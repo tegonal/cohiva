@@ -2,7 +2,7 @@
 Tests for the Member/Address importer.
 """
 
-from datetime import date
+from datetime import date, datetime
 from io import BytesIO
 
 import openpyxl
@@ -99,7 +99,7 @@ class ImporterMemberAddressITWGNTest(TestCase):
         )
 
     def test_import_simple_person(self):
-        """Test importing a simple person without member."""
+        """Test importing a simple person with membership date as string."""
         rows = [
             [
                 "max.test@example.com",  # email
@@ -181,6 +181,152 @@ class ImporterMemberAddressITWGNTest(TestCase):
         member = Member.objects.get(name=address)
         self.assertEqual(member.date_join, date(2024, 1, 15))
 
+    def test_import_simple_person_dateobject(self):
+        """Test importing a simple person with membership date as date object."""
+        rows = [
+            [
+                "max.test2@example.com",  # email
+                "",
+                date(2024, 1, 16),
+                "1001",
+                "",  # Person section + join date + P_nr
+                "",
+                "",
+                "Teststrasse 42",
+                "",
+                "3011 Bern",  # Address
+                "Herr",
+                "Herr",
+                "Schweiz",
+                "",
+                "",  # Title/salutation
+                "",
+                "Müller2",
+                "Max",
+                "+41 31 123 45 67",
+                "",  # Contact - name
+                "",
+                "",
+                "+41 79 123 45 67",
+                "",
+                "max.test2@example.com",
+                "",  # Contact - phones/email
+                "",
+                "",
+                "",
+                "Informatiker",  # Contact - web, Personal - occupation (P_beruf)
+                "Tech AG",
+                "Bern",
+                "",
+                "1990-05-15",  # P_arbeitgeber, Personal info
+                "",
+                "",
+                "",
+                "",  # Portal info, Payment section start
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",  # Payment accounts
+            ]
+        ]
+
+        excel_file = self.create_test_excel(rows)
+        import_job = ImportJob.objects.create(file=excel_file)
+
+        # Process import
+        importer = ImporterMemberAddressITWGN(import_job)
+        results = importer.process()
+
+        # Check results
+        self.assertEqual(results["success_count"], 1)
+        self.assertEqual(results["error_count"], 0)
+
+        # Check Address was created
+        address = Address.objects.get(email="max.test2@example.com")
+        self.assertEqual(address.name, "Müller2")
+
+        # Check Member was created (X_heute was provided as date)
+        member = Member.objects.get(name=address)
+        self.assertEqual(member.date_join, date(2024, 1, 16))
+
+    def test_import_simple_person_datetimeobject(self):
+        """Test importing a simple person with membership date as datetime object."""
+        rows = [
+            [
+                "max.test3@example.com",  # email
+                "",
+                datetime(2024, 1, 17, 12, 30, 15),
+                "1001",
+                "",  # Person section + join date + P_nr
+                "",
+                "",
+                "Teststrasse 42",
+                "",
+                "3011 Bern",  # Address
+                "Herr",
+                "Herr",
+                "Schweiz",
+                "",
+                "",  # Title/salutation
+                "",
+                "Müller3",
+                "Max",
+                "+41 31 123 45 67",
+                "",  # Contact - name
+                "",
+                "",
+                "+41 79 123 45 67",
+                "",
+                "max.test3@example.com",
+                "",  # Contact - phones/email
+                "",
+                "",
+                "",
+                "Informatiker",  # Contact - web, Personal - occupation (P_beruf)
+                "Tech AG",
+                "Bern",
+                "",
+                "1990-05-15",  # P_arbeitgeber, Personal info
+                "",
+                "",
+                "",
+                "",  # Portal info, Payment section start
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",  # Payment accounts
+            ]
+        ]
+
+        excel_file = self.create_test_excel(rows)
+        import_job = ImportJob.objects.create(file=excel_file)
+
+        # Process import
+        importer = ImporterMemberAddressITWGN(import_job)
+        results = importer.process()
+
+        # Check results
+        self.assertEqual(results["success_count"], 1)
+        self.assertEqual(results["error_count"], 0)
+
+        # Check Address was created
+        address = Address.objects.get(email="max.test3@example.com")
+        self.assertEqual(address.name, "Müller3")
+
+        # Check Member was created (X_heute was provided as datetime)
+        member = Member.objects.get(name=address)
+        self.assertEqual(member.date_join, date(2024, 1, 17))
+
     def test_import_organization(self):
         """Test importing an organization."""
         rows = [
@@ -258,7 +404,7 @@ class ImporterMemberAddressITWGNTest(TestCase):
             [
                 "test@example.com",
                 "",
-                "2024-01-15",
+                "15.01.2024",
                 "1003",
                 "",
                 "",

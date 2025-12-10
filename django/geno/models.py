@@ -216,12 +216,12 @@ class Address(GenoBase):
         ("Deposit", "Dem Depositenkassenkonto anrechnen"),
     )
     organization = models.CharField(
-        "Organisation", max_length=100, blank=True, help_text="Bei Privatpersonen: leer lassen"
+        "Organisation", max_length=150, blank=True, help_text="Bei Privatpersonen: leer lassen"
     )
     name = models.CharField(
-        "Nachname", max_length=30, blank=True, help_text="Bei Organisationen: Kontaktperson"
+        "Nachname", max_length=150, blank=True, help_text="Bei Organisationen: Kontaktperson"
     )  ## db_index=True ???
-    first_name = models.CharField("Vorname", max_length=30, blank=True)  ## db_index=True ???
+    first_name = models.CharField("Vorname", max_length=100, blank=True)  ## db_index=True ???
     title = models.CharField("Anrede", max_length=20, choices=TITLE_CHOICES, blank=True)
     formal = models.CharField(
         "Duzen", max_length=20, choices=FORMAL_CHOICES, default=get_default_formal_choice
@@ -1898,11 +1898,13 @@ class TenantsView(GenoBase):
     p_membership_date = models.DateField("Mieter*in Mitglied seit", null=True, blank=True)
     c_issubcontract = models.BooleanField("Ist Untervertrag", default=False)
 
-    building = models.ForeignKey("Building", verbose_name="Liegenschaft", on_delete=models.CASCADE)
-    rental_unit = models.ForeignKey(
-        "RentalUnit", verbose_name="Mietobjekt", on_delete=models.CASCADE
+    building = models.ForeignKey(
+        "Building", verbose_name="Liegenschaft", on_delete=models.DO_NOTHING
     )
-    contract = models.ForeignKey(Contract, verbose_name="Vertrag", on_delete=models.CASCADE)
+    rental_unit = models.ForeignKey(
+        "RentalUnit", verbose_name="Mietobjekt", on_delete=models.DO_NOTHING
+    )
+    contract = models.ForeignKey(Contract, verbose_name="Vertrag", on_delete=models.DO_NOTHING)
 
     class Meta:
         db_table = "geno_TenantsView"
