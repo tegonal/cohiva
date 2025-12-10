@@ -139,7 +139,7 @@ class BookTransaction:
         notes = "Added through API"
         description = getattr(transaction, "description", "")
         # in case description is longer than 250 chars, truncate and append fully to notes
-        if description.len > 250:
+        if len(description) > 250:
             notes += "\n" + description
             description = description[:250]
 
