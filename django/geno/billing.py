@@ -2,6 +2,7 @@ import contextlib
 import datetime
 import io
 import logging
+import os.path
 import re
 import tempfile
 from collections import defaultdict
@@ -11,8 +12,10 @@ from smtplib import SMTPException
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.db.models import Q
+from django.http import Http404
 from django.template import Context, loader
 from django.utils.html import escape
+from django.utils.translation import gettext_lazy as _
 from html2text import html2text
 
 ## For QR bill and svg -> pdf
@@ -24,6 +27,7 @@ from svglib.svglib import svg2rlg
 import geno.settings as geno_settings
 from cohiva.utils.pdf import PdfGenerator
 from cohiva.utils.strings import pluralize
+from cohiva.views.admin import CohivaAdminViewMixin, ResponseVariant
 from finance.accounting import (
     Account,
     AccountingBook,
@@ -90,6 +94,10 @@ def create_invoices(
 
     messages = []
     count = {"invoices": 0, "contracts": 0}
+    all_regular_invoices = []
+    all_placeholder_invoices = []
+    all_email_messages = []
+
     with AccountingManager(messages) as book:
         if not book:
             return messages
@@ -101,24 +109,86 @@ def create_invoices(
                 "dry_run": dry_run,
             }
             try:
-                result, result_messages = create_monthly_invoices(
+                result_tuple = create_monthly_invoices(
                     book, contract, reference_date, invoice_category, options
                 )
             except InvoiceCreationError as e:
-                logger.error("Could not create invoice for contract {contract}: {e}")
-                messages.append(f"FEHLER beim Erzeugen der Rechnungen für {contract}: {e}")
-                messages.append("VERARBEITUNG ABGEBROCHEN!")
+                logger.error(f"Could not create invoice for contract {contract}: {e}")
+                messages.append(
+                    CohivaAdminViewMixin.make_response_item(
+                        _("FEHLER beim Erzeugen der Rechnungen für {contract}: {e}").format(
+                            contract=contract, e=e
+                        ),
+                        variant=ResponseVariant.ERROR,
+                    )
+                )
+                messages.append(
+                    CohivaAdminViewMixin.make_response_item(
+                        _("VERARBEITUNG ABGEBROCHEN!"), variant=ResponseVariant.ERROR
+                    )
+                )
                 break
-            messages.extend(result_messages)
-            if isinstance(result, str):
-                return result
+
+            if isinstance(result_tuple[0], str):
+                # We got a filename back, so we're done here
+                return result_tuple[0]
+
+            result, regular_invoices, placeholder_invoices, email_messages = result_tuple
             if result > 0:
                 count["invoices"] += result
                 count["contracts"] += 1
-    messages.append(
-        f"{pluralize(count['invoices'], 'Rechnung', 'Rechnungen')} für "
-        f"{pluralize(count['contracts'], 'Vertrag', 'Verträge')}"
-    )
+                all_regular_invoices.extend(regular_invoices)
+                all_placeholder_invoices.extend(placeholder_invoices)
+                all_email_messages.extend(email_messages)
+
+    email_objects = []
+    if all_email_messages:
+        email_objects.append(
+            {
+                "label": _("Email mit QR-Rechnung an:"),
+                "items": all_email_messages,
+                "variant": ResponseVariant.INFO.value,
+            }
+        )
+    if email_objects:
+        messages.append(
+            CohivaAdminViewMixin.make_response_item(_("Email-Versand"), objects=email_objects)
+        )
+
+    invoice_objects = []
+    if all_regular_invoices:
+        invoice_objects.append(
+            {
+                "label": str(_("Monatsrechnungen hinzugefügt")),
+                "items": all_regular_invoices,
+                "variant": ResponseVariant.DEFAULT.value,
+            }
+        )
+    if all_placeholder_invoices:
+        invoice_objects.append(
+            {
+                "label": str(_("Platzhalter-Monatsrechnungen hinzugefügt")),
+                "items": all_placeholder_invoices,
+                "variant": ResponseVariant.INFO.value,
+            }
+        )
+
+    if invoice_objects:
+        messages.append(
+            CohivaAdminViewMixin.make_response_item(
+                str(_("Rechnungen in Buchhaltung erstellen")), objects=invoice_objects
+            )
+        )
+
+    if count["invoices"] > 0:
+        summary_msg = str(_("%(invoice_count)s für %(contract_count)s")) % {
+            "invoice_count": pluralize(count["invoices"], "Rechnung", "Rechnungen"),
+            "contract_count": pluralize(count["contracts"], "Vertrag", "Verträge"),
+        }
+        messages.append(
+            CohivaAdminViewMixin.make_response_item(summary_msg, variant=ResponseVariant.INFO)
+        )
+
     return messages
 
 
@@ -126,10 +196,17 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
     download_only = options.get("download_only")
     single_contract = options.get("single_contract")
     dry_run = options.get("dry_run")
-    month = reference_date.month
-    year = reference_date.year
+    if contract.date_end and contract.date_end < reference_date:
+        # Don't try to create invoices after the end date of the contract
+        month = contract.date_end.month
+        year = contract.date_end.year
+    else:
+        month = reference_date.month
+        year = reference_date.year
     stop = False
     billed_months_count = 0
+    regular_invoices = []
+    placeholder_invoices = []
     messages = []
     while not stop:
         invoices = Invoice.objects.filter(
@@ -274,9 +351,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     )
                     if not dry_run:
                         invoice.save()
-                    messages.append(
-                        "Platzhalter-Monatsrechnung %d.%d hinzugefügt: %s."
-                        % (month, year, billing_contract_info)
+                    placeholder_invoices.append(
+                        str(_("%(month)d.%(year)d: %(contract)s"))
+                        % {"month": month, "year": year, "contract": billing_contract_info}
                     )
 
             if sum_rent_net > 0.0:
@@ -300,8 +377,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     is_additional=is_additional_invoice,
                     dry_run=dry_run,
                 )
-                messages.append(
-                    "Monatsrechnung hinzugefügt: %s für %s." % (description, billing_contract_info)
+                regular_invoices.append(
+                    str(_("%(description)s für %(contract)s"))
+                    % {"description": description, "contract": billing_contract_info}
                 )
 
             if sum_nk > 0.0:
@@ -325,8 +403,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     is_additional=is_additional_invoice,
                     dry_run=dry_run,
                 )
-                messages.append(
-                    "Monatsrechnung hinzugefügt: %s für %s." % (description, billing_contract_info)
+                regular_invoices.append(
+                    str(_("%(description)s für %(contract)s"))
+                    % {"description": description, "contract": billing_contract_info}
                 )
 
             if sum_nk_flat > 0.0:
@@ -350,8 +429,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     is_additional=is_additional_invoice,
                     dry_run=dry_run,
                 )
-                messages.append(
-                    "Monatsrechnung hinzugefügt: %s für %s." % (description, billing_contract_info)
+                regular_invoices.append(
+                    str(_("%(description)s für %(contract)s"))
+                    % {"description": description, "contract": billing_contract_info}
                 )
 
             if sum_nk_electricity > 0.0:
@@ -375,8 +455,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     is_additional=is_additional_invoice,
                     dry_run=dry_run,
                 )
-                messages.append(
-                    "Monatsrechnung hinzugefügt: %s für %s." % (description, billing_contract_info)
+                regular_invoices.append(
+                    str(_("%(description)s für %(contract)s"))
+                    % {"description": description, "contract": billing_contract_info}
                 )
 
             ## Rent reduction
@@ -401,8 +482,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     is_additional=is_additional_invoice,
                     dry_run=dry_run,
                 )
-                messages.append(
-                    "Monatsrechnung hinzugefügt: %s für %s." % (description, billing_contract_info)
+                regular_invoices.append(
+                    str(_("%(description)s für %(contract)s"))
+                    % {"description": description, "contract": billing_contract_info}
                 )
                 rent_info.append(
                     {
@@ -437,8 +519,9 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                     is_additional=is_additional_invoice,
                     dry_run=dry_run,
                 )
-                messages.append(
-                    "Monatsrechnung hinzugefügt: %s für %s." % (description, billing_contract_info)
+                regular_invoices.append(
+                    str(_("%(description)s für %(contract)s"))
+                    % {"description": description, "contract": billing_contract_info}
                 )
                 rent_info.append(
                     {
@@ -468,6 +551,8 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                 email_template=None,
                 billing_contract=billing_contract,
             )
+            if not output_filename:
+                raise Http404(f"Konnte Rechnung nicht erzeugen: {invoice_title}: {' '.join(ret)}")
             return output_filename, messages
         elif (
             factor > 0 and sum_rent_total > 0.0 and contract.send_qrbill in ("only_next", "always")
@@ -493,6 +578,10 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
             )
             messages.extend(ret)
             if dry_run and single_contract:
+                if not output_filename:
+                    raise Http404(
+                        f"Konnte Rechnung nicht erzeugen: {invoice_title}: {' '.join(ret)}"
+                    )
                 return output_filename, messages
 
         ## Continue with previous month
@@ -501,7 +590,7 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
             year -= 1
         else:
             month -= 1
-    return billed_months_count, messages
+    return billed_months_count, regular_invoices, placeholder_invoices, messages
 
 
 def pay_invoice(invoice, date, amount):
@@ -1618,6 +1707,7 @@ def create_qrbill(
             invoice_doctype = DocumentType.objects.get(name="invoice")
             render_qrbill(invoice_doctype.template, context, output_filename)
         except Exception as e:
+            logger.error(f"Could not render QR bill: {e}")
             return (
                 [
                     "Konnte QR-Rechnung nicht erstellen: %s" % e,
@@ -1761,25 +1851,37 @@ def create_qrbill_rent(
         email_subject,
         dry_run,
     )
+    if render and not os.path.isfile(f"/tmp/{output_filename}"):
+        output_filename = None
+        return messages, output_filename
 
     if email_template:
         if mails_sent == 1:
             if dry_run:
-                preview_email_url = f'<a href="/geno/preview/?contract={contract.id}&invoice_category={invoice_category.id}" target="_blank">Vorschau</a>'
-                preview_pdf_url = f'<a href="?single_contract={contract.id}&date={invoice_date.strftime("%Y-%m-%d")}">{output_filename}</a>'
+                preview_email_url = (
+                    f'<a href="/geno/preview/?contract={contract.id}'
+                    f'&invoice_category={invoice_category.id}" target="_blank" '
+                    'class="text-primary-600 dark:text-primary-500"'
+                    ">Mail-Text</a>"
+                )
+                preview_pdf_url = (
+                    f'<a href="?single_contract={contract.id}'
+                    f'&date={invoice_date.strftime("%Y-%m-%d")}" target="_blank" '
+                    'class="text-primary-600 dark:text-primary-500"'
+                    f">{output_filename}</a>"
+                )
                 messages.append(
-                    f"DRY-RUN: Hätte nun Email [{preview_email_url}] mit QR-Rechnung an {escape(mail_recipient)} geschickt. {preview_pdf_url}"
+                    f"{escape(mail_recipient)} - "
+                    f"Vorschau: {preview_email_url} und Anhang {preview_pdf_url}"
                 )
             else:
-                messages.append(
-                    "Email mit QR-Rechnung an %s geschickt. %s"
-                    % (escape(mail_recipient), output_filename)
-                )
+                messages.append("%s - %s" % (escape(mail_recipient), output_filename))
                 if contract.send_qrbill == "only_next":
                     ## Disable sending for next bill
                     contract.send_qrbill = "none"
                     contract.save()
         else:
+            output_filename = None
             messages.append("FEHLER beim Versenden des Emails.")
 
     return messages, output_filename

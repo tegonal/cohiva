@@ -1,3 +1,4 @@
+import datetime
 from unittest.mock import ANY, Mock, call, patch
 
 from django.conf import settings
@@ -247,7 +248,44 @@ class CashctrlBookTestCase(TestCase):
             )
             called_url = mock_post.call_args[0][0]
             assert (
-                f"{self.cohiva_test_endpoint}journal/create.json?amount=100.00&creditId=1237&debitId=1477&title=Test+CashCtrl+add_transaction&dateAdded="
+                f"{self.cohiva_test_endpoint}journal/create.json?amount=100.00&creditId=1237&debitId=1477&title=Test+CashCtrl+add_transaction&dateAdded=2026-01-01"
+                in called_url
+            )
+
+    @patch("finance.accounting.cashctrl.requests.get")
+    @patch("finance.accounting.cashctrl.requests.post")
+    def test_add_transaction_without_date(self, mock_post, mock_get):
+        messages = []
+        with AccountingManager(messages) as book:
+            # configure fake responses
+            mock_get.return_value.raise_for_status.side_effect = None
+            mock_get.side_effect = self.fetch_account_responses
+
+            mock_post.return_value.json.return_value = {
+                "success": True,
+                "message": "Buchung gespeichert",
+                "insertId": 700,
+            }
+            mock_post.return_value.raise_for_status.side_effect = None
+
+            transaction_id = book.add_transaction(
+                100.00,
+                self.account1,
+                self.account2,
+                None,
+                "Test CashCtrl add_transaction",
+                autosave=False,
+            )
+            self.assertTrue(transaction_id.startswith("cct_"))
+            self.assertEqual("cct_0_700", transaction_id)
+            book.save()
+
+            # verify that the API was called
+            today = datetime.date.today().strftime("%Y-%m-%d")
+            called_url = mock_post.call_args[0][0]
+            assert (
+                f"{self.cohiva_test_endpoint}journal/create.json?amount=100.00&creditId=1237"
+                f"&debitId=1477&title=Test+CashCtrl+add_transaction&dateAdded={today}"
                 in called_url
             )
 

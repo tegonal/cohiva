@@ -1,0 +1,174 @@
+{% extends "geno/base.html" %}
+{% load static i18n unfold %}
+
+{% block object-tools %}
+  {# Override to hide the tab list when there's only one view #}
+{% endblock %}
+
+{% block custom_content %}
+
+  <div class="mb-6">
+    <h1 class="text-2xl font-semibold text-font-important-light dark:text-font-important-dark">
+      {{ title }}
+    </h1>
+    {% if show_back_button %}
+      <div class="mt-3 inline-block">
+        {% component "unfold/components/button.html" with href="javascript:window.history.back()" variant="secondary" %}
+        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+        {% trans "Zurück" %}
+      {% endcomponent %}
+    </div>
+  {% endif %}
+</div>
+
+{# Display results with variant and sub-group support #}
+{% if response %}
+  {% for r in response %}
+    {% if r.variant == "error" %}
+      {# Error alert - standalone without card #}
+      <div class="bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400 rounded-default px-3 py-3 mb-3 text-sm"
+           role="alert">
+        <div class="flex items-start gap-3">
+          <span class="material-symbols-outlined text-[20px] mt-0.5">error</span>
+          <div class="font-medium">{{ r.info|safe }}</div>
+        </div>
+      </div>
+      {% if r.objects %}
+        <div class="bg-base-50 border border-base-200 rounded p-4 mb-6 dark:bg-base-800 dark:border-base-700">
+          <div class="space-y-1">
+            {% for o in r.objects %}
+              <div class="text-sm text-font-light dark:text-font-dark">{{ o|safe }}</div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    {% elif r.variant == "warning" %}
+      {# Warning alert - standalone without card #}
+      <div class="bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400 rounded-default px-3 py-3 mb-3 text-sm"
+           role="alert">
+        <div class="flex items-start gap-3">
+          <span class="material-symbols-outlined text-[20px] mt-0.5">warning</span>
+          <div class="font-medium">{{ r.info|safe }}</div>
+        </div>
+      </div>
+      {% if r.objects %}
+        <div class="bg-base-50 border border-base-200 rounded p-4 mb-6 dark:bg-base-800 dark:border-base-700">
+          <div class="space-y-1">
+            {% for o in r.objects %}
+              <div class="text-sm text-font-light dark:text-font-dark">{{ o|safe }}</div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    {% elif r.variant == "success" %}
+      {# Success alert - standalone without card #}
+      <div class="bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400 rounded-default px-3 py-3 mb-3 text-sm"
+           role="alert">
+        <div class="flex items-start gap-3">
+          <span class="material-symbols-outlined text-[20px] mt-0.5">check_circle</span>
+          <div class="font-medium">{{ r.info|safe }}</div>
+        </div>
+      </div>
+      {% if r.objects %}
+        <div class="bg-base-50 border border-base-200 rounded p-4 mb-6 dark:bg-base-800 dark:border-base-700">
+          <div class="space-y-1">
+            {% for o in r.objects %}
+              <div class="text-sm text-font-light dark:text-font-dark">{{ o|safe }}</div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    {% elif r.variant == "info" %}
+      {# Info alert - standalone without card #}
+      <div class="bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400 rounded-default px-3 py-3 mb-3 text-sm"
+           role="alert">
+        <div class="flex items-start gap-3">
+          <span class="material-symbols-outlined text-[20px] mt-0.5">info</span>
+          <div class="font-medium">{{ r.info|safe }}</div>
+        </div>
+      </div>
+      {% if r.objects %}
+        <div class="bg-base-50 border border-base-200 rounded p-4 mb-6 dark:bg-base-800 dark:border-base-700">
+          <div class="space-y-1">
+            {% for o in r.objects %}
+              <div class="text-sm text-font-light dark:text-font-dark">{{ o|safe }}</div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    {% else %}
+      {# Default variant - keep card wrapper #}
+      <div class="bg-white border border-base-200 rounded-default shadow-sm dark:border-base-800 dark:bg-base-900 mb-6">
+        <div class="p-6">
+          <h2 class="text-lg font-semibold mb-4 text-font-important-light dark:text-font-important-dark">
+            {{ r.info|safe }}
+          </h2>
+          {% if r.objects %}
+            <div class="bg-base-50 border border-base-200 rounded p-4 dark:bg-base-800 dark:border-base-700">
+              <div class="space-y-3">
+                {% for o in r.objects %}
+                  {% if o.label %}
+                    {# Sub-group with its own label and styling #}
+                    <div class="space-y-2">
+                      <div class="text-sm font-medium mt-3 mb-2 {% if o.variant == 'info' %}text-blue-700 dark:text-blue-400{% elif o.variant == 'warning' %}text-orange-700 dark:text-orange-400{% elif o.variant == 'error' %}text-red-700 dark:text-red-400{% elif o.variant == 'success' %}text-green-700 dark:text-green-400{% else %}text-font-important-light dark:text-font-important-dark{% endif %}">
+                        {{ o.label|safe }}
+                      </div>
+                      <div class="space-y-1">
+                        {% for item in o.items %}
+                          <div class="text-sm text-font-light dark:text-font-dark">{{ item|safe }}</div>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  {% else %}
+                    {# Regular string item #}
+                    <div class="text-sm text-font-light dark:text-font-dark">{{ o|safe }}</div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+          {% else %}
+            <div class="text-sm text-font-muted-light dark:text-font-muted-dark italic">Keine Einträge</div>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  {% endfor %}
+{% else %}
+  {% component "geno/components/empty_state.html" with message=_("Keine Daten verfügbar.") icon="inbox" %}{% endcomponent %}
+{% endif %}
+
+{% endblock %}
+
+{% block footer %}
+  {# Show execute button if this is a dry run #}
+  {% if execute_url %}
+    <div class="relative lg:sticky lg:bottom-0 z-40">
+      <div class="backdrop-blur-xs bg-white/80 rounded-b-default pb-4 px-4 dark:bg-base-900/80 lg:border-t lg:border-base-200 relative lg:scrollable-top lg:py-0 dark:border-base-800">
+        <div class="flex flex-col-reverse gap-3 items-center mx-auto lg:flex-row-reverse container lg:h-[64px]">
+          {# Primary action - Execute #}
+          <a href="{{ execute_url }}"
+             class="bg-primary-600 block border border-transparent cursor-pointer font-medium px-3 py-2 rounded-default text-white w-full lg:w-auto inline-flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">check_circle</span>
+            {% trans "Jetzt ausführen" %}
+          </a>
+
+          {# Info text on the left with item count #}
+          <div class="mr-auto text-sm text-font-light dark:text-font-dark">
+            {% if item_count %}
+              {% if item_label %}
+                {% blocktrans count counter=item_count %}
+                  Es wird {{ counter }} {{ item_label }} verarbeitet.
+                {% plural %}
+                  Es werden {{ counter }} {{ item_label }} verarbeitet.
+                {% endblocktrans %}
+              {% endif %}
+              {% trans "Dies ist ein Probelauf." %}
+            {% else %}
+              {% trans "Dies ist ein Probelauf. Klicken Sie auf 'Jetzt ausführen', um die Aktion tatsächlich auszuführen." %}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}
