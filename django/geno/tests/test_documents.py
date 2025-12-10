@@ -38,7 +38,7 @@ class DocumentSendTest(DocumentCreationMockMixin, GenoAdminTestCase):
     def form_filter_active_members(self):
         response = self.client.get("/geno/member/send_mail/")
         self.assertEqual(response.status_code, 200)
-        self.assertInHTML("Allg. Attribut-Wert:", response.content.decode())
+        self.assertIn("Basis-Datensatz", response.content.decode())
 
         post_data = {
             "base_dataset": "active_members",
@@ -98,7 +98,7 @@ class DocumentSendTest(DocumentCreationMockMixin, GenoAdminTestCase):
             "template_files": [f"ContentTemplate:{ContentTemplate.objects.get(name='Simple').pk}"],
             "template_mail": f"template_id_{self.email_templates[0].pk}",
             "subject": "Email-Test-Subject",
-            "email_sender": MemberMailActionForm.email_sender_choices[1],
+            "email_sender": MemberMailActionForm.email_sender_choices[0],
             "email_copy": "bcc-copy@example.com",
             # change_attribute	""
             # change_attribute_value	""

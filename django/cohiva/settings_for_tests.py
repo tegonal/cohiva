@@ -33,9 +33,10 @@ IS_RUNNING_TESTS = True
 if os.getenv("SKIP_SLOW", "false") == "true":
     ## Speed up tests in quick mode
     PASSWORD_HASHERS = ("django.contrib.auth.hashers.MD5PasswordHasher",)
-    ## Skip migrations and use a test runner that applies selected migrations needed for tests
-    DATABASES["default"]["TEST"] = {"MIGRATE": False}
-    TEST_RUNNER = "cohiva.utils.migrations_for_tests.SelectiveMigrationRunner"
+    if os.getenv("KEEP_DB", "false") == "false":
+        ## Skip migrations and use a test runner that applies selected migrations needed for tests
+        DATABASES["default"]["TEST"] = {"MIGRATE": False}
+        TEST_RUNNER = "cohiva.utils.migrations_for_tests.SelectiveMigrationRunner"
 
 ## Default settings for tests, which are overwritten temporarily by specific tests, if needed.
 GENO_FORMAL = True

@@ -1,4 +1,26 @@
 #!/usr/bin/bash
+#
+# Run Django tests
+#
+# Usage:
+#    ./run-tests.sh
+#
+# By default, all tests are run. You can set the following environment variables
+# to modify the test run:
+#
+#    COVERAGE=1   # Run with coverage
+#    SKIP_SLOW=1  # Skip slow tests and migrations
+#    KEEP_DB=1    # Keep the test database between test runs to speed up startup
+#
+# Example for running quick (repeated) tests:
+#
+#    SKIP_SLOW=1 KEEP_DB=1 ./run-tests.sh
+#
+# Further customization can be done by modifying the variables in this script:
+#
+#   SELECTED_TESTS - to run only selected tests
+#   TEST_OPTS      - to add options to the test runner
+#
 
 # exit on error
 set -e
@@ -36,6 +58,14 @@ case "${SKIP_SLOW,,}" in
     SKIP_SLOW="false"
     ;;
 esac
+case "${KEEP_DB,,}" in
+  true|1|yes|on)
+    KEEP_DB="true"
+    ;;
+  *)
+    KEEP_DB="false"
+    ;;
+esac
 
 ## Coverage options
 COVERAGE_OPTS=()
@@ -53,12 +83,16 @@ TESTCMD="./manage.py test --settings=cohiva.settings_for_tests"
 if [ "$SKIP_SLOW" = "true" ] ; then
     TESTCMD="${TESTCMD} --exclude-tag=slow-test"
     export PYTHONDONTWRITEBYTECODE=1
-    export SKIP_SLOW="true"
+    export SKIP_SLOW
+    export KEEP_DB
 fi
 
 ## Test options
-TEST_OPTS=""
-#TEST_OPTS="--keepdb" # Keep DB (don't run migrations)
+if [ "$KEEP_DB" = "true" ] ; then
+  TEST_OPTS="--keepdb" # Keep DB between test runs (don't run migrations again)
+else
+  TEST_OPTS=""
+fi
 
 ## Select test to run (leave emtpy to run all tests)
 SELECTED_TESTS=""
