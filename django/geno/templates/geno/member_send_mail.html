@@ -1,263 +1,269 @@
 {% extends "geno/base.html" %}
-{% load static %}
-{% load i18n %}
+{% load static i18n unfold crispy_forms_tags %}
 
-{% block extrastyle %}
-{{ block.super }}
-<link rel="stylesheet" type="text/css" href="/static/admin/css/forms.css" />
-<script type="text/javascript" src="/admin/jsi18n/"></script>
-<script type="text/javascript" src="/static/admin/js/jquery.init.js"></script>
-{{ form.media }}
-
-<style>
-.error { color: #dd1b1b; }
-.warning { color: #a86815; }
-.success { color: #217721; }
-.collapsible {
-    cursor: pointer;
-    background: #efefef;
-    color: #666666;
-    border: none;
-    border-radius: 4px;
-    padding: 10px;
-}
-.log_content {
-    display:none;
-    color: #666666;
-    border: 1px #c6c6c6 solid;
-    padding: 10px;
-    margin-top: 10px;
-}
-</style>
-
-{% endblock extrastyle %}
+{% block object-tools %}{# Override to hide tab list when there's only one view #}{% endblock %}
 
 {% block custom_content %}
 
-{% if form_action %}
-<h2>{{info}}</h2>
-<form action="{{ form_action }}" method="post">
-    {% csrf_token %}
-    <div class="aligned border border-base-200 mb-8 rounded-default pt-3 pb-3 px-3 shadow-sm dark:border-base-800 legacyform">
-    <table>
-    {{ form.as_table }}
-    <tr><td><input type="submit" /></td></tr>
-    </table>
-    </div>
-    
-<script type="text/javascript">
-    /* Show/hide fields */
+  {% if not response.show_results %}
+    <form method="post" id="mail-wizard-form">
+      {% csrf_token %}
 
-    const member_filters = [
-        '#id_select_attributeA',
-        '#id_select_attributeA_value',
-        '#id_select_attributeB',
-        '#id_select_attributeB_value',
-        '#id_select_flag_01',
-        '#id_select_flag_02',
-        '#id_select_flag_03',
-        '#id_select_flag_04',
-        '#id_select_flag_05',
-        '#id_ignore_join_date',
-        '#id_share_paid_01',
-        '#id_share_unpaid',
-    ];
-
-    const renter_filters = [
-        '#id_select_rentaltype',
-        '#id_filter_genattribute',
-        '#id_filter_genattribute_value',
-        '#id_include_subcontracts',
-        '#id_filter_building',
-    ];
-
-    const address_filters = [
-    ];
-
-    const share_filters = [
-        '#id_select_sharetype',
-        '#id_select_document',
-    ];
-
-    const invoice_filters = [
-        '#id_filter_invoice_category',
-        '#id_filter_invoice_consolidated',
-        '#id_filter_invoice_daterange_max',
-        '#id_filter_invoice_daterange_min',
-    ];
-
-    django.jQuery(function( $ ) {
-        $('#id_base_dataset').change( function() {
-            if (this.value === 'active_members') {
-                for (const id of member_filters) {
-                    $(id).parent().parent().show(100);
-                }
-            } else {
-                for (const id of member_filters) {
-                    $(id).parent().parent().hide(100);
-                }
-            }
-            if (this.value === 'renters') {
-                for (const id of renter_filters) {
-                    $(id).parent().parent().show(100);
-                }
-            } else {
-                for (const id of renter_filters) {
-                    $(id).parent().parent().hide(100);
-                }
-            }
-            if (this.value === 'shares') {
-                for (const id of share_filters) {
-                    $(id).parent().parent().show(100);
-                }
-            } else {
-                for (const id of share_filters) {
-                    $(id).parent().parent().hide(100);
-                }
-            }
-            if (this.value === 'addresses') {
-                for (const id of address_filters) {
-                    $(id).parent().parent().show(100);
-                }
-            } else {
-                for (const id of address_filters) {
-                    $(id).parent().parent().hide(100);
-                }
-            }
-        });
-    });
-
-    django.jQuery(function( $ ) {
-        $('#id_filter_invoice').change( function() {
-            if (this.value === 'none') {
-                for (const id of invoice_filters) {
-                    $(id).parent().parent().hide(100);
-                }
-            } else {
-                for (const id of invoice_filters) {
-                    $(id).parent().parent().show(100);
-                }
-            }
-        });
-    });
-
-    django.jQuery( document ).ready(function( $ ) {
-        //console.log($('#id_base_dataset').val());
-        const base_dataset = $('#id_base_dataset').val();
-        if (base_dataset !== 'active_members') {
-            for (const id of member_filters) {
-                $(id).parent().parent().hide();
-            }
-        }
-        if (base_dataset !== 'renters') {
-            for (const id of renter_filters) {
-                $(id).parent().parent().hide();
-            }
-        }
-        if (base_dataset !== 'shares') {
-            for (const id of share_filters) {
-                $(id).parent().parent().hide();
-            }
-        }
-        if (base_dataset !== 'addresses') {
-            for (const id of address_filters) {
-                $(id).parent().parent().hide();
-            }
-        }
-        if ($('#id_filter_invoice').val() === 'none') {
-            for (const id of invoice_filters) {
-                $(id).parent().parent().hide(100);
-            }
-        }
-    });
-
-</script>
-
-</form>
+      {% component "unfold/components/card.html" %}
+      <div class="px-3 py-3">{% crispy form "unfold_crispy" %}</div>
+    {% endcomponent %}
+  </form>
 {% endif %}
 
 {% if response.show_results %}
-<div>
-<h2>Resultat</h2>
-{% if response.errors %}
-<p><b class="error">Es gab {{ response.errors|length }} Fehler:</b>
-<ul>
-{% for item in response.errors %}
-    <li>{{ item.info|safe }}
-    {% if item.objects|length  == 1 %}
-        : {{ item.objects|first|safe }}
-    {% elif item.objects %}
-        <ul>
-            {% for o in item.objects %}
-                <li>{{ o|safe }}</li>
-            {% endfor %}
-        </ul>
+  {# Results section #}
+  {% component "unfold/components/card.html" %}
+  <div class="px-3 py-3">
+    <h3 class="text-lg font-medium text-font-important-light dark:text-font-important-dark mb-4">
+      {% trans "Resultat" %}
+    </h3>
+
+    {# Errors #}
+    {% if response.errors %}
+      <div class="bg-red-100 rounded-default p-4 mb-4 dark:bg-red-500/20">
+        <div class="flex items-start gap-3">
+          <span class="material-symbols-outlined text-red-700 dark:text-red-400 text-[20px] flex-shrink-0 mt-0.5">error</span>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-red-700 dark:text-red-400 mb-2">
+              {% blocktrans count counter=response.errors|length %}Es gab {{ counter }} Fehler{% plural %}Es gab {{ counter }} Fehler{% endblocktrans %}
+            </p>
+            <ul class="list-disc list-inside text-sm text-red-700 dark:text-red-400 space-y-1">
+              {% for item in response.errors %}
+                <li>
+                  {{ item.info|safe }}
+                  {% if item.objects|length  == 1 %}
+                    {{ item.objects|first|safe }}
+                  {% elif item.objects %}
+                    <ul class="list-disc list-inside ml-4 mt-1">
+                      {% for o in item.objects %}<li>{{ o|safe }}</li>{% endfor %}
+                    </ul>
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
     {% endif %}
-    </li>
-{% endfor %}
-</ul></p>
+
+    {# Warnings #}
+    {% if response.warnings %}
+      <div class="bg-orange-100 rounded-default p-4 mb-4 dark:bg-orange-500/20">
+        <div class="flex items-start gap-3">
+          <span class="material-symbols-outlined text-orange-700 dark:text-orange-400 text-[20px] flex-shrink-0 mt-0.5">warning</span>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-orange-700 dark:text-orange-400 mb-2">
+              {% blocktrans count counter=response.warnings|length %}Es gab {{ counter }} Warnung / übersprungenes Element{% plural %}Es gab {{ counter }} Warnungen / übersprungene Elemente{% endblocktrans %}
+            </p>
+            <ul class="list-disc list-inside text-sm text-orange-700 dark:text-orange-400 space-y-1">
+              {% for item in response.warnings %}
+                <li>
+                  {{ item.info|safe }}
+                  {% if item.objects|length  == 1 %}
+                    {{ item.objects|first|safe }}
+                  {% elif item.objects %}
+                    <ul class="list-disc list-inside ml-4 mt-1">
+                      {% for o in item.objects %}<li>{{ o|safe }}</li>{% endfor %}
+                    </ul>
+                  {% endif %}
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    {# Success #}
+    {% if response.success %}
+      <div class="bg-green-100 rounded-default p-4 dark:bg-green-500/20">
+        <div class="flex items-start gap-3">
+          <span class="material-symbols-outlined text-green-700 dark:text-green-400 text-[20px] flex-shrink-0 mt-0.5">check_circle</span>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-green-700 dark:text-green-400 mb-2">
+              {% blocktrans count counter=response.success|length %}{{ counter }} Element wurde erfolgreich verarbeitet{% plural %}{{ counter }} Elemente wurden erfolgreich verarbeitet{% endblocktrans %}
+            </p>
+            <details class="text-sm text-green-700 dark:text-green-400">
+              <summary class="cursor-pointer hover:text-green-900 dark:hover:text-green-200">
+                {% trans "Details anzeigen" %}
+              </summary>
+              <ul class="list-disc list-inside mt-2 space-y-1">
+                {% for item in response.success %}
+                  {% if item.objects|length  == 1 %}
+                    <li>{{ item.info|safe }} {{ item.objects|first|safe }}</li>
+                  {% else %}
+                    <li>
+                      {{ item.info|safe }}
+                      {% if item.objects %}
+                        <ul class="list-disc list-inside ml-4 mt-1">
+                          {% for o in item.objects %}<li>{{ o|safe }}</li>{% endfor %}
+                        </ul>
+                      {% endif %}
+                    </li>
+                  {% endif %}
+                {% endfor %}
+              </ul>
+            </details>
+          </div>
+        </div>
+      </div>
+    {% elif not response.errors and not response.warnings %}
+      <div class="bg-orange-100 rounded-default p-4 dark:bg-orange-500/20">
+        <div class="flex items-start gap-3">
+          <span class="material-symbols-outlined text-orange-700 dark:text-orange-400 text-[20px] flex-shrink-0 mt-0.5">info</span>
+          <p class="text-sm text-orange-700 dark:text-orange-400">
+            {% trans "Es konnten keine Elemente erfolgreich verarbeitet werden" %}
+          </p>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% endcomponent %}
 {% endif %}
 
-{% if response.warnings %}
-<p><b class="warning">Es gab {{ response.warnings|length }} Warnungen / übersprungene Elemente:</b>
-<ul>
-{% for item in response.warnings %}
-    <li>{{ item.info|safe }}
-    {% if item.objects|length  == 1 %}
-        : {{ item.objects|first|safe }}
-    {% elif item.objects %}
-        <ul>
-            {% for o in item.objects %}
-                <li>{{ o|safe }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
-    </li>
-{% endfor %}
-</ul></p>
-{% endif %}
+{% endblock %}
 
-{% if response.success %}
-<div>
-<b class="success">{{ response.success|length }} Elemente wurden erfolgreich verarbeitet.</b><br>
-<button type="button" class="collapsible">Details anzeigen</button>
-<ul class="log_content">
-{% for item in response.success %}
-    {% if item.objects|length  == 1 %}
-        <li>{{ item.info|safe }}: {{ item.objects|first|safe }}</li>
-    {% else %}
-        <li>{{ item.info|safe }}</li>
-        {% if item.objects %}
-        <ul>
-            {% for o in item.objects %}
-                <li>{{ o|safe }}</li>
-            {% endfor %}
-        </ul>
+{% block footer %}
+  {# Floating action button footer #}
+  <div class="relative lg:sticky lg:bottom-0 z-40">
+    <div class="backdrop-blur-xs bg-white/80 rounded-b-default pb-4 px-4 dark:bg-base-900/80 lg:border-t lg:border-base-200 relative lg:scrollable-top lg:py-0 dark:border-base-800">
+      <div class="flex flex-col-reverse gap-3 items-center mx-auto lg:flex-row-reverse container lg:h-[64px]">
+        {% if response.show_results %}
+          {# Back to start button #}
+          <a href="{% url 'geno:mail-wizard-start' %}"
+             class="inline-flex items-center justify-center font-medium rounded-md cursor-pointer transition-colors text-sm h-9 px-4 py-2 bg-primary-600 text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:bg-primary-500 dark:hover:bg-primary-600">
+            {% trans "Beenden" %}
+          </a>
+        {% else %}
+          {# Submit button with form attribute #}
+          {% if last_step %}
+            {% component "unfold/components/button.html" with submit=1 attrs=attrs_button class="bg-red-600" %}
+            {% trans "Aktion ausführen!" %}
+            {% endcomponent %}
+          {% else %}
+            {% component "unfold/components/button.html" with submit=1 attrs=attrs_button %}
+            {% trans "Weiter" %}
+            {% endcomponent %}
+          {% endif %}
+          {# Back button (shown on steps 2 and 3) #}
+          {% if back_url %}
+            {% component "unfold/components/button.html" with href=back_url variant="default" %}
+            {% trans "Zurück" %}
+            {% endcomponent %}
+          {% endif %}
         {% endif %}
-    {% endif %}
-{% endfor %}
-</ul>
-</div>
-<script>
-const coll = document.getElementsByClassName("collapsible");
+      </div>
+    </div>
+  </div>
+{% endblock %}
 
-for (let i = 0; i < coll.length; i++) {
-  coll[i].addEventListener("click", function() {
-    console.log(this);
-    this.classList.toggle("active");
-    const log_content = this.nextElementSibling;
-    if (log_content.style.display === "block") {
-      log_content.style.display = "none";
-    } else {
-      log_content.style.display = "block";
-    }
-  });
-}
-</script>
-{% else %}
-<p><b class="warning">Es konnten keine Elemente erfolgreich verarbeitet werden.</b></p>
-{% endif %}
-</div>
-{% endif %}  {# show_results #}
+{% block extrajs %}
+  {{ block.super }}
+  <script>
+      (function() {
+          'use strict';
 
-{% endblock custom_content %}
+          // Show/hide conditional fields based on base_dataset selection
+          function toggleFilters() {
+              const baseDataset = document.getElementById('id_base_dataset');
+              if (!baseDataset) return;
+
+              const memberFilters = document.getElementById('member-filters');
+              const renterFilters = document.getElementById('renter-filters');
+              const shareFilters = document.getElementById('share-filters');
+
+              const value = baseDataset.value;
+
+              // Hide all by default
+              if (memberFilters) memberFilters.style.display = 'none';
+              if (renterFilters) renterFilters.style.display = 'none';
+              if (shareFilters) shareFilters.style.display = 'none';
+
+              // Show relevant filters
+              if (value === 'active_members' && memberFilters) {
+                  memberFilters.style.display = 'block';
+              } else if (value === 'renters' && renterFilters) {
+                  renterFilters.style.display = 'block';
+              } else if (value === 'shares' && shareFilters) {
+                  shareFilters.style.display = 'block';
+              }
+          }
+
+          // Show/hide invoice detail filters
+          function toggleInvoiceFilters() {
+              const filterInvoice = document.getElementById('id_filter_invoice');
+              const invoiceDetails = document.getElementById('invoice-detail-filters');
+
+              if (!filterInvoice || !invoiceDetails) return;
+
+              if (filterInvoice.value === 'none') {
+                  invoiceDetails.style.display = 'none';
+              } else {
+                  invoiceDetails.style.display = 'block';
+              }
+          }
+
+          // Show/hide email settings based on send_email checkbox
+          function toggleEmailSettings() {
+              const sendEmail = document.getElementById('id_send_email');
+              const emailSettings = document.getElementById('email-settings');
+
+              if (!sendEmail || !emailSettings) return;
+
+              if (sendEmail.checked) {
+                  emailSettings.style.display = 'block';
+              } else {
+                  emailSettings.style.display = 'none';
+              }
+          }
+
+          // Show/hide attribute settings based on change_attributes checkbox
+          function toggleAttributeSettings() {
+              const changeAttributes = document.getElementById('id_change_attributes');
+              const attributeSettings = document.getElementById('attribute-settings');
+
+              if (!changeAttributes || !attributeSettings) return;
+
+              if (changeAttributes.checked) {
+                  attributeSettings.style.display = 'block';
+              } else {
+                  attributeSettings.style.display = 'none';
+              }
+          }
+
+          // Initialize on page load
+          document.addEventListener('DOMContentLoaded', function() {
+              toggleFilters();
+              toggleInvoiceFilters();
+              toggleEmailSettings();
+              toggleAttributeSettings();
+
+              // Add event listeners
+              const baseDataset = document.getElementById('id_base_dataset');
+              if (baseDataset) {
+                  baseDataset.addEventListener('change', toggleFilters);
+              }
+
+              const filterInvoice = document.getElementById('id_filter_invoice');
+              if (filterInvoice) {
+                  filterInvoice.addEventListener('change', toggleInvoiceFilters);
+              }
+
+              const sendEmail = document.getElementById('id_send_email');
+              if (sendEmail) {
+                  sendEmail.addEventListener('change', toggleEmailSettings);
+              }
+
+              const changeAttributes = document.getElementById('id_change_attributes');
+              if (changeAttributes) {
+                  changeAttributes.addEventListener('change', toggleAttributeSettings);
+              }
+          });
+      })();
+  </script>
+{% endblock %}

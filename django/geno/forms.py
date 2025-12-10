@@ -4,7 +4,6 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Column, Div, Layout, Row
 from django import forms
 from django.conf import settings
-from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.core.mail import send_mail
 from django.utils import timezone
 from django.utils.safestring import mark_safe
@@ -164,20 +163,39 @@ class TransactionFormInvoice(forms.Form):
 
 class MemberMailForm(forms.Form):
     def get_attribute_value_choices(self):
-        choices_attval = [("--OHNE--", "--OHNE--")]
+        from django.utils.translation import gettext_lazy as _
+
+        choices_attval = [("--OHNE--", _("ist nicht vorhanden"))]
         for v in (
             MemberAttribute.objects.order_by("value").values_list("value", flat=True).distinct()
         ):
-            choices_attval.append((v, v))
+            choices_attval.append((v, _("ist {}").format(v)))
         return choices_attval
 
     def __init__(self, *args, **kwargs):
+        from crispy_forms.helper import FormHelper
+        from crispy_forms.layout import HTML, Div, Layout
+        from django.utils.translation import gettext_lazy as _
+
+        from geno.layout_helpers import (
+            CollapsibleSection,
+            ConditionalDiv,
+            UnfoldSectionHeading,
+            UnfoldSeparator,
+        )
+
         super().__init__(*args, **kwargs)
         self.fields["select_attributeA_value"] = forms.ChoiceField(
-            choices=self.get_attribute_value_choices(), label="Filter A: Attribut-Wert"
+            choices=self.get_attribute_value_choices(),
+            label=_("Wert"),
+            required=False,
+            widget=UnfoldAdminSelectWidget(),
         )
         self.fields["select_attributeB_value"] = forms.ChoiceField(
-            choices=self.get_attribute_value_choices(), label="Filter B: Attribut-Wert"
+            choices=self.get_attribute_value_choices(),
+            label=_("Wert"),
+            required=False,
+            widget=UnfoldAdminSelectWidget(),
         )
         for v in (
             GenericAttribute.objects.order_by("name").values_list("name", flat=True).distinct()
@@ -185,162 +203,306 @@ class MemberMailForm(forms.Form):
             self.fields["filter_genattribute"].choices.append((v, v))
             self.fields["filter_genattribute"].widget.choices.append((v, v))
 
+        self.helper = FormHelper()
+        self.helper.form_tag = False
+        self.helper.form_class = ""
+        self.helper.layout = Layout(
+            Div("base_dataset", css_class="mb-4"),
+            ConditionalDiv(
+                "member-filters",
+                UnfoldSeparator(),
+                UnfoldSectionHeading(_("Mitglieder-Filter")),
+                CollapsibleSection(
+                    _("Mitglieder-Attribute"),
+                    Div(
+                        HTML(
+                            '<p class="text-xs font-medium text-gray-500 mb-2">{}</p>'.format(
+                                _("Filter A")
+                            )
+                        ),
+                        Div(
+                            Div("select_attributeA", css_class="mb-4"),
+                            Div("select_attributeA_value", css_class="mb-4"),
+                            css_class="p-3 border border-base-200 dark:border-base-800 rounded",
+                        ),
+                        css_class="mb-4",
+                    ),
+                    Div(
+                        HTML(
+                            '<p class="text-xs font-medium text-gray-500 mb-2">{}</p>'.format(
+                                _("Filter B")
+                            )
+                        ),
+                        Div(
+                            Div("select_attributeB", css_class="mb-4"),
+                            Div("select_attributeB_value", css_class="mb-4"),
+                            css_class="p-3 border border-base-200 dark:border-base-800 rounded",
+                        ),
+                        css_class="mb-4",
+                    ),
+                    collapsed=True,
+                ),
+                CollapsibleSection(
+                    _("Weitere Filter"),
+                    Div("select_flag_01", css_class="mb-4"),
+                    Div("select_flag_02", css_class="mb-4"),
+                    Div("select_flag_03", css_class="mb-4"),
+                    Div("select_flag_04", css_class="mb-4"),
+                    Div("select_flag_05", css_class="mb-4"),
+                    Div("ignore_join_date", css_class="mb-4"),
+                    *(
+                        [
+                            Div("share_paid_01", css_class="mb-4"),
+                            Div("share_unpaid", css_class="mb-4"),
+                        ]
+                        if settings.GENO_ID == "HSG"
+                        else []
+                    ),
+                    collapsed=True,
+                ),
+                initial_display="none",
+            ),
+            ConditionalDiv(
+                "renter-filters",
+                UnfoldSeparator(),
+                UnfoldSectionHeading(_("Mietobjekt-Filter")),
+                Div("select_rentaltype", css_class="mb-4"),
+                CollapsibleSection(
+                    _("Allgemeine Attribute"),
+                    Div("filter_genattribute", css_class="mb-4"),
+                    Div("filter_genattribute_value", css_class="mb-4"),
+                    collapsed=True,
+                ),
+                Div("include_subcontracts", css_class="mb-4"),
+                Div("filter_building", css_class="mb-4"),
+                initial_display="none",
+            ),
+            ConditionalDiv(
+                "share-filters",
+                UnfoldSeparator(),
+                UnfoldSectionHeading(_("Beteiligungen-Filter")),
+                Div("select_sharetype", css_class="mb-4"),
+                Div("select_document", css_class="mb-4"),
+                initial_display="none",
+            ),
+            UnfoldSeparator(),
+            UnfoldSectionHeading(_("Rechnungen-Filter")),
+            Div("filter_invoice", css_class="mb-4"),
+            ConditionalDiv(
+                "invoice-detail-filters",
+                Div("filter_invoice_category", css_class="mb-4"),
+                Div("filter_invoice_consolidated", css_class="mb-4"),
+                Div("filter_invoice_daterange_min", css_class="mb-4"),
+                Div("filter_invoice_daterange_max", css_class="mb-4"),
+                initial_display="none",
+            ),
+        )
+
     rentaltype_choices = [
-        # ('none', '---------'),
-        ("all", "Alle Mietenden inkl. Gewerbe/Lager/PP"),
-        ("all_nobusiness", "Alle Bewohnenden exkl. Gewerbe/Lager/PP"),
-        ("Wohnung", "Wohnungen bis 6.5Zi."),
-        ("Grosswohnung", "Grosswohnungen ab 7Zi. (ohne Selbstausbau)"),
-        ("Selbstausbau", "Selbstausbau"),
-        ("Gewerbe", "Gewerbemietende"),
+        ("all", _("Alle Mietenden inkl. Gewerbe/Lager/PP")),
+        ("all_nobusiness", _("Alle Bewohnenden exkl. Gewerbe/Lager/PP")),
+        ("Wohnung", _("Wohnungen bis 6.5Zi.")),
+        ("Grosswohnung", _("Grosswohnungen ab 7Zi. (ohne Selbstausbau)")),
+        ("Selbstausbau", _("Selbstausbau")),
+        ("Gewerbe", _("Gewerbemietende")),
     ]
 
     document_choices = [
-        ("none", "---------"),
-        ("nostatement", "Kein Kontoauszug in den letzten 6 Monaten"),
+        ("none", ""),
+        ("nostatement", _("Kein Kontoauszug in den letzten 6 Monaten")),
     ]
 
     sharetype_choices = [
-        ("none", "---------"),
-        ("shares", "Nur Anteilscheine"),
-        ("loan_deposit", "Nur Darlehen+Deposito"),
-        ("with_interest", "Nur verzinste Darlehen+Deposito"),
+        ("none", ""),
+        ("shares", _("Nur Anteilscheine")),
+        ("loan_deposit", _("Nur Darlehen+Deposito")),
+        ("with_interest", _("Nur verzinste Darlehen+Deposito")),
     ]
 
     boolean_choices = [
-        ("none", "---------"),
-        ("true", "Muss gesetzt sein"),
-        ("false", "Ausschliessen"),
+        ("none", ""),
+        ("true", _("Muss gesetzt sein")),
+        ("false", _("Ausschliessen")),
     ]
 
     base_dataset_choices = [
-        ("active_members", "Alle aktuellen Mitglieder"),
-        ("renters", "Alle aktuellen Mieter"),
-        ("shares", "Alle Personen mit Beteiligungen (ohne Hypothek/Spezial)"),
-        ("addresses", "Alle aktiven Adressen/Kontakte"),
+        ("active_members", _("Alle aktuellen Mitglieder")),
+        ("renters", _("Alle aktuellen Mieter")),
+        ("shares", _("Alle Personen mit Beteiligungen (ohne Hypothek/Spezial)")),
+        ("addresses", _("Alle aktiven Adressen/Kontakte")),
     ]
 
     base_dataset = forms.ChoiceField(
         choices=base_dataset_choices,
-        label="Basis-Datensatz",
+        label=_("Basis-Datensatz"),
         required=True,
-        help_text="Diese Auswahl kann ggf. mit den Filtern unten noch eingeschränkt werden",
+        help_text=_("Diese Auswahl kann ggf. mit den Filtern unten noch eingeschränkt werden"),
+        widget=UnfoldAdminSelectWidget(),
     )
     select_attributeA = forms.ModelChoiceField(
         queryset=MemberAttributeType.objects.all(),
-        label="Filter A: nach Mitglieder-Attribut",
+        label=_("Attribut"),
         required=False,
+        empty_label=_("Bitte ein Attribut wählen"),
+        widget=UnfoldAdminSelectWidget(),
     )
-    select_attributeA_value = forms.ChoiceField(choices=[], label="Filter A: Attribut-Wert")
+    select_attributeA_value = forms.ChoiceField(choices=[], label=_("Filter A - Attribut-Wert"))
     select_attributeB = forms.ModelChoiceField(
         queryset=MemberAttributeType.objects.all(),
-        label="Filter B: nach Mitglieder-Attribut",
+        label=_("Attribut"),
         required=False,
+        empty_label=_("Bitte ein Attribut wählen"),
+        widget=UnfoldAdminSelectWidget(),
     )
-    select_attributeB_value = forms.ChoiceField(choices=[], label="Filter B: Attribut-Wert")
+    select_attributeB_value = forms.ChoiceField(choices=[], label=_("Filter B - Attribut-Wert"))
     select_flag_01 = forms.ChoiceField(
-        choices=boolean_choices, label="Filtern nach %s" % geno_settings.MEMBER_FLAGS[1]
+        choices=boolean_choices,
+        label=geno_settings.MEMBER_FLAGS[1],
+        required=False,
+        widget=UnfoldAdminSelectWidget(),
     )
     select_flag_02 = forms.ChoiceField(
-        choices=boolean_choices, label="Filtern nach %s" % geno_settings.MEMBER_FLAGS[2]
+        choices=boolean_choices,
+        label=geno_settings.MEMBER_FLAGS[2],
+        required=False,
+        widget=UnfoldAdminSelectWidget(),
     )
     select_flag_03 = forms.ChoiceField(
-        choices=boolean_choices, label="Filtern nach %s" % geno_settings.MEMBER_FLAGS[3]
+        choices=boolean_choices,
+        label=geno_settings.MEMBER_FLAGS[3],
+        required=False,
+        widget=UnfoldAdminSelectWidget(),
     )
     select_flag_04 = forms.ChoiceField(
-        choices=boolean_choices, label="Filtern nach %s" % geno_settings.MEMBER_FLAGS[4]
+        choices=boolean_choices,
+        label=geno_settings.MEMBER_FLAGS[4],
+        required=False,
+        widget=UnfoldAdminSelectWidget(),
     )
     select_flag_05 = forms.ChoiceField(
-        choices=boolean_choices, label="Filtern nach %s" % geno_settings.MEMBER_FLAGS[5]
+        choices=boolean_choices,
+        label=geno_settings.MEMBER_FLAGS[5],
+        required=False,
+        widget=UnfoldAdminSelectWidget(),
     )
     if settings.GENO_ID == "HSG":
         share_paid_01 = forms.BooleanField(
-            label="Nur Mitglieder MIT bezahltem Anteilschein Einzelmitglied", required=False
+            label=_("Nur Mitglieder MIT bezahltem Anteilschein Einzelmitglied"),
+            required=False,
+            widget=UnfoldBooleanSwitchWidget(),
         )
         share_unpaid = forms.BooleanField(
-            label="Nur Mitglieder OHNE Anteilscheine", required=False
+            label=_("Nur Mitglieder OHNE Anteilscheine"),
+            required=False,
+            widget=UnfoldBooleanSwitchWidget(),
         )
     select_rentaltype = forms.ChoiceField(
-        choices=rentaltype_choices, label="Filtern nach Mietobjekt-Typ", required=False
+        choices=rentaltype_choices,
+        label=_("Typ"),
+        required=False,
+        widget=UnfoldAdminSelectWidget(),
     )
     select_document = forms.ChoiceField(
-        choices=document_choices, label="Filtern nach Dokumenten", required=False
+        choices=document_choices,
+        label=_("Dokumente"),
+        required=False,
+        widget=UnfoldAdminSelectWidget(),
     )
     select_sharetype = forms.ChoiceField(
-        choices=sharetype_choices, label="Filtern nach Beteiligungstyp", required=False
+        choices=sharetype_choices,
+        label=_("Typ"),
+        required=False,
+        widget=UnfoldAdminSelectWidget(),
     )
     ignore_join_date = forms.DateField(
-        label="Beitritts-Datum älter als",
+        label=_("Beitritts-Datum älter als"),
         required=False,
-        widget=forms.TextInput(attrs={"class": "datepicker"}),
+        widget=UnfoldAdminDateWidget(),
     )
     filter_genattribute = forms.ChoiceField(
         choices=[
-            ("none", "---------"),
+            ("none", ""),
         ],
-        label="Filtern nach allg. Attribut",
+        label=_("Attribut"),
         required=False,
+        widget=UnfoldAdminSelectWidget(),
     )
     filter_genattribute_value = forms.CharField(
-        label="Allg. Attribut-Wert",
+        label=_("Allg. Attribut-Wert"),
         required=False,
-        help_text="--OHNE-- eingeben für keinen Wert.",
+        help_text=_("--OHNE-- eingeben für keinen Wert"),
         initial="--OHNE--",
+        widget=UnfoldAdminTextInputWidget(),
     )
     filter_invoice_choices = (
-        ("none", "---------"),
+        ("none", ""),
         (
             "include",
-            "Empfänger:in nur einschliessen, falls eine Rechnung mit folgenden Kriterien existiert",
+            _("eine passende Rechnung existiert"),
         ),
         (
             "exclude",
-            "Empfänger:in nur einschliessen, falls KEINE Rechnung mit den folgenden Kriterien existiert",
+            _("keine passende Rechnung existiert"),
         ),
     )
     filter_invoice = forms.ChoiceField(
-        choices=filter_invoice_choices, label="Nach Rechnungen filtern"
+        choices=filter_invoice_choices,
+        label=_("Empfänger:in nur einschliessen, falls"),
+        required=False,
+        widget=UnfoldAdminSelectWidget(),
     )
     filter_invoice_category = forms.ModelChoiceField(
         queryset=InvoiceCategory.objects.filter(active=True),
-        label="Rechnungtyp",
+        label=_("Rechnungstyp"),
         required=False,
-        empty_label="(Beliebig)",
+        empty_label="",
+        widget=UnfoldAdminSelectWidget(),
     )
     filter_invoice_consolidate_choices = (
-        ("none", "(Beliebig)"),
-        ("true", "Nur konsolidierte Rechnungen"),
-        ("false", "Nur NICHT konsolidierte Rechnungen"),
+        ("none", ""),
+        ("true", _("Nur konsolidierte Rechnungen")),
+        ("false", _("Nur NICHT konsolidierte Rechnungen")),
     )
     filter_invoice_consolidated = forms.ChoiceField(
-        choices=filter_invoice_consolidate_choices, label="Rechnung konsolidiert"
+        choices=filter_invoice_consolidate_choices,
+        label=_("Rechnung konsolidiert"),
+        required=False,
+        widget=UnfoldAdminSelectWidget(),
     )
     filter_invoice_daterange_max = forms.DateField(
-        label="Rechnungsdatum älter als",
+        label=_("Rechnungsdatum älter als"),
         required=False,
-        help_text="Leer = Beliebig",
-        widget=forms.TextInput(attrs={"class": "datepicker"}),
+        help_text=_("Leer lassen für alle"),
+        widget=UnfoldAdminDateWidget(),
     )
     filter_invoice_daterange_min = forms.DateField(
-        label="Rechnungsdatum jünger als",
+        label=_("Rechnungsdatum jünger als"),
         required=False,
-        help_text="Leer = Beliebig",
-        widget=forms.TextInput(attrs={"class": "datepicker"}),
+        help_text=_("Leer lassen für alle"),
+        widget=UnfoldAdminDateWidget(),
     )
     include_subcontracts = forms.BooleanField(
-        label="Unterverträge einbeziehen",
+        label=_("Unterverträge einbeziehen"),
         required=False,
+        widget=UnfoldBooleanSwitchWidget(),
     )
 
     filter_building = forms.ModelMultipleChoiceField(
-        label="Mit Vertrag in Liegenschaft(en)",
+        label=_("Mit Vertrag in Liegenschaft(en)"),
         required=False,
         queryset=Building.objects.filter(active=True).order_by("name"),
+        widget=UnfoldAdminSelect2MultipleWidget(),
+        help_text=_("Tippen um zu suchen, mehrere Einträge möglich"),
     )
 
 
 class MemberMailSelectForm(forms.Form):
     def __init__(self, *args, **kwargs):
+        from crispy_forms.helper import FormHelper
+        from crispy_forms.layout import Div, Layout
+        from django.contrib.admin.widgets import FilteredSelectMultiple
+        from django.utils.translation import gettext_lazy as _
+
         members = kwargs.pop("members")
         super().__init__(*args, **kwargs)
         choices = []
@@ -348,12 +510,31 @@ class MemberMailSelectForm(forms.Form):
             if m["id"] and m["member"]:
                 choices.append((m["id"], m["member"]))
         self.fields["select_members"] = forms.MultipleChoiceField(
-            choices=choices, label="", widget=FilteredSelectMultiple("Empfänger", is_stacked=False)
+            choices=choices,
+            label=_("Empfänger auswählen"),
+            widget=FilteredSelectMultiple(
+                verbose_name=_("Empfänger"),
+                is_stacked=False,
+                attrs={"size": "20"},
+            ),
+        )
+
+        self.helper = FormHelper()
+        self.helper.form_tag = False
+        self.helper.form_class = ""
+        self.helper.layout = Layout(
+            Div("select_members", css_class="mb-4"),
         )
 
 
 class MemberMailActionForm(forms.Form):
     def __init__(self, *args, **kwargs):
+        from crispy_forms.helper import FormHelper
+        from crispy_forms.layout import HTML, Div, Layout
+        from django.utils.translation import gettext_lazy as _
+
+        from geno.layout_helpers import ConditionalDiv, UnfoldSectionHeading, UnfoldSeparator
+
         super().__init__(*args, **kwargs)
         choices = []
         ## Add ContentTemplates
@@ -373,12 +554,13 @@ class MemberMailActionForm(forms.Form):
 
         self.fields["template_files"] = forms.MultipleChoiceField(
             choices=choices,
-            label="Vorlagen Dokumente/Anhänge",
-            widget=FilteredSelectMultiple("Vorlagen/Anhänge", is_stacked=False),
+            label=_("Vorlagen Dokumente/Anhänge"),
+            widget=UnfoldAdminSelect2MultipleWidget(),
             required=False,
+            help_text=_("Tippen um zu suchen, mehrere Einträge möglich"),
         )
 
-        template_mail_choices = [("none", "-- Kein Email schicken --")]
+        template_mail_choices = []
         try:
             for template in (
                 ContentTemplate.objects.filter(active=True)
@@ -390,73 +572,142 @@ class MemberMailActionForm(forms.Form):
             print("WARNING: Could not load ContentTemplates.")
             send_error_mail("MemberMailActionForm", "Could not load ContentTemplates")
         self.fields["template_mail"] = forms.ChoiceField(
-            label="Vorlage Email",
+            label=_("Vorlage"),
             choices=template_mail_choices,
             required=False,
-            help_text="Nur für Mail-Versand.",
+            widget=UnfoldAdminSelectWidget(),
         )
 
-        self.order_fields(
-            [
-                "action",
-                "template_files",
-                "template_mail",
-                "subject",
-                "email_sender",
-                "email_copy",
-                "change_attribute",
-                "change_attribute_value",
-            ]
+        self.helper = FormHelper()
+        self.helper.form_tag = False
+        self.helper.form_class = ""
+        self.helper.layout = Layout(
+            Div("action", css_class="mb-4"),
+            UnfoldSeparator(),
+            UnfoldSectionHeading(_("Dokumente")),
+            Div("template_files", css_class="mb-4"),
+            UnfoldSeparator(),
+            UnfoldSectionHeading(_("E-Mail")),
+            Div("send_email", css_class="mb-4"),
+            ConditionalDiv(
+                "email-settings",
+                Div("template_mail", css_class="mb-4"),
+                Div("subject", css_class="mb-4"),
+                Div("email_sender", css_class="mb-4"),
+                Div("email_copy", css_class="mb-4"),
+                initial_display="none",
+            ),
+            UnfoldSeparator(),
+            UnfoldSectionHeading(_("Attribute ändern")),
+            HTML(
+                '<p class="text-sm text-gray-500 dark:text-gray-400 mb-4">{}</p>'.format(
+                    _(
+                        "Setzt oder aktualisiert ein Attribut bei allen ausgewählten "
+                        "Empfängern. Bestehende Werte werden überschrieben."
+                    )
+                )
+            ),
+            Div("change_attributes", css_class="mb-4"),
+            ConditionalDiv(
+                "attribute-settings",
+                Div(
+                    HTML(
+                        '<p class="text-xs font-medium text-gray-500 mb-2">{}</p>'.format(
+                            _("Mitglieder-Attribut")
+                        )
+                    ),
+                    Div(
+                        Div("change_attribute", css_class="mb-4"),
+                        Div("change_attribute_value", css_class="mb-4"),
+                        css_class="p-3 border border-base-200 dark:border-base-800 rounded",
+                    ),
+                    css_class="mb-4",
+                ),
+                Div(
+                    HTML(
+                        '<p class="text-xs font-medium text-gray-500 mb-2">{}</p>'.format(
+                            _("Allgemeines Attribut")
+                        )
+                    ),
+                    Div(
+                        Div("change_genattribute", css_class="mb-4"),
+                        Div("change_genattribute_value", css_class="mb-4"),
+                        css_class="p-3 border border-base-200 dark:border-base-800 rounded",
+                    ),
+                    css_class="mb-4",
+                ),
+                initial_display="none",
+            ),
         )
 
     action = forms.ChoiceField(
-        label="Aktion",
+        label=_("Aktion"),
         choices=[
-            ("list", "Liste anzeigen / nur Attribute ändern"),
-            ("list_xls", "Liste als XLS herunterladen / nur Attribute ändern"),
-            ("makezip", "ZIP-File mit Dokumenten erzeugen (odt)"),
-            ("makezip_pdf", "ZIP-File mit Dokumenten erzeugen (pdf)"),
-            ("mail", "Mails mit Text und evtl. Anhang verschicken"),
-            ("mail_test", "Test-Mails nur an Kopie-Adresse verschicken"),
+            ("list", _("Liste anzeigen / nur Attribute ändern")),
+            ("list_xls", _("Liste als XLS herunterladen / nur Attribute ändern")),
+            ("makezip", _("ZIP-File mit Dokumenten erzeugen (odt)")),
+            ("makezip_pdf", _("ZIP-File mit Dokumenten erzeugen (pdf)")),
+            ("mail", _("Mails mit Text und evtl. Anhang verschicken")),
+            ("mail_test", _("Test-Mails nur an Kopie-Adresse verschicken")),
         ],
+        widget=UnfoldAdminSelectWidget(),
+    )
+
+    send_email = forms.BooleanField(
+        label=_("E-Mail versenden"),
+        required=False,
+        widget=UnfoldBooleanSwitchWidget(),
     )
 
     subject = forms.CharField(
-        label="Email-Betreff", required=False, help_text="Nur für Mail-Versand."
+        label=_("Betreff"),
+        required=False,
+        widget=UnfoldAdminTextInputWidget(),
     )
-    email_sender_choices = [("none", "-- Kein Email schicken --")]
     default_email_sender = f'"{settings.GENO_NAME}" <{settings.GENO_DEFAULT_EMAIL}>'
-    email_sender_choices.append((default_email_sender, default_email_sender))
+    email_sender_choices = [(default_email_sender, default_email_sender)]
     if hasattr(settings, "GENO_EXTRA_EMAIL_SENDER_CHOICES"):
         for email_sender in settings.GENO_EXTRA_EMAIL_SENDER_CHOICES:
             email_sender_choices.append((email_sender, email_sender))
     email_sender = forms.ChoiceField(
-        label="Email-Absender",
+        label=_("Absender"),
         choices=email_sender_choices,
         required=False,
-        help_text="Nur für Mail-Versand.",
+        widget=UnfoldAdminSelectWidget(),
     )
     email_copy = forms.EmailField(
-        label="Email-Kopie (Bcc) an",
+        label=_("Kopie (Bcc) an"),
         required=False,
-        help_text="Nur für Mail-Versand. Leer lassen, falls keine Kopie gewünscht.",
+        help_text=_("Leer lassen, falls keine Kopie gewünscht"),
+        widget=UnfoldAdminTextInputWidget(attrs={"type": "email"}),
+    )
+    change_attributes = forms.BooleanField(
+        label=_("Attribute ändern"),
+        required=False,
+        widget=UnfoldBooleanSwitchWidget(),
     )
     change_attribute = forms.ModelChoiceField(
         queryset=MemberAttributeType.objects.all(),
-        label="Mitglieder-Attribut ändern/hinzufügen",
+        label=_("Attribut"),
         required=False,
-        help_text="Leer lassen, falls keine Änderung der Mitglieder-Attribute.",
+        empty_label="",
+        widget=UnfoldAdminSelectWidget(),
     )
     change_attribute_value = forms.CharField(
-        label="Mitglieder-Attribut-Wert ändern zu", required=False
+        label=_("Wert"),
+        required=False,
+        widget=UnfoldAdminTextInputWidget(),
     )
     change_genattribute = forms.CharField(
-        label="Allg.Attribut ändern/hinzufügen",
+        label=_("Name"),
         required=False,
-        help_text="Leer lassen, falls keine Änderung der Allg. Attribute.",
+        help_text=_("Name eines allgemeinen Attributs eingeben"),
+        widget=UnfoldAdminTextInputWidget(),
     )
     change_genattribute_value = forms.CharField(
-        label="Allg.Attribut-Wert ändern zu", required=False
+        label=_("Wert"),
+        required=False,
+        widget=UnfoldAdminTextInputWidget(),
     )
 
     def clean(self):
@@ -472,32 +723,34 @@ class MemberMailActionForm(forms.Form):
         cl_change_attribute_value = cleaned_data.get("change_attribute_value")
         cl_change_genattribute = cleaned_data.get("change_genattribute")
         cl_change_genattribute_value = cleaned_data.get("change_genattribute_value")
+        from django.utils.translation import gettext_lazy as _
+
         if cl_action == "makezip" or cl_action == "makezip_pdf":
             if cl_template_file == "none":
                 raise forms.ValidationError(
-                    "Für diese Aktion muss eine Vorlage für das Dokument ausgewählt werden"
+                    _("Für diese Aktion muss eine Vorlage für das Dokument ausgewählt werden")
                 )
         if cl_action == "mail" or cl_action == "mail_test":
             if cl_template_mail == "none":
                 raise forms.ValidationError(
-                    "Für diese Aktion muss eine Vorlage für das Email ausgewählt werden"
+                    _("Für diese Aktion muss eine Vorlage für das E-Mail ausgewählt werden")
                 )
             if len(cl_subject) < 3:
                 raise forms.ValidationError(
-                    "Für diese Aktion muss ein Email-Betreff eingegeben werden"
+                    _("Für diese Aktion muss ein E-Mail-Betreff eingegeben werden")
                 )
             if cl_email_sender == "none":
                 raise forms.ValidationError(
-                    "Für diese Aktion muss ein Email-Absender ausgewählt werden"
+                    _("Für diese Aktion muss ein E-Mail-Absender ausgewählt werden")
                 )
             if cl_action == "mail_test" and len(cl_email_copy) < 3:
                 raise forms.ValidationError(
-                    "Für diese Aktion muss eine Kopie-Email-Adresse eingegeben werden"
+                    _("Für diese Aktion muss eine Kopie-E-Mail-Adresse eingegeben werden")
                 )
         if cl_change_attribute is not None and len(cl_change_attribute_value) < 1:
-            raise forms.ValidationError("Der Mitglieder-Attribut-Wert ist leer")
+            raise forms.ValidationError(_("Der Mitglieder-Attribut-Wert ist leer"))
         if len(cl_change_genattribute) and len(cl_change_genattribute_value) < 1:
-            raise forms.ValidationError("Der Allg. Attribut-Wert ist leer")
+            raise forms.ValidationError(_("Der Allg. Attribut-Wert ist leer"))
 
 
 class RegistrationFormSlotField(forms.ModelChoiceField):

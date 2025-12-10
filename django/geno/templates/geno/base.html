@@ -41,3 +41,8 @@
   {% tab_list "changelist" navigation_view_name %}
   {% block custom_content %}{% endblock %}
 {% endblock %}
+
+{% block base %}
+  {{ block.super }}
+  {% block extrajs %}{% endblock %}
+{% endblock %}

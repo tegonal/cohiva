@@ -3148,17 +3148,21 @@ def send_member_mail_filter_by_invoice(form, member_list):
         if member["id"]:
             count += 1
     if count == 0:
-        errors.append("Keine Empfänger:innen gefunden, welche diesen Filterkriterien entsprechen.")
+        errors.append(
+            _("Keine Empfänger:innen gefunden, welche diesen Filterkriterien entsprechen.")
+        )
     return errors
 
 
 class MailWizardView(CohivaAdminViewMixin, FormView):
-    title = "Dokumente erstellen/versenden"
-    step_title = "Schritt 1: Empfänger:innen filtern"
+    title = _("Dokumente erstellen/versenden")
+    step_title = _("Schritt 1 - Empfänger:innen filtern")
     form_action = reverse_lazy("geno:mail-wizard-start")
+    back_url = None  # No back button on step 1
     permission_required = "geno.send_mail"
     template_name = "geno/member_send_mail.html"
     form_class = MemberMailForm
+    last_step = False
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -3168,11 +3172,14 @@ class MailWizardView(CohivaAdminViewMixin, FormView):
         context = super().get_context_data(**kwargs)
         context.update(
             {
-                "info": self.step_title,
                 "response": self.result,
-                "form_action": self.form_action,
+                "attrs_button": {"form": "mail-wizard-form"},
+                "back_url": self.back_url,
+                "last_step": self.last_step,
             }
         )
+        # Override title to show step
+        context["title"] = self.step_title
         return context
 
     def form_valid(self, form):
@@ -3191,7 +3198,7 @@ class MailWizardView(CohivaAdminViewMixin, FormView):
             ## Filter members
             errors = send_member_mail_filter_members(form, self.request.session["members"])
         else:
-            errors.append("Ungültiger Basis-Datensatz")
+            errors.append(_("Ungültiger Basis-Datensatz"))
         ## Filter by invoice existence
         errors.extend(send_member_mail_filter_by_invoice(form, self.request.session["members"]))
         if not errors:
@@ -3201,8 +3208,9 @@ class MailWizardView(CohivaAdminViewMixin, FormView):
 
 
 class MailWizardSelectView(MailWizardView):
-    step_title = "Schritt 2: Empfänger:innen auswählen"
+    step_title = _("Schritt 2 - Empfänger:innen auswählen")
     form_action = reverse_lazy("geno:mail-wizard-select")
+    back_url = reverse_lazy("geno:mail-wizard-start")
 
     def get(self, request, *args, **kwargs):
         if "members" not in request.session:
@@ -3222,9 +3230,11 @@ class MailWizardSelectView(MailWizardView):
 
 
 class MailWizardActionView(MailWizardView):
-    step_title = "Schritt 3: Aktionen ausführen"
+    step_title = _("Schritt 3 - Aktionen ausführen")
     form_class = MemberMailActionForm
     form_action = reverse_lazy("geno:mail-wizard-action")
+    back_url = reverse_lazy("geno:mail-wizard-select")
+    last_step = True
 
     def get_initial(self):
         return {"email_copy": settings.GENO_DEFAULT_EMAIL}
