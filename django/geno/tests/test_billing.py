@@ -162,11 +162,12 @@ class TestBilling(GenoAdminTestCase):
                 geno.billing.create_monthly_invoices(book, contract, date, inv_cat, options)
             )
             self.assertEqual(mock_add_invoice.call_count, 2)
+
             self.assertEqual(count, 1)
             self.assertEqual(len(email_messages), 1)
             self.assertIn("Vorschau", email_messages[0])
             self.assertEqual(len(placeholder_invoices), 0)
-            contract_string = "001a/001b für 001a Wohnung (Musterweg 1)/001b Wohnung (Musterweg 1) [Anna Muster/Hans Muster]"
+            contract_string = "001a,001b; Musterweg 1 für 001a Wohnung (Musterweg 1)/001b Wohnung (Musterweg 1) [Anna Muster/Hans Muster]"
             self.assertEqual(
                 regular_invoices[0],
                 f"Nettomiete 04.2001 für {contract_string}",

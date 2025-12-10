@@ -5,6 +5,7 @@ import logging
 import os.path
 import re
 import tempfile
+from collections import defaultdict
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from smtplib import SMTPException
 
@@ -265,48 +266,58 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
         ru_list = []
         rent_info = []
         rent_account_key = None  # Wohnungen: Get account from invoice_category (default)
-        for ru in contract.rental_units.all():
-            if ru.rental_type in ("Gewerbe", "Lager", "Hobby"):
-                rent_account_key = AccountKey.RENT_BUSINESS
-            elif ru.rental_type == "Gemeinschaft":
-                rent_account_key = AccountKey.RENT_OTHER
-            elif ru.rental_type == "Parkplatz":
-                rent_account_key = AccountKey.RENT_PARKING
-            if not ru.rent_netto:
-                ru.rent_netto = Decimal(0.0)
-            if not ru.nk:
-                ru.nk = Decimal(0.0)
-            if not ru.nk_flat:
-                ru.nk_flat = Decimal(0.0)
-            if not ru.nk_electricity:
-                ru.nk_electricity = Decimal(0.0)
-            if not ru.depot:
-                ru.depot = Decimal(0.0)
-            sum_depot += ru.depot
-            sum_rent_total += ru.rent_total if ru.rent_total else Decimal(0.0)
-            sum_nk += ru.nk
-            sum_nk_flat += ru.nk_flat
-            sum_nk_electricity += ru.nk_electricity
-            sum_rent_net += ru.rent_netto
-            if ru.rent_netto or ru.nk or ru.nk_flat:
-                rent_info.append(
-                    {
-                        "text": ru.str_short(),
-                        "net": ru.rent_netto,
-                        "nk": ru.nk + ru.nk_flat,
-                        "total": ru.rent_netto + ru.nk + ru.nk_flat,
-                    }
-                )
-            if ru.nk_electricity:
-                rent_info.append(
-                    {
-                        "text": "Strompauschale %s" % str(ru.name),
-                        "net": "",
-                        "nk": "",
-                        "total": ru.nk_electricity,
-                    }
-                )
-            ru_list.append(ru.name)
+
+        ruL = contract.rental_units.order_by("building__name", "name").all()
+
+        by_building = defaultdict(list)
+        for ru in ruL:
+            by_building[ru.building].append(ru)
+
+        for building, rental_units in by_building.items():
+            ru_names = []
+            for ru in rental_units:
+                if ru.rental_type in ("Gewerbe", "Lager", "Hobby"):
+                    rent_account_key = AccountKey.RENT_BUSINESS
+                elif ru.rental_type == "Gemeinschaft":
+                    rent_account_key = AccountKey.RENT_OTHER
+                elif ru.rental_type == "Parkplatz":
+                    rent_account_key = AccountKey.RENT_PARKING
+                if not ru.rent_netto:
+                    ru.rent_netto = Decimal(0.0)
+                if not ru.nk:
+                    ru.nk = Decimal(0.0)
+                if not ru.nk_flat:
+                    ru.nk_flat = Decimal(0.0)
+                if not ru.nk_electricity:
+                    ru.nk_electricity = Decimal(0.0)
+                if not ru.depot:
+                    ru.depot = Decimal(0.0)
+                sum_depot += ru.depot
+                sum_rent_total += ru.rent_total if ru.rent_total else Decimal(0.0)
+                sum_nk += ru.nk
+                sum_nk_flat += ru.nk_flat
+                sum_nk_electricity += ru.nk_electricity
+                sum_rent_net += ru.rent_netto
+                if ru.rent_netto or ru.nk or ru.nk_flat:
+                    rent_info.append(
+                        {
+                            "text": ru.str_short(),
+                            "net": ru.rent_netto,
+                            "nk": ru.nk + ru.nk_flat,
+                            "total": ru.rent_netto + ru.nk + ru.nk_flat,
+                        }
+                    )
+                if ru.nk_electricity:
+                    rent_info.append(
+                        {
+                            "text": "Strompauschale %s" % str(ru.name),
+                            "net": "",
+                            "nk": "",
+                            "total": ru.nk_electricity,
+                        }
+                    )
+                ru_names.append(ru.name)
+            ru_list.append(",".join(ru_names) + "; " + building.name)
 
         if factor > 0.0:
             if factor != 1.0:
@@ -349,7 +360,7 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                 description = "Nettomiete %02d.%d für %s%s" % (
                     month,
                     year,
-                    "/".join(ru_list),
+                    " / ".join(ru_list),
                     factor_txt,
                 )
                 invoice_value = sum_rent_net * factor

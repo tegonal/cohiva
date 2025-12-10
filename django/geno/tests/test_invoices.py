@@ -58,11 +58,11 @@ class InvoicesTest(GenoAdminTestCase):
             if "info" in msg:
                 infos[msg["info"]] = msg["objects"]
         self.assertIn(
-            "Nettomiete 04.2001 für 001a/001b für",
+            "Nettomiete 04.2001 für 001a,001b; Musterweg 1 für",
             infos["Rechnungen in Buchhaltung erstellen"][0]["items"][0],
         )
         self.assertIn(
-            "Nebenkosten 04.2001 für 001a/001b für",
+            "Nebenkosten 04.2001 für 001a,001b; Musterweg 1 für",
             infos["Rechnungen in Buchhaltung erstellen"][0]["items"][1],
         )
         self.assertIn("Email mit QR-Rechnung an:", infos["Email-Versand"][0]["label"])
@@ -81,11 +81,11 @@ class InvoicesTest(GenoAdminTestCase):
             if "info" in msg:
                 infos[msg["info"]] = msg["objects"]
         self.assertIn(
-            "Nettomiete 06.2001 für 001a für",
+            "Nettomiete 06.2001 für 001a; Musterweg 1 für",
             infos["Rechnungen in Buchhaltung erstellen"][0]["items"][0],
         )
         self.assertIn(
-            "Nettomiete 05.2001 für 001a für",
+            "Nettomiete 05.2001 für 001a; Musterweg 1 für",
             infos["Rechnungen in Buchhaltung erstellen"][0]["items"][2],
         )
         self.assertEqual("2 Rechnungen für 1 Vertrag", msgs[-1]["info"])

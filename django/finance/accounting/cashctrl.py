@@ -135,13 +135,21 @@ class BookTransaction:
             if isinstance(transaction.splits[1].amount, float)
             else str(transaction.splits[1].amount)
         )
+
+        notes = "Added through API"
+        description = getattr(transaction, "description", "")
+        # in case description is longer than 250 chars, truncate and append fully to notes
+        if len(description) > 250:
+            notes += "\n" + description
+            description = description[:250]
+
         date_added = self.cct_book_ref.get_date(getattr(transaction, "date", None)).strftime(
             "%Y-%m-%d"
         )
         attributes = (
             f"amount={amount_str}&creditId={cct_account_credit}&debitId={cct_account_debit}"
-            f"&title={urllib.parse.quote_plus(getattr(transaction, 'description', ''))}"
-            f"&dateAdded={date_added}&notes={urllib.parse.quote_plus('Added through API')}"
+            f"&title={urllib.parse.quote_plus(description)}"
+            f"&dateAdded={date_added}&notes={urllib.parse.quote_plus(notes)}"
         )
 
         # Call create endpoint
