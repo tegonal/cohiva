@@ -199,6 +199,63 @@ class TestBilling(GenoAdminTestCase):
             self.assertEqual(len(placeholder_invoices), 0)
             self.assertEqual(len(email_messages), 3)
 
+    @patch("geno.billing.add_invoice")
+    def test_create_monthly_invoices_date_ranges(self, mock_add_invoice):
+        with AccountingManager(book_type_id="dum") as book:
+            contract = self.contracts[0]
+            inv_cat = InvoiceCategory.objects.get(
+                reference_id=10
+            )  # name="Mietzins wiederkehrend")
+            options = {
+                "download_only": None,
+                "single_contract": None,
+                "dry_run": True,
+            }
+            date = datetime.date(2001, 5, 1)
+            contract.date = datetime.date(2001, 1, 1)
+            contract.date_end = None
+            contract.billing_date_end = None
+            contract.billing_date_start = None
+            count, regular_invoices, placeholder_invoices, email_messages = (
+                geno.billing.create_monthly_invoices(book, contract, date, inv_cat, options)
+            )
+            self.assertEqual(count, 5)
+            self.assertIn(" 01.2001 für ", regular_invoices[-1])
+            self.assertIn(" 05.2001 für ", regular_invoices[0])
+
+            contract.billing_date_start = datetime.date(2001, 2, 1)
+            count, regular_invoices, placeholder_invoices, email_messages = (
+                geno.billing.create_monthly_invoices(book, contract, date, inv_cat, options)
+            )
+            self.assertEqual(count, 4)
+            self.assertIn(" 02.2001 für ", regular_invoices[-1])
+            self.assertIn(" 05.2001 für ", regular_invoices[0])
+
+            contract.date_end = datetime.date(2001, 4, 30)
+            count, regular_invoices, placeholder_invoices, email_messages = (
+                geno.billing.create_monthly_invoices(book, contract, date, inv_cat, options)
+            )
+            self.assertEqual(count, 3)
+            self.assertIn(" 02.2001 für ", regular_invoices[-1])
+            self.assertIn(" 04.2001 für ", regular_invoices[0])
+
+            contract.billing_date_end = datetime.date(2001, 3, 31)
+            count, regular_invoices, placeholder_invoices, email_messages = (
+                geno.billing.create_monthly_invoices(book, contract, date, inv_cat, options)
+            )
+            self.assertEqual(count, 2)
+            self.assertIn(" 02.2001 für ", regular_invoices[-1])
+            self.assertIn(" 03.2001 für ", regular_invoices[0])
+
+            contract.billing_date_start = None
+            contract.date_end = None
+            count, regular_invoices, placeholder_invoices, email_messages = (
+                geno.billing.create_monthly_invoices(book, contract, date, inv_cat, options)
+            )
+            self.assertEqual(count, 3)
+            self.assertIn(" 01.2001 für ", regular_invoices[-1])
+            self.assertIn(" 03.2001 für ", regular_invoices[0])
+
     def test_add_transaction_shares_200(self):
         with AccountingManager(book_type_id="dum") as book:
             date = datetime.date(2001, 4, 1)

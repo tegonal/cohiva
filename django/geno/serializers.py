@@ -76,6 +76,8 @@ class ContractSerializer(serializers.ModelSerializer):
             "date",
             "date_end",
             "date_since",
+            "billing_date_start",
+            "billing_date_end",
             "rent_reduction",
             "rent_reservation",
             "share_reduction",

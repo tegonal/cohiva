@@ -1392,8 +1392,22 @@ class Contract(GenoBase):
         default=None,
         help_text="Start des Mietverhältnisses (ggf. abweichend vom Vertragsbeginn). Wird in keiner Berechnung verwendet.",
     )
-    date = models.DateField("Datum Beginn")
-    date_end = models.DateField("Datum Ende", null=True, blank=True, default=None)
+    date = models.DateField("Vertragsbeginn")
+    date_end = models.DateField("Vertragsende", null=True, blank=True, default=None)
+    billing_date_start = models.DateField(
+        "Sollstellung ab",
+        null=True,
+        blank=True,
+        default=None,
+        help_text="Leer lassen, falls ab Vertragsbeginn.",
+    )
+    billing_date_end = models.DateField(
+        "Sollstellung bis",
+        null=True,
+        blank=True,
+        default=None,
+        help_text="Leer lassen, falls bis Vertragsende.",
+    )
     note = models.CharField("Zusatzinfo", max_length=200, blank=True)
     import_id = models.CharField(
         "Import-ID", max_length=255, unique=True, null=True, default=None, blank=True
