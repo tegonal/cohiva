@@ -848,13 +848,23 @@ def import_from_api():
     if response["next"] or response["previous"]:
         raise RuntimeError("API returned multiple pages but pagination is not implemented yet!")
     for contract in response["results"]:
-        ## Convert dates
+        ## Convert dates and set billing_date_start/end
         if contract["date"]:
             d = contract["date"].split("-")
             contract["date"] = datetime(int(d[0]), int(d[1]), int(d[2]))
         if contract["date_end"]:
             d = contract["date_end"].split("-")
             contract["date_end"] = datetime(int(d[0]), int(d[1]), int(d[2]))
+        if contract["billing_date_start"]:
+            d = contract["billing_date_start"].split("-")
+            contract["billing_date_start"] = datetime(int(d[0]), int(d[1]), int(d[2]))
+        else:
+            contract["billing_date_start"] = contract["date"]
+        if contract["billing_date_end"]:
+            d = contract["billing_date_end"].split("-")
+            contract["billing_date_end"] = datetime(int(d[0]), int(d[1]), int(d[2]))
+        else:
+            contract["billing_date_end"] = contract["date_end"]
         ## Get akonto from billing
         # request_params = {
         #    'contract_id': contract['id'],
@@ -1770,9 +1780,9 @@ def assign_to_contracts():
             active_contract = None
             if "contracts" in o:
                 for c_id in o["contracts"]:
-                    if nk.contracts[c_id]["date"] <= date["start"] and (
-                        not nk.contracts[c_id]["date_end"]
-                        or nk.contracts[c_id]["date_end"] > date["start"]
+                    if nk.contracts[c_id]["billing_date_start"] <= date["start"] and (
+                        not nk.contracts[c_id]["billing_date_end"]
+                        or nk.contracts[c_id]["billing_date_end"] > date["start"]
                     ):
                         ## Contract is active in this month
                         if active_contract:

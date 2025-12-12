@@ -1,5 +1,6 @@
 import datetime
 
+from dateutil.relativedelta import relativedelta
 from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
@@ -1070,10 +1071,76 @@ def contract_mark_invalid(modeladmin, request, queryset):
     queryset.update(state="ungueltig")
 
 
-@admin.display(description=("Mietbeginn auf 1. des nächsten Monats setzten"))
-def contract_set_startdate_nextmonth(modeladmin, request, queryset):
-    new_date = (datetime.date.today().replace(day=1) + datetime.timedelta(days=32)).replace(day=1)
+@admin.display(description="Vertragsbeginn auf 1. des letzten Monats setzten")
+def contract_set_startdate_lastmonth(modeladmin, request, queryset):
+    new_date = datetime.date.today().replace(day=1) - relativedelta(months=1)
     queryset.update(date=new_date)
+
+
+@admin.display(description="Vertragsbeginn auf 1. dieses Monats setzten")
+def contract_set_startdate_thismonth(modeladmin, request, queryset):
+    new_date = datetime.date.today().replace(day=1)
+    queryset.update(date=new_date)
+
+
+@admin.display(description="Vertragsbeginn auf 1. des nächsten Monats setzten")
+def contract_set_startdate_nextmonth(modeladmin, request, queryset):
+    new_date = datetime.date.today().replace(day=1) + relativedelta(months=1)
+    queryset.update(date=new_date)
+
+
+@admin.display(description="Start Sollstellung auf 1. des letzten Monats setzten")
+def contract_set_billingstart_lastmonth(modeladmin, request, queryset):
+    new_date = datetime.date.today().replace(day=1) - relativedelta(months=1)
+    queryset.update(billing_date_start=new_date)
+
+
+@admin.display(description="Start Sollstellung auf 1. dieses Monats setzten")
+def contract_set_billingstart_thismonth(modeladmin, request, queryset):
+    new_date = datetime.date.today().replace(day=1)
+    queryset.update(billing_date_start=new_date)
+
+
+@admin.display(description="Start Sollstellung auf 1. des nächsten Monats setzten")
+def contract_set_billingstart_nextmonth(modeladmin, request, queryset):
+    new_date = datetime.date.today().replace(day=1) + relativedelta(months=1)
+    queryset.update(billing_date_start=new_date)
+
+
+@admin.display(description="Vertragsende auf Ende des letzten Monats setzten")
+def contract_set_enddate_lastmonth(modeladmin, request, queryset):
+    new_date = datetime.date.today() - relativedelta(months=1) + relativedelta(day=31)
+    queryset.update(date_end=new_date)
+
+
+@admin.display(description="Vertragsende auf Ende dieses Monats setzten")
+def contract_set_enddate_thismonth(modeladmin, request, queryset):
+    new_date = datetime.date.today() + relativedelta(day=31)
+    queryset.update(date_end=new_date)
+
+
+@admin.display(description="Vertragsende auf Ende des nächsten Monats setzten")
+def contract_set_enddate_nextmonth(modeladmin, request, queryset):
+    new_date = datetime.date.today() + relativedelta(months=1) + relativedelta(day=31)
+    queryset.update(date_end=new_date)
+
+
+@admin.display(description="Ende Sollstellung auf Ende des letzten Monats setzten")
+def contract_set_billingend_lastmonth(modeladmin, request, queryset):
+    new_date = datetime.date.today() - relativedelta(months=1) + relativedelta(day=31)
+    queryset.update(billing_date_end=new_date)
+
+
+@admin.display(description="Ende Sollstellung auf Ende dieses Monats setzten")
+def contract_set_billingend_thismonth(modeladmin, request, queryset):
+    new_date = datetime.date.today() + relativedelta(day=31)
+    queryset.update(billing_date_end=new_date)
+
+
+@admin.display(description="Ende Sollstellung auf Ende des nächsten Monats setzten")
+def contract_set_billingend_nextmonth(modeladmin, request, queryset):
+    new_date = datetime.date.today() + relativedelta(months=1) + relativedelta(day=31)
+    queryset.update(billing_date_end=new_date)
 
 
 class ContractAdminModelForm(forms.ModelForm):
@@ -1133,6 +1200,7 @@ class ContractAdmin(GenoBaseAdmin):
         "children",
         "state",
         ("date", "date_end", "date_since"),
+        ("billing_date_start", "billing_date_end"),
         ("rent_reduction", "rent_reservation"),
         "share_reduction",
         "send_qrbill",
@@ -1164,10 +1232,10 @@ class ContractAdmin(GenoBaseAdmin):
         "state",
         "rental_units__building",
         "rental_units__rental_type",
-        "rental_units__floor",
-        "rental_units__rooms",
         "date",
         "date_end",
+        "billing_date_start",
+        "billing_date_end",
         "send_qrbill",
     ]
     autocomplete_fields = [
@@ -1182,7 +1250,18 @@ class ContractAdmin(GenoBaseAdmin):
         contract_mark_offered,
         contract_mark_canceled,
         contract_mark_invalid,
+        contract_set_billingstart_nextmonth,
+        contract_set_billingstart_thismonth,
+        contract_set_billingstart_lastmonth,
         contract_set_startdate_nextmonth,
+        contract_set_startdate_thismonth,
+        contract_set_startdate_lastmonth,
+        contract_set_billingend_nextmonth,
+        contract_set_billingend_thismonth,
+        contract_set_billingend_lastmonth,
+        contract_set_enddate_nextmonth,
+        contract_set_enddate_thismonth,
+        contract_set_enddate_lastmonth,
     ]
     filter_horizontal = ["contractors", "children", "rental_units"]
     actions_list = [

@@ -196,10 +196,12 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
     download_only = options.get("download_only")
     single_contract = options.get("single_contract")
     dry_run = options.get("dry_run")
-    if contract.date_end and contract.date_end < reference_date:
+    start_date = contract.billing_date_start or contract.date
+    end_date = contract.billing_date_end or contract.date_end
+    if end_date and end_date < reference_date:
         # Don't try to create invoices after the end date of the contract
-        month = contract.date_end.month
-        year = contract.date_end.year
+        month = end_date.month
+        year = end_date.year
     else:
         month = reference_date.month
         year = reference_date.year
@@ -228,21 +230,21 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
         factor = Decimal(1.0)
         invoice_date = datetime.date(year, month, 1)
 
-        if contract.date > invoice_date:
+        if start_date > invoice_date:
             stop = True
             invoice_date = datetime.date(year, month, 15)
-            if contract.date <= invoice_date:
+            if start_date <= invoice_date:
                 ## Mid-month start
                 factor = Decimal(0.5)
             else:
                 ## Contract is in the future
                 factor = Decimal(0.0)
 
-        if contract.date_end:
-            if contract.date_end <= datetime.date(year, month, 1):
+        if end_date:
+            if end_date <= datetime.date(year, month, 1):
                 ## Contract has ended
                 factor = Decimal(0.0)
-            elif contract.date_end <= datetime.date(year, month, 15):
+            elif end_date <= datetime.date(year, month, 15):
                 ## Mid-month end
                 factor = Decimal(0.5)
 

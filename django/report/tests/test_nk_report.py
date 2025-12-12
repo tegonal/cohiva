@@ -322,3 +322,6 @@ class NKReportTest(ReportTestCase):
             f"Rechnung {invoice1.id}",
             on_page=1,
         )
+
+    def test_import_from_api(self):
+        pass
