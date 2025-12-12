@@ -1,9 +1,14 @@
 import datetime
+from unittest.mock import patch
+
+from django.db.models import Q
 
 import geno.tests.data as geno_testdata
+from geno import admin
 
 # from django.conf import settings
 from geno.models import Address, ContentTemplate, Contract, GenericAttribute, Member
+from geno.tests.base import MockDate
 
 from .base import GenoAdminTestCase
 
@@ -154,3 +159,61 @@ class GenoAdminTest(GenoAdminTestCase):
         self.assertListEqual(
             list(old_ct.template_context.all()), list(new_ct.template_context.all())
         )
+
+    @patch("geno.admin.datetime.date", MockDate)
+    def test_admin_contract_actions(self):
+        self.contracts.append(
+            Contract.objects.create(date=datetime.date(2000, 6, 6), state="test1")
+        )
+        self.contracts.append(
+            Contract.objects.create(date=datetime.date(2000, 6, 7), state="test2")
+        )
+        queryset = Contract.objects.filter(
+            Q(pk=self.contracts[0].pk) | Q(pk=self.contracts[-1].pk)
+        )
+        admin.contract_mark_invalid(None, None, queryset)
+        self.contracts[0].refresh_from_db()
+        self.contracts[-1].refresh_from_db()
+        self.assertEqual(self.contracts[0].state, "ungueltig")
+        self.assertEqual(self.contracts[-1].state, "ungueltig")
+        self.assertEqual(self.contracts[1].state, "test1")
+
+        admin.contract_set_startdate_lastmonth(None, None, queryset)
+        self.contracts[-1].refresh_from_db()
+        self.assertEqual(self.contracts[-1].date, datetime.date(2024, 12, 1))
+        admin.contract_set_startdate_thismonth(None, None, queryset)
+        self.contracts[-1].refresh_from_db()
+        self.assertEqual(self.contracts[-1].date, datetime.date(2025, 1, 1))
+        admin.contract_set_startdate_nextmonth(None, None, queryset)
+        self.contracts[-1].refresh_from_db()
+        self.assertEqual(self.contracts[-1].date, datetime.date(2025, 2, 1))
+
+        admin.contract_set_enddate_lastmonth(None, None, queryset)
+        self.contracts[-1].refresh_from_db()
+        self.assertEqual(self.contracts[-1].date_end, datetime.date(2024, 12, 31))
+        admin.contract_set_enddate_thismonth(None, None, queryset)
+        self.contracts[-1].refresh_from_db()
+        self.assertEqual(self.contracts[-1].date_end, datetime.date(2025, 1, 31))
+        admin.contract_set_enddate_nextmonth(None, None, queryset)
+        self.contracts[-1].refresh_from_db()
+        self.assertEqual(self.contracts[-1].date_end, datetime.date(2025, 2, 28))
+
+        admin.contract_set_billingstart_lastmonth(None, None, queryset)
+        self.contracts[-1].refresh_from_db()
+        self.assertEqual(self.contracts[-1].billing_date_start, datetime.date(2024, 12, 1))
+        admin.contract_set_billingstart_thismonth(None, None, queryset)
+        self.contracts[-1].refresh_from_db()
+        self.assertEqual(self.contracts[-1].billing_date_start, datetime.date(2025, 1, 1))
+        admin.contract_set_billingstart_nextmonth(None, None, queryset)
+        self.contracts[-1].refresh_from_db()
+        self.assertEqual(self.contracts[-1].billing_date_start, datetime.date(2025, 2, 1))
+
+        admin.contract_set_billingend_lastmonth(None, None, queryset)
+        self.contracts[-1].refresh_from_db()
+        self.assertEqual(self.contracts[-1].billing_date_end, datetime.date(2024, 12, 31))
+        admin.contract_set_billingend_thismonth(None, None, queryset)
+        self.contracts[-1].refresh_from_db()
+        self.assertEqual(self.contracts[-1].billing_date_end, datetime.date(2025, 1, 31))
+        admin.contract_set_billingend_nextmonth(None, None, queryset)
+        self.contracts[-1].refresh_from_db()
+        self.assertEqual(self.contracts[-1].billing_date_end, datetime.date(2025, 2, 28))

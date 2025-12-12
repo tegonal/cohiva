@@ -1116,7 +1116,6 @@ def contract_set_enddate_lastmonth(modeladmin, request, queryset):
 @admin.display(description="Vertragsende auf Ende dieses Monats setzten")
 def contract_set_enddate_thismonth(modeladmin, request, queryset):
     new_date = datetime.date.today() + relativedelta(day=31)
-    new_date = datetime.date.today().replace(day=1)
     queryset.update(date_end=new_date)
 
 

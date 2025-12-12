@@ -1,3 +1,4 @@
+import datetime
 import os
 import zoneinfo
 from io import BytesIO
@@ -478,3 +479,11 @@ class DocumentCreationMockMixin:
             f"No call to odt2pdf used odtfile {odtfile!r}.\n\n"
             f"Templates used in calls:\n{formatted_calls}"
         )
+
+
+class MockDate(datetime.date):
+    """Mocks datetime.date.today() so it always returns a constant 2025-01-15"""
+
+    @classmethod
+    def today(cls):
+        return cls(2025, 1, 15)
