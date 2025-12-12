@@ -69,10 +69,12 @@ class RentalUnitViewSet(viewsets.ReadOnlyModelViewSet):
 
 class ContractViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    API endpoint that allows active contracts to be viewed.
+    API endpoint that allows active contracts to be viewed (excluding subcontracts).
     """
 
-    queryset = Contract.objects.filter(state__in=("unterzeichnet", "gekuendigt"))
+    queryset = Contract.objects.filter(state__in=("unterzeichnet", "gekuendigt")).filter(
+        main_contract=None
+    )
     serializer_class = ContractSerializer
     # permission_classes = [permissions.IsAuthenticated]
 

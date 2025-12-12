@@ -1,13 +1,16 @@
 import datetime
+import json
 from unittest.mock import patch
 
+from django.contrib.auth import get_user_model
 from django.http import FileResponse
 from django.test import tag
-from rest_framework.test import APIRequestFactory
+from django.urls import reverse
+from rest_framework.test import APIRequestFactory, force_authenticate
 
 import geno.tests.data as geno_testdata
 from finance.accounting import Account, AccountingManager, AccountKey
-from geno.api_views import Akonto, QRBill
+from geno.api_views import Akonto, ContractViewSet, QRBill
 from geno.billing import get_income_account, get_receivables_account
 from geno.models import Contract, Invoice, InvoiceCategory
 
@@ -319,3 +322,25 @@ class QRBillAPIViewTest(GenoAdminTestCase):
             ],
         )
         pdf_file.file_to_stream.close()
+
+
+class ContractViewSetTest(GenoAdminTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        geno_testdata.create_contracts(cls)
+        User = get_user_model()
+        cls.user = User.objects.get(username="superuser")
+
+    def test_subcontracts_are_excluded_in_api_view(self):
+        Contract.objects.create(
+            state="unterzeichnet", date=datetime.date(2020, 1, 1), main_contract=self.contracts[0]
+        )
+        factory = APIRequestFactory()
+        view = ContractViewSet.as_view({"get": "list"})
+        request = factory.get(reverse("contract-list"))
+        force_authenticate(request, user=self.user)
+        response = view(request)
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.render().content)
+        self.assertEqual(data["count"], 1)
