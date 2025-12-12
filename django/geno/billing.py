@@ -83,7 +83,7 @@ def create_invoices(
     elif download_only:
         contracts = Contract.objects.filter(id=download_only)
     else:
-        contracts = Contract.objects.filter(state="unterzeichnet")
+        contracts = Contract.objects.filter(state="unterzeichnet").filter(main_contract=None)
 
     if building_ids:
         contracts = contracts.filter(rental_units__building__in=building_ids).distinct()

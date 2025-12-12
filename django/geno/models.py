@@ -1524,27 +1524,29 @@ class Contract(GenoBase):
 
     def get_object_actions(self):
         actions = []
-        actions.append(
-            (
-                "/geno/invoice/download/contract/%s/" % (self.pk),
-                "Mietzinsrechnung herunterladen, aktueller Monat",
-                "Es wird nur das PDF erzeugt, nicht gebucht!",
+        if not self.main_contract:
+            # No invoices for sub-contracts
+            actions.append(
+                (
+                    "/geno/invoice/download/contract/%s/" % (self.pk),
+                    "Mietzinsrechnung herunterladen, aktueller Monat",
+                    "Es wird nur das PDF erzeugt, nicht gebucht!",
+                )
             )
-        )
-        actions.append(
-            (
-                "/geno/invoice/download/contract/%s/?date=last_month" % (self.pk),
-                "Mietzinsrechnung herunterladen, letzter Monat",
-                "Es wird nur das PDF erzeugt, nicht gebucht!",
+            actions.append(
+                (
+                    "/geno/invoice/download/contract/%s/?date=last_month" % (self.pk),
+                    "Mietzinsrechnung herunterladen, letzter Monat",
+                    "Es wird nur das PDF erzeugt, nicht gebucht!",
+                )
             )
-        )
-        actions.append(
-            (
-                "/geno/invoice/download/contract/%s/?date=next_month" % (self.pk),
-                "Mietzinsrechnung herunterladen, nächster Monat",
-                "Es wird nur das PDF erzeugt, nicht gebucht!",
+            actions.append(
+                (
+                    "/geno/invoice/download/contract/%s/?date=next_month" % (self.pk),
+                    "Mietzinsrechnung herunterladen, nächster Monat",
+                    "Es wird nur das PDF erzeugt, nicht gebucht!",
+                )
             )
-        )
         for dt in DocumentType.objects.filter(active=True).filter(name__startswith="contract"):
             actions.append(
                 (

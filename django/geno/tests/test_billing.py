@@ -73,6 +73,15 @@ class TestBilling(GenoAdminTestCase):
         self.assertEqual(mock_monthly_invoices.call_count, 1)
         self.assertEqual(ret, "String")
 
+    @patch("geno.billing.create_monthly_invoices", return_value=(2, [], [], []))
+    def test_create_invoices_exclude_subcontracts(self, mock_monthly_invoices):
+        Contract.objects.create(
+            date=datetime.date(2001, 1, 1), state="unterzeichnet", main_contract=self.contracts[0]
+        )
+        ret = geno.billing.create_invoices()
+        self.assertEqual(mock_monthly_invoices.call_count, 1)
+        self.assertEqual(ret[-1]["info"], "2 Rechnungen für 1 Vertrag")
+
     def test_create_invoices_empty_contract_count(self):
         messages = geno.billing.create_invoices(reference_date=datetime.date(2001, 6, 1))
         self.assertEqual(messages[-1]["info"], "3 Rechnungen für 1 Vertrag")
