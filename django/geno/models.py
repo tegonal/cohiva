@@ -539,6 +539,7 @@ class Address(GenoBase):
             if (
                 self.organization.startswith("Verein ")
                 or self.organization.endswith("verein")
+                or self.organization.startswith("Hausverein")
                 or self.organization.startswith("Verband ")
                 or self.organization.endswith("verband")
                 or self.organization.startswith("Regionalverband")

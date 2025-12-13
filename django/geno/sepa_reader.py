@@ -24,10 +24,17 @@ def read_camt_transaction(data, tr, date_str, entry_ref=None):
         tr["refs"].get("instruction_id", ""),
     )
     amount = tr["amount"]["_value"]
+    charges = ""
     if "charges" in tr:
-        charges = tr["charges"]["total"]
-    else:
-        charges = ""
+        if "total" in tr["charges"]:
+            charges = tr["charges"]["total"]
+        elif tr["charges"].get("record", []):
+            if len(tr["charges"]["record"]) == 1:
+                charges = tr["charges"]["record"][0]["amount"]["_value"]
+            else:
+                raise SepaReaderException(
+                    "More than one charge record: %s %s" % (tx_id, tr["charges"])
+                )
     if "related_parties" not in tr or "debtor" not in tr["related_parties"]:
         return [
             "Ignoring transaction without debtor: %s" % tr["amount"]["_value"],

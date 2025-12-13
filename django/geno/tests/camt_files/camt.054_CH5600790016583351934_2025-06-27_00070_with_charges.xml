@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.054.001.04" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <BkToCstmrDbtCdtNtfctn>
+        <GrpHdr>
+            <MsgId>161935259201_1</MsgId>
+            <CreDtTm>2025-06-28T01:31:37.086+02:00</CreDtTm>
+            <MsgPgntn>
+                <PgNb>1</PgNb>
+                <LastPgInd>true</LastPgInd>
+            </MsgPgntn>
+            <AddtlInf>SPS/PROD</AddtlInf>
+        </GrpHdr>
+        <Ntfctn>
+            <Id>161935259201</Id>
+            <CreDtTm>2025-06-28T01:31:37.086+02:00</CreDtTm>
+            <FrToDt>
+                <FrDtTm>2020-07-13T00:00:00.000+02:00</FrDtTm>
+                <ToDtTm>2025-07-10T02:00:00.000+02:00</ToDtTm>
+            </FrToDt>
+            <RptgSrc>
+                <Prtry>C53F</Prtry>
+            </RptgSrc>
+            <Acct>
+                <Id>
+                    <IBAN>CH5600790000000351934</IBAN>
+                </Id>
+                <Ccy>CHF</Ccy>
+                <Ownr>
+                    <Nm>Muster-Genossenschaft</Nm>
+                    <PstlAdr>
+                        <StrtNm>Musterstrasse 257</StrtNm>
+                        <PstCd>3018</PstCd>
+                        <TwnNm>Bern</TwnNm>
+                    </PstlAdr>
+                </Ownr>
+            </Acct>
+            <Ntry>
+                <NtryRef>CH7830790000000351934</NtryRef>
+                <Amt Ccy="CHF">50.00</Amt>
+                <CdtDbtInd>CRDT</CdtDbtInd>
+                <Sts>BOOK</Sts>
+                <BookgDt>
+                    <Dt>2025-06-28</Dt>
+                </BookgDt>
+                <ValDt>
+                    <Dt>2025-06-28</Dt>
+                </ValDt>
+                <AcctSvcrRef>424500009094184744</AcctSvcrRef>
+                <BkTxCd>
+                    <Domn>
+                        <Cd>PMNT</Cd>
+                        <Fmly>
+                            <Cd>RCDT</Cd>
+                            <SubFmlyCd>VCOM</SubFmlyCd>
+                        </Fmly>
+                    </Domn>
+                </BkTxCd>
+                <NtryDtls>
+                    <TxDtls>
+                        <Refs>
+                            <AcctSvcrRef>424500009094184743</AcctSvcrRef>
+                            <AcctSvcrTxId>424500009094184743</AcctSvcrTxId>
+                        </Refs>
+                        <Amt Ccy="CHF">50.00</Amt>
+                        <CdtDbtInd>CRDT</CdtDbtInd>
+                        <BkTxCd>
+                            <Domn>
+                                <Cd>PMNT</Cd>
+                                <Fmly>
+                                    <Cd>RCDT</Cd>
+                                    <SubFmlyCd>ATXN</SubFmlyCd>
+                                </Fmly>
+                            </Domn>
+                        </BkTxCd>
+                        <Chrgs>
+                            <Rcrd>
+                                <Amt Ccy="CHF">1.20</Amt>
+                                <ChrgInclInd>false</ChrgInclInd>
+                                <Tp>
+                                    <Prtry>
+                                        <Id>2</Id>
+                                    </Prtry>
+                                </Tp>
+                            </Rcrd>
+                        </Chrgs>
+                        <RltdPties>
+                            <Dbtr>
+                                <Nm>Hans Muster</Nm>
+                                <PstlAdr>
+                                    <AdrLine>Musterweg 9</AdrLine>
+                                    <AdrLine>CH-3004 Bern</AdrLine>
+                                </PstlAdr>
+                            </Dbtr>
+                        </RltdPties>
+                        <RltdAgts>
+                            <DbtrAgt>
+                                <FinInstnId>
+                                    <BICFI>BCLRCHBBXXX</BICFI>
+                                    <Nm>Bank Taler AG</Nm>
+                                    <PstlAdr>
+                                        <Ctry>CH</Ctry>
+                                        <AdrLine>4000 Basel</AdrLine>
+                                    </PstlAdr>
+                                </FinInstnId>
+                            </DbtrAgt>
+                        </RltdAgts>
+                        <RmtInf>
+                            <Strd>
+                                <CdtrRefInf>
+                                    <Tp>
+                                        <CdOrPrtry>
+                                            <Prtry>QRR</Prtry>
+                                        </CdOrPrtry>
+                                    </Tp>
+                                    <Ref>360000000002000000003620253</Ref>
+                                </CdtrRefInf>
+                                <AddtlRmtInf>Jahresbeitrag 2025 mit Gebühren</AddtlRmtInf>
+                            </Strd>
+                        </RmtInf>
+                    </TxDtls>
+                </NtryDtls>
+                <AddtlNtryInf>Zahlungseingang QRR</AddtlNtryInf>
+            </Ntry>
+        </Ntfctn>
+    </BkToCstmrDbtCdtNtfctn>
+</Document>

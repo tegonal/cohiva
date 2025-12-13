@@ -1498,20 +1498,26 @@ def process_sepa_transactions(data):
 def add_sepa_transaction(book, tx, errors, skipped, success):
     # tx: 'id': tx_id, 'date': date, 'amount': amount, 'reference': reference_nr,
     #     'debtor': debtor, 'extra_info': additional_info, 'charges': charges
+    addtl_info = []
+    if tx.get("extra_info"):
+        addtl_info.append(tx["extra_info"])
+    if tx.get("debtor"):
+        addtl_info.append(tx["debtor"])
+    if tx.get("charges"):
+        addtl_info.append("Charges: %s" % tx["charges"])
     bill_info = parse_reference_nr(tx["reference_nr"])
     if "error" in bill_info:
         errors.append(
-            "Ungültige Referenznummer: %s für Buchung %s - CHF %s"
-            % (bill_info["error"], tx["date"], tx["amount"])
+            "Ungültige Referenznummer: %s für Buchung %s - CHF %s (Referenznr. %s, %s)"
+            % (
+                bill_info["error"],
+                tx["date"],
+                tx["amount"],
+                tx["reference_nr"],
+                "/".join(addtl_info),
+            )
         )
         return
-    addtl_info = []
-    if tx["extra_info"]:
-        addtl_info.append(tx["extra_info"])
-    if tx["debtor"]:
-        addtl_info.append(tx["debtor"])
-    if tx["charges"]:
-        addtl_info.append("Charges: %s" % tx["charges"])
     if bill_info["person"]:
         bill_info_name = bill_info["person"]
     else:
