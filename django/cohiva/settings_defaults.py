@@ -1433,3 +1433,7 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = ["unfold_crispy"]
 # Theme Customization
 COHIVA_TITLE_FONT = "Lato"
 COHIVA_TEXT_FONT = "Liberation Serif"
+
+LANGUAGE_CODE = 'de'
+USE_L10N = True
+USE_THOUSAND_SEPARATOR = True

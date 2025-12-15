@@ -28,3 +28,5 @@ DATETIME_INPUT_FORMATS = [
     "%Y-%m-%d %H:%M:%S",  # ISO format (added)
     "%Y-%m-%d %H:%M",  # ISO format (added)
 ]
+THOUSAND_SEPARATOR = "'"
+NUMBER_GROUPING = 3

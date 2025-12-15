@@ -1,4 +1,5 @@
 import datetime
+from decimal import Decimal, InvalidOperation
 
 from dateutil.relativedelta import relativedelta
 from django import forms
@@ -62,6 +63,15 @@ def copy_objects(modeladmin, request, queryset):
             return
     messages.success(request, f"{count} Objekt(e) kopiert.")
 
+class ApostropheDecimalField(forms.DecimalField):
+    def to_python(self, value):
+        if value in self.empty_values:
+            return None
+
+        if isinstance(value, str):
+            value = value.replace("'", "").strip()
+
+        return super().to_python(value)
 
 class BooleanFieldDefaultTrueListFilter(admin.BooleanFieldListFilter):
     """
@@ -987,9 +997,10 @@ class RegistrationEventAdmin(GenoBaseAdmin):
         request._obj_ = obj
         return super().get_form(request, obj, **kwargs)
 
-
 @admin.decorators.register(RentalUnit)
 class RentalUnitAdmin(GenoBaseAdmin):
+    class Media:
+        js = ("geno/js/apostrophe_decimal.js",)
     fields = [
         "name",
         ("label", "label_short"),
