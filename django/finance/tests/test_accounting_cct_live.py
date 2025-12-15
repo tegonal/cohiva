@@ -21,7 +21,7 @@ class CashctrlBookTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        AccountingManager.default_backend_label = "cashctrl_test"
+        AccountingManager.default_backend_label = "cashctrl_test_live"
         cls.account1 = Account("TestAccount CashCtrl1", "43000")
         cls.account2 = Account("TestAccount CashCtrl2", "10220")
         cls.account3 = Account("TestAccount CashCtrl3", "47400")
@@ -50,6 +50,20 @@ class CashctrlBookTestCase(TestCase):
             )
             self.assertTrue(transaction_id.startswith("cct_"))
             book.save()
+
+    def test_add_transaction_with_long_description(self):
+        messages = []
+        with AccountingManager(messages) as book:
+            transaction_id = book.add_transaction(
+                101.00,
+                self.account1,
+                self.account2,
+                "2026-01-01",
+                "Test CashCtrl add_transaction with long description (254 chars) "
+                + 19 * "123456789_",
+                autosave=True,
+            )
+            self.assertTrue(transaction_id.startswith("cct_"))
 
     def test_add_transaction_no_commit(self):
         messages = []

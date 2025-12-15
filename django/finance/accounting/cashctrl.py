@@ -96,30 +96,11 @@ class BookTransaction:
             amount_str = f"{amount:.2f}"
             split_items_o.append({"accountId": cct_account, credit_type: amount_str})
 
-        payload = dict(
-            dateAdded=self.cct_book_ref.get_date(getattr(transaction, "date", None)).strftime(
-                "%Y-%m-%d"
-            ),
-            title=getattr(transaction, "description", ""),
-            items=json.dumps(split_items_o),
+        payload = self._get_common_transaction_payload(transaction)
+        payload["items"] = json.dumps(split_items_o)
+        return self._create_transaction_api_call(
+            payload, f"create collective transaction: len: {len(transaction.splits)}"
         )
-
-        # Call create endpoint
-        response = self._construct_request_post("journal/create.json", payload=payload)
-        response.raise_for_status()
-        data = response.json()
-        self._raise_for_error(
-            response, f"create collective transaction: len: {len(transaction.splits)}"
-        )
-
-        txn_id = None
-        if isinstance(data, dict):
-            if data.get("success"):
-                txn_id = data.get("insertId")
-        # Record inserted transaction for the current BookTransaction
-        transaction_id = self.cct_book_ref.build_transaction_id(txn_id)
-        self.insert(transaction_id)
-        return transaction_id
 
     def _create_simple_transaction(self, transaction):
         # Expecting two splits: debit and credit
@@ -136,29 +117,22 @@ class BookTransaction:
             else str(transaction.splits[1].amount)
         )
 
-        notes = "Added through API"
-        description = getattr(transaction, "description", "")
-        # in case description is longer than 250 chars, truncate and append fully to notes
-        if len(description) > 250:
-            notes += "\n" + description
-            description = description[:250]
-
-        date_added = self.cct_book_ref.get_date(getattr(transaction, "date", None)).strftime(
-            "%Y-%m-%d"
-        )
-        attributes = (
-            f"amount={amount_str}&creditId={cct_account_credit}&debitId={cct_account_debit}"
-            f"&title={urllib.parse.quote_plus(description)}"
-            f"&dateAdded={date_added}&notes={urllib.parse.quote_plus(notes)}"
+        payload = self._get_common_transaction_payload(transaction)
+        payload["amount"] = amount_str
+        payload["creditId"] = cct_account_credit
+        payload["debitId"] = cct_account_debit
+        return self._create_transaction_api_call(
+            payload, f"create:{cct_account_debit}:{cct_account_credit}:{amount_str}"
         )
 
+    def _create_transaction_api_call(self, payload, request_info):
         # Call create endpoint
-        response = self._construct_request_post("journal/create.json?" + attributes, None)
+        response = self._construct_request_post("journal/create.json", payload=payload)
         response.raise_for_status()
         data = response.json()
         self._raise_for_error(
             response,
-            f"create:{cct_account_debit}:{cct_account_credit}:{amount_str}",
+            request_info,
         )
 
         txn_id = None
@@ -169,6 +143,26 @@ class BookTransaction:
         transaction_id = self.cct_book_ref.build_transaction_id(txn_id)
         self.insert(transaction_id)
         return transaction_id
+
+    def _get_common_transaction_payload(self, transaction):
+        date_added = self.cct_book_ref.get_date(getattr(transaction, "date", None)).strftime(
+            "%Y-%m-%d"
+        )
+        description = getattr(transaction, "description", "")
+        # in case description is longer than 250 chars, truncate and append fully to notes
+        if len(description) > 250:
+            notes = description
+            description = description[:250]
+        else:
+            notes = None
+
+        payload = dict(
+            dateAdded=date_added,
+            title=description,
+        )
+        if notes:
+            payload["notes"] = notes
+        return payload
 
     def save(self):
         # inserted transactions can be ignored as they were already saved to CashCtrl via API
@@ -266,7 +260,13 @@ class BookTransaction:
         data = response.json()
         if isinstance(data, dict):
             if not data.get("success", True):
-                error_message = data.get("message", "Unknown error")
+                errors = data.get("errors")
+                if errors:
+                    error_message = "; ".join(
+                        f"{error.get('field')}: {error.get('message')}" for error in errors
+                    )
+                else:
+                    error_message = data.get("message") or "Unknown error"
                 raise RuntimeError(
                     f"CashCtrl API error: {error_message} - for request {request_info}"
                 )
