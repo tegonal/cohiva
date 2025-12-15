@@ -482,3 +482,44 @@ class CashctrlBookTestCase(TestCase):
             mock_post.assert_called_once_with(
                 f"{self.cohiva_test_endpoint}journal/delete.json?ids=801", data=None, auth=ANY
             )
+
+    @patch("finance.accounting.cashctrl.requests.get")
+    @patch("finance.accounting.cashctrl.requests.post")
+    def test_process_api_error(self, mock_post, mock_get):
+        messages = []
+        with AccountingManager(messages) as book:
+            # configure fake responses
+            mock_get.return_value.raise_for_status.side_effect = None
+            mock_get.side_effect = self.fetch_account_responses
+
+            mock_post.return_value.json.return_value = {
+                "success": False,
+                "message": None,
+                "errors": [
+                    {
+                        "field": "creditId",
+                        "message": "This account does not exist.",
+                    },
+                    {
+                        "field": "field2",
+                        "message": "Another error for field2",
+                    },
+                ],
+            }
+            mock_post.return_value.raise_for_status.side_effect = None
+
+            with self.assertRaisesRegex(
+                RuntimeError,
+                (
+                    "CashCtrl API error: creditId: This account does not exist.; "
+                    "field2: Another error for field2 - for request"
+                ),
+            ):
+                book.add_transaction(
+                    100.00,
+                    self.account1,
+                    self.account2,
+                    None,
+                    "Test error processing",
+                    autosave=False,
+                )
