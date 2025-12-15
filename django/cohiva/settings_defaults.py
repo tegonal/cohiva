@@ -1419,3 +1419,6 @@ UNFOLD = {
 # Crispy Forms Configuration for Unfold
 CRISPY_TEMPLATE_PACK = "unfold_crispy"
 CRISPY_ALLOWED_TEMPLATE_PACKS = ["unfold_crispy"]
+LANGUAGE_CODE = 'de' 
+USE_L10N = True
+USE_THOUSAND_SEPARATOR = True
