@@ -45,7 +45,7 @@ class CashctrlBookTestCase(TestCase):
                         "type": "MANUAL",
                         "dateAdded": "2025-11-04 18:07:00.0",
                         "title": "Test CashCtrl add_transaction",
-                        "notes": "Added through API",
+                        "notes": "",
                         "amount": 100,
                         "currencyRate": 1,
                         "accountIds": '["1237","1477"]',
@@ -189,6 +189,12 @@ class CashctrlBookTestCase(TestCase):
                     status_code=200,
                 )
             return Exception("Unknown account number in URL")
+        return Mock(
+            json=lambda: {
+                "success": False,
+            },
+            status_code=200,
+        )
 
     @staticmethod
     def fetch_transaction_responses(url, **kw):
@@ -247,10 +253,15 @@ class CashctrlBookTestCase(TestCase):
                 ]
             )
             called_url = mock_post.call_args[0][0]
-            assert (
-                f"{self.cohiva_test_endpoint}journal/create.json?amount=100.00&creditId=1237&debitId=1477&title=Test+CashCtrl+add_transaction&dateAdded=2026-01-01"
-                in called_url
+            self.assertIn(f"{self.cohiva_test_endpoint}journal/create.json", called_url)
+            form_data_constructed = mock_post.call_args[1]
+            self.assertEqual("100.00", form_data_constructed["data"]["amount"])
+            self.assertEqual(1237, form_data_constructed["data"]["creditId"])
+            self.assertEqual(1477, form_data_constructed["data"]["debitId"])
+            self.assertEqual(
+                "Test CashCtrl add_transaction", form_data_constructed["data"]["title"]
             )
+            self.assertEqual("2026-01-01", form_data_constructed["data"]["dateAdded"])
 
     @patch("finance.accounting.cashctrl.requests.get")
     @patch("finance.accounting.cashctrl.requests.post")
@@ -273,7 +284,7 @@ class CashctrlBookTestCase(TestCase):
                 self.account1,
                 self.account2,
                 None,
-                "Test CashCtrl add_transaction",
+                "Test CashCtrl add_transaction without date",
                 autosave=False,
             )
             self.assertTrue(transaction_id.startswith("cct_"))
@@ -283,11 +294,52 @@ class CashctrlBookTestCase(TestCase):
             # verify that the API was called
             today = datetime.date.today().strftime("%Y-%m-%d")
             called_url = mock_post.call_args[0][0]
-            assert (
-                f"{self.cohiva_test_endpoint}journal/create.json?amount=100.00&creditId=1237"
-                f"&debitId=1477&title=Test+CashCtrl+add_transaction&dateAdded={today}"
-                in called_url
+            self.assertIn(f"{self.cohiva_test_endpoint}journal/create.json", called_url)
+            form_data_constructed = mock_post.call_args[1]
+            self.assertEqual(
+                "Test CashCtrl add_transaction without date",
+                form_data_constructed["data"]["title"],
             )
+            self.assertEqual(today, form_data_constructed["data"]["dateAdded"])
+
+    @patch("finance.accounting.cashctrl.requests.get")
+    @patch("finance.accounting.cashctrl.requests.post")
+    def test_add_transaction_with_long_description(self, mock_post, mock_get):
+        messages = []
+        with AccountingManager(messages) as book:
+            # configure fake responses
+            mock_get.return_value.raise_for_status.side_effect = None
+            mock_get.side_effect = self.fetch_account_responses
+
+            mock_post.return_value.json.return_value = {
+                "success": True,
+                "message": "Buchung gespeichert",
+                "insertId": 700,
+            }
+            mock_post.return_value.raise_for_status.side_effect = None
+
+            long_description = (
+                "Test CashCtrl add_transaction with long description (254 chars) "
+                + 19 * "123456789_"
+            )
+            transaction_id = book.add_transaction(
+                100.00,
+                self.account1,
+                self.account2,
+                None,
+                long_description,
+                autosave=False,
+            )
+            self.assertTrue(transaction_id.startswith("cct_"))
+            self.assertEqual("cct_0_700", transaction_id)
+            book.save()
+
+            # verify that the API was called
+            called_url = mock_post.call_args[0][0]
+            self.assertIn(f"{self.cohiva_test_endpoint}journal/create.json", called_url)
+            form_data_constructed = mock_post.call_args[1]
+            self.assertEqual(long_description[:250], form_data_constructed["data"]["title"])
+            self.assertEqual(long_description, form_data_constructed["data"]["notes"])
 
     @patch("finance.accounting.cashctrl.requests.get")
     @patch("finance.accounting.cashctrl.requests.post")

@@ -43,6 +43,7 @@ GENO_FORMAL = True
 DEMO = False
 RESERVATION_BLOCKER_RULES = []
 FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]["iban"] = "CH7730000001250094239"
+FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]["account_code"] = "1020.1"
 
 FINANCIAL_ACCOUNTING_CASHCTRL_LIVE_TESTS = False
 
@@ -65,6 +66,15 @@ FINANCIAL_ACCOUNTING_BACKENDS = {
             "API_HOST": "cashctrl123.com",
             "API_TOKEN": "123test",
             "TENANT": "cohiva-test",
+        },
+    },
+    "cashctrl_test_live": {
+        "BACKEND": "finance.accounting.CashctrlBook",
+        "DB_ID": 1,
+        "OPTIONS": {
+            "API_HOST": "cashctrl.com",
+            "API_TOKEN": f"{cbc.CASHCTRL_API_TOKEN}",
+            "TENANT": f"{cbc.CASHCTRL_TENANT}",
         },
     },
     "dummy_test": {

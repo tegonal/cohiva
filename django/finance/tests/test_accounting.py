@@ -125,7 +125,7 @@ class AccountingManagerTestCase(TestCase):
         self.assertEqual(AccountingManager.default_backend_label, "test1")
 
         AccountingManager.register_backends_from_settings()
-        self.assertEqual(len(AccountingManager.backends), 4)
+        self.assertEqual(len(AccountingManager.backends), 5)
         self.assertEqual(AccountingManager.default_backend_label, "dummy_test")
         self.assertEqual(AccountingManager.backends["dummy_test2"]["db_id"], 1)
 
