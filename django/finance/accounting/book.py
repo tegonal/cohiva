@@ -24,6 +24,13 @@ class AccountingBook:
         self._settings_label = settings_label
         self.db_id = int(db_id)
 
+    # Convention:
+    #   - account_debit: POSITIVE amount, transaction.splits[0]
+    #       - receivables account for invoices
+    #       - bank account for payments
+    #   - account_credit: NEGATIVE amount, transaction.splits[1]
+    #       - revenue account for invoices
+    #       - receivables account for payments
     def add_transaction(
         self,
         amount: Decimal | float | str,
@@ -34,11 +41,16 @@ class AccountingBook:
         currency: str = "CHF",
         autosave: bool = True,
     ):
+        """Add a transaction with two splits: one for the debit and one for the credit.
+
+        :param account_debit: e.g. receivables account for invoices; bank account for payments
+        :param account_credit: e.g. revenue account for invoices; receivables account for payments
+        """
         return self.add_split_transaction(
             Transaction(
                 [
-                    Split(account_debit, -amount),
-                    Split(account_credit, amount),
+                    Split(account_debit, amount),
+                    Split(account_credit, -amount),
                 ],
                 date,
                 description,
@@ -49,7 +61,7 @@ class AccountingBook:
 
     def add_split_transaction(
         self,
-        transaction,
+        transaction: Transaction,
         autosave=True,
     ):
         raise NotImplementedError

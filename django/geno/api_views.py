@@ -252,8 +252,8 @@ class QRBill(APIView):
             amount = request.data["total_akonto"]
             book.add_transaction(
                 amount,
-                fiaccount_nk_receivables,
                 fiaccount_nk,
+                fiaccount_nk_receivables,
                 billing_period_end.date(),
                 description,
                 autosave=False,
@@ -307,8 +307,8 @@ class QRBill(APIView):
             description = f"NK-Abrechnung {virtual_account.name}"
             book.add_transaction(
                 total_amount,
-                fiaccount_nk_receivables,
                 virtual_account,
+                fiaccount_nk_receivables,
                 billing_period_end.date(),
                 description,
                 autosave=not self.dry_run,

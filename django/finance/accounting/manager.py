@@ -6,6 +6,8 @@ import logging
 
 from django.conf import settings
 
+from finance.accounting import CashctrlBook, DummyBook, GnucashBook
+
 logger = logging.getLogger("finance_accounting")
 
 
@@ -108,7 +110,7 @@ class AccountingManager:
             self.db_id = 0
         self.backend_label = backend_label
 
-    def __enter__(self):
+    def __enter__(self) -> CashctrlBook | GnucashBook | DummyBook | None:
         if not self.backend_class:
             logger.error("No financial accounting backend configured.")
             if self.messages is not None:

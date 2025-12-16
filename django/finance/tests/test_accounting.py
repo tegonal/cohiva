@@ -288,9 +288,9 @@ class DummyBookTestCase(TestCase):
             tr = book.get_transaction(transaction_id)
             self.assertTrue(isinstance(tr, Transaction))
             self.assertEqual(len(tr.splits), 2)
-            self.assertEqual(tr.splits[0].amount, Decimal(-100))
+            self.assertEqual(tr.splits[0].amount, Decimal(100))
             self.assertEqual(tr.splits[0].account.code, "1000")
-            self.assertEqual(tr.splits[1].amount, Decimal(100))
+            self.assertEqual(tr.splits[1].amount, Decimal(-100))
             self.assertEqual(tr.splits[1].account.code, "2000")
             self.assertEqual(tr.date, datetime.date(2020, 1, 1))
 

@@ -6,12 +6,14 @@ import json
 import logging
 import time
 import urllib.parse
+from decimal import Decimal
 
 import requests
 from requests.auth import HTTPBasicAuth
 
-from . import Account
+from .account import Account
 from .book import AccountingBook
+from .transaction import Transaction
 
 logger = logging.getLogger("finance_accounting")
 
@@ -73,7 +75,7 @@ class BookTransaction:
         else:
             self._deleted_transaction_ids.append(transaction)
 
-    def create(self, transaction):
+    def create(self, transaction: Transaction):
         # Expecting two or more accounts involved in the transaction
         if not getattr(transaction, "splits", None) or len(transaction.splits) < 2:
             raise ValueError("transaction must contain at least two splits (debit and credit)")
@@ -82,7 +84,7 @@ class BookTransaction:
         else:
             return self._create_collective_transaction(transaction)
 
-    def _create_collective_transaction(self, transaction):
+    def _create_collective_transaction(self, transaction: Transaction):
         # Expecting more than two splits
         if not getattr(transaction, "splits", None) or len(transaction.splits) <= 2:
             raise ValueError("transaction must contain at least two splits")
@@ -102,20 +104,29 @@ class BookTransaction:
             payload, f"create collective transaction: len: {len(transaction.splits)}"
         )
 
-    def _create_simple_transaction(self, transaction):
+    def _create_simple_transaction(self, transaction: Transaction):
         # Expecting two splits: debit and credit
         if not getattr(transaction, "splits", None) or len(transaction.splits) != 2:
             raise ValueError("transaction must contain at exactly two splits (debit and credit)")
 
-        # Resolve CashCtrl account identifiers for all involved accounts
-        cct_account_debit = self.get_cct_account(transaction.splits[0].account)
-        cct_account_credit = self.get_cct_account(transaction.splits[1].account)
+        amount_debit = transaction.splits[0].amount
+        account_debit = transaction.splits[0].account
+        account_credit = transaction.splits[1].account
+        if isinstance(amount_debit, str):
+            amount_debit = Decimal(amount_debit)
+        if amount_debit >= 0:
+            # Resolve CashCtrl account identifiers for all involved accounts
+            amount = amount_debit
+            cct_account_debit = self.get_cct_account(account_debit)
+            cct_account_credit = self.get_cct_account(account_credit)
+        else:
+            # Negative amount for debit => switch debit/credit accounts and make
+            # the amount positive (CashCtrl only accepts positive amounts)
+            amount = abs(amount_debit)
+            cct_account_debit = self.get_cct_account(account_credit)
+            cct_account_credit = self.get_cct_account(account_debit)
 
-        amount_str = (
-            f"{transaction.splits[1].amount:.2f}"
-            if isinstance(transaction.splits[1].amount, float)
-            else str(transaction.splits[1].amount)
-        )
+        amount_str = f"{amount:.2f}" if isinstance(amount, float) else str(amount)
 
         payload = self._get_common_transaction_payload(transaction)
         payload["amount"] = amount_str

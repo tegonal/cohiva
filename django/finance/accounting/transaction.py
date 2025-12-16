@@ -36,5 +36,8 @@ class Transaction:
 
 @dataclass
 class Split:
+    """A split of a transaction."""
+
     account: Account
     amount: Decimal | float | str
+    "Positive for debit, negative for credit."

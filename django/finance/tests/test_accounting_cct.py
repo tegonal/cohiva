@@ -265,6 +265,40 @@ class CashctrlBookTestCase(TestCase):
 
     @patch("finance.accounting.cashctrl.requests.get")
     @patch("finance.accounting.cashctrl.requests.post")
+    def test_add_transaction_with_negative_amount(self, mock_post, mock_get):
+        messages = []
+        with AccountingManager(messages) as book:
+            # configure fake responses
+            mock_get.return_value.raise_for_status.side_effect = None
+            mock_get.side_effect = self.fetch_account_responses
+
+            mock_post.return_value.json.return_value = {
+                "success": True,
+                "message": "Buchung gespeichert",
+                "insertId": 700,
+            }
+            mock_post.return_value.raise_for_status.side_effect = None
+
+            transaction_id = book.add_transaction(
+                -50.00,
+                self.account1,
+                self.account2,
+                "2026-01-01",
+                "Test CashCtrl add_transaction_with_negative_amount",
+                autosave=True,
+            )
+            self.assertTrue(transaction_id.startswith("cct_"))
+
+            # verify that the API was called
+            called_url = mock_post.call_args[0][0]
+            self.assertIn(f"{self.cohiva_test_endpoint}journal/create.json", called_url)
+            form_data_constructed = mock_post.call_args[1]
+            self.assertEqual("50.00", form_data_constructed["data"]["amount"])
+            self.assertEqual(1477, form_data_constructed["data"]["creditId"])
+            self.assertEqual(1237, form_data_constructed["data"]["debitId"])
+
+    @patch("finance.accounting.cashctrl.requests.get")
+    @patch("finance.accounting.cashctrl.requests.post")
     def test_add_transaction_without_date(self, mock_post, mock_get):
         messages = []
         with AccountingManager(messages) as book:
