@@ -72,6 +72,9 @@ class AccountingBook:
     def delete_transaction(self, transaction_id):
         raise NotImplementedError
 
+    def account_exists(self, account: Account):
+        raise NotImplementedError
+
     def save(self):
         raise NotImplementedError
 
@@ -164,6 +167,10 @@ class DummyBook(AccountingBook):
             return
         backend_id = self.get_backend_id(transaction_id)
         del self._db[backend_id]
+
+    def account_exists(self, account: Account):
+        # DummyBook accounts always exist
+        return True
 
     def save(self):
         for transaction in self._db.values():

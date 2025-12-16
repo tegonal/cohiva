@@ -315,6 +315,11 @@ class DummyBookTestCase(TestCase):
             self.assertEqual(book._save_transactions, False)
             self.assertEqual(book.delete_transaction("invalid"), None)
 
+    def test_account_exists(self):
+        DummyBook.dummy_db = {}
+        with AccountingManager() as book:
+            self.assertTrue(book.account_exists(Account("Test", "1000")))
+
     def test_save(self):
         DummyBook.dummy_db = {}
         with AccountingManager() as book:

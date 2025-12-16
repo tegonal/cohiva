@@ -98,8 +98,9 @@ class TestBilling(GenoAdminTestCase):
         contract.rental_units.set([self.rentalunits[3]])
         messages = geno.billing.create_invoices(reference_date=datetime.date(2001, 6, 1))
         self.assertIn("Vertrag hat keine Vertragspartner/Adresse", messages[0]["info"])
+        self.assertEqual(messages[0]["variant"], "error")
         self.assertEqual(messages[1]["info"], "VERARBEITUNG ABGEBROCHEN!")
-        self.assertEqual(messages[1]["variant"], "error")
+        self.assertEqual(messages[1]["variant"], "warning")
         self.assertEqual(messages[-1]["info"], "3 Rechnungen für 1 Vertrag")
 
     @patch("geno.billing.add_invoice", wraps=add_invoice_exception_generator)

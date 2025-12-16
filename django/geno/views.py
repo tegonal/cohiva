@@ -3666,7 +3666,6 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
         form = self.get_form()
         formset = self.get_formset()
         if form.is_valid() and formset.is_valid():
-            print("Form valid")
             ret = self.process(form, formset)
             if isinstance(ret, FileResponse):
                 return ret
@@ -3839,7 +3838,6 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
                         "Bitte eingeben oder Betrag löschen.",
                     )
                     self.error_flag = True
-                    print("ERROR")
                     break
                 line["date"] = line["date"].strftime("%d.%m.%Y")
                 line["total"] = nformat(line["amount"])
@@ -3954,7 +3952,6 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
                     )
                     self.error_flag = True
             else:
-                print("Output")
                 pdf_file = open("/tmp/%s" % output_filename, "rb")
                 resp = FileResponse(pdf_file, content_type="application/pdf")
                 resp["Content-Disposition"] = "attachment; filename=%s" % output_filename
@@ -4021,7 +4018,7 @@ class InvoiceBatchGenerateView(DryRunActionView):
         """Extract invoice count from the results."""
         if self.result and len(self.result) > 0:
             last_section = self.result[-1]
-            if last_section.get("objects"):
+            if isinstance(last_section, dict) and last_section.get("objects"):
                 objects = last_section["objects"]
                 if objects and isinstance(objects[-1], str) and "Rechnungen" in objects[-1]:
                     invoice_count_text = objects[-1]
