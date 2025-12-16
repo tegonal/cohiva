@@ -8,7 +8,14 @@ from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.db.models import Q
 
-from finance.accounting import Account, AccountingManager, AccountKey, Split, Transaction
+from finance.accounting import (
+    Account,
+    AccountingBook,
+    AccountingManager,
+    AccountKey,
+    Split,
+    Transaction,
+)
 
 from .models import Address, RentalUnit, Share, ShareType, get_active_contracts, get_active_shares
 from .utils import is_member, nformat
@@ -688,7 +695,7 @@ def create_interest_transactions_execute(book_date):
 
 
 def add_interest_transaction(
-    book,
+    book: AccountingBook,
     book_date,
     adr,
     name,

@@ -52,9 +52,9 @@ class GnucashBookTestCase(TestCase):
             for split in tr.splits:
                 self.assertIn(split.account.code, ("1000", "2000"))
                 if split.account.code == "1000":
-                    self.assertEqual(split.amount, Decimal(-100))
-                elif split.account.code == "2000":
                     self.assertEqual(split.amount, Decimal(100))
+                elif split.account.code == "2000":
+                    self.assertEqual(split.amount, Decimal(-100))
             self.assertEqual(tr.date, datetime.date(2020, 1, 1))
             self.assertEqual(tr.description, "Test")
             self.assertEqual(tr.currency, "CHF")
@@ -79,7 +79,7 @@ class GnucashBookTestCase(TestCase):
         splits = [
             Split(account=self.account1, amount=150),
             Split(account=self.account2, amount=-50),
-            Split(account=self.account3, amount=100),
+            Split(account=self.account3, amount=-100),
         ]
         with AccountingManager(messages) as book:
             transaction_id = book.add_split_transaction(

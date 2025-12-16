@@ -737,6 +737,13 @@ def add_invoice(
     )
 
 
+## Convention for invoice types:
+## - Invoice:
+#      - acc_debit = receivables account (Debitoren)
+#      - acc_credit = revenue account (e.g. Mieteinnamhen)
+## - Payment:
+#      - acc_debit = payment account (e.g. Bank)
+#      - acc_credit = receivables (Debitoren)
 def add_invoice_obj(
     book: AccountingBook,
     invoice_type,
@@ -757,13 +764,18 @@ def add_invoice_obj(
     dry_run=False,
     comment="",
 ):
+    """Add Invoice object and transaction to the accounting book.
+
+    :param account: Revenue account for invoices (credit) or bank account for payments (debit).
+    :param receivables_account: Receivables account for invoices (debit) or payments (credit).
+    """
     amount_dec = Decimal(str(amount))
     if invoice_type == "Invoice":
-        acc_to = receivables_account
-        acc_from = account
+        acc_debit = receivables_account
+        acc_credit = account  # revenue account
     elif invoice_type == "Payment":
-        acc_to = account
-        acc_from = receivables_account
+        acc_debit = account  # bank account
+        acc_credit = receivables_account
     else:
         raise InvoiceCreationError(f"Invoice type {invoice_type} is not implemented.")
 
@@ -805,9 +817,8 @@ def add_invoice_obj(
             additional_info=additional_info,
             comment=comment,
         )
-        ## TODO: Change acc_from and acc_to numbers (with ID?)
         fin_transaction_ref = book.add_transaction(
-            amount_dec, acc_from, acc_to, date, txn_description, autosave=False
+            amount_dec, acc_debit, acc_credit, date, txn_description, autosave=False
         )
         invoice.fin_transaction_ref = fin_transaction_ref
         invoice.fin_account = account.code
@@ -1313,7 +1324,7 @@ def process_transaction(transaction_type, date, address, amount, save_sender=Non
         return f"Konnte Transaktion nicht erstellen: {e}"
 
 
-def add_transaction_shares(book, date, amount, address, use_clearing=False):
+def add_transaction_shares(book: AccountingBook, date, amount, address, use_clearing=False):
     ## Genossenschaftsanteile Mitglieder
     share_as_account = Account.from_settings(AccountKey.SHARES_MEMBERS)
     if use_clearing:
@@ -1340,12 +1351,12 @@ def add_transaction_shares(book, date, amount, address, use_clearing=False):
     )
     description = f"{text_as} {address}"
     book.add_transaction(
-        amount, share_as_account, payment_account, date, description, autosave=False
+        amount, payment_account, share_as_account, date, description, autosave=False
     )
     share.save()
 
 
-def add_transaction_shares_entry(book, date, amount, address, use_clearing=False):
+def add_transaction_shares_entry(book: AccountingBook, date, amount, address, use_clearing=False):
     ## Genossenschaftsanteile Mitglieder
     share_as_account = Account.from_settings(AccountKey.SHARES_MEMBERS)
     ## Beitrittsgebühren
@@ -1399,7 +1410,7 @@ def add_transaction_shares_entry(book, date, amount, address, use_clearing=False
     att.save()
 
 
-def add_transaction_interest(book, date, amount, address, book_to):
+def add_transaction_interest(book: AccountingBook, date, amount, address, book_to):
     ## Verbindlichkeiten aus Finanzierung
     interest_account = Account.from_settings(AccountKey.SHARES_INTEREST)
 
@@ -1425,12 +1436,12 @@ def add_transaction_interest(book, date, amount, address, book_to):
     )
     description = f"{text}, {address}"
     book.add_transaction(
-        amount, shares_account, interest_account, date, description, autosave=False
+        amount, interest_account, shares_account, date, description, autosave=False
     )
     share.save()
 
 
-def add_transaction_memberfee(book, date, amount, address):
+def add_transaction_memberfee(book: AccountingBook, date, amount, address):
     payment_account = Account.from_settings(AccountKey.DEFAULT_DEBTOR_MANUAL)
     fee_year = datetime.datetime.today().year
     memberfee_account = Account.from_settings(AccountKey.MEMBER_FEE)
@@ -1462,20 +1473,20 @@ def add_transaction_memberfee(book, date, amount, address):
 
     description = f"Mitgliederbeitrag {fee_year}, {address}"
     book.add_transaction(
-        amount, memberfee_account, payment_account, date, description, autosave=False
+        amount, payment_account, memberfee_account, date, description, autosave=False
     )
     att.value = "Bezahlt"
     att.date = date
     att.save()
 
 
-def add_transaction_kiosk(book, date, amount, note=None):
+def add_transaction_kiosk(book: AccountingBook, date, amount, note=None):
     payment_account = Account.from_settings(AccountKey.DEFAULT_DEBTOR_MANUAL)
     income_account = Account.from_settings(AccountKey.KIOSK)
     desc = "Kiosk/Twint"
     if note:
         desc = "%s: %s" % (desc, note)
-    book.add_transaction(amount, income_account, payment_account, date, desc, autosave=False)
+    book.add_transaction(amount, payment_account, income_account, date, desc, autosave=False)
 
 
 def process_sepa_transactions(data):

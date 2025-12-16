@@ -33,9 +33,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 # Install runtime dependencies
-    # mariadb-client-compat
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends xmlsec1 libreoffice-writer-nogui mariadb-client locales fonts-lato fonts-liberation && \
+    apt-get install -y --no-install-recommends xmlsec1 libreoffice-writer-nogui mariadb-client locales fonts-lato fonts-liberation rsync && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
