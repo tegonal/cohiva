@@ -197,6 +197,8 @@ class BookTransaction:
 
         # Check cache first
         if account_nbr in self._account_cache:
+            if self._account_cache[account_nbr] is None:
+                raise KeyError(f"Account with number {account_nbr} not found in CashCtrl.")
             return self._account_cache[account_nbr]
 
         # Build filter as the CashCtrl REST API expects and URL-encode it
@@ -219,7 +221,8 @@ class BookTransaction:
                 return acct.get("id")
 
         # TODO Throw exception if account not found
-        raise ValueError(f"Account with number {account_nbr} not found in CashCtrl.")
+        self._account_cache[account_nbr] = None
+        raise KeyError(f"Account with number {account_nbr} not found in CashCtrl.")
 
     def get_cct_transaction(self, transaction_id):
         # Call _get_api_url + journal/read.json?id=[transaction_id] and fetch the transaction
@@ -321,6 +324,14 @@ class CashctrlBook(AccountingBook):
             self._book_transaction.delete(cct_transaction["data"])
         if autosave:
             self.save()
+
+    def account_exists(self, account: Account):
+        self._open_book_transactional()
+        try:
+            self._book_transaction.get_cct_account(account)
+        except KeyError:
+            return False
+        return True
 
     def save(self):
         if not self._book_transaction:

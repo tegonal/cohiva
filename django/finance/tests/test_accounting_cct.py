@@ -188,7 +188,9 @@ class CashctrlBookTestCase(TestCase):
                     },
                     status_code=200,
                 )
-            return Exception("Unknown account number in URL")
+            elif "123456789" in str(url):
+                # Simulate unknown account
+                return Mock(json=lambda: {"total": 0, "data": []}, status_code=200)
         return Mock(
             json=lambda: {
                 "success": False,
@@ -557,3 +559,13 @@ class CashctrlBookTestCase(TestCase):
                     "Test error processing",
                     autosave=False,
                 )
+
+    @patch("finance.accounting.cashctrl.requests.get")
+    def test_account_exists(self, mock_get):
+        with AccountingManager() as book:
+            # configure fake responses
+            mock_get.return_value.raise_for_status.side_effect = None
+            mock_get.side_effect = self.fetch_account_responses
+
+            self.assertTrue(book.account_exists(self.account1))
+            self.assertFalse(book.account_exists(Account("Invalid", "123456789")))

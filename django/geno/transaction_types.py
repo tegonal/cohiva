@@ -34,7 +34,7 @@ def get_manual_transaction_types():
         for year in range(now.year + 1, geno_settings.TRANSACTION_MEMBERFEE_STARTYEAR - 1, -1):
             transaction_types.append((f"fee{year}", f"Mitgliederbeitrag {year}"))
 
-    if settings.GENO_ID == "Warmbaechli":
+    if settings.GENO_ID == "Warmbaechli" or (settings.DEMO and settings.DEBUG):
         transaction_types.append(("entry_as", "Beitrittsgebühr+Anteilschein(e) (Post)"))
         transaction_types.append(("share_as", "Anteilscheine (Bank)"))
         transaction_types.append(

@@ -21,6 +21,7 @@ from html2text import html2text
 ## For QR bill and svg -> pdf
 from qrbill import QRBill
 from reportlab.graphics import renderPDF
+from requests import HTTPError
 from stdnum.ch import esr
 from svglib.svglib import svg2rlg
 
@@ -98,9 +99,14 @@ def create_invoices(
     all_placeholder_invoices = []
     all_email_messages = []
 
-    with AccountingManager(messages) as book:
+    book_messages = []
+    with AccountingManager(book_messages) as book:
         if not book:
-            return messages
+            contracts = []  # Can't proceed without an accounting book
+            for msg in book_messages:
+                messages.append(
+                    CohivaAdminViewMixin.make_response_item(msg, variant=ResponseVariant.ERROR)
+                )
         for contract in contracts:
             ## Create monthly invoices starting from the reference date
             options = {
@@ -124,7 +130,7 @@ def create_invoices(
                 )
                 messages.append(
                     CohivaAdminViewMixin.make_response_item(
-                        _("VERARBEITUNG ABGEBROCHEN!"), variant=ResponseVariant.ERROR
+                        _("VERARBEITUNG ABGEBROCHEN!"), variant=ResponseVariant.WARNING
                     )
                 )
                 break
@@ -780,6 +786,20 @@ def add_invoice_obj(
         raise InvoiceCreationError(f"Invoice type {invoice_type} is not implemented.")
 
     if dry_run:
+        # Just check if the accounts exist
+        try:
+            if not book.account_exists(acc_debit):
+                raise InvoiceCreationError(
+                    _("Account {account} does not exist.").format(account=acc_debit)
+                )
+            if not book.account_exists(acc_credit):
+                raise InvoiceCreationError(
+                    _("Account {account} does not exist.").format(account=acc_credit)
+                )
+        except HTTPError as e:
+            raise InvoiceCreationError(
+                _("Can't access accounting backend: {error}").format(error=e)
+            )
         return None
 
     if transaction_id:

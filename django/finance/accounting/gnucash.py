@@ -68,6 +68,13 @@ class GnucashBook(AccountingBook):
         self._book.delete(gnc_transaction)
         self.save()
 
+    def account_exists(self, account: Account):
+        try:
+            self._get_gnc_account(account)
+        except KeyError:
+            return False
+        return True
+
     def save(self):
         if not self._book:
             return False

@@ -93,3 +93,8 @@ class GnucashBookTestCase(TestCase):
                 Transaction(splits, date="2020-01-02", description="Split Transaction Test"),
             )
             mock_save.assert_called_once()
+
+    def test_account_exists(self):
+        with AccountingManager() as book:
+            self.assertTrue(book.account_exists(Account("Test", "1000")))
+            self.assertFalse(book.account_exists(Account("Test", "123456789")))
