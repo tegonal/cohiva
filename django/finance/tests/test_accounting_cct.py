@@ -569,3 +569,31 @@ class CashctrlBookTestCase(TestCase):
 
             self.assertTrue(book.account_exists(self.account1))
             self.assertFalse(book.account_exists(Account("Invalid", "123456789")))
+
+    @patch("finance.accounting.cashctrl.requests.get")
+    def test_account_caching(self, mock_get):
+        # configure fake responses
+        mock_get.return_value.raise_for_status.side_effect = None
+        mock_get.side_effect = self.fetch_account_responses
+
+        with AccountingManager() as book:
+            acc = book._book_transaction.get_cct_account(self.account1.code)
+            self.assertEqual(acc, 1477)
+            with self.assertRaises(KeyError):
+                book._book_transaction.get_cct_account("123456789")
+            self.assertEqual(mock_get.call_count, 2)
+
+            # second calls should use cache
+            acc = book._book_transaction.get_cct_account(self.account1.code)
+            self.assertEqual(acc, 1477)
+            with self.assertRaises(KeyError):
+                book._book_transaction.get_cct_account("123456789")
+            self.assertEqual(mock_get.call_count, 2)
+
+        with AccountingManager() as book:
+            ## Opening a new book should reset the cache
+            acc = book._book_transaction.get_cct_account(self.account1.code)
+            self.assertEqual(acc, 1477)
+            with self.assertRaises(KeyError):
+                book._book_transaction.get_cct_account("123456789")
+            self.assertEqual(mock_get.call_count, 4)
