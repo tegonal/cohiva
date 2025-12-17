@@ -10,7 +10,7 @@ from django.test import tag
 
 import geno.tests.data as testdata
 from finance.accounting import AccountingManager, AccountKey
-from geno.billing import create_invoices, get_reference_nr
+from geno.billing import consolidate_invoices, create_invoices, get_reference_nr
 from geno.invoice import InvoiceCreator, InvoiceCreatorError, InvoiceNotUnique
 from geno.models import Contract, Invoice, InvoiceCategory
 
@@ -290,6 +290,52 @@ class InvoicesTest(GenoAdminTestCase):
         self.assertNotEqual(payments[0].fin_transaction_ref, "")
         self.assertNotEqual(payments[1].fin_transaction_ref, "")
         Invoice.objects.all().delete()
+
+    def test_consolidate_invoices(self):
+        Invoice.objects.create(
+            name="Test Invoice",
+            person=self.addresses[0],
+            invoice_type="Invoice",
+            invoice_category=self.invoicecategories[0],
+            date=datetime.date(2000, 1, 1),
+            amount=Decimal("100"),
+        )
+        Invoice.objects.create(
+            name="Test Payment",
+            person=self.addresses[0],
+            invoice_type="Payment",
+            invoice_category=self.invoicecategories[0],
+            date=datetime.date(2000, 1, 1),
+            amount=Decimal("100"),
+        )
+        self.assertEqual(Invoice.objects.all().count(), 2)
+        self.assertEqual(Invoice.objects.filter(consolidated=True).count(), 0)
+
+        consolidate_invoices()
+        self.assertEqual(Invoice.objects.filter(consolidated=True).count(), 2)
+
+    def test_consolidate_invoices_amount_mismatch(self):
+        Invoice.objects.create(
+            name="Test Invoice",
+            person=self.addresses[0],
+            invoice_type="Invoice",
+            invoice_category=self.invoicecategories[0],
+            date=datetime.date(2000, 1, 1),
+            amount=Decimal("100"),
+        )
+        Invoice.objects.create(
+            name="Test Payment",
+            person=self.addresses[0],
+            invoice_type="Payment",
+            invoice_category=self.invoicecategories[0],
+            date=datetime.date(2000, 1, 2),
+            amount=Decimal("101"),
+        )
+        self.assertEqual(Invoice.objects.all().count(), 2)
+        self.assertEqual(Invoice.objects.filter(consolidated=True).count(), 0)
+
+        consolidate_invoices()
+        self.assertEqual(Invoice.objects.filter(consolidated=True).count(), 0)
 
 
 # Create two rental_objects

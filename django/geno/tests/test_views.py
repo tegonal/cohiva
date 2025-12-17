@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.apps import apps as django_apps
 from django.conf import settings
 from django.urls import reverse
@@ -89,3 +91,29 @@ class GenoViewsTest(GenoAdminTestCase):
             if response.status_code != 200:
                 print(f"FAILED PATH: {path} [{response.status_code}]")
             self.assertEqual(response.status_code, 200)
+
+    @patch("geno.views.consolidate_invoices")
+    def test_debtor_view_consolidate_invoices(self, mock_consolidate_invoices):
+        self.client.login(username="superuser", password="secret")
+        path = reverse("geno:debtor-list")
+        response = self.client.post(path, data={"consolidate": ""})
+        self.assertEqual(response.status_code, 200)
+        mock_consolidate_invoices.assert_called_once()
+
+        # Don't consolidate on search/filter
+        response = self.client.post(path, data={"search": ""})
+        self.assertEqual(response.status_code, 200)
+        mock_consolidate_invoices.assert_called_once()
+
+    @patch("geno.views.consolidate_invoices")
+    def test_debtor_view_consolidate_invoices_detail(self, mock_consolidate_invoices):
+        self.client.login(username="superuser", password="secret")
+        path = reverse("geno:debtor-detail", args=["p", self.addresses[0].pk])
+        response = self.client.post(path, data={"consolidate": ""})
+        self.assertEqual(response.status_code, 200)
+        mock_consolidate_invoices.assert_called_once_with(self.addresses[0])
+
+        # Don't consolidate on search/filter
+        response = self.client.post(path, data={"search": ""})
+        self.assertEqual(response.status_code, 200)
+        mock_consolidate_invoices.assert_called_once()
