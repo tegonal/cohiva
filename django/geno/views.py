@@ -1071,7 +1071,7 @@ class DebtorView(CohivaAdminViewMixin, TemplateView):
 
         from .tables import InvoiceOverviewTable
 
-        if self.request.POST.get("consolidate"):
+        if "consolidate" in self.request.POST:
             consolidate_invoices()
         data = invoice_overview(self.request.session["invoice_filter"])
 
@@ -1090,7 +1090,7 @@ class DebtorView(CohivaAdminViewMixin, TemplateView):
             obj = Contract.objects.get(pk=key)
         else:
             obj = Address.objects.get(pk=key)
-        if self.request.POST.get("consolidate"):
+        if "consolidate" in self.request.POST:
             consolidate_invoices(obj)
         data = invoice_detail(obj, self.request.session["invoice_filter"])
 
