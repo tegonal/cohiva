@@ -62,9 +62,9 @@ def update_deployed_version_file():
     updated_lines = []
     for line in lines:
         if line.startswith("git_tag = "):
-            updated_lines.append(f"git_tag = \"{git_tag}\"")
+            updated_lines.append(f'git_tag = "{git_tag}"')
         elif line.startswith("git_commit = "):
-            updated_lines.append(f"git_commit = \"{git_commit}\"")
+            updated_lines.append(f'git_commit = "{git_commit}"')
         else:
             updated_lines.append(line)
     file_path.write_text("\n".join(updated_lines) + "\n")
