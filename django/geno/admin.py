@@ -4,6 +4,9 @@ from dateutil.relativedelta import relativedelta
 from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
+from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import Group, User
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -12,6 +15,7 @@ from stdnum import iban as iban_util
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import action
 from unfold.enums import ActionVariant
+from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 
 import geno.settings as geno_settings
 from geno.exporter import ExportXlsMixin
@@ -1678,3 +1682,22 @@ class GenericAttributeAdmin(GenoBaseAdmin):
     list_display = ["name", "value", "date", "content_type", "ts_created", "ts_modified"]
     search_fields = ["name", "comment", "value"]
     list_filter = ["name", "ts_created", "ts_modified", "content_type"]
+
+
+## Unregister default admin classes and re-register with unfold classes to provide the correct
+## styling.
+admin.site.unregister(User)
+admin.site.unregister(Group)
+
+
+@admin.register(User)
+class UserAdmin(BaseUserAdmin, ModelAdmin):
+    # Forms loaded from `unfold.forms`
+    form = UserChangeForm
+    add_form = UserCreationForm
+    change_password_form = AdminPasswordChangeForm
+
+
+@admin.register(Group)
+class GroupAdmin(BaseGroupAdmin, ModelAdmin):
+    pass
