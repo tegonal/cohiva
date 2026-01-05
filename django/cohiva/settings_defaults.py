@@ -231,6 +231,19 @@ if "api" in cbc.FEATURES:
         #'rest_framework_jwt',
     )
 
+if "website" in cbc.FEATURES:
+    INSTALLED_APPS += ("website",)
+
+if "portal" in cbc.FEATURES:
+    INSTALLED_APPS += (
+        "portal",
+        # For oauth
+        "oauth2_provider",
+        "corsheaders",
+        # For SAML 2.0
+        "djangosaml2idp",
+    )
+
 if "cms" in cbc.FEATURES:
     INSTALLED_APPS += (
         ## For wagtail
@@ -248,19 +261,6 @@ if "cms" in cbc.FEATURES:
         "modelcluster",
         "taggit",
         "wagtailmenus",
-    )
-
-if "website" in cbc.FEATURES:
-    INSTALLED_APPS += ("website",)
-
-if "portal" in cbc.FEATURES:
-    INSTALLED_APPS += (
-        "portal",
-        # For oauth
-        "oauth2_provider",
-        "corsheaders",
-        # For SAML 2.0
-        "djangosaml2idp",
     )
 
 if "reservation" in cbc.FEATURES:
@@ -1319,9 +1319,19 @@ UNFOLD = {
     "SITE_HEADER": "Cohiva",
     "SITE_DROPDOWN": [
         {
+            "icon": "book_2",
+            "title": _("Dokumentation"),
+            "link": "https://tegonal.github.io/cohiva/",
+        },
+        {
+            "icon": "error",
+            "title": _("GitHub Issues"),
+            "link": "https://github.com/tegonal/cohiva/issues/",
+        },
+        {
             "icon": "globe",
             "title": _("Cohiva Website"),
-            "link": "https://cohiva.ch",
+            "link": "https://cohiva.ch/",
         },
     ],
     #    "SITE_URL": "/",
