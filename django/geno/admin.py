@@ -72,85 +72,45 @@ class BooleanFieldDefaultTrueListFilter(admin.BooleanFieldListFilter):
 
     def __init__(self, field, request, params, model, model_admin, field_path):
         super().__init__(field, request, params, model, model_admin, field_path)
-
-        # Determine the parameter name used in the URL.
-        # Support `field_path` (e.g. parent__active), the field name,
-        # and common variants with '.' vs '__' (e.g. parent.active).
-        candidates = []
-        if field_path:
-            candidates.append(field_path)
-        try:
-            candidates.append(self.field.name)
-        except Exception:
-            pass
-
-        # Add common variants
-        variants = set(candidates)
-        for c in list(candidates):
-            variants.add(c.replace(".", "__"))
-            variants.add(c.replace("__", "."))
-        candidates = list(variants)
-
-        lookup_param = None
-        for c in candidates:
-            if c in self.used_parameters:
-                lookup_param = c
-                break
-
-        # Fallback to field_path or field name
-        if lookup_param is None:
-            lookup_param = field_path or getattr(self.field, "name", "")
-
-        self.field.name = lookup_param
-
-        try:
-            val = self.used_parameters.get(self.field.name)
-            if val == "all":
-                self.lookup_val = "all"
-            elif val == "0":
-                self.lookup_val = "0"
-            else:
-                self.lookup_val = "1"
-        except Exception:
-            self.lookup_val = "1"
+        self.lookup_val = self.used_parameters.get(self.lookup_kwarg, True)
+        # Add the model name to the label if the filter uses a boolean field of a related object.
+        if field.model and field.model != model:
+            self.title = f"{self.title} ({field.model._meta.verbose_name.title()})"
 
     def choices(self, changelist):
+        if self.lookup_val == "all":
+            selected = "all"
+        elif self.lookup_val:
+            selected = "1"
+        else:
+            selected = "0"
         yield from [
             {
-                "selected": self.lookup_val == "all",
-                "query_string": changelist.get_query_string(
-                    {self.field.name: "all"}, remove=[self.field.name]
-                ),
+                "selected": selected == "all",
+                "query_string": changelist.get_query_string({self.lookup_kwarg: "all"}),
                 "display": "Alle",
             },
             {
-                "selected": self.lookup_val == "1",
+                "selected": selected == "1",
                 "query_string": changelist.get_query_string(
-                    {self.field.name: "1"}, remove=[self.field.name]
+                    {self.lookup_kwarg: "1"},
                 ),
                 "display": "Aktive",
             },
             {
-                "selected": self.lookup_val == "0",
+                "selected": selected == "0",
                 "query_string": changelist.get_query_string(
-                    {self.field.name: "0"}, remove=[self.field.name]
+                    {self.lookup_kwarg: "0"},
                 ),
                 "display": "Inaktive",
             },
         ]
 
     def queryset(self, request, queryset):
-        # Normalize lookup to Django filter lookup syntax (use `__` separators).
-        lookup = (self.field.name or getattr(self.field, "name", "")).replace(".", "__")
-        if self.lookup_val == "1":
-            return queryset.filter(**{lookup: True})
-        elif self.lookup_val == "0":
-            return queryset.filter(**{lookup: False})
-        else:
+        if self.lookup_val == "all":
             return queryset
-
-    def expected_parameters(self):
-        return [self.field.name]
+        else:
+            return queryset.filter(**{self.lookup_kwarg: self.lookup_val})
 
 
 ## Base admin class
@@ -479,7 +439,11 @@ class TenantAdmin(GenoBaseAdmin):
     ]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "building", "key_number", "active"]
-    list_filter = ["building__name", ("active", BooleanFieldDefaultTrueListFilter)]
+    list_filter = [
+        "building__name",
+        ("active", BooleanFieldDefaultTrueListFilter),
+        ("building__active", BooleanFieldDefaultTrueListFilter),
+    ]
     search_fields = ["name__name", "name__first_name", "building__name", "key_number", "notes"]
     autocomplete_fields = ["name", "building"]
 

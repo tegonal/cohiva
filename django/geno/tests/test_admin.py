@@ -1,13 +1,17 @@
 import datetime
 from unittest.mock import patch
 
+from django.contrib import admin as django_admin
 from django.db.models import Q
+from django.test import RequestFactory
 
+import geno.admin
 import geno.tests.data as geno_testdata
 from geno import admin
+from geno.admin import BooleanFieldDefaultTrueListFilter
 
 # from django.conf import settings
-from geno.models import Address, ContentTemplate, Contract, GenericAttribute, Member
+from geno.models import Address, Child, ContentTemplate, Contract, GenericAttribute, Member
 from geno.tests.base import MockDate
 
 from .base import GenoAdminTestCase
@@ -18,6 +22,8 @@ class GenoAdminTest(GenoAdminTestCase):
     def setUpTestData(cls):
         super().setUpTestData()
         geno_testdata.create_contracts(cls)
+        inactive_adr = Address.objects.create(name="Inactive Address", active=False)
+        Child.objects.create(name=inactive_adr, presence=1)
 
     def test_admin_views_status200(self):
         logged_in = self.client.login(username="superuser", password="secret")
@@ -217,3 +223,124 @@ class GenoAdminTest(GenoAdminTestCase):
         admin.contract_set_billingend_nextmonth(None, None, queryset)
         self.contracts[-1].refresh_from_db()
         self.assertEqual(self.contracts[-1].billing_date_end, datetime.date(2025, 2, 28))
+
+    def create_BooleanFieldDefaultTrueListFilter(
+        self,
+        model_name="address",
+        query_params=None,
+    ):
+        if model_name == "address":
+            model = Address
+            field_path = "active"
+            model_admin = geno.admin.AddressAdmin
+        elif model_name == "child":
+            model = Child
+            field_path = "name__active"
+            model_admin = geno.admin.ChildAdmin
+        else:
+            raise ValueError("Unknown model_name")
+        factory = RequestFactory()
+        request = factory.get(f"/admin/geno/{model_name}/", query_params=query_params)
+        admin_instance = model_admin(model, django_admin.site)
+        _filter = BooleanFieldDefaultTrueListFilter(
+            field=Address._meta.get_field("active"),
+            request=request,
+            params=query_params or {},
+            model=model,
+            model_admin=admin_instance,
+            field_path=field_path,
+        )
+        qs = _filter.queryset(request, model.objects.all())
+        request.user = self.su
+        changelist = admin_instance.get_changelist_instance(request)
+        return _filter, qs, changelist
+
+    def test_BooleanFieldDefaultTrueListFilter_title(self):
+        _filter, _, _ = self.create_BooleanFieldDefaultTrueListFilter()
+        self.assertEqual(_filter.title, "Aktiv")
+
+        _filter, _, _ = self.create_BooleanFieldDefaultTrueListFilter("child")
+        self.assertEqual(_filter.title, "Aktiv (Adresse)")
+
+    def test_BooleanFieldDefaultTrueListFilter_default(self):
+        _, qs, _ = self.create_BooleanFieldDefaultTrueListFilter()
+        self.assertEqual(qs.count(), 8)
+
+    def test_BooleanFieldDefaultTrueListFilter_active(self):
+        _, qs, _ = self.create_BooleanFieldDefaultTrueListFilter(
+            query_params={"active__exact": "1"}
+        )
+        self.assertEqual(qs.count(), 8)
+
+    def test_BooleanFieldDefaultTrueListFilter_inactive(self):
+        _, qs, _ = self.create_BooleanFieldDefaultTrueListFilter(
+            query_params={"active__exact": "0"}
+        )
+        self.assertEqual(qs.count(), 1)
+
+    def test_BooleanFieldDefaultTrueListFilter_all(self):
+        _, qs, _ = self.create_BooleanFieldDefaultTrueListFilter(
+            query_params={"active__exact": "all"}
+        )
+        self.assertEqual(qs.count(), 9)
+
+    def test_BooleanFieldDefaultTrueListFilter_related_default(self):
+        _, qs, _ = self.create_BooleanFieldDefaultTrueListFilter(model_name="child")
+        self.assertEqual(qs.count(), 2)
+
+    def test_BooleanFieldDefaultTrueListFilter_related_active(self):
+        _, qs, _ = self.create_BooleanFieldDefaultTrueListFilter(
+            model_name="child", query_params={"name__active__exact": "1"}
+        )
+        self.assertEqual(qs.count(), 2)
+
+    def test_BooleanFieldDefaultTrueListFilter_related_inactive(self):
+        _, qs, _ = self.create_BooleanFieldDefaultTrueListFilter(
+            model_name="child", query_params={"name__active__exact": "0"}
+        )
+        self.assertEqual(qs.count(), 1)
+
+    def test_BooleanFieldDefaultTrueListFilter_related_all(self):
+        _, qs, _ = self.create_BooleanFieldDefaultTrueListFilter(
+            model_name="child", query_params={"name__active__exact": "all"}
+        )
+        self.assertEqual(qs.count(), 3)
+
+    def test_BooleanFieldDefaultTrueListFilter_choices(self):
+        _filter, _, changelist = self.create_BooleanFieldDefaultTrueListFilter()
+        choices = list(_filter.choices(changelist))
+        self.assertEqual(choices[0]["query_string"], "?active__exact=all")
+        self.assertEqual(choices[1]["query_string"], "?active__exact=1")
+        self.assertEqual(choices[2]["query_string"], "?active__exact=0")
+        self.assertEqual(choices[0]["selected"], False)
+        self.assertEqual(choices[1]["selected"], True)
+        self.assertEqual(choices[2]["selected"], False)
+        _filter, _, changelist = self.create_BooleanFieldDefaultTrueListFilter(
+            query_params={"active__exact": "all"}
+        )
+        choices = list(_filter.choices(changelist))
+        self.assertEqual(choices[0]["selected"], True)
+        self.assertEqual(choices[1]["selected"], False)
+        self.assertEqual(choices[2]["selected"], False)
+        _filter, _, changelist = self.create_BooleanFieldDefaultTrueListFilter(
+            query_params={"active__exact": "0"}
+        )
+        choices = list(_filter.choices(changelist))
+        self.assertEqual(choices[0]["selected"], False)
+        self.assertEqual(choices[1]["selected"], False)
+        self.assertEqual(choices[2]["selected"], True)
+        _filter, _, changelist = self.create_BooleanFieldDefaultTrueListFilter(
+            query_params={"active__exact": "1"}
+        )
+        choices = list(_filter.choices(changelist))
+        self.assertEqual(choices[0]["selected"], False)
+        self.assertEqual(choices[1]["selected"], True)
+        self.assertEqual(choices[2]["selected"], False)
+
+    def test_COHIV133_dont_overwrite_model_field_name(self):
+        self.client.login(username="superuser", password="secret")
+        # Setup  model field name to name__active by
+        self.client.get("/admin/geno/child/")
+        # Bug COHIV-133 will result in a HTTP Error 500 here:
+        response = self.client.get("/admin/geno/address/add/")
+        self.assertEqual(response.status_code, 200)
