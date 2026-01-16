@@ -419,6 +419,11 @@ def import_messung_data():
                         "Konnte Mieteinheit-Messdaten nicht importieren. Datei im ZIP nicht gefunden: %s"
                         % filename
                     )
+                except Exception as e:
+                    nk.log.append(f"WARNING: Error while reading {filename}: {e}")
+                    raise RuntimeError(
+                        f"Fehler beim Import der Mieteinheit-Messdaten von {filename}: {e}"
+                    )
                 month += 1
 
 
