@@ -1,5 +1,5 @@
 # Build stage
-FROM python:3.13-bookworm AS builder
+FROM python:3.14-bookworm AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -23,7 +23,7 @@ RUN find /usr/local/lib -type d -name '__pycache__' -exec rm -rf {} + && \
     find /usr/local/lib -type f -name '*.dist-info' -exec rm -rf {} +
 
 # Runtime stage
-FROM python:3.13-slim-bookworm AS cohiva-platform-os
+FROM python:3.14-slim-bookworm AS cohiva-platform-os
 
 # Set environment variables to ensure LibreOffice runs in headless mode
 ENV DEBIAN_FRONTEND=noninteractive
