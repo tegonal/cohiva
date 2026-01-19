@@ -565,6 +565,11 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
         elif (
             factor > 0 and sum_rent_total > 0.0 and contract.send_qrbill in ("only_next", "always")
         ):
+            if not invoice_category.email_template:
+                raise InvoiceCreationError(
+                    f"Rechnungstyp «{invoice_category}» hat keine Email-Vorlage. "
+                    "Bitte zuerst eine Vorlage konfigurieren."
+                )
             if dry_run and not single_contract:
                 render = False
             else:

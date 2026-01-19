@@ -266,6 +266,23 @@ class TestBilling(GenoAdminTestCase):
             self.assertIn(" 01.2001 für ", regular_invoices[-1])
             self.assertIn(" 03.2001 für ", regular_invoices[0])
 
+    @patch("geno.billing.add_invoice")
+    def test_create_monthly_invoices_when_email_template_is_missing(self, mock_add_invoice):
+        InvoiceCategory.objects.filter(name="Mietzins wiederkehrend").update(email_template=None)
+        with AccountingManager(book_type_id="dum") as book:
+            contract = self.contracts[0]
+            date = datetime.date(2001, 4, 1)
+            inv_cat = InvoiceCategory.objects.get(
+                reference_id=10
+            )  # name="Mietzins wiederkehrend")
+            options = {
+                "download_only": None,
+                "single_contract": None,
+                "dry_run": True,
+            }
+            with self.assertRaisesRegex(InvoiceCreationError, "keine Email-Vorlage"):
+                geno.billing.create_monthly_invoices(book, contract, date, inv_cat, options)
+
     def test_add_transaction_shares_200(self):
         with AccountingManager(book_type_id="dum") as book:
             date = datetime.date(2001, 4, 1)
