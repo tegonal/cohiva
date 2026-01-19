@@ -131,7 +131,7 @@ class ReportInputData(GenoBase):
                 filer_file = FilerFile.objects.get(id=int(self.value[6:]))
                 return filer_file.path
             except FilerFile.DoesNotExist:
-                return "[NOT FOUND]"
+                return f"[FEHLT: Datei für «{self.name.name}» mit ID {self.value}]"
         if self.name.field_type == "bool":
             return self.value.lower() in ["true", "1", "yes"]
         if self.name.field_type == "int":
