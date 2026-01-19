@@ -32,7 +32,6 @@ from oauthlib.oauth2 import TokenExpiredError
 from requests_oauthlib import OAuth2Session
 from stdnum.ch import esr
 
-from credit_accounting.forms import TransactionUploadForm
 from finance.accounting import Account, AccountingManager, AccountKey
 
 if hasattr(settings, "SHARE_PLOT") and settings.SHARE_PLOT:
@@ -86,6 +85,7 @@ from .forms import (
     ShareStatementForm,
     TransactionForm,
     TransactionFormInvoice,
+    TransactionUploadForm,
     TransactionUploadProcessForm,
     WebstampForm,
     process_registration_forms,

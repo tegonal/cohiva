@@ -1026,6 +1026,25 @@ class SendInvoicesForm(forms.Form):
         )
 
 
+class TransactionUploadForm(forms.Form):
+    file = forms.FileField(
+        label="Zahlungsdatei",
+        required=False,
+        widget=UnfoldAdminFileFieldWidget(),
+        help_text="camt.053 oder camt.054 (XML) oder ZIP-Datei mit mehreren XML-Dateien",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Add Crispy Forms helper for Unfold styling
+        self.helper = FormHelper()
+        self.helper.form_tag = False  # Form tag handled in template
+        self.helper.form_class = ""
+        self.helper.layout = Layout(
+            Div("file", css_class="mb-4"),
+        )
+
+
 class TransactionUploadFileForm(forms.Form):
     file = forms.FileField(required=False)
 
