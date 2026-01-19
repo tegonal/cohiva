@@ -1157,7 +1157,7 @@ class ManualInvoiceForm(forms.Form):
     send_email = forms.BooleanField(
         label="Per Email verschicken",
         required=False,
-        widget=UnfoldBooleanSwitchWidget(),
+        widget=UnfoldBooleanSwitchWidget(attrs={"form": "invoice_form"}),
         initial=False,
     )
 

@@ -487,7 +487,7 @@ def share_overview_boxplot(request):
             if total >= 1000:
                 stat_share.append(total / 1000.0)
     stat.append(stat_share)
-    labels.append("%s\nn=%d" % ("Nichtmitglieder", len(stat_share)))
+    labels.append("%s\nn=%d" % ("Personen ohne Mitgliedschaft", len(stat_share)))
 
     fig = Figure(figsize=(10, 7))
     ax = fig.add_subplot(111)
@@ -495,7 +495,7 @@ def share_overview_boxplot(request):
     ax.set_ylabel("Betrag (kFr.)")
     ax.axvline(5.5)
     ax.set_title(
-        "Beteiligungen ab Fr. 1000.- von Mitgliedern und Nichtmitglieden "
+        "Beteiligungen ab Fr. 1000.- von Mitgliedern und Personen ohne Mitgliedschaft "
         "(ohne Darlehen spez./Hypothek)\n"
         "(%d Mitglieder sind mit weniger als Fr. 1000.- beteiligt)\n"
         "Rot = Median, Box = Quartile (50%% der Daten), Linien = Min-Max ohne Ausreisser (1.5-IQR)"
@@ -1802,7 +1802,7 @@ def share_mailing(request):
     for adr in Address.objects.filter(active=True).order_by("name"):
         if not is_member(adr, date_mode="end_date"):
             ## Nichtmitglied
-            # ret.append({'info': str(adr), 'objects': ['Nichtmitglied']})
+            # ret.append({'info': str(adr), 'objects': ['Ohne Mitgliedschaft']})
             continue
 
         if not adr.city:
@@ -3874,10 +3874,12 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
             except Exception as e:
                 messages.error(self.request, f"Konnte Rechnungs-Objekt nicht erzeugen: {e}")
                 self.error_flag = True
+                invoice = None
                 invoice_id = None
         else:
             ## Test/Preview
             dry_run = True
+            invoice = None
             invoice_id = 9999999999
 
         if not self.error_flag:
@@ -3934,7 +3936,7 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
             )
             if ret:
                 messages.error(
-                    self.request, "Fehler beim erzeugen der Rechnung für %s: %s" % (info, ret)
+                    self.request, "Fehler beim Erzeugen der Rechnung für %s: %s" % (info, ret)
                 )
                 self.error_flag = True
             elif email_template:
@@ -3956,6 +3958,9 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
                 resp = FileResponse(pdf_file, content_type="application/pdf")
                 resp["Content-Disposition"] = "attachment; filename=%s" % output_filename
                 return resp
+            if self.error_flag and invoice:
+                # Rollback transaction
+                invoice.delete()
         return self.get(self.request)
 
 

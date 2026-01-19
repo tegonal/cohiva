@@ -1,12 +1,22 @@
-from unittest.mock import patch
+import datetime
+from unittest.mock import DEFAULT, patch
 
 from django.apps import apps as django_apps
 from django.conf import settings
 from django.urls import reverse
 
 import geno.tests.data as geno_testdata
+from geno.models import Invoice
 
 from .base import GenoAdminTestCase
+
+
+def create_fake_pdf(
+    ref_number, address, context, output_filename, render, email_template, email_subject, dry_run
+):
+    with open(f"/tmp/{output_filename}", "wb") as dummy_pdf:
+        dummy_pdf.write(b"Dummy PDF")
+    return DEFAULT
 
 
 class GenoViewsTest(GenoAdminTestCase):
@@ -117,3 +127,99 @@ class GenoViewsTest(GenoAdminTestCase):
         response = self.client.post(path, data={"search": ""})
         self.assertEqual(response.status_code, 200)
         mock_consolidate_invoices.assert_called_once()
+
+    def get_invoice_manual_data(self, preview=True, send_email=False):
+        data = {
+            "date": datetime.date.today().strftime("%d.%m.%Y"),
+            "category": self.invoicecategories[0].pk,
+            "address": self.addresses[0].pk,
+            "extra_text": "Test extra_text",
+            "form-0-date": datetime.date.today().strftime("%d.%m.%Y"),
+            "form-0-text": "Test invoice item 1",
+            "form-0-amount": "99.99",
+            "form-TOTAL_FORMS": "1",
+            "form-INITIAL_FORMS": "3",
+        }
+        if preview:
+            data["submit_action_preview"] = ""
+        else:
+            data["submit_action_save"] = ""
+        if send_email:
+            data["send_email"] = "on"
+        return data
+
+    @patch("geno.views.create_qrbill", side_effect=create_fake_pdf, return_value=([], 0, None))
+    def test_invoice_manual_process_preview(self, mock_create_qrbill):
+        self.client.login(username="superuser", password="secret")
+        path = reverse("geno:invoice-manual")
+        response = self.client.post(path, data=self.get_invoice_manual_data())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["Content-Type"], "application/pdf")
+        self.assertEqual(b"".join(response.streaming_content), b"Dummy PDF")
+        self.assertEqual(Invoice.objects.count(), 0)
+
+    @patch("geno.views.create_qrbill", side_effect=create_fake_pdf, return_value=([], 0, None))
+    def test_invoice_manual_process_download(self, mock_create_qrbill):
+        self.client.login(username="superuser", password="secret")
+        path = reverse("geno:invoice-manual")
+        response = self.client.post(path, data=self.get_invoice_manual_data(preview=False))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["Content-Type"], "application/pdf")
+        self.assertEqual(b"".join(response.streaming_content), b"Dummy PDF")
+        self.assertEqual(Invoice.objects.count(), 1)
+
+    @patch(
+        "geno.views.create_qrbill",
+        side_effect=create_fake_pdf,
+        return_value=([], 1, "test@example.test"),
+    )
+    def test_invoice_manual_process_send_email(self, mock_create_qrbill):
+        self.client.login(username="superuser", password="secret")
+        path = reverse("geno:invoice-manual")
+        response = self.client.post(
+            path, data=self.get_invoice_manual_data(preview=False, send_email=True)
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertInHTMLResponse(
+            " mit QR-Rechnung an test@example.test geschickt. Rechnung_Member Invoice",
+            response,
+            raw=True,
+        )
+        self.assertEqual(Invoice.objects.count(), 1)
+
+    @patch(
+        "geno.views.create_qrbill",
+        side_effect=create_fake_pdf,
+        return_value=([], 0, "test@example.test"),
+    )
+    def test_invoice_manual_process_email_error(self, mock_create_qrbill):
+        self.client.login(username="superuser", password="secret")
+        path = reverse("geno:invoice-manual")
+        response = self.client.post(
+            path, data=self.get_invoice_manual_data(preview=False, send_email=True)
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertInHTMLResponse(
+            "FEHLER beim Versenden des Emails ",
+            response,
+            raw=True,
+        )
+        self.assertEqual(Invoice.objects.count(), 0)
+
+    @patch(
+        "geno.views.create_qrbill",
+        return_value=(["Error: TEST"], 1, "test@example.test"),
+    )
+    def test_invoice_manual_process_creation_error(self, mock_create_qrbill):
+        self.client.login(username="superuser", password="secret")
+        path = reverse("geno:invoice-manual")
+        response = self.client.post(
+            path, data=self.get_invoice_manual_data(preview=False, send_email=False)
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertInHTMLResponse(
+            "Fehler beim Erzeugen der Rechnung für ",
+            response,
+            raw=True,
+        )
+        self.assertEqual(Invoice.objects.count(), 0)

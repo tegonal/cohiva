@@ -132,7 +132,7 @@ def process_eigenmittel():
             else:
                 members[m.pk]["status_eff"] = "Mitglied"
         except Member.DoesNotExist:
-            members[m.pk]["status_eff"] = "Nichtmitglied"
+            members[m.pk]["status_eff"] = "Ohne Mitgliedschaft"
 
     ## Export joined list
     response = HttpResponse(
