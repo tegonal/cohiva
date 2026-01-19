@@ -6,6 +6,7 @@ from django import forms
 from django.conf import settings
 from django.core.mail import send_mail
 from django.utils import timezone
+from django.utils.formats import date_format
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from unfold.widgets import (
@@ -130,8 +131,6 @@ class TransactionFormInvoice(forms.Form):
 
     def clean(self):
         """Cross-field validation for invoice payment."""
-        from django.utils.formats import date_format
-
         cleaned_data = super().clean()
         invoice = cleaned_data.get("invoice")
         amount = cleaned_data.get("amount")
@@ -149,7 +148,7 @@ class TransactionFormInvoice(forms.Form):
 
         # Validate date is not before invoice date
         if date and invoice.date and date < invoice.date:
-            formatted_date = date_format(invoice.date, format="SHORT_DATE_FORMAT", use_l10n=True)
+            formatted_date = date_format(invoice.date, format="SHORT_DATE_FORMAT")
             self.add_error(
                 "date", f"Datum darf nicht vor Rechnungsdatum ({formatted_date}) liegen."
             )
@@ -874,21 +873,13 @@ def process_registration_forms(request, selector="internal"):
         too_early = False
         too_late = False
         if event.publication_start:
-            from django.utils.formats import date_format
-
             localized_start = timezone.localtime(event.publication_start)
-            start_period = (
-                date_format(localized_start, format="DATETIME_FORMAT", use_l10n=True) + " Uhr"
-            )
+            start_period = date_format(localized_start, format="DATETIME_FORMAT") + " Uhr"
             if event.publication_start > timezone.now():
                 too_early = True
         if event.publication_end:
-            from django.utils.formats import date_format
-
             localized_end = timezone.localtime(event.publication_end)
-            end_period = (
-                date_format(localized_end, format="DATETIME_FORMAT", use_l10n=True) + " Uhr"
-            )
+            end_period = date_format(localized_end, format="DATETIME_FORMAT") + " Uhr"
             if event.publication_end < timezone.now():
                 too_late = True
         q = (
