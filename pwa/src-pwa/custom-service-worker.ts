@@ -1,5 +1,3 @@
-/* eslint-env serviceworker */
-
 declare const self: ServiceWorkerGlobalScope &
   typeof globalThis & { skipWaiting: () => void }
 
