@@ -248,7 +248,7 @@ class Address(GenoBase):
     occupation = models.CharField("Beruf/Ausbildung", max_length=150, blank=True)
     bankaccount = models.ForeignKey(
         BankAccount,
-        verbose_name="Kontoverbindung",
+        verbose_name="Kontoverbindung/IBAN",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
@@ -1453,7 +1453,7 @@ class Contract(GenoBase):
     )
     bankaccount = models.ForeignKey(
         BankAccount,
-        verbose_name="Kontoverbindung",
+        verbose_name="Kontoverbindung/IBAN",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
