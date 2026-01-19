@@ -55,8 +55,8 @@
         </aside>
         <h2>
             <span class="text">967 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">853<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">114<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">855<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">112<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">0<span class="text"> excluded</span></button>
         </h2>
         <p class="text">
@@ -65,7 +65,7 @@
             <a id="nextFileLink" class="nav" href="z_53abe7f4e356d201_sepa_reader_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-01-19 17:56 +0000
+            created at 2026-01-19 18:31 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -141,7 +141,7 @@
     <p class="pln"><span class="n"><a id="t59" href="#t59">59</a></span><span class="t">                        <span class="com">## Object is saved</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t60" href="#t60">60</a></span><span class="t">                        <span class="nam">objs</span> <span class="op">=</span> <span class="nam">getattr</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">field</span><span class="op">.</span><span class="nam">name</span><span class="op">,</span> <span class="key">None</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t61" href="#t61">61</a></span><span class="t">                    <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t62" href="#t62">62</a></span><span class="t">                        <span class="nam">objs</span> <span class="op">=</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t62" href="#t62">62</a></span><span class="t">                        <span class="nam">objs</span> <span class="op">=</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t63" href="#t63">63</a></span><span class="t">                    <span class="nam">field_verbose_name</span> <span class="op">=</span> <span class="nam">field</span><span class="op">.</span><span class="nam">related_model</span><span class="op">.</span><span class="nam">_meta</span><span class="op">.</span><span class="nam">verbose_name</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t64" href="#t64">64</a></span><span class="t">                <span class="nam">obj_data</span> <span class="op">=</span> <span class="op">[</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t65" href="#t65">65</a></span><span class="t">                <span class="key">if</span> <span class="nam">field</span><span class="op">.</span><span class="nam">many_to_many</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -162,7 +162,7 @@
     <p class="run"><span class="n"><a id="t80" href="#t80">80</a></span><span class="t">    <span class="op">@</span><span class="nam">admin</span><span class="op">.</span><span class="nam">display</span><span class="op">(</span><span class="nam">description</span><span class="op">=</span><span class="str">"Backlinks"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t81" href="#t81">81</a></span><span class="t">    <span class="key">def</span> <span class="nam">backlinks</span><span class="op">(</span><span class="nam">self</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t82" href="#t82">82</a></span><span class="t">        <span class="key">if</span> <span class="nam">self</span><span class="op">.</span><span class="nam">id</span> <span class="key">is</span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t83" href="#t83">83</a></span><span class="t">            <span class="key">return</span> <span class="str">""</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t83" href="#t83">83</a></span><span class="t">            <span class="key">return</span> <span class="str">""</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t84" href="#t84">84</a></span><span class="t">        <span class="nam">items</span> <span class="op">=</span> <span class="op">[</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t85" href="#t85">85</a></span><span class="t">        <span class="nam">models_done</span> <span class="op">=</span> <span class="op">[</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t86" href="#t86">86</a></span><span class="t">        <span class="key">for</span> <span class="nam">rfield</span> <span class="key">in</span> <span class="nam">self</span><span class="op">.</span><span class="nam">_meta</span><span class="op">.</span><span class="nam">get_fields</span><span class="op">(</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -330,7 +330,7 @@
     <p class="run"><span class="n"><a id="t248" href="#t248">248</a></span><span class="t">    <span class="nam">occupation</span> <span class="op">=</span> <span class="nam">models</span><span class="op">.</span><span class="nam">CharField</span><span class="op">(</span><span class="str">"Beruf/Ausbildung"</span><span class="op">,</span> <span class="nam">max_length</span><span class="op">=</span><span class="num">150</span><span class="op">,</span> <span class="nam">blank</span><span class="op">=</span><span class="key">True</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t249" href="#t249">249</a></span><span class="t">    <span class="nam">bankaccount</span> <span class="op">=</span> <span class="nam">models</span><span class="op">.</span><span class="nam">ForeignKey</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t250" href="#t250">250</a></span><span class="t">        <span class="nam">BankAccount</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t251" href="#t251">251</a></span><span class="t">        <span class="nam">verbose_name</span><span class="op">=</span><span class="str">"Kontoverbindung"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t251" href="#t251">251</a></span><span class="t">        <span class="nam">verbose_name</span><span class="op">=</span><span class="str">"Kontoverbindung/IBAN"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t252" href="#t252">252</a></span><span class="t">        <span class="nam">null</span><span class="op">=</span><span class="key">True</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t253" href="#t253">253</a></span><span class="t">        <span class="nam">blank</span><span class="op">=</span><span class="key">True</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t254" href="#t254">254</a></span><span class="t">        <span class="nam">on_delete</span><span class="op">=</span><span class="nam">models</span><span class="op">.</span><span class="nam">SET_NULL</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
@@ -1535,7 +1535,7 @@
     <p class="run run2"><span class="n"><a id="t1453" href="#t1453">1453</a></span><span class="t">    <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1454" href="#t1454">1454</a></span><span class="t">    <span class="nam">bankaccount</span> <span class="op">=</span> <span class="nam">models</span><span class="op">.</span><span class="nam">ForeignKey</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t1455" href="#t1455">1455</a></span><span class="t">        <span class="nam">BankAccount</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t1456" href="#t1456">1456</a></span><span class="t">        <span class="nam">verbose_name</span><span class="op">=</span><span class="str">"Kontoverbindung"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t1456" href="#t1456">1456</a></span><span class="t">        <span class="nam">verbose_name</span><span class="op">=</span><span class="str">"Kontoverbindung/IBAN"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t1457" href="#t1457">1457</a></span><span class="t">        <span class="nam">null</span><span class="op">=</span><span class="key">True</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t1458" href="#t1458">1458</a></span><span class="t">        <span class="nam">blank</span><span class="op">=</span><span class="key">True</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t1459" href="#t1459">1459</a></span><span class="t">        <span class="nam">on_delete</span><span class="op">=</span><span class="nam">models</span><span class="op">.</span><span class="nam">SET_NULL</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
@@ -2026,7 +2026,7 @@
             <a class="nav" href="z_53abe7f4e356d201_sepa_reader_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-01-19 17:56 +0000
+            created at 2026-01-19 18:31 +0000
         </p>
     </div>
 </footer>
