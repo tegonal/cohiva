@@ -355,7 +355,9 @@ def create_documenttypes(cls):
 
 def create_invoicecategories(cls):
     cls.invoicecategories = [
-        InvoiceCategory.objects.create(name="Member Invoice", reference_id=77),
+        InvoiceCategory.objects.create(
+            name="Member Invoice", reference_id=77, manual_allowed=True
+        ),
         InvoiceCategory.objects.create(
             name="Mietzins wiederkehrend",
             reference_id=10,
