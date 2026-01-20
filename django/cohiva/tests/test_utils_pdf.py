@@ -55,7 +55,7 @@ class UtilsPdfTestCase(TestCase):
 
     def test_pdf_append_merge_list_multi(self):
         p = PdfGenerator()
-        with self.assertRaises(RuntimeError):
+        with self.assertRaisesRegex(RuntimeError, "Can only merge one PDF to last page"):
             p.append_pdf_file(
                 "cohiva/tests/A1A2.pdf", ["cohiva/tests/B1.pdf", "cohiva/tests/C1.pdf"]
             )
@@ -84,11 +84,26 @@ class UtilsPdfTestCase(TestCase):
         p.write_file("/tmp/out.pdf")
         self.assertPDFPages([["A1"], ["A2"], ["A1"], ["A2", "B1", "C1"], ["B1"]])
 
-    def test_pdf_append_merge_raises_with_missing(self):
+    def test_pdf_append_merge_raises_when_missing(self):
         p = PdfGenerator(ignore_missing=False)
         p.append_pdf_file("cohiva/tests/A1A2.pdf")
-        with self.assertRaises(RuntimeError):
+        with self.assertRaisesRegex(
+            RuntimeError, "File invalid.pdf does not exist. Can't merge it."
+        ):
             p.append_pdf_file(
                 "cohiva/tests/A1A2.pdf",
                 ["cohiva/tests/B1.pdf", "cohiva/tests/C1.pdf", "invalid.pdf"],
+                transform={"tx": 60, "ty": 560, "dy": -250, "scale": 0.2},
             )
+
+    def test_pdf_error_when_more_than_one_page_to_merge(self):
+        p = PdfGenerator(ignore_missing=False)
+        with self.assertRaisesRegex(
+            RuntimeError, "Can't merge: PDF to merge must have exaclty 1 page!"
+        ):
+            p.append_pdf_file("cohiva/tests/A1A2.pdf", ["cohiva/tests/A1A2.pdf"])
+
+    def test_pdf_error_when_empty(self):
+        p = PdfGenerator()
+        with self.assertRaisesRegex(RuntimeError, r"test\.pdf.*is empty"):
+            p.write_file("test.pdf")

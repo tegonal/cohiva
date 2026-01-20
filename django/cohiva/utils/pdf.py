@@ -5,7 +5,7 @@ from pypdf import PdfReader, PdfWriter, Transformation
 
 class PdfGenerator:
     def __init__(self, ignore_missing=True):
-        self._output_pdf = PdfWriter()
+        self._output_pdf = None
         self._merge_files = []
         self._ignore_missing = ignore_missing
 
@@ -21,12 +21,14 @@ class PdfGenerator:
     def append_pdf(self, fp, merge_pdfs_on_last_page=None, transform=None):
         if merge_pdfs_on_last_page is None:
             merge_pdfs_on_last_page = []
-        pdf = PdfReader(fp)
-        n_pages = len(pdf.pages)
-        for i, page in enumerate(pdf.pages):
+        if self._output_pdf:
+            self._output_pdf.append(fp)
+        else:
+            self._output_pdf = PdfWriter(fp)
+        n_pages = len(self._output_pdf.pages)
+        for i, page in enumerate(self._output_pdf.pages):
             if merge_pdfs_on_last_page and i == n_pages - 1:
                 self.merge_pages(page, merge_pdfs_on_last_page, transform)
-            self._output_pdf.add_page(page)
             for fp in self._merge_files:
                 fp.close()
             self._merge_files = []
@@ -48,6 +50,8 @@ class PdfGenerator:
                 if not os.path.isfile(merge_pdf_file):
                     if self._ignore_missing:
                         continue
+                    for fp in self._merge_files:
+                        fp.close()
                     raise RuntimeError(f"File {merge_pdf_file} does not exist. Can't merge it.")
                 fp = open(merge_pdf_file, "rb")
                 self._merge_files.append(fp)
@@ -72,5 +76,7 @@ class PdfGenerator:
             page.merge_page(merge_pdf.pages[0])
 
     def write_file(self, output_filename):
+        if not self._output_pdf:
+            raise RuntimeError(f"Can't write {output_filename}: PDF is empty!")
         with open(output_filename, "wb") as fp:
             self._output_pdf.write(fp)

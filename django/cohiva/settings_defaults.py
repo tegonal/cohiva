@@ -1429,3 +1429,7 @@ UNFOLD = {
 # Crispy Forms Configuration for Unfold
 CRISPY_TEMPLATE_PACK = "unfold_crispy"
 CRISPY_ALLOWED_TEMPLATE_PACKS = ["unfold_crispy"]
+
+# Theme Customization
+COHIVA_TITLE_FONT = "Lato"
+COHIVA_TEXT_FONT = "Liberation Serif"

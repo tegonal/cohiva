@@ -2723,13 +2723,13 @@ def create_energy_consumption_graph(data, output_filename, context):
 
     fig.update_yaxes(title_text="Relativer Verbrauch in Prozent")
     fig.update_layout(
-        font_family="Korpus",
+        font_family=settings.COHIVA_TEXT_FONT,
         font_size=16,
         font_color="black",
         title={
             "text": "%s Energieverbrauch im Vergleich" % context["Euer"],
             "font": {
-                "family": "National",
+                "family": settings.COHIVA_TITLE_FONT,
                 "size": 30,
             },
         },
@@ -2873,13 +2873,13 @@ def create_energy_timeseries_graph(data, output_filename, context, extra_text=No
 
     fig.update_yaxes(title_text="Relativer Verbrauch in Prozent")
     fig.update_layout(
-        font_family="Korpus",
+        font_family=settings.COHIVA_TEXT_FONT,
         font_size=16,
         font_color="black",
         title={
             "text": context["graph_title"],
             "font": {
-                "family": "National",
+                "family": settings.COHIVA_TITLE_FONT,
                 "size": 30,
             },
         },

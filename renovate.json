@@ -31,6 +31,14 @@
       "minimumReleaseAge": "30 days",
       "groupName": "npm Packages Updates (minor/patch)",
       "schedule": ["* * 1 * *"]
-    }
-  ]
+    },
+	{
+	  "matchManagers":  ["github-action","dockerfile","docker-compose"],
+	  "enabled": false
+	}
+  ],
+    "vulnerabilityAlerts": {
+    "enabled": true
+  },
+  "osvVulnerabilityAlerts": true
 }
