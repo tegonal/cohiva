@@ -13,17 +13,17 @@
 | cohiva/formats/de/\_\_init\_\_.py                                                                      |        0 |        0 |    100% |           |
 | cohiva/formats/de/formats.py                                                                           |        5 |        0 |    100% |           |
 | cohiva/oauth\_validators.py                                                                            |       13 |        2 |     85% |    14, 29 |
-| cohiva/settings\_defaults.py                                                                           |      159 |        4 |     97% |60, 276, 288, 911 |
+| cohiva/settings\_defaults.py                                                                           |      161 |        4 |     98% |60, 276, 288, 911 |
 | cohiva/settings\_for\_tests.py                                                                         |       34 |        4 |     88% |     35-39 |
 | cohiva/storage.py                                                                                      |       14 |        5 |     64% |     25-31 |
 | cohiva/templatetags/\_\_init\_\_.py                                                                    |        0 |        0 |    100% |           |
 | cohiva/templatetags/admin.py                                                                           |       10 |        0 |    100% |           |
 | cohiva/tests/\_\_init\_\_.py                                                                           |        0 |        0 |    100% |           |
-| cohiva/tests/test\_utils\_pdf.py                                                                       |       68 |        0 |    100% |           |
+| cohiva/tests/test\_utils\_pdf.py                                                                       |       76 |        0 |    100% |           |
 | cohiva/ui.py                                                                                           |      144 |       13 |     91% |56, 90, 134, 137-138, 158-160, 169, 175-178, 210 |
 | cohiva/urls.py                                                                                         |       37 |        4 |     89% |60, 82, 120, 124 |
 | cohiva/utils/\_\_init\_\_.py                                                                           |        0 |        0 |    100% |           |
-| cohiva/utils/pdf.py                                                                                    |       61 |        3 |     95% |23, 42, 51 |
+| cohiva/utils/pdf.py                                                                                    |       66 |        2 |     97% |    23, 44 |
 | cohiva/utils/settings.py                                                                               |       15 |        2 |     87% |    12, 19 |
 | cohiva/utils/strings.py                                                                                |        4 |        0 |    100% |           |
 | cohiva/version.py                                                                                      |        4 |        0 |    100% |           |
@@ -200,12 +200,12 @@
 | reservation/tests/base.py                                                                              |        9 |        0 |    100% |           |
 | reservation/tests/data.py                                                                              |       42 |        0 |    100% |           |
 | reservation/tests/test\_api.py                                                                         |      374 |       10 |     97% |28-29, 785-802 |
-| reservation/tests/test\_models.py                                                                      |       64 |        1 |     98% |       122 |
+| reservation/tests/test\_models.py                                                                      |       64 |        0 |    100% |           |
 | reservation/tests/test\_reservations.py                                                                |        6 |        0 |    100% |           |
 | reservation/tests/test\_views.py                                                                       |       10 |        2 |     80% |     21-22 |
 | reservation/urls.py                                                                                    |        4 |        0 |    100% |           |
 | reservation/views.py                                                                                   |      136 |      112 |     18% |22-201, 240-263 |
-| **TOTAL**                                                                                              | **21338** | **5727** | **73%** |           |
+| **TOTAL**                                                                                              | **21353** | **5725** | **73%** |           |
 
 
 ## Setup coverage badge
