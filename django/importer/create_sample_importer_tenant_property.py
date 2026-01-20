@@ -84,7 +84,7 @@ def create_sample_tenant_property_excel(filename="sample_tenant_property_import.
             "",  # Wohnung Id Eidg
             "",  # Wohnung Nummer Administrativ
             "",  # Id
-            "Max Muster",  # Mieter Person Person Name Vorname
+            "Muster Max",  # Mieter Person Person Name Vorname
             "Testweg 5, 3011 Bern",  # Mieter Person Person Adresse
             "1001",  # Mieter Person Person Id
             "2024-01-01",  # Verhaeltnis Gueltigvon

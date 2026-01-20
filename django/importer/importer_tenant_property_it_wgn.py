@@ -348,8 +348,8 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
         # Try to split into first and last name
         name_parts = name_str.split()
         if len(name_parts) >= 2:
-            first_name = name_parts[0]
-            last_name = " ".join(name_parts[1:])
+            last_name = name_parts[0]
+            first_name = " ".join(name_parts[1:])
         else:
             first_name = ""
             last_name = name_str
