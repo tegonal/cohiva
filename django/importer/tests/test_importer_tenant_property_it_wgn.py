@@ -173,7 +173,7 @@ class ImporterTenantPropertyITWGNTest(TestCase):
                 "",  # Wohnung Id Eidg
                 "",  # Wohnung Nummer Administrativ
                 "unit_002",  # Id
-                "Max Muster",  # Mieter Person Person Name Vorname
+                "Muster Max",  # Mieter Person Person Name Vorname
                 "Testweg 1, 8000 Zürich",  # Mieter Person Person Adresse
                 "person_001",  # Mieter Person Person Id
                 "2024-01-01",  # Verhaeltnis Gueltigvon
