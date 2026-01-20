@@ -1,5 +1,6 @@
 ## Modify settings to run automated tests
 
+import logging
 import os
 import warnings
 from urllib.parse import quote
@@ -29,6 +30,9 @@ warnings.filterwarnings("once", category=RemovedInDjango51Warning)
 
 ## Make code aware that this is a test run
 IS_RUNNING_TESTS = True
+
+## Disable logging for tests
+logging.disable()
 
 if os.getenv("SKIP_SLOW", "false") == "true":
     ## Speed up tests in quick mode
