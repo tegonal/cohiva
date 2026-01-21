@@ -130,7 +130,15 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
             and module_name in settings.COHIVA_ADMIN_FIELDS
         ):
             class_name = type(self).__name__
-            for attr in ("fields", "readonly_fields", "list_display", "list_filter"):
+            for attr in (
+                "fields",
+                "fieldsets",
+                "readonly_fields",
+                "search_fields",
+                "autocomplete_fields",
+                "list_display",
+                "list_filter",
+            ):
                 setting_name = f"{class_name}.{attr}"
                 if setting_name in settings.COHIVA_ADMIN_FIELDS[module_name]:
                     setattr(self, attr, settings.COHIVA_ADMIN_FIELDS[module_name][setting_name])
@@ -892,7 +900,7 @@ class RegistrationSlotAdmin(GenoBaseAdmin):
     autocomplete_fields = ["event", "is_backup_for"]
 
 
-class RegistrationSlotInline(admin.TabularInline):
+class RegistrationSlotInline(TabularInline):
     model = RegistrationSlot
     fields = ["name", "alt_text", "max_places", "is_backup_for", "comment"]
 
@@ -909,32 +917,57 @@ class RegistrationSlotInline(admin.TabularInline):
 @admin.register(RegistrationEvent)
 class RegistrationEventAdmin(GenoBaseAdmin):
     model = RegistrationEvent
-    fields = [
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "name",
+                    "description",
+                    "confirmation_mail_sender",
+                    "confirmation_mail_text",
+                    ("publication_type", "active"),
+                    ("publication_start", "publication_end"),
+                    "show_counter",
+                )
+            },
+        ),
+        (
+            "Anmeldeformular",
+            {
+                "fields": (
+                    ("enable_notes", "enable_telephone"),
+                    "check1_label",
+                    "check2_label",
+                    "check3_label",
+                    "check4_label",
+                    "check5_label",
+                    "text1_label",
+                    "text2_label",
+                    "text3_label",
+                    "text4_label",
+                    "text5_label",
+                ),
+                "classes": ["tab"],
+            },
+        ),
+        (
+            "Zusatzinfos",
+            {
+                "fields": ("registration_link", "comment", "ts_created", "ts_modified"),
+                "classes": ["tab"],
+            },
+        ),
+        ("Verknüpfungen", {"fields": ("links", "backlinks"), "classes": ["tab"]}),
+    )
+    readonly_fields = ["registration_link", "ts_created", "ts_modified", "links", "backlinks"]
+    list_display = [
         "name",
-        "description",
+        "registration_link",
         "confirmation_mail_sender",
-        "confirmation_mail_text",
-        ("publication_type", "active"),
-        ("publication_start", "publication_end"),
-        "show_counter",
-        ("enable_notes", "enable_telephone"),
-        "check1_label",
-        "check2_label",
-        "check3_label",
-        "check4_label",
-        "check5_label",
-        "text1_label",
-        "text2_label",
-        "text3_label",
-        "text4_label",
-        "text5_label",
-        "comment",
-        ("ts_created", "ts_modified"),
-        "links",
-        "backlinks",
+        "active",
+        "ts_created",
     ]
-    readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
-    list_display = ["name", "confirmation_mail_sender", "active", "ts_created"]
     ordering = ("-active", "-ts_created")
     list_editable = ["active"]
     search_fields = ["name", "description", "confirmation_mail_sender", "comment"]

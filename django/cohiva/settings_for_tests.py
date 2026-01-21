@@ -106,3 +106,23 @@ GENO_QRBILL_CREDITOR = {
 
 if "importer" not in INSTALLED_APPS:
     INSTALLED_APPS += ("importer",)
+
+# Test code to overwrite admin config
+COHIVA_ADMIN_FIELDS = {
+    "geno.admin": {
+        "RentalUnitAdmin.fields": [
+            "name",
+            "label",
+            "rental_type",
+            "rooms",
+            "min_occupancy",
+            "building",
+            "floor",
+            "area",
+            "height",
+            "volume",
+            "rent_netto",
+            "rent_year",
+        ]
+    }
+}

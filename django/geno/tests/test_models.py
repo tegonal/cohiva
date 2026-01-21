@@ -1,6 +1,9 @@
+from unittest.mock import patch
+
 import django
 from django.conf import settings
 from django.test import TestCase
+from django.urls import NoReverseMatch, reverse
 
 if django.VERSION < (3, 0):
     from django.db import OperationalError as IntegrityError
@@ -8,7 +11,7 @@ else:
     from django.db.utils import IntegrityError
 from django.test import override_settings
 
-from geno.models import Address, InvoiceCategory
+from geno.models import Address, InvoiceCategory, RegistrationEvent
 
 
 class InvoiceTests(TestCase):
@@ -110,3 +113,26 @@ class AddressTest(TestCase):
         with override_settings(DEBUG=False, TEST_MAIL_RECIPIENT="test@domain.com"):
             result = addr.get_mail_recipient()
             self.assertEqual(result, '"Lisa Meier" <lisa@realmail.com>')
+
+
+class RegistrationEventTest(TestCase):
+    registration_form_viewname = "registration-form"
+
+    def test_registration_link(self):
+        event = RegistrationEvent(name="Test Event")
+        self.assertEqual(event.registration_link, "Bitte zuerst speichern.")
+        event.save()
+        self.assertEqual(event.registration_link, "[Kein öffentlicher Link]")
+        event.publication_type = "public"
+        url = settings.BASE_URL + reverse(
+            self.registration_form_viewname, kwargs={"registration_id": event.id}
+        )
+        self.assertEqual(event.registration_link, f"<a href='{url}'>{url}</a>")
+
+    @patch("geno.models.reverse", side_effect=NoReverseMatch())
+    def test_registration_link_not_found(self, mock_reverse):
+        event = RegistrationEvent.objects.create(name="Test Event", publication_type="public")
+        self.assertEqual(
+            event.registration_link,
+            f"[Fehler: Keine URL für '{self.registration_form_viewname}' gefunden]",
+        )
