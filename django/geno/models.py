@@ -16,6 +16,7 @@ from django.db.models import Q
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch.dispatcher import receiver
 from django.template import Template
+from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 from django.utils.html import format_html, format_html_join, mark_safe
 from filer.fields.file import FilerFileField
@@ -1114,9 +1115,7 @@ class RegistrationEvent(GenoBase):
     publication_end = models.DateTimeField("Ende Anmeldefrist", blank=True, null=True)
     active = models.BooleanField("Aktiv", db_index=True, default=True)
     enable_notes = models.BooleanField("Kommentarfeld anzeigen?", default=False)
-    enable_telephone = models.BooleanField(
-        "Telefonnummer abfragen (zwingend wegen Covid-19)?", default=False
-    )
+    enable_telephone = models.BooleanField("Telefonnummer abfragen?", default=False)
     show_counter = models.BooleanField("Anzahl bisherige Anmeldungen anzeigen?", default=True)
     check1_label = models.CharField(
         "Checkbox-Frage 1",
@@ -1141,6 +1140,22 @@ class RegistrationEvent(GenoBase):
     text3_label = models.CharField("Textfeld-Frage 3", max_length=100, blank=True)
     text4_label = models.CharField("Textfeld-Frage 4", max_length=100, blank=True)
     text5_label = models.CharField("Textfeld-Frage 5", max_length=100, blank=True)
+
+    @property
+    @admin.display(description="Link zum Anmelde-Formular")
+    def registration_link(self):
+        registration_form_viewname = "registration-form"
+        if self.pk:
+            if self.publication_type == "public":
+                try:
+                    url = settings.BASE_URL + reverse(
+                        registration_form_viewname, kwargs={"registration_id": self.pk}
+                    )
+                    return mark_safe(f"<a href='{url}'>{url}</a>")
+                except NoReverseMatch:
+                    return f"[Fehler: Keine URL für '{registration_form_viewname}' gefunden]"
+            return "[Kein öffentlicher Link]"
+        return "Bitte zuerst speichern."
 
     class Meta:
         verbose_name = "Anmeldung-Anlass"
