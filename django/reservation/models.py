@@ -1,8 +1,8 @@
 import logging
+import zoneinfo
 from datetime import timedelta
 from decimal import Decimal
 
-import select2.fields
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -45,7 +45,7 @@ class ReservationType(GenoBase):
     required_role = models.CharField(
         "Verfügbar für", default="renter", choices=RESERVATIONTYPE_ROLE_CHOICES, max_length=30
     )
-    confirmation_email_template = select2.fields.ForeignKey(
+    confirmation_email_template = models.ForeignKey(
         ContentTemplate,
         verbose_name="Vorlage Bestätigungs-Email",
         on_delete=models.SET_NULL,
@@ -63,6 +63,54 @@ class ReservationType(GenoBase):
         "Kalender-Farbe", max_length=7, default="#7d7d78", help_text='Format: "#rrggbb"'
     )
     active = models.BooleanField("Aktiv", default=True)
+
+    def get_calendar_events(self, start, end):
+        to_zone = zoneinfo.ZoneInfo(settings.TIME_ZONE)
+        start = start.astimezone(to_zone)
+        end = end.astimezone(to_zone)
+        # print("Getting reservations: %s, %s, %s" % (reservation_type_id, start, end))
+        events = []
+        for res in (
+            Reservation.objects.filter(date_start__lte=end)
+            .filter(date_end__gte=start)
+            .filter(name__reservation_type=self)
+            .exclude(Q(state="cancelled") | Q(state="deleted"))
+        ):
+            summary = res.name.name
+            start_localtime = res.date_start.astimezone(to_zone)
+            end_localtime = res.date_end.astimezone(to_zone)
+
+            time = "<br>Zeit: %s bis %s Uhr" % (
+                start_localtime.strftime("%a %d.%m %H:%M"),
+                end_localtime.strftime("%a %d.%m %H:%M"),
+            )
+
+            extra_info = []
+            if res.contact:
+                if res.contact.organization:
+                    contact_txt = res.contact.organization
+                    if res.contact.name:
+                        contact_txt += " %s %s" % (res.contact.first_name, res.contact.name)
+                else:
+                    contact_txt = "%s %s" % (res.contact.first_name, res.contact.name)
+                extra_info.append(contact_txt)
+            if res.summary:
+                extra_info.append(res.summary)
+
+            if extra_info:
+                descr = "<b>%s</b>%s<hr />%s" % (summary, time, ", ".join(extra_info))
+            else:
+                descr = "<b>%s</b>%s" % (summary, time)
+
+            events.append(
+                {
+                    "title": summary,
+                    "start": start_localtime.strftime("%Y-%m-%dT%H:%M:%S"),
+                    "end": end_localtime.strftime("%Y-%m-%dT%H:%M:%S"),
+                    "description": descr,
+                }
+            )
+        return events
 
     class Meta:
         verbose_name = "Reservationstyp"
@@ -90,7 +138,7 @@ RESERVATION_COST_TYPE_CHOICES = (
 
 class ReservationPrice(GenoBase):
     name = models.CharField("Bezeichnung", max_length=50)
-    usage_type = select2.fields.ForeignKey(
+    usage_type = models.ForeignKey(
         ReservationUsageType, verbose_name="Reservations Nutzungsart", on_delete=models.CASCADE
     )
     priority = models.IntegerField(
@@ -129,7 +177,7 @@ class ReservationPrice(GenoBase):
 
 class ReservationObject(GenoBase):
     name = models.CharField("Name", max_length=80)
-    reservation_type = select2.fields.ForeignKey(
+    reservation_type = models.ForeignKey(
         ReservationType, verbose_name="Reservationstyp", on_delete=models.CASCADE
     )
     short_description = models.CharField(
@@ -261,12 +309,8 @@ class ReservationObject(GenoBase):
 
 
 class Reservation(GenoBase):
-    name = select2.fields.ForeignKey(
-        ReservationObject, verbose_name="Objekt", on_delete=models.CASCADE
-    )
-    contact = select2.fields.ForeignKey(
-        Address, verbose_name="Kontaktperson", on_delete=models.CASCADE
-    )
+    name = models.ForeignKey(ReservationObject, verbose_name="Objekt", on_delete=models.CASCADE)
+    contact = models.ForeignKey(Address, verbose_name="Kontaktperson", on_delete=models.CASCADE)
     contact_text = models.CharField(
         "Kontaktperson (alternativer Text)", max_length=200, blank=True
     )
@@ -282,7 +326,7 @@ class Reservation(GenoBase):
         max_length=120,
         help_text="Kurze Beschreibung des Anlasses/Grund der Reservation",
     )
-    usage_type = select2.fields.ForeignKey(
+    usage_type = models.ForeignKey(
         ReservationUsageType,
         verbose_name="Nutzungsart",
         on_delete=models.SET_NULL,
@@ -369,7 +413,7 @@ class ReportType(GenoBase):
 
 class ReportCategory(GenoBase):
     name = models.CharField("Kategorie", max_length=50)
-    report_type = select2.fields.ForeignKey(
+    report_type = models.ForeignKey(
         ReportType, verbose_name="Meldungstyp", on_delete=models.CASCADE
     )
 
@@ -390,16 +434,16 @@ REPORT_STATE_CHOICES = (
 
 class Report(GenoBase):
     name = models.CharField("Betreff", max_length=100)
-    report_type = select2.fields.ForeignKey(
+    report_type = models.ForeignKey(
         ReportType, verbose_name="Meldungstyp", on_delete=models.CASCADE
     )
-    category = select2.fields.ForeignKey(
+    category = models.ForeignKey(
         ReportCategory, verbose_name="Kategorie", on_delete=models.CASCADE
     )
-    rental_unit = select2.fields.ForeignKey(
+    rental_unit = models.ForeignKey(
         RentalUnit, verbose_name="Mietobjekt", on_delete=models.CASCADE, blank=True, null=True
     )
-    contact = select2.fields.ForeignKey(
+    contact = models.ForeignKey(
         Address, verbose_name="Kontaktperson", on_delete=models.CASCADE, blank=True, null=True
     )
     contact_text = models.CharField("Erreichbarkeit", max_length=300, blank=True)
@@ -444,7 +488,7 @@ def report_picture_path(instance, filename):
 class ReportPicture(GenoBase):
     name = models.CharField("Name", max_length=100)
     image = models.ImageField("Bild", upload_to=report_picture_path)
-    report = select2.fields.ForeignKey(Report, verbose_name="Meldung", on_delete=models.CASCADE)
+    report = models.ForeignKey(Report, verbose_name="Meldung", on_delete=models.CASCADE)
 
     class Meta:
         unique_together = ["image", "report"]
@@ -453,11 +497,9 @@ class ReportPicture(GenoBase):
 
 
 class ReportLogEntry(GenoBase):
-    name = select2.fields.ForeignKey(Report, verbose_name="Meldung", on_delete=models.CASCADE)
+    name = models.ForeignKey(Report, verbose_name="Meldung", on_delete=models.CASCADE)
     text = models.TextField("Text")
-    user = select2.fields.ForeignKey(
-        User, verbose_name="Autor:in", on_delete=models.SET_NULL, null=True
-    )
+    user = models.ForeignKey(User, verbose_name="Autor:in", on_delete=models.SET_NULL, null=True)
 
     class Meta:
         verbose_name = "Logbucheintrag"

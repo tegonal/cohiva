@@ -5,6 +5,7 @@ from unittest.mock import patch
 from django.conf import settings
 from django.core import mail
 from django.http import HttpResponse
+from django.test import tag
 
 # from geno.views import send_member_mail_process
 from geno.documents import send_member_mail_process
@@ -20,11 +21,16 @@ from geno.models import (
     Share,
 )
 from geno.tests import data as geno_testdata
+from geno.utils import fill_template_pod, odt2pdf
 
-from .base import GenoAdminTestCase
+from .base import DocumentCreationMockMixin, GenoAdminTestCase
 
 
-class DocumentSendTest(GenoAdminTestCase):
+class DocumentSendTest(DocumentCreationMockMixin, GenoAdminTestCase):
+    # Specify correct import paths for patching
+    patch_target_fill_template = "geno.documents.fill_template_pod"
+    patch_target_odt2pdf = "geno.documents.odt2pdf"
+
     def test_select_without_session(self):
         response = self.client.get("/geno/member/send_mail/select/")
         self.assertRedirects(response, "/geno/member/send_mail/")
@@ -32,7 +38,7 @@ class DocumentSendTest(GenoAdminTestCase):
     def form_filter_active_members(self):
         response = self.client.get("/geno/member/send_mail/")
         self.assertEqual(response.status_code, 200)
-        self.assertInHTML("Allg. Attribut-Wert:", response.content.decode())
+        self.assertIn("Basis-Datensatz", response.content.decode())
 
         post_data = {
             "base_dataset": "active_members",
@@ -82,6 +88,7 @@ class DocumentSendTest(GenoAdminTestCase):
         self.assertEqual(response.status_code, 200)
 
     def form_action_send(self, formal):
+        self.reset_mocks()
         prev_geno_formal = settings.GENO_FORMAL
         settings.GENO_FORMAL = formal
         mail.outbox = []
@@ -91,7 +98,7 @@ class DocumentSendTest(GenoAdminTestCase):
             "template_files": [f"ContentTemplate:{ContentTemplate.objects.get(name='Simple').pk}"],
             "template_mail": f"template_id_{self.email_templates[0].pk}",
             "subject": "Email-Test-Subject",
-            "email_sender": MemberMailActionForm.email_sender_choices[1],
+            "email_sender": MemberMailActionForm.email_sender_choices[0],
             "email_copy": "bcc-copy@example.com",
             # change_attribute	""
             # change_attribute_value	""
@@ -106,6 +113,82 @@ class DocumentSendTest(GenoAdminTestCase):
         self.assertEqual(mail.outbox[0].attachments[0][0], "Muster_Anna_Simple.pdf")
         self.assertEqual(mail.outbox[0].attachments[0][2], "application/pdf")
 
+        ## Check document creation (mocked)
+        self.assertMocksCallCount(4)
+
+        current_year = datetime.datetime.now().year
+        self.assertFillTemplateCalledWith(
+            call_index=0,
+            expected_context_items={
+                "organisation": None,
+                "vorname": "Anna",
+                "name": "Muster",
+                "strasse": "Beispielweg 1",
+                "wohnort": "3000 Bern",
+                "anrede": "Liebe Anna",
+                "share_count": None,
+                "jahr": f"{current_year}",
+            },
+        )
+
+        ## Sie
+        if formal:
+            self.assertFillTemplateCalledWith(
+                call_index=1,
+                expected_context_items={
+                    "organisation": None,
+                    "anrede": "Sehr geehrter Herr Muster",
+                },
+            )
+        else:
+            self.assertFillTemplateCalledWith(
+                call_index=1,
+                expected_context_items={
+                    "organisation": None,
+                    "anrede": "Lieber Herr Muster",
+                },
+            )
+
+        ## Organisation ohne Namen
+        self.assertFillTemplateCalledWith(
+            call_index=2,
+            expected_context_items={
+                "organisation": "WBG Test",
+                "anrede": "Liebe WBG Test",
+            },
+        )
+
+        ## Organisation mit Namen
+        self.assertFillTemplateCalledWith(
+            call_index=3,
+            expected_context_items={
+                "organisation": "WBG Test",
+                "anrede": "Liebe WBG Test, Lieber Ernst",
+            },
+        )
+
+        settings.GENO_FORMAL = prev_geno_formal
+
+    def test_send_member_bill(self):
+        self.form_filter_active_members()
+        self.form_select_members()
+        self.form_action_list()
+        self.form_action_send(formal=False)
+        self.form_action_send(formal=True)
+
+
+@tag("slow-test")
+class DocumentCreationTest(GenoAdminTestCase):
+    def test_libreoffice_template_processing_and_odt2pdf(self):
+        content_template = ContentTemplate.objects.get(name="Simple")
+        ctx = self.members[1].name.get_context()
+
+        output_odt_file = fill_template_pod(content_template.file.path, ctx, output_format="odt")
+        self.assertRegex(output_odt_file, r"^/tmp/django_pod_Musterweg/django_pod_\w+\.odt$")
+
+        output_pdf_file = odt2pdf(output_odt_file, "document_creation_test")
+        self.assertRegex(output_pdf_file, r"^/tmp/django_pod_Musterweg/django_pod_\w+\.pdf$")
+
         current_year = datetime.datetime.now().year
         expected = f"""General:
 <adr-line1>: Anna Muster
@@ -116,34 +199,7 @@ Share context:
 Billing context:
 <jahr>: {current_year}
 """
-        self.assertInPDF(mail.outbox[0].attachments[0][1], expected)
-
-        ## Sie
-        self.assertNotInPDF(mail.outbox[1].attachments[0][1], "<organisation>:")
-        if formal:
-            self.assertInPDF(
-                mail.outbox[1].attachments[0][1], "<anrede>: Sehr geehrter Herr Muster\n"
-            )
-        else:
-            self.assertInPDF(mail.outbox[1].attachments[0][1], "<anrede>: Lieber Herr Muster\n")
-
-        ## Organisation
-        self.assertInPDF(mail.outbox[3].attachments[0][1], "<organisation>: WBG Test")
-        self.assertInPDF(
-            mail.outbox[3].attachments[0][1], "<anrede>: Liebe WBG Test, Lieber Ernst"
-        )
-
-        ## Organisation ohne Namen
-        self.assertInPDF(mail.outbox[2].attachments[0][1], "<anrede>: Liebe WBG Test\n")
-
-        settings.GENO_FORMAL = prev_geno_formal
-
-    def test_send_member_bill(self):
-        self.form_filter_active_members()
-        self.form_select_members()
-        self.form_action_list()
-        self.form_action_send(formal=False)
-        self.form_action_send(formal=True)
+        self.assertInPDF(output_pdf_file, expected)
 
 
 class DocumentFormFilterTest(GenoAdminTestCase):
@@ -382,6 +438,7 @@ class DocumentFormFilterTest(GenoAdminTestCase):
         )
 
 
+@tag("slow-test")
 class DocumentProcessTest(GenoAdminTestCase):
     @classmethod
     def setUpTestData(cls):
@@ -652,7 +709,7 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.assertEmailSent(4)
         self.assertEqual(len(mail.outbox[0].attachments), 1)
         self.assertEqual(len(mail.outbox[1].attachments), 1)
-        self.assertEqual(mail.outbox[0].attachments[0][0], "testpdf_b1.pdf")  # Test_PDF1.pdf
+        self.assertEqual(mail.outbox[0].attachments[0][0], "TestPDF1.pdf")  # testpdf_b1.pdf
         self.assertEqual(mail.outbox[0].attachments[0][2], "application/pdf")
         self.assertInPDF(mail.outbox[0].attachments[0][1], "B1")
 
@@ -663,9 +720,9 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.assertEmailSent(4)
         self.assertEqual(len(mail.outbox[0].attachments), 2)
         self.assertEqual(len(mail.outbox[1].attachments), 2)
-        self.assertEqual(mail.outbox[0].attachments[0][0], "testpdf_b1.pdf")  # Test_PDF1.pdf
+        self.assertEqual(mail.outbox[0].attachments[0][0], "TestPDF1.pdf")  # testpdf_b1.pdf
         self.assertEqual(mail.outbox[0].attachments[0][2], "application/pdf")
-        self.assertEqual(mail.outbox[0].attachments[1][0], "testpdf_c1.pdf")  # Test_PDF2.pdf
+        self.assertEqual(mail.outbox[0].attachments[1][0], "TestPDF2.pdf")  # testpdf_c1.pdf
         self.assertEqual(mail.outbox[0].attachments[1][2], "application/pdf")
         self.assertInPDF(mail.outbox[0].attachments[0][1], "B1")
         self.assertInPDF(mail.outbox[0].attachments[1][1], "C1")
@@ -983,7 +1040,7 @@ class DocumentProcessTest(GenoAdminTestCase):
             ],
         )
 
-        self.assertEqual(mail.outbox[0].attachments[1][0], "testpdf_b1.pdf")  # Test_PDF1.pdf
+        self.assertEqual(mail.outbox[0].attachments[1][0], "TestPDF1.pdf")  # testpdf_b1.pdf
 
         self.assertEqual(mail.outbox[0].attachments[2][0], "Muster_Hans_QR-Bill.pdf")
         self.assertInPDF(
@@ -999,7 +1056,7 @@ class DocumentProcessTest(GenoAdminTestCase):
             ],
         )
 
-        self.assertEqual(mail.outbox[0].attachments[3][0], "testpdf_c1.pdf")  # Test_PDF2.pdf
+        self.assertEqual(mail.outbox[0].attachments[3][0], "TestPDF2.pdf")  # testpdf_c1.pdf
 
         self.assertEqual(mail.outbox[0].attachments[4][0], "Muster_Hans_QR-BillRef.pdf")
         self.assertInPDF(

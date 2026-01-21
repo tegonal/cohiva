@@ -11,7 +11,7 @@ from django.shortcuts import redirect
 from django.utils import timezone
 
 import credit_accounting.settings as app_settings
-from geno.gnucash import parse_reference_nr
+from geno.billing import parse_reference_nr
 from geno.models import Address, Contract
 from geno.utils import send_error_mail
 
@@ -285,6 +285,8 @@ class AccountInformationMixin:
         context = super().get_context_data(**kwargs)
         context["is_admin"] = self.is_admin
         context["base_url"] = "/credit_accounting"
+        context["site_title"] = settings.GENO_NAME
+        context["vendor_name"] = self.vendor.name
         return context
 
     def get_account_owner(self, owner_id):

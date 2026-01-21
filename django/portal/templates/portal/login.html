@@ -32,7 +32,7 @@
               <a href="https://www.holliger-bern.ch/">
                 <img src="https://chat.holliger-bern.ch/assets/logo.svg" alt="">
               </a>
-        </div> 
+        </div>
 {% else %}
         <h1 class="uk-text-center uk-margin-medium-top uk-margin-medium-bottom c-h1-login">{{portal_name}} Portal</h1>
 {% endif %}
@@ -50,7 +50,7 @@
 {% endif %}
 
 {% block login_text %}
-              <p class="uk-text-small uk-margin-medium-bottom">Zur Anmeldung benötigst du deine E-Mail-Adresse und dein Passwort. Falls du Probleme beim Anmelden hast, findest du zuunterst weitere Infos.<!--schreib uns an <a href="mailto:support@warmbaechli.ch">support@warmbaechli.ch</a>--></p>
+              <p class="uk-text-small uk-margin-medium-bottom">Zur Anmeldung benötigst du deine E-Mail-Adresse und dein Passwort. Falls du Probleme beim Anmelden hast, findest du zuunterst weitere Infos.</p>
 {% endblock login_text %}
 
 {% if login_error %}
@@ -99,7 +99,6 @@
                   <li>Du erhältst nun ein Mail an deine Adresse. Falls du es im Posteingang nicht findest, überprüfe auch den Spam-Ordner. Im Mail findest du dein Benutzername und ein Link, um ein neues Passwort zu setzen sowie die weiteren nötigen Schritte, um den Registriervorgang abschliessen zu können.</li>
                   <li>Sobald du fertig bist, kannst du dein neues Login für alle Warmbächli Dienste nutzen.</li>
                 </ul>
-                <p>Falls du Probleme beim Anmelden hast, schreib uns an {{ 'support@warmbaechli.ch'|obfuscate_mailto }}.</p>
 {% else %}
                 <p>Über das {{portal_name}}-Portal bekommst du Zugriff auf den {{portal_name}}-Chat und allenfalls weitere Tools. Du hast bereits ein Konto erstellt und kennst dein Passwort? Dann kannst du dich oben direkt anmelden.</p>
                 <p><span class="c-text-underline">Du hast noch kein Konto oder dein Passwort vergessen?</span> Dann gehst du folgendermassen vor:</p>

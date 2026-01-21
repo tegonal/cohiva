@@ -1,0 +1,54 @@
+{% extends "geno/base.html" %}
+{% load static i18n unfold crispy_forms_tags django_tables2 %}
+
+{% block custom_content %}
+
+  {# Filter Form using Crispy Forms with Unfold template pack #}
+  <form method="post" id="debtor_filter_form">
+    {% csrf_token %}
+    {% component "unfold/components/card.html" with class="mb-6" %}
+    <div class="px-3 py-3">{% crispy form "unfold_crispy" %}</div>
+
+    {# Action buttons #}
+    <div class="flex flex-wrap gap-3 mt-6 px-3 pb-3">
+      {% component "unfold/components/button.html" with submit=1 name="show" %}
+      {% trans "Suchen/Anzeigen" %}
+    {% endcomponent %}
+
+    {% if invoice_table %}
+      {% component "unfold/components/button.html" with submit=1 name="consolidate" %}
+      {% trans "Rechnungen konsolidieren" %}
+    {% endcomponent %}
+  {% endif %}
+
+  <a href="?reset_filter=1"
+     class="inline-flex items-center px-4 py-2 text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline">
+    {% trans "Filter zurücksetzen" %}
+  </a>
+</div>
+{% endcomponent %}
+</form>
+
+{# Table using django_tables2 with Unfold styling #}
+{% if table %}
+  {% component "unfold/components/card.html" %}
+  <div class="-m-6">{% render_table table %}</div>
+{% endcomponent %}
+{% else %}
+{% component "geno/components/empty_state.html" with message=_("Keine Rechnungen gefunden. Passen Sie die Filterkriterien an.") icon="search" %}
+{% endcomponent %}
+{% endif %}
+
+{# Breadcrumb navigation #}
+{% if breadcrumbs|length %}
+  <div class="mt-5">
+    {% with prev=breadcrumbs|last %}
+      <a href="{{ prev.href }}"
+         class="text-primary-600 dark:text-primary-400 hover:underline">
+        &lt; {% trans "Zurück zu" %} {{ prev.name }}
+      </a>
+    {% endwith %}
+  </div>
+{% endif %}
+
+{% endblock %}

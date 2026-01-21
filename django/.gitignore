@@ -1,18 +1,23 @@
 *.pyc
 .*.swp
 NOT_USED
-test.log
+*.log
 .idea/*
 /.env
+/.envrc  # direnv auto-activation config
+/.venv-path  # Virtual environment path marker
 /.coverage
 /test-failure.html
 /dump
 /website
-/cohiva/base_config.py
+/django-test
+/django-production
+/cohiva/base_config.py  # Contains generated SITE_SECRET and local config
 /cohiva/settings_production.py
 /cohiva/settings.py
 /cohiva/saml2/private.key
 /cohiva/saml2/public.pem
+/cohiva/oauth2/oidc.key
 /deployment/celery.conf
 /deployment/cohiva-celery.service
 /deployment_custom
@@ -30,3 +35,8 @@ test.log
 /portal/templates/portal/portal_page.html
 /portal/templates/portal/secondary.html
 /portal/static
+
+# AI agents
+CLAUDE.md
+/.claude
+/.serena

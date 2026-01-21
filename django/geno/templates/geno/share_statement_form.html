@@ -1,0 +1,41 @@
+{% extends "geno/base.html" %}
+{% load static i18n unfold crispy_forms_tags %}
+
+{% block object-tools %}{# Override to hide tab list when there's only one view #}{% endblock %}
+
+{% block custom_content %}
+
+  {# Info message #}
+  {% if help_text %}
+    <div class="bg-white border border-base-200 rounded-default p-6 mb-6 shadow-sm dark:border-base-800 dark:bg-base-900">
+      <div class="flex items-start gap-3">
+        <span class="material-symbols-outlined text-base-400 dark:text-base-600 text-[20px] flex-shrink-0 mt-0.5">info</span>
+        <p class="text-sm text-font-light dark:text-font-dark">{{ help_text }}</p>
+      </div>
+    </div>
+  {% endif %}
+
+  {# Form with custom layout #}
+  <form method="post" id="statement-form">
+    {% csrf_token %}
+
+    {% component "unfold/components/card.html" %}
+    {% crispy form "unfold_crispy" %}
+  {% endcomponent %}
+</form>
+
+{% endblock %}
+
+{% block footer %}
+  {# Floating action button footer #}
+  <div class="relative lg:sticky lg:bottom-0 z-40">
+    <div class="backdrop-blur-xs bg-white/80 rounded-b-default pb-4 px-4 dark:bg-base-900/80 lg:border-t lg:border-base-200 relative lg:scrollable-top lg:py-0 dark:border-base-800">
+      <div class="flex flex-col-reverse gap-3 items-center mx-auto lg:flex-row-reverse container lg:h-[64px]">
+        {# Primary action - Submit form using form attribute #}
+        {% component "unfold/components/button.html" with submit=1 attrs=attrs_button %}
+        {% trans "Dokumente erstellen" %}
+      {% endcomponent %}
+    </div>
+  </div>
+</div>
+{% endblock %}

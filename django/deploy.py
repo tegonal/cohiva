@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import os
+import subprocess
+from pathlib import Path
 
 import cohiva.base_config as cbc
 
@@ -10,7 +12,7 @@ PROJECT = "cohiva"
 DEPLOY_DEST_PRODUCTION = cbc.INSTALL_DIR + "/django-production"
 
 ## Project and apps to deploy
-MODULES = (PROJECT, "geno")
+MODULES = (PROJECT, "geno", "finance")
 if "website" in cbc.FEATURES:
     MODULES += ("website",)
 if "portal" in cbc.FEATURES:
@@ -49,6 +51,23 @@ CLEAR_CODE = False
 
 RELOAD_WEBSERVER = False
 RELOAD_CELERY = False
+
+
+def update_deployed_version_file():
+    file_path = Path(DEPLOY_DEST_PRODUCTION) / "cohiva" / "version.py"
+    git_tag = subprocess.check_output(["git", "describe", "--tags", "--always"], text=True).strip()
+    git_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+
+    lines = file_path.read_text().splitlines()
+    updated_lines = []
+    for line in lines:
+        if line.startswith("git_tag = "):
+            updated_lines.append(f'git_tag = "{git_tag}"')
+        elif line.startswith("git_commit = "):
+            updated_lines.append(f'git_commit = "{git_commit}"')
+        else:
+            updated_lines.append(line)
+    file_path.write_text("\n".join(updated_lines) + "\n")
 
 
 def deploy_production():
@@ -92,6 +111,9 @@ def deploy_production():
     os.system(
         f"rsync -a --info=NAME {celery_files} {rsync_opts} --delete --delete-missing-args {DEPLOY_DEST_PRODUCTION}/celery/"
     )
+
+    print("- Updating version.py")
+    update_deployed_version_file()
 
     print("")
     print("2. Updating static files")

@@ -2,9 +2,10 @@ import datetime
 import logging
 import math
 import uuid
+from decimal import Decimal
 
-import select2.fields
 from django.conf import settings
+from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -38,11 +39,12 @@ logger = logging.getLogger("access_portal")
 
 ## Abstract base class
 class GenoBase(models.Model):
-    comment = models.CharField("Comment", max_length=500, blank=True)
+    comment = models.CharField("Kommentar", max_length=500, blank=True)
     ts_created = models.DateTimeField("Erstellt", auto_now_add=True)
     ts_modified = models.DateTimeField("Geändert", auto_now=True)
 
     ## List objects linked to by this instance.
+    @admin.display(description="Links")
     def links(self):
         foreign_key_fields = []
         for field in self._meta.get_fields():
@@ -74,9 +76,8 @@ class GenoBase(models.Model):
             "<ul>{}</ul>", format_html_join("\n", "<li>{}: {}</li>", foreign_key_fields)
         )
 
-    links.short_description = "Links"
-
     ## List objects that link to this instance.
+    @admin.display(description="Backlinks")
     def backlinks(self):
         if self.id is None:
             return ""
@@ -132,11 +133,10 @@ class GenoBase(models.Model):
                 models_done.append(rfield.related_model)
         return format_html("<ul>{}</ul>", format_html_join("\n", "<li>{}: {}</li>", items))
 
-    backlinks.short_description = "Backlinks"
-
     def get_object_actions(self):
         return []
 
+    @admin.display(description="Aktionen")
     def object_actions(self):
         actions = self.get_object_actions()
         if not actions:
@@ -157,8 +157,6 @@ class GenoBase(models.Model):
         action_list = "\n".join(action_buttons)
         return mark_safe(f'<ul class="cohiva_object-actions">{action_list}</ul>')
 
-    object_actions.short_description = "Aktionen"
-
     def save_as_copy(self):
         if hasattr(self, "name") and isinstance(self.name, str):
             self.name = "%s [KOPIE]" % self.name
@@ -176,10 +174,35 @@ class GenoBase(models.Model):
         abstract = True
 
 
+class BankAccount(GenoBase):
+    iban = models.CharField("IBAN", max_length=34, blank=True)
+    financial_institution = models.CharField("Finanzinstitut", max_length=100, blank=True)
+    account_holders = models.CharField("Kontoinhaber", max_length=100, blank=True)
+
+    def __str__(self):
+        account_holders = self.account_holders.strip() if self.account_holders else ""
+        iban = self.iban.strip() if self.iban else ""
+        if account_holders and iban:
+            return f"{account_holders} ({iban})"
+        elif account_holders:
+            return account_holders
+        elif iban:
+            return iban
+        elif self.comment:
+            return f"Ohne IBAN / {self.comment}"
+        else:
+            return "Kein Konto angegeben"
+
+    class Meta:
+        verbose_name = "Bankkonto"
+        verbose_name_plural = "Bankkonten"
+
+
 class Address(GenoBase):
     TITLE_CHOICES = (
         ("Herr", "Herr"),
         ("Frau", "Frau"),
+        ("Divers", "Divers"),
         ("Paar", "Familie/Paar"),
         ("Org", "Organisation/Firma"),
     )
@@ -193,12 +216,12 @@ class Address(GenoBase):
         ("Deposit", "Dem Depositenkassenkonto anrechnen"),
     )
     organization = models.CharField(
-        "Organisation", max_length=100, blank=True, help_text="Bei Privatpersonen: leer lassen"
+        "Organisation", max_length=150, blank=True, help_text="Bei Privatpersonen: leer lassen"
     )
     name = models.CharField(
-        "Nachname", max_length=30, blank=True, help_text="Bei Organisationen: Kontaktperson"
+        "Nachname", max_length=150, blank=True, help_text="Bei Organisationen: Kontaktperson"
     )  ## db_index=True ???
-    first_name = models.CharField("Vorname", max_length=30, blank=True)  ## db_index=True ???
+    first_name = models.CharField("Vorname", max_length=100, blank=True)  ## db_index=True ???
     title = models.CharField("Anrede", max_length=20, choices=TITLE_CHOICES, blank=True)
     formal = models.CharField(
         "Duzen", max_length=20, choices=FORMAL_CHOICES, default=get_default_formal_choice
@@ -215,12 +238,22 @@ class Address(GenoBase):
     country = models.CharField("Land", max_length=100, blank=True, default="Schweiz")
     telephone = models.CharField("Telefon", max_length=30, blank=True)
     mobile = models.CharField("2. Telefon", max_length=30, blank=True)
+    telephoneOffice = models.CharField("Telefon Geschäft", max_length=30, blank=True)
+    telephoneOffice2 = models.CharField("2. Telefon Geschäft", max_length=30, blank=True)
     email = LowercaseEmailField("Email", blank=True)
     email2 = LowercaseEmailField("2. Email", blank=True)
+    website = models.CharField("Webseite", max_length=300, blank=True)
     date_birth = models.DateField("Geburtsdatum", null=True, blank=True)
     hometown = models.CharField("Heimatort", max_length=50, blank=True)
     occupation = models.CharField("Beruf/Ausbildung", max_length=150, blank=True)
-    bankaccount = models.CharField("Kontoverbindung", max_length=150, blank=True)
+    bankaccount = models.ForeignKey(
+        BankAccount,
+        verbose_name="Kontoverbindung/IBAN",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        help_text="Z.B. für Auszahlung Zinsen",
+    )
     interest_action = models.CharField(
         "Standard-Zinsvergütung",
         max_length=100,
@@ -245,11 +278,8 @@ class Address(GenoBase):
         ),
     )
     active = models.BooleanField("Aktiv", db_index=True, default=True)
-    gnucash_id = models.CharField(
-        "GnuCash-ID", max_length=30, unique=True, null=True, default=None
-    )
-    emonitor_id = models.IntegerField(
-        "eMonitor-ID", unique=True, null=True, default=None, blank=True
+    import_id = models.CharField(
+        "Import-ID", max_length=255, unique=True, null=True, default=None, blank=True
     )
     random_id = models.UUIDField("Zufalls-ID", unique=True, default=uuid.uuid4, editable=False)
 
@@ -275,6 +305,7 @@ class Address(GenoBase):
             return "%s, %s" % (self.name, self.first_name)
 
     @property
+    @admin.display(description="Strasse/Nr.")
     def street(self):
         ret = ""
         if self.street_name:
@@ -291,22 +322,17 @@ class Address(GenoBase):
                 ret += f" {self.po_box_number}"
         return ret
 
-    street.fget.short_description = "Strasse/Nr."
-
     @property
+    @admin.display(description="PLZ/Ort")
     def city(self):
         if self.city_zipcode and self.city_name:
             return f"{self.city_zipcode} {self.city_name}"
         else:
             return self.city_name
 
-    city.fget.short_description = "PLZ/Ort"
-
+    @admin.display(description="Person/Organisation")
     def list_name(self):
         return self.__str__()
-
-    list_name.short_description = "Person/Organisation"
-    # list_name.admin_order_field = 'name'
 
     def get_filename_str(self):
         if self.organization:
@@ -469,6 +495,9 @@ class Address(GenoBase):
             if self.title == "Herr" and len(self.first_name):
                 anrede_person = "Lieber %s" % self.first_name
                 words_select = 0
+            elif self.title == "Divers" and len(self.first_name):
+                anrede_person = "Liebe*r %s" % self.first_name
+                words_select = 0
             elif self.title == "Frau" and len(self.first_name):
                 anrede_person = "Liebe %s" % self.first_name
                 words_select = 0
@@ -484,6 +513,12 @@ class Address(GenoBase):
                     anrede_person = "Sehr geehrter Herr %s" % self.name
                 else:
                     anrede_person = "Lieber Herr %s" % self.name
+                words_select = 1
+            elif self.title == "Divers" and len(self.name):
+                if settings.GENO_FORMAL:
+                    anrede_person = "Sehr geehrte*r %s" % self.name
+                else:
+                    anrede_person = "Guten Tag  %s" % self.name
                 words_select = 1
             elif self.title == "Frau" and len(self.name):
                 if settings.GENO_FORMAL:
@@ -504,6 +539,7 @@ class Address(GenoBase):
             if (
                 self.organization.startswith("Verein ")
                 or self.organization.endswith("verein")
+                or self.organization.startswith("Hausverein")
                 or self.organization.startswith("Verband ")
                 or self.organization.endswith("verband")
                 or self.organization.startswith("Regionalverband")
@@ -557,8 +593,7 @@ class Address(GenoBase):
 
     def save_as_copy(self):
         self.user = None
-        self.emonitor_id = None
-        self.gnucash_id = None
+        self.import_id = None
         self.random_id = uuid.uuid4()
         super().save_as_copy()
 
@@ -620,16 +655,17 @@ def sync_user(sender, instance, created, **kwargs):
 
 
 class Child(GenoBase):
-    name = select2.fields.OneToOneField(
+    name = models.OneToOneField(
         Address, verbose_name="Person", on_delete=models.CASCADE, related_name="address_child"
     )
     presence = models.DecimalField("Anwesenheit (Tage/Woche)", max_digits=2, decimal_places=1)
     parents = models.CharField("Eltern(teil)", max_length=200, blank=True)
     notes = models.TextField("Bemerkungen", blank=True)
-    emonitor_id = models.IntegerField(
-        "eMonitor-ID", unique=True, null=True, default=None, blank=True
+    import_id = models.CharField(
+        "Import-ID", max_length=255, unique=True, null=True, default=None, blank=True
     )
 
+    @admin.display(description="Alter", ordering="name__date_birth")
     def age(self, precision=1):
         if self.name.date_birth:
             age_years = (datetime.date.today() - self.name.date_birth) / datetime.timedelta(
@@ -641,9 +677,6 @@ class Child(GenoBase):
             return nformat(age_years, precision)
         else:
             return "-"
-
-    age.short_description = "Alter"
-    age.admin_order_field = "name__date_birth"
 
     def __str__(self):
         if self.name:
@@ -660,6 +693,17 @@ class Child(GenoBase):
 class Building(GenoBase):
     name = models.CharField("Liegenschaft", max_length=100, unique=True)
     description = models.CharField("Beschreibung", max_length=200, blank=True)
+    street_name = models.CharField("Strasse", max_length=100, blank=True)
+    house_number = models.CharField("Hausnummer", max_length=100, blank=True)
+    city_zipcode = models.CharField("PLZ", max_length=30, blank=True)
+    city_name = models.CharField("Ort", max_length=100, blank=True)
+    country = models.CharField("Land", max_length=100, blank=True, default="Schweiz")
+    value_insurance = models.DecimalField(
+        "Gebäudeversicherungswert (Fr.)", max_digits=12, decimal_places=2, null=True, blank=True
+    )
+    value_build = models.DecimalField(
+        "Anlagekosten (Fr.)", max_digits=12, decimal_places=2, null=True, blank=True
+    )
     team = models.CharField(
         "Rocket.Chat Team",
         max_length=100,
@@ -669,6 +713,8 @@ class Building(GenoBase):
             "(für automatische Zuordnung von Nutzer:innen)."
         ),
     )
+    accounting_postfix = models.PositiveIntegerField("Buchhaltungs-Postfix", null=True, blank=True)
+    egid = models.PositiveIntegerField("EGID", null=True, blank=True)
     active = models.BooleanField("Aktiv", default=True)
 
     class Meta:
@@ -678,12 +724,10 @@ class Building(GenoBase):
 
 
 class Tenant(GenoBase):
-    name = select2.fields.OneToOneField(
+    name = models.OneToOneField(
         Address, verbose_name="Person", on_delete=models.CASCADE, related_name="address_tenant"
     )
-    building = select2.fields.ForeignKey(
-        Building, verbose_name="Gebäude", on_delete=models.CASCADE
-    )
+    building = models.ForeignKey(Building, verbose_name="Gebäude", on_delete=models.CASCADE)
     key_number = models.CharField(
         "Schlüsselnr.",
         default="",
@@ -703,12 +747,12 @@ class Tenant(GenoBase):
 
     class Meta:
         ordering = ["name"]
-        verbose_name = "Nutzer:in"
-        verbose_name_plural = "Nutzer:innen"
+        verbose_name = "Externe Nutzer:in"
+        verbose_name_plural = "Externe Nutzer:innen"
 
 
 class Member(GenoBase):
-    name = select2.fields.OneToOneField(
+    name = models.OneToOneField(
         Address, verbose_name="Person/Organisation", on_delete=models.CASCADE
     )
     date_join = models.DateField("Eintritt")
@@ -782,8 +826,8 @@ class MemberAttributeType(GenoBase):
 
 
 class MemberAttribute(GenoBase):
-    member = select2.fields.ForeignKey(Member, verbose_name="Mitglied", on_delete=models.CASCADE)
-    attribute_type = select2.fields.ForeignKey(
+    member = models.ForeignKey(Member, verbose_name="Mitglied", on_delete=models.CASCADE)
+    attribute_type = models.ForeignKey(
         MemberAttributeType, verbose_name="Attributtyp", on_delete=models.CASCADE
     )
     date = models.DateField("Datum", null=True, blank=True)
@@ -817,10 +861,8 @@ class ShareType(GenoBase):
 
 
 class Share(GenoBase):
-    name = select2.fields.ForeignKey(
-        Address, verbose_name="Person/Organisation", on_delete=models.CASCADE
-    )
-    share_type = select2.fields.ForeignKey(
+    name = models.ForeignKey(Address, verbose_name="Person/Organisation", on_delete=models.CASCADE)
+    share_type = models.ForeignKey(
         ShareType, verbose_name="Beteiligungstyp", on_delete=models.CASCADE
     )
     STATE_CHOICES = (
@@ -863,7 +905,7 @@ class Share(GenoBase):
     is_interest_credit = models.BooleanField("Zinsgutschrift", default=False)
     is_pension_fund = models.BooleanField("WEF-Guthaben (BVG/3.Säule)", default=False)
     is_business = models.BooleanField("Gewerbe", default=False)
-    attached_to_contract = select2.fields.ForeignKey(
+    attached_to_contract = models.ForeignKey(
         "Contract",
         verbose_name="Fixe Zuteilung als Pflichtanteil für Vertrag",
         help_text=(
@@ -875,18 +917,26 @@ class Share(GenoBase):
         on_delete=models.SET_NULL,
         related_name="contract_attached_shares",
     )
+    attached_to_building = models.ForeignKey(
+        "Building",
+        verbose_name="Liegenschaft",
+        help_text=("Nur ausfüllbar wenn kein Vertrag gewählt ist."),
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="building_attached_shares",
+    )
     note = models.CharField("Zusatzinfo", max_length=200, blank=True)
 
     ## Reverse relation to Documents
     documents = GenericRelation("Document", related_query_name="shares")
 
+    @admin.display(description="Zinssatz")
     def interest(self):
         if self.interest_mode == "Standard":
             return self.share_type.standard_interest
         else:
             return self.manual_interest
-
-    interest.short_description = "Zinssatz"
 
     def __str__(self):
         extra_info = self.share_type
@@ -907,22 +957,35 @@ class Share(GenoBase):
             )
         return actions
 
+    @admin.display(description="Total")
     def value_total(self):
         if self.quantity and self.value:
             return self.quantity * self.value
         else:
             return "-"
 
-    value_total.short_description = "Total"
+    def clean(self, *args, **kwargs):
+        from django.core.exceptions import ValidationError
+
+        # contract and building relations may not both be present
+        if self.attached_to_building is not None and self.attached_to_contract is not None:
+            raise ValidationError("Vertrag und Liegeneschaft dürfen nicht beide ausgewählt sein.")
+        super().clean(*args, **kwargs)
 
     class Meta:
         verbose_name = "Beteiligung"
         verbose_name_plural = "Beteiligungen"
+        constraints = [
+            models.CheckConstraint(
+                check=Q(attached_to_building=None) | Q(attached_to_contract=None),
+                name="geno_share_attached_to_building_or_contract",
+            )
+        ]
         permissions = (
             ("canview_share", "Can view shares"),
             ("canview_share_overview", "Can see share overview"),
             ("confirm_share", "Kann Betiligungen bestätigen"),
-            ("share_interest_statments", "Kann Zins-/Kontoauszüge erstellen und Zinsen anpassen"),
+            ("share_interest_statements", "Kann Zins-/Kontoauszüge erstellen und Zinsen anpassen"),
             ("share_mailing", "Kann Mailing zu Beteiligungen erstellen"),
         )
 
@@ -955,7 +1018,7 @@ DOCUMENTTYPE_NAME_CHOICES = (
 class DocumentType(GenoBase):
     name = models.CharField("Name", max_length=50, unique=True, choices=DOCUMENTTYPE_NAME_CHOICES)
     description = models.CharField("Beschreibung", max_length=200)
-    template = select2.fields.ForeignKey(
+    template = models.ForeignKey(
         "ContentTemplate",
         verbose_name="Vorlage",
         on_delete=models.CASCADE,
@@ -985,9 +1048,7 @@ class DocumentType(GenoBase):
 
 class Document(GenoBase):
     name = models.CharField("Name", max_length=250)
-    doctype = select2.fields.ForeignKey(
-        DocumentType, verbose_name="Dokumenttyp", on_delete=models.CASCADE
-    )
+    doctype = models.ForeignKey(DocumentType, verbose_name="Dokumenttyp", on_delete=models.CASCADE)
     data = models.TextField("Data")
 
     ## Generic relation to object
@@ -1101,9 +1162,7 @@ class RegistrationSlot(GenoBase):
         default=-1,
         help_text="Für unbeschränkte Anzahl -1 (minus 1) eingeben.",
     )
-    event = select2.fields.ForeignKey(
-        RegistrationEvent, verbose_name="Anlass", on_delete=models.CASCADE
-    )
+    event = models.ForeignKey(RegistrationEvent, verbose_name="Anlass", on_delete=models.CASCADE)
     is_backup_for = models.OneToOneField(
         "self",
         verbose_name="Ist Backup für Termin",
@@ -1140,7 +1199,7 @@ class Registration(GenoBase):
     telephone = models.CharField(
         "Telefon", max_length=30, blank=True, help_text="Angabe zwingend wegen COVID-19 Massnahmen"
     )
-    slot = select2.fields.ForeignKey(
+    slot = models.ForeignKey(
         RegistrationSlot, verbose_name="Datum/Zeit Beginn", on_delete=models.CASCADE
     )
     notes = models.TextField("Kommentar", blank=True)
@@ -1163,27 +1222,27 @@ class Registration(GenoBase):
         verbose_name_plural = "Anmeldungen"
 
 
+RENTAL_UNIT_TYPES = (
+    ("Wohnung", "Wohnung"),
+    ("Grosswohnung", "Grosswohnung"),
+    ("Jokerzimmer", "Jokerzimmer"),
+    ("Selbstausbau", "Selbstausbau"),
+    ("Kellerabteil", "Kellerabteil"),
+    ("Gewerbe", "Gewerbefläche"),
+    ("Lager", "Lagerraum"),
+    ("Hobby", "Hobbyraum"),
+    ("Gemeinschaft", "Gemeinschaftsräume/Diverses"),
+    ("Parkplatz", "Parkplatz"),
+)
+
+
 class RentalUnit(GenoBase):
-    RENTAL_UNIT_TYPES = (
-        ("Wohnung", "Wohnung"),
-        ("Grosswohnung", "Grosswohnung"),
-        ("Jokerzimmer", "Jokerzimmer"),
-        ("Selbstausbau", "Selbstausbau"),
-        ("Kellerabteil", "Kellerabteil"),
-        ("Gewerbe", "Gewerbefläche"),
-        ("Lager", "Lagerraum"),
-        ("Hobby", "Hobbyraum"),
-        ("Gemeinschaft", "Gemeinschaftsräume/Diverses"),
-        ("Parkplatz", "Parkplatz"),
-    )
     name = models.CharField("Nr.", max_length=255)
     label = models.CharField("Bezeichnung", max_length=50, blank=True)
     label_short = models.CharField("Kurzbezeichnung", blank=True, max_length=50)
     rental_type = models.CharField("Typ", max_length=50, choices=RENTAL_UNIT_TYPES)
     # building = models.CharField('Gebäude(teil)', max_length=100, blank=True)
-    building = select2.fields.ForeignKey(
-        "Building", verbose_name="Liegenschaft", on_delete=models.CASCADE
-    )
+    building = models.ForeignKey("Building", verbose_name="Liegenschaft", on_delete=models.CASCADE)
     floor = models.CharField("Stockwerk", max_length=50, blank=True)
     area = models.DecimalField(
         "Fläche (m2)", max_digits=10, decimal_places=2, null=True, blank=True
@@ -1205,23 +1264,30 @@ class RentalUnit(GenoBase):
         "Mindestbelegung", max_digits=5, decimal_places=1, null=True, blank=True
     )
     nk = models.DecimalField(
-        "Nebenkosten (Fr.)",
+        "Nebenkosten Akonto (Fr.)",
         max_digits=10,
         decimal_places=2,
         null=True,
         blank=True,
         help_text="Wird bei unvermieteten Gewerberäumen auch auf der Website angezeigt.",
     )
-    nk_electricity = models.DecimalField(
-        "Strompauschale (Fr.)", max_digits=10, decimal_places=2, null=True, blank=True
-    )
-    rent_total = models.DecimalField(
-        "Miete inkl. NK+Strom (Fr./Monat)",
+    nk_flat = models.DecimalField(
+        "Nebenkosten Pauschal (Fr.)",
         max_digits=10,
         decimal_places=2,
         null=True,
         blank=True,
-        help_text="Die effektive Miete, welche in Rechnung gestellt wird.",
+    )
+    nk_electricity = models.DecimalField(
+        "Strompauschale (Fr.)", max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    rent_netto = models.DecimalField(
+        "Netto-Miete (Fr.)",
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="exkl. NK+Strom",
     )
     rent_year = models.DecimalField(
         "Nettomiete publiziert (Fr./Jahr)",
@@ -1240,6 +1306,8 @@ class RentalUnit(GenoBase):
     note = models.CharField("Zusatzinfo", max_length=200, blank=True)
     active = models.BooleanField("Aktiv", default=True)
     status = models.CharField("Status", default="Verfügbar", max_length=100)
+    ewid = models.PositiveIntegerField("EWID", null=True, blank=True)
+    internal_nr = models.PositiveIntegerField("Interne-Nummer", null=True, blank=True)
     svg_polygon = models.TextField("SVG Polygon", default="", blank=True)
     description = models.TextField("Beschreibung", default="", blank=True)
     adit_serial = models.TextField(
@@ -1249,6 +1317,22 @@ class RentalUnit(GenoBase):
         max_length=50,
         help_text="Mehrere Seriennr. durch Komma trennen.",
     )
+    import_id = models.CharField(
+        "Import-ID", max_length=255, unique=True, null=True, default=None, blank=True
+    )
+
+    @property
+    @admin.display(description="Bruttomiete (Fr.)")
+    def rent_total(self):
+        """
+        Bruttomiete inkl. NK und Strom
+        """
+        return (
+            (self.rent_netto if self.rent_netto else Decimal(0.0))
+            + (self.nk if self.nk else Decimal(0.0))
+            + (self.nk_flat if self.nk_flat else Decimal(0.0))
+            + (self.nk_electricity if self.nk_electricity else Decimal(0.0))
+        )
 
     def str_short(self):
         if self.label:
@@ -1270,10 +1354,18 @@ class RentalUnit(GenoBase):
 
 
 class Contract(GenoBase):
+    main_contract = models.ForeignKey(
+        "self",
+        verbose_name="Hauptvertrag",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="sub_contract",
+    )
     contractors = models.ManyToManyField(
         Address, verbose_name="Vertragspartner", related_name="address_contracts"
     )
-    main_contact = select2.fields.ForeignKey(
+    main_contact = models.ForeignKey(
         Address,
         verbose_name="Kontaktperson/Hauptmieter*in",
         null=True,
@@ -1284,7 +1376,6 @@ class Contract(GenoBase):
     children = models.ManyToManyField(
         Child, verbose_name="Kinder", blank=True, related_name="child_contracts"
     )
-    children_old = models.CharField("Kinder (ALT!)", max_length=200, blank=True)
     rental_units = models.ManyToManyField(
         RentalUnit, verbose_name="Mietobjekt(e)", related_name="rentalunit_contracts"
     )
@@ -1295,14 +1386,42 @@ class Contract(GenoBase):
         ("ungueltig", "ungültig"),
     )
     state = models.CharField("Status", max_length=50, choices=CONTRACT_STATE_CHOICES, blank=True)
-    date = models.DateField("Datum Beginn")
-    date_end = models.DateField("Datum Ende", null=True, blank=True, default=None)
+    date_since = models.DateField(
+        "Verhältnis seit",
+        null=True,
+        blank=True,
+        default=None,
+        help_text="Start des Mietverhältnisses (ggf. abweichend vom Vertragsbeginn). Wird in keiner Berechnung verwendet.",
+    )
+    date = models.DateField("Vertragsbeginn")
+    date_end = models.DateField("Vertragsende", null=True, blank=True, default=None)
+    billing_date_start = models.DateField(
+        "Sollstellung ab",
+        null=True,
+        blank=True,
+        default=None,
+        help_text="Leer lassen, falls ab Vertragsbeginn.",
+    )
+    billing_date_end = models.DateField(
+        "Sollstellung bis",
+        null=True,
+        blank=True,
+        default=None,
+        help_text="Leer lassen, falls bis Vertragsende.",
+    )
     note = models.CharField("Zusatzinfo", max_length=200, blank=True)
-    emonitor_id = models.IntegerField(
-        "eMonitor-ID", unique=True, null=True, default=None, blank=True
+    import_id = models.CharField(
+        "Import-ID", max_length=255, unique=True, null=True, default=None, blank=True
     )
     rent_reduction = models.DecimalField(
         "Mietzinsreduktion Nettomiete (Fr./Monat)",
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+    rent_reservation = models.DecimalField(
+        "Mietzinsvorbehalt Nettomiete (Fr./Monat)",
         max_digits=10,
         decimal_places=2,
         null=True,
@@ -1324,7 +1443,7 @@ class Contract(GenoBase):
         "QR-Rechnung", max_length=50, choices=CONTRACT_QRBILL_CHOICES, default="only_next"
     )
     ## TODO: Billing and Debitoren for linked contracts.
-    billing_contract = select2.fields.ForeignKey(
+    billing_contract = models.ForeignKey(
         "Contract",
         verbose_name="In Inkasso von diesem Vertrag integrieren",
         null=True,
@@ -1332,8 +1451,13 @@ class Contract(GenoBase):
         on_delete=models.SET_NULL,
         related_name="contract_billing_contracts",
     )
-    bankaccount = models.CharField(
-        "Kontoverbindung", max_length=150, blank=True, help_text="Z.B. für Rückzahlung Nebenkosten"
+    bankaccount = models.ForeignKey(
+        BankAccount,
+        verbose_name="Kontoverbindung/IBAN",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        help_text="Z.B. für Rückzahlung Nebenkosten",
     )
 
     ## Reverse relation to Documents
@@ -1379,6 +1503,10 @@ class Contract(GenoBase):
                     names.append("%s %s" % (a.first_name, a.name))
             return "%05d, %s" % (self.id, "/".join(names))
 
+    def get_building_label(self):
+        ru = self.rental_units.first()
+        return ru.building.name if ru else None
+
     def list_rental_units(self, short=False, exclude_minor=False, as_list=False):
         units = []
         if exclude_minor:
@@ -1397,27 +1525,29 @@ class Contract(GenoBase):
 
     def get_object_actions(self):
         actions = []
-        actions.append(
-            (
-                "/geno/invoice/download/contract/%s/" % (self.pk),
-                "Mietzinsrechnung herunterladen, aktueller Monat",
-                "Es wird nur das PDF erzeugt, nicht gebucht!",
+        if not self.main_contract:
+            # No invoices for sub-contracts
+            actions.append(
+                (
+                    "/geno/invoice/download/contract/%s/" % (self.pk),
+                    "Mietzinsrechnung herunterladen, aktueller Monat",
+                    "Es wird nur das PDF erzeugt, nicht gebucht!",
+                )
             )
-        )
-        actions.append(
-            (
-                "/geno/invoice/download/contract/%s/?date=last_month" % (self.pk),
-                "Mietzinsrechnung herunterladen, letzter Monat",
-                "Es wird nur das PDF erzeugt, nicht gebucht!",
+            actions.append(
+                (
+                    "/geno/invoice/download/contract/%s/?date=last_month" % (self.pk),
+                    "Mietzinsrechnung herunterladen, letzter Monat",
+                    "Es wird nur das PDF erzeugt, nicht gebucht!",
+                )
             )
-        )
-        actions.append(
-            (
-                "/geno/invoice/download/contract/%s/?date=next_month" % (self.pk),
-                "Mietzinsrechnung herunterladen, nächster Monat",
-                "Es wird nur das PDF erzeugt, nicht gebucht!",
+            actions.append(
+                (
+                    "/geno/invoice/download/contract/%s/?date=next_month" % (self.pk),
+                    "Mietzinsrechnung herunterladen, nächster Monat",
+                    "Es wird nur das PDF erzeugt, nicht gebucht!",
+                )
             )
-        )
         for dt in DocumentType.objects.filter(active=True).filter(name__startswith="contract"):
             actions.append(
                 (
@@ -1431,7 +1561,7 @@ class Contract(GenoBase):
         old_contractors = self.contractors.all()
         old_children = self.children.all()
         old_rental_units = self.rental_units.all()
-        self.emonitor_id = None
+        self.import_id = None
         super().save_as_copy()
         self.contractors.set(old_contractors)
         self.children.set(old_children)
@@ -1450,11 +1580,10 @@ class Contract(GenoBase):
                 "rental_objects",
                 "Kann Mieter-/Objektespiegel erstellen und Mietobjekt-Dokumente erstellen",
             ),
-            ("send_mail_rental", "Kann Versand an Mieter*innen erstellen"),
         )
 
 
-def get_active_contracts(date=None, pre_select=None):
+def get_active_contracts(date=None, pre_select=None, include_subcontracts=False):
     if date is None:
         date = datetime.date.today()
         if date < datetime.date(2021, 12, 1):
@@ -1462,7 +1591,10 @@ def get_active_contracts(date=None, pre_select=None):
     if not pre_select:
         pre_select = Contract.objects.all()
     select = pre_select.filter(Q(date_end=None) | Q(date_end__gt=date)).filter(date__lte=date)
-    return select
+    if include_subcontracts:
+        return select
+    else:
+        return select.filter(main_contract__isnull=True)
 
 
 INVOICE_OBJECT_TYPE_CHOICES = (
@@ -1486,11 +1618,21 @@ class InvoiceCategory(GenoBase):
         default="Address",
     )
     income_account = models.CharField("Kontonummer Ertrag", max_length=50, default="3000")
+    income_account_building_based = models.BooleanField(
+        "Ertragskonto liegenschaftsabhängig",
+        default=False,
+        help_text="Liegenschafts-Postfix (bspw. 81) wird genutzt um Kontonummer zu bilden. Es resultiert bspw. 300081",
+    )
     receivables_account = models.CharField(
         "Kontonummer Forderungen", max_length=50, default="1102"
     )
+    receivables_account_building_based = models.BooleanField(
+        "Forderungskonto liegenschaftsabhängig",
+        default=False,
+        help_text="Liegenschafts-Postfix (bspw. 81) wird genutzt um Kontonummer zu bilden. Es resultiert bspw. 110281",
+    )
     manual_allowed = models.BooleanField("Manuelle Rechnungsstellung erlaubt", default=False)
-    email_template = select2.fields.ForeignKey(
+    email_template = models.ForeignKey(
         "ContentTemplate",
         verbose_name="Email-Vorlage",
         on_delete=models.SET_NULL,
@@ -1523,7 +1665,7 @@ INVOICE_TYPE_CHOICES = (
 
 class Invoice(GenoBase):
     name = models.CharField("Beschreibung", max_length=1000)
-    person = select2.fields.ForeignKey(
+    person = models.ForeignKey(
         Address,
         verbose_name="Person/Organisation",
         on_delete=models.CASCADE,
@@ -1534,7 +1676,7 @@ class Invoice(GenoBase):
     invoice_type = models.CharField(
         "Typ", max_length=50, choices=INVOICE_TYPE_CHOICES, default="Invoice", db_index=True
     )
-    invoice_category = select2.fields.ForeignKey(
+    invoice_category = models.ForeignKey(
         InvoiceCategory, verbose_name="Kategorie", on_delete=models.CASCADE, db_index=True
     )
     date = models.DateField("Datum")
@@ -1552,7 +1694,7 @@ class Invoice(GenoBase):
     is_additional_invoice = models.BooleanField(
         "Zusatzrechnung zu einer Hauptrechnung?", default=False, db_index=True
     )
-    contract = select2.fields.ForeignKey(
+    contract = models.ForeignKey(
         Contract,
         verbose_name="Vertrag",
         null=True,
@@ -1562,11 +1704,13 @@ class Invoice(GenoBase):
     )
     active = models.BooleanField("Aktiv", default=True, db_index=True)
 
-    ## Gnucash references
-    gnc_transaction = models.CharField("GNC transaction", max_length=1024)
-    gnc_account = models.CharField("GNC account", max_length=50, blank=True)
-    gnc_account_receivables = models.CharField(
-        "GNC account receivables", max_length=50, blank=True
+    ## Financial accounting references
+    fin_transaction_ref = models.CharField(
+        "Transaktions-Referenz Buchhaltung", max_length=1024, blank=True
+    )
+    fin_account = models.CharField("Konto Buchhaltung", max_length=50, blank=True)
+    fin_account_receivables = models.CharField(
+        "Konto Forderungen Buchhaltung", max_length=50, blank=True
     )
 
     def __str__(self):
@@ -1590,7 +1734,7 @@ class Invoice(GenoBase):
 
 @receiver(pre_delete, sender=Invoice)
 def _delete_invoice_pre(sender, instance, *args, **kwargs):
-    from .gnucash import delete_invoice_transaction
+    from .billing import delete_invoice_transaction
 
     ret = delete_invoice_transaction(instance)
     if ret:
@@ -1650,7 +1794,7 @@ class ContentTemplateOptionType(GenoBase):
 
 
 class ContentTemplateOption(GenoBase):
-    name = select2.fields.ForeignKey(
+    name = models.ForeignKey(
         ContentTemplateOptionType, verbose_name="Variable", on_delete=models.CASCADE
     )
     value = models.CharField("Wert", max_length=100, blank=True)
@@ -1738,3 +1882,56 @@ class ContentTemplate(GenoBase):
 
     def __str__(self):
         return f"{self.template_type}: {self.name}"
+
+
+class TenantsView(GenoBase):
+    bu_name = models.CharField("Liegenschaft", max_length=100, unique=True)
+    ru_name = models.CharField("Mietobjekt Nr.", max_length=255)
+    ru_label = models.CharField("Mietobjekt Bezeichnung", max_length=50, blank=True)
+    ru_type = models.CharField("Mietobjekt Typ", max_length=50, choices=RENTAL_UNIT_TYPES)
+    ru_floor = models.CharField("Mietobjekt Stockwerk", max_length=50, blank=True)
+    ru_rooms = models.DecimalField(
+        "Mietobjekt Anzahl Zimmer", max_digits=5, decimal_places=1, null=True, blank=True
+    )
+    ru_area = models.DecimalField(
+        "Mietobjekt Fläche (m2)", max_digits=10, decimal_places=2, null=True, blank=True
+    )
+
+    organization = models.CharField("Mieter*in Organisation", max_length=100, blank=True)
+    ad_name = models.CharField("Mieter*in Nachname", max_length=30)
+    ad_first_name = models.CharField("Mieter*in Vorname", max_length=30)
+    ad_title = models.CharField("Mieter*in Titel", max_length=50, blank=True)
+    ad_email = models.CharField("Mieter*in Email", max_length=100, blank=True)
+    c_ischild = models.BooleanField("Ist Kind", default=False)
+    c_age = models.IntegerField("Alter Kind", null=True, blank=True)
+    presence = models.CharField("Anwesenheit Kind", max_length=50, blank=True)
+    ad_date_birth = models.DateField("Mieter*in Geburtsdatum", null=True, blank=True)
+    ad_city = models.CharField("Mieter*in Ort", max_length=100, blank=True)
+    ad_street = models.CharField("Mieter*in Strasse", max_length=100, blank=True)
+    ad_tel1 = models.CharField("Mieter*in Telefon 1", max_length=30, blank=True)
+    ad_tel2 = models.CharField("Mieter*in Telefon 2", max_length=30, blank=True)
+    p_hometown = models.CharField("Mieter*in Heimatort", max_length=100, blank=True)
+    p_occupation = models.CharField("Mieter*in Beruf", max_length=100, blank=True)
+    p_membership_date = models.DateField("Mieter*in Mitglied seit", null=True, blank=True)
+    c_issubcontract = models.BooleanField("Ist Untervertrag", default=False)
+
+    building = models.ForeignKey(
+        "Building", verbose_name="Liegenschaft", on_delete=models.DO_NOTHING
+    )
+    rental_unit = models.ForeignKey(
+        "RentalUnit", verbose_name="Mietobjekt", on_delete=models.DO_NOTHING
+    )
+    contract = models.ForeignKey(Contract, verbose_name="Vertrag", on_delete=models.DO_NOTHING)
+
+    class Meta:
+        db_table = "geno_TenantsView"
+        managed = False
+        verbose_name = "Mieter:innenspiegel"
+        verbose_name_plural = "Mieter:innenspiegel"
+        ordering = ["bu_name", "ru_name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["building", "rental_unit", "contract"],
+                name="unique_tenantsview_entry",
+            ),
+        ]

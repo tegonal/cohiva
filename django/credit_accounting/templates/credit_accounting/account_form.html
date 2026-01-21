@@ -1,19 +1,5 @@
 {% extends "credit_accounting/base.html" %}
-{% load static %}
 {% load i18n %}
-
-{% block extrastyle %}
-{# For Select2 #}
-<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
-<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-
-<link href="/static/select2/css/select2.css" type="text/css" media="all" rel="stylesheet">
-<script type="text/javascript" src="/static/select2/js/select2.jquery_ready.js"></script>
-<script type="text/javascript" src="/static/select2/js/select2.jquery_ui_sortable.js"></script>
-<script type="text/javascript" src="/static/select2/js/select2.js"></script>
-
-{% endblock %}
 
 {% block content %}
     <form method="post">{% csrf_token %}

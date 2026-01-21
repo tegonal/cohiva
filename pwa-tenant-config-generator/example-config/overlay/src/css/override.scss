@@ -1,0 +1,100 @@
+// Tenant-specific style overrides
+// This file is loaded last and can override any styles in the application
+// Use this for tenant-specific customizations that go beyond theme colors
+
+// Import theme variables to set up CSS custom properties
+@import './theme-variables.scss';
+
+// Header and Toolbar styling with CSS variables
+.q-header {
+  background-color: var(--q-header-bg) !important;
+  color: var(--q-header-text) !important;
+  box-shadow: var(--q-header-shadow) !important;
+}
+
+.q-toolbar {
+  background-color: var(--q-toolbar-bg) !important;
+  color: var(--q-toolbar-text) !important;
+}
+
+// Remove Quasar's default elevated shadow when using custom shadow
+.app-header {
+  box-shadow: var(--q-header-shadow) !important;
+}
+
+// Link styles using CSS custom properties (with --q- prefix for Quasar compatibility)
+// Only target links within paragraph tags to avoid affecting navigation/buttons
+p a {
+  color: var(--q-link-color);
+  text-decoration: none;
+  transition: color 0.3s ease;
+
+  &:hover {
+    color: var(--q-link-hover-color);
+    text-decoration: underline;
+  }
+
+  &:visited {
+    color: var(--q-link-visited-color);
+  }
+
+  &:active {
+    color: var(--q-link-active-color);
+  }
+}
+
+// Q-List link styles - no underline on hover
+.q-list a,
+.q-item a {
+  &:hover {
+    text-decoration: none;
+  }
+}
+
+// App logo with dynamic shadow
+.app-logo {
+  box-shadow: var(--q-shadow-1);
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: var(--q-shadow-2);
+  }
+}
+
+// Utility classes that use the CSS variables
+.shadow-xs {
+  box-shadow: var(--q-shadow-1);
+}
+.shadow-sm {
+  box-shadow: var(--q-shadow-2);
+}
+.shadow-md {
+  box-shadow: var(--q-shadow-3);
+}
+.shadow-lg {
+  box-shadow: var(--q-shadow-4);
+}
+.shadow-xl {
+  box-shadow: var(--q-shadow-5);
+}
+
+// Example overrides (uncomment and modify as needed):
+
+// Override component styles
+// .q-btn {
+//   border-radius: 8px;
+// }
+
+// Override layout styles
+// .q-drawer {
+//   backdrop-filter: blur(10px);
+//   background-color: rgba(255, 255, 255, 0.9) !important;
+// }
+
+// Custom utility classes
+// .tenant-special {
+//   // Add tenant-specific styles
+// }

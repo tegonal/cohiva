@@ -11,14 +11,16 @@ except ImportError:
     print(
         "Django does not seem to be installed. Please check that you are in the correct virtual environment."
     )
+    sys.exit(1)
 
 
-def setup():
+def setup(use_default_certs=False):
     link_missing_templates()
     copy_missing_settings()
     generate_missing_base_config()
     create_missing_dirs()
-    generate_saml2_keys()
+    generate_saml2_keys(use_defaults=use_default_certs)
+    generate_oidc_keys()
 
 
 def generate_missing_base_config():
@@ -83,31 +85,52 @@ def create_missing_dirs():
     for d in dirs:
         if not os.path.exists(d):
             print(f"Creating missing directory {d}")
-            os.mkdir(d)
+            os.makedirs(d, exist_ok=True)
 
 
-def generate_saml2_keys():
+def generate_saml2_keys(use_defaults=False):
     if os.path.exists("./cohiva/saml2/private.key") or os.path.exists("./cohiva/saml2/public.pem"):
         return
     print("Generating SAML2 keys in ./cohiva/saml2/.")
-    subprocess.run(
-        [
-            "openssl",
-            "req",
-            "-nodes",
-            "-new",
-            "-x509",
-            "-newkey",
-            "rsa:2048",
-            "-days",
-            "3650",
-            "-keyout",
-            "./cohiva/saml2/private.key",
-            "-out",
-            "./cohiva/saml2/public.pem",
-        ]
-    )
+
+    cmd = [
+        "openssl",
+        "req",
+        "-nodes",
+        "-new",
+        "-x509",
+        "-newkey",
+        "rsa:2048",
+        "-days",
+        "3650",
+        "-keyout",
+        "./cohiva/saml2/private.key",
+        "-out",
+        "./cohiva/saml2/public.pem",
+    ]
+
+    if use_defaults:
+        # Use default certificate subject
+        cmd.extend(["-subj", "/C=CH/ST=Bern/L=Bern/O=Cohiva Development/CN=localhost"])
+
+    subprocess.run(cmd)
+
+
+def generate_oidc_keys():
+    if os.path.exists("./cohiva/oauth2/oidc.key"):
+        return
+    print("Generating OIDC key in ./cohiva/oauth2/.")
+    subprocess.run(["openssl", "genrsa", "-out", "./cohiva/oauth2/oidc.key", "4096"])
 
 
 if __name__ == "__main__":
-    setup()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Cohiva setup script")
+    parser.add_argument(
+        "--use-default-certs",
+        action="store_true",
+        help="Use default certificate values without prompting",
+    )
+    args = parser.parse_args()
+    setup(use_default_certs=args.use_default_certs)

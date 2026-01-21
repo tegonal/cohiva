@@ -18,12 +18,13 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.contrib.auth import views as auth_views
 from django.urls import include, path
 from django.views.generic.base import RedirectView
 
 admin.site.site_header = settings.GENO_NAME + " – Cohiva"
 admin.site.site_title = "Cohiva " + settings.COHIVA_SITE_NICKNAME
-admin.site.index_title = "Genossenschafts-Administration"
+admin.site.index_title = "Startseite"
 admin.site.site_url = None  ## To disable 'view on site' link
 
 urlpatterns = [
@@ -35,9 +36,12 @@ urlpatterns = [
 ]
 
 if "reservation" in settings.COHIVA_FEATURES:
+    from reservation import views as reservation_views
+
     urlpatterns += [
         path("reservation/", include("reservation.urls")),
         path("api/v1/reservation/", include("reservation.api_urls")),
+        path("calendar/feed/<calendar_id>/", reservation_views.calendar_feed),
     ]
 
 if "credit_accounting" in settings.COHIVA_FEATURES:
@@ -52,7 +56,14 @@ if "report" in settings.COHIVA_FEATURES:
         # path('api/v1/report/', include('report.api_urls')),
     ]
 
+if "importer" in settings.COHIVA_FEATURES:
+    urlpatterns += [
+        path("importer/", include("importer.urls")),
+    ]
+
 if "portal" in settings.COHIVA_FEATURES:
+    from portal.auth import CohivaAuthorizationView
+
     urlpatterns += [
         path(
             "login/sendpass/", RedirectView.as_view(url="/portal/", permanent=False), name="portal"
@@ -63,6 +74,7 @@ if "portal" in settings.COHIVA_FEATURES:
         ),
         path("portal/", include("portal.urls")),
         ## Auth
+        path("o/authorize/", CohivaAuthorizationView.as_view(), name="authorize"),
         path("o/", include("oauth2_provider.urls", namespace="oauth2_provider")),
         path("idp/", include("djangosaml2idp.urls")),
     ]
@@ -76,6 +88,22 @@ else:
             RedirectView.as_view(url="/admin/logout", permanent=False),
             name="admin-logout",
         ),
+        path("password_reset/", auth_views.PasswordResetView.as_view(), name="password_reset"),
+        path(
+            "password_reset/done/",
+            auth_views.PasswordResetDoneView.as_view(),
+            name="password_reset_done",
+        ),
+        path(
+            "reset/<uidb64>/<token>/",
+            auth_views.PasswordResetConfirmView.as_view(),
+            name="password_reset_confirm",
+        ),
+        path(
+            "reset/done/",
+            auth_views.PasswordResetCompleteView.as_view(),
+            name="password_reset_complete",
+        ),
     ]
 
 if "api" in settings.COHIVA_FEATURES:
@@ -86,6 +114,10 @@ if "api" in settings.COHIVA_FEATURES:
         path("dj-rest-auth/", include("dj_rest_auth.urls")),
     ]
 
+
+## Serve media files through the test server (don't do that for production!)
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 ## Serve media files through the test server (don't do that for production!)
 if settings.DEBUG:

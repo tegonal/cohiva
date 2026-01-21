@@ -6,13 +6,14 @@ from tempfile import NamedTemporaryFile
 import vdirsyncer
 import vobject
 from django.conf import settings
+from django.contrib import admin
 from django.http import HttpResponse
 from django.template import loader
 from django.utils import timezone
 from openpyxl import load_workbook
 from vdirsyncer.storage.dav import CardDAVStorage
 
-from .gnucash import get_reference_nr
+from .billing import get_reference_nr
 from .models import Address, Invoice, RentalUnit, get_active_contracts
 
 
@@ -215,6 +216,7 @@ def export_to_xls_generic(data, fields, title, header, filename_suffix):
 
 
 class ExportXlsMixin:
+    @admin.display(description="Ausgewählte als XLS exportieren")
     def export_as_xls(self, request, queryset):
         fields = []
         header = {}
@@ -223,8 +225,6 @@ class ExportXlsMixin:
             fields.append(field.name)
             header[field.name] = field.verbose_name
         return export_to_xls_generic(queryset, fields, str(meta), header, str(meta))
-
-    export_as_xls.short_description = "Ausgewählte als XLS exportieren"
 
 
 def export_adit_file():

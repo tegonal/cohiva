@@ -74,7 +74,7 @@ def create_prototype_users(cls):
         rooms=4,
         min_occupancy=3,
         nk=100,
-        rent_total=1100,
+        rent_netto=1000,
         share=10000,
     )
     contract = Contract.objects.create(
@@ -203,108 +203,142 @@ def create_templateoptions(cls):
     cls.contenttemplateoptions = {
         "statement": [
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="share_statement_context")
+                name=ContentTemplateOptionType.objects.get_or_create(
+                    name="share_statement_context"
+                )[0]
             )
         ],
         "billing": [
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="billing_context")
+                name=ContentTemplateOptionType.objects.get_or_create(name="billing_context")[0]
             )
         ],
         "iban": [
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="qrbill_account"),
+                name=ContentTemplateOptionType.objects.get_or_create(name="qrbill_account")[0],
                 value="CH5604835012345678009",
             )
         ],
         "qr-iban": [
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="qrbill_account"),
+                name=ContentTemplateOptionType.objects.get_or_create(name="qrbill_account")[0],
                 value="CH6431961000004421557",
             ),
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="qrbill_invoice_type_id"),
+                name=ContentTemplateOptionType.objects.get_or_create(
+                    name="qrbill_invoice_type_id"
+                )[0],
                 value="77",
             ),
         ],
         "qr-iban-contract": [
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="qrbill_account"),
+                name=ContentTemplateOptionType.objects.get_or_create(name="qrbill_account")[0],
                 value="CH6431961000004421557",
             ),
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="qrbill_invoice_type_id"),
+                name=ContentTemplateOptionType.objects.get_or_create(
+                    name="qrbill_invoice_type_id"
+                )[0],
                 value="12",
             ),
         ],
         "qr-info": [
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="qrbill_info"),
+                name=ContentTemplateOptionType.objects.get_or_create(name="qrbill_info")[0],
                 value="QR-Infotext {{jahr}}",
             )
         ],
         "qr-info-rental": [
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="qrbill_rental_unit_in_extra_info")
+                name=ContentTemplateOptionType.objects.get_or_create(
+                    name="qrbill_rental_unit_in_extra_info"
+                )[0]
             )
         ],
         "bill-default": [
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="bill_text_default"),
+                name=ContentTemplateOptionType.objects.get_or_create(name="bill_text_default")[0],
                 value="Standard-Rechnungstext",
             ),
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="bill_amount_default"),
+                name=ContentTemplateOptionType.objects.get_or_create(name="bill_amount_default")[
+                    0
+                ],
                 value="9.95",
             ),
         ],
         "bill-member": [
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="share_count_context_var"),
+                name=ContentTemplateOptionType.objects.get_or_create(
+                    name="share_count_context_var"
+                )[0],
                 value="share_count",
             ),
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="share_count_sharetype"),
+                name=ContentTemplateOptionType.objects.get_or_create(name="share_count_sharetype")[
+                    0
+                ],
                 value="Anteilschein freiwillig",
             ),
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="bill_text_memberflag_01"),
+                name=ContentTemplateOptionType.objects.get_or_create(
+                    name="bill_text_memberflag_01"
+                )[0],
                 value="Rechnung-Flag01",
             ),
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="bill_amount_memberflag_01"),
+                name=ContentTemplateOptionType.objects.get_or_create(
+                    name="bill_amount_memberflag_01"
+                )[0],
                 value="10.00",
             ),
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="bill_text_memberflag_02"),
+                name=ContentTemplateOptionType.objects.get_or_create(
+                    name="bill_text_memberflag_02"
+                )[0],
                 value="Rechnung-Flag02",
             ),
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="bill_amount_memberflag_02"),
+                name=ContentTemplateOptionType.objects.get_or_create(
+                    name="bill_amount_memberflag_02"
+                )[0],
                 value="20.00",
             ),
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="bill_text_memberflag_03"),
+                name=ContentTemplateOptionType.objects.get_or_create(
+                    name="bill_text_memberflag_03"
+                )[0],
                 value="Rechnung-Flag03",
             ),
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="bill_amount_memberflag_03"),
+                name=ContentTemplateOptionType.objects.get_or_create(
+                    name="bill_amount_memberflag_03"
+                )[0],
                 value="30.00",
             ),
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="bill_text_memberflag_04"),
+                name=ContentTemplateOptionType.objects.get_or_create(
+                    name="bill_text_memberflag_04"
+                )[0],
                 value="Rechnung-Flag04",
             ),
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="bill_amount_memberflag_04"),
+                name=ContentTemplateOptionType.objects.get_or_create(
+                    name="bill_amount_memberflag_04"
+                )[0],
                 value="40.00",
             ),
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="bill_text_memberflag_05"),
+                name=ContentTemplateOptionType.objects.get_or_create(
+                    name="bill_text_memberflag_05"
+                )[0],
                 value="Rechnung-Flag05",
             ),
             ContentTemplateOption.objects.create(
-                name=ContentTemplateOptionType.objects.get(name="bill_amount_memberflag_05"),
+                name=ContentTemplateOptionType.objects.get_or_create(
+                    name="bill_amount_memberflag_05"
+                )[0],
                 value="50.00",
             ),
         ],
@@ -321,7 +355,9 @@ def create_documenttypes(cls):
 
 def create_invoicecategories(cls):
     cls.invoicecategories = [
-        InvoiceCategory.objects.create(name="Member Invoice", reference_id=77),
+        InvoiceCategory.objects.create(
+            name="Member Invoice", reference_id=77, manual_allowed=True
+        ),
         InvoiceCategory.objects.create(
             name="Mietzins wiederkehrend",
             reference_id=10,
@@ -482,9 +518,11 @@ def create_sharetypes(cls):
     cls.sharetypes = []
     cls.sharetypes.append(ShareType.objects.create(name="Anteilschein"))
     cls.sharetypes.append(ShareType.objects.create(name="Darlehen zinslos"))
-    cls.sharetypes.append(ShareType.objects.create(name="Darlehen verzinst"))
-    cls.sharetypes.append(ShareType.objects.create(name="Depositenkasse"))
-    cls.sharetypes.append(ShareType.objects.create(name="Darlehen spezial"))
+    cls.sharetypes.append(
+        ShareType.objects.create(name="Darlehen verzinst", standard_interest=1.0)
+    )
+    cls.sharetypes.append(ShareType.objects.create(name="Depositenkasse", standard_interest=0.75))
+    cls.sharetypes.append(ShareType.objects.create(name="Darlehen spezial", standard_interest=1.5))
     cls.sharetypes.append(ShareType.objects.create(name="Hypothek"))
     cls.sharetypes.append(ShareType.objects.create(name="Anteilschein Einzelmitglied"))
     cls.sharetypes.append(ShareType.objects.create(name="Anteilschein Gründungsmitglied"))
@@ -515,8 +553,8 @@ def create_buildings(cls, count=2):
         cls.buildings.append(Building.objects.create(name=f"Musterweg {i + 1}"))
 
 
-def create_rentalunits(cls):
-    create_buildings(cls)
+def create_rentalunits(cls, buildingCount=2):
+    create_buildings(cls, buildingCount)
 
     cls.rentalunits = []
     cls.rentalunits.append(
@@ -530,7 +568,7 @@ def create_rentalunits(cls):
             rooms=4,
             min_occupancy=3,
             nk=100,
-            rent_total=1100,
+            rent_netto=1000,
             share=10000,
         )
     )
@@ -545,7 +583,7 @@ def create_rentalunits(cls):
             rooms=1,
             min_occupancy=1,
             nk=20,
-            rent_total=220,
+            rent_netto=200,
             share=4000,
         )
     )
@@ -558,7 +596,7 @@ def create_rentalunits(cls):
             height=5,
             volume=1000,
             nk=300,
-            rent_total=2500,
+            rent_netto=2200,
             share=25000,
         )
     )
@@ -571,7 +609,7 @@ def create_rentalunits(cls):
             height=5,
             volume=250,
             nk=120,
-            rent_total=700,
+            rent_netto=580,
             share=7000,
         )
     )
@@ -584,7 +622,7 @@ def create_rentalunits(cls):
             height=4,
             volume=40,
             nk=20,
-            rent_total=150,
+            rent_netto=130,
             share=1500,
         )
     )
@@ -597,7 +635,7 @@ def create_rentalunits(cls):
             height=4,
             volume=120,
             nk=60,
-            rent_total=450,
+            rent_netto=390,
             share=4500,
         )
     )

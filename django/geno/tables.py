@@ -1,5 +1,8 @@
 import django_tables2 as tables
+from django.urls import reverse
 from django.utils.safestring import mark_safe
+from django.utils.translation import gettext_lazy as _
+from django.utils.translation import ngettext_lazy
 
 from .models import Contract, Member, RentalUnit
 
@@ -64,94 +67,132 @@ class MemberTableAdmin(tables.Table):
         attrs = {"class": "paleblue"}
 
 
+UNFOLD_LINK_CLASS = "text-primary-600 dark:text-primary-400 hover:underline"
+
+
+def _get_balance_color_class(value):
+    """Return Tailwind CSS classes for balance value coloring."""
+    if value > 0:
+        return "text-red-600 dark:text-red-400 font-semibold"
+    elif value < 0:
+        return "text-green-600 dark:text-green-400 font-semibold"
+    return "text-gray-500 dark:text-gray-400"
+
+
+def _render_currency(value, css_class="text-right"):
+    """Render a currency value with right alignment."""
+    return mark_safe(f'<div class="{css_class}">{value:.2f}</div>')
+
+
+def _render_currency_colored(value):
+    """Render a currency value with color based on positive/negative."""
+    color_class = _get_balance_color_class(value)
+    return mark_safe(f'<div class="text-right {color_class}">{value:.2f}</div>')
+
+
 class InvoiceOverviewTotalColumn(tables.Column):
     def render_footer(self, bound_column, table):
-        total_receivable = sum(
-            max(x["total"], 0) for x in table.data
-        )  ## positive values (Forderungen)
-        total_payable = sum(
-            min(x["total"], 0) for x in table.data
-        )  ## negative values (Verbindlichkeiten / Vorauszahlungen)
+        total_receivable = sum(max(x["total"], 0) for x in table.data)
+        total_payable = sum(min(x["total"], 0) for x in table.data)
         return mark_safe(
-            "%s<br>%s<br>= %s"
-            % (total_receivable, total_payable, total_receivable + total_payable)
+            f'<div class="text-right">'
+            f'<div class="text-red-600 dark:text-red-400">{total_receivable:.2f}</div>'
+            f'<div class="text-green-600 dark:text-green-400">{total_payable:.2f}</div>'
+            f'<div class="border-t border-base-300 dark:border-base-700 mt-1 pt-1 whitespace-nowrap">'
+            f"= {total_receivable + total_payable:.2f}</div>"
+            f"</div>"
         )
+
+
+def _entries_footer(table):
+    """Footer function for entry count with proper pluralization."""
+    count = len(table.data)
+    return ngettext_lazy("%(count)d Eintrag", "%(count)d Einträge", count) % {"count": count}
 
 
 class InvoiceOverviewTable(tables.Table):
-    obj = tables.Column(verbose_name="Link", footer="Summe")
-    name = tables.Column(
-        footer=lambda table: len(table.data), verbose_name="Vertrag/Person/Org."
-    )  # , order_by=("obj__rental_units__name")) #empty_values=())
+    obj = tables.Column(verbose_name=_("Link"), footer=_("Summe"), orderable=False)
+    name = tables.Column(footer=_entries_footer, verbose_name=_("Vertrag/Person/Org."))
     total_billed = tables.Column(
-        footer=lambda table: sum(x["total_billed"] for x in table.data),
-        verbose_name="Gefordert",
-        attrs={"td": {"style": "text-align: right;"}},
+        footer=lambda table: _render_currency(sum(x["total_billed"] for x in table.data)),
+        verbose_name=_("Gefordert"),
+        attrs={"td": {"class": "text-right"}},
     )
     total_paid = tables.Column(
-        footer=lambda table: sum(x["total_paid"] for x in table.data),
-        verbose_name="Bezahlt",
-        attrs={"td": {"style": "text-align: right;"}},
+        footer=lambda table: _render_currency(sum(x["total_paid"] for x in table.data)),
+        verbose_name=_("Bezahlt"),
+        attrs={"td": {"class": "text-right"}},
     )
     total = InvoiceOverviewTotalColumn(
-        verbose_name="Saldo", attrs={"td": {"style": "text-align: right;"}}
+        verbose_name=_("Saldo"),
+        attrs={"td": {"class": "text-right"}},
     )
-    open_bill_date = tables.Column(verbose_name="Offene Forderung seit")
-    last_payment_date = tables.Column(verbose_name="Letzte Zahlung")
+    open_bill_date = tables.DateColumn(
+        verbose_name=_("Offene Forderung seit"),
+        format="d.m.Y",
+        attrs={"td": {"class": "text-center"}},
+    )
+    last_payment_date = tables.DateColumn(
+        verbose_name=_("Letzte Zahlung"),
+        format="d.m.Y",
+        attrs={"td": {"class": "text-center"}},
+    )
 
     def render_obj(self, value):
-        if type(value) is Contract:
-            obj_type = "c"
-        else:
-            obj_type = "p"
-        return mark_safe(
-            '<a href="/geno/invoice/detail/%s/%d/">Details</a>' % (obj_type, value.pk)
-        )
+        obj_type = "c" if isinstance(value, Contract) else "p"
+        url = reverse("geno:debtor-detail", kwargs={"key_type": obj_type, "key": value.pk})
+        return mark_safe(f'<a href="{url}" class="{UNFOLD_LINK_CLASS}">{_("Details")}</a>')
+
+    def render_total_billed(self, value):
+        return _render_currency(value)
+
+    def render_total_paid(self, value):
+        return _render_currency(value)
+
+    def render_total(self, value):
+        return _render_currency_colored(value)
 
     class Meta:
-        attrs = {"class": "paleblue"}
+        template_name = "geno/components/django_tables2_unfold.html"
+        attrs = {"class": "unfold-table"}
+        empty_text = _("Keine Debitoren gefunden.")
+        order_by = "-total"
 
 
 class InvoiceDetailTable(tables.Table):
-    obj = tables.Column(verbose_name="Link")
-    date = tables.Column(verbose_name="Datum")
-    number = tables.Column(verbose_name="Nummer")
-    note = tables.Column(verbose_name="Beschreibung")
-    billed = tables.Column(verbose_name="Rechnung", attrs={"td": {"style": "text-align: right;"}})
-    paid = tables.Column(verbose_name="Zahlung", attrs={"td": {"style": "text-align: right;"}})
-    balance = tables.Column(verbose_name="Saldo", attrs={"td": {"style": "text-align: right;"}})
-    consolidated = tables.Column(verbose_name="K")
-    extra_info = tables.Column(verbose_name="Zusatzinfo")
-
-    ## TODO: Open Invoice in popup window?
-    #    function showAdminPopup(triggeringLink, name_regexp, add_popup) {
-    #    var name = triggeringLink.id.replace(name_regexp, '');
-    #    name = id_to_windowname(name);
-    #    var href = triggeringLink.href;
-    #    if (add_popup) {
-    #        if (href.indexOf('?') === -1) {
-    #            href += '?_popup=1';
-    #        } else {
-    #            href += '&_popup=1';
-    #        }
-    #    }
-    #    var win = window.open(href, name, 'height=500,width=800,resizable=yes,scrollbars=yes');
-    #    win.focus();
-    #    return false;
-    # }
+    obj = tables.Column(verbose_name=_("Link"), orderable=False)
+    date = tables.DateColumn(
+        verbose_name=_("Datum"),
+        format="d.m.Y",
+        attrs={"td": {"class": "text-center"}},
+    )
+    number = tables.Column(verbose_name=_("Nummer"), attrs={"td": {"class": "text-center"}})
+    note = tables.Column(verbose_name=_("Beschreibung"))
+    billed = tables.Column(verbose_name=_("Rechnung"), attrs={"td": {"class": "text-right"}})
+    paid = tables.Column(verbose_name=_("Zahlung"), attrs={"td": {"class": "text-right"}})
+    balance = tables.Column(verbose_name=_("Saldo"), attrs={"td": {"class": "text-right"}})
+    consolidated = tables.Column(verbose_name=_("K"), attrs={"td": {"class": "text-center"}})
+    extra_info = tables.Column(verbose_name=_("Zusatzinfo"))
 
     def render_obj(self, value):
-        if value.invoice_type == "Payment":
-            link_text = "Zahlung"
-        else:
-            link_text = "Rechnung"
-        return mark_safe(
-            '<a href="/admin/geno/invoice/%d/" '
-            'class="related-widget-wrapper-link change-related">%s</a>' % (value.pk, link_text)
-        )
+        link_text = _("Zahlung") if value.invoice_type == "Payment" else _("Rechnung")
+        url = reverse("admin:geno_invoice_change", args=[value.pk])
+        return mark_safe(f'<a href="{url}" class="{UNFOLD_LINK_CLASS}">{link_text}</a>')
+
+    def render_billed(self, value):
+        return _render_currency(value) if value else ""
+
+    def render_paid(self, value):
+        return _render_currency(value) if value else ""
+
+    def render_balance(self, value):
+        return _render_currency_colored(value)
 
     class Meta:
-        attrs = {"class": "paleblue"}
+        template_name = "geno/components/django_tables2_unfold.html"
+        attrs = {"class": "unfold-table"}
+        empty_text = _("Keine Rechnungen gefunden.")
+        order_by = "-date"
 
 
 class RentalUnitTable(tables.Table):

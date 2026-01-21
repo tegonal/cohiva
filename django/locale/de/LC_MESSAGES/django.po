@@ -1,0 +1,1449 @@
+# German translations for Cohiva.
+# Copyright (C) 2025 Tegonal Genossenschaft
+# This file is distributed under the same license as the Cohiva package.
+# Cohiva Development Team, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Cohiva 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-12-16 17:38+0100\n"
+"PO-Revision-Date: 2025-10-21 01:30+0200\n"
+"Last-Translator: Cohiva Development Team\n"
+"Language-Team: German\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: cohiva/settings_defaults.py:1013
+msgid "Stammdaten"
+msgstr "Stammdaten"
+
+#: cohiva/settings_defaults.py:1018
+msgid "Adressen/Personen"
+msgstr "Adressen/Personen"
+
+#: cohiva/settings_defaults.py:1025 cohiva/settings_defaults.py:1075
+#: cohiva/settings_defaults.py:1117 cohiva/settings_defaults.py:1155
+#: cohiva/settings_defaults.py:1192 cohiva/settings_defaults.py:1227
+#: cohiva/settings_defaults.py:1251
+msgid "Erweitert"
+msgstr "Erweitert"
+
+#: cohiva/settings_defaults.py:1038
+msgid "Erweiterte Konfiguration"
+msgstr "Erweiterte Konfiguration"
+
+#: cohiva/settings_defaults.py:1045
+msgid "Mitglieder"
+msgstr "Mitglieder"
+
+#: cohiva/settings_defaults.py:1084
+msgid "Vermietung"
+msgstr "Vermietung"
+
+#: cohiva/settings_defaults.py:1131
+msgid "Gemeinschaft"
+msgstr "Gemeinschaft"
+
+#: cohiva/settings_defaults.py:1167
+msgid "Inkasso"
+msgstr "Inkasso"
+
+#: cohiva/settings_defaults.py:1202
+msgid "Finanzierung"
+msgstr "Finanzierung"
+
+#: cohiva/settings_defaults.py:1236
+msgid "Dokumente & Kommunikation"
+msgstr "Dokumente & Kommunikation"
+
+#: cohiva/settings_defaults.py:1264
+msgid "Systemadministration"
+msgstr "Systemadministration"
+
+#: cohiva/settings_defaults.py:1323
+msgid "Cohiva Website"
+msgstr "Cohiva Website"
+
+#: cohiva/templates/admin/index.html:10 geno/templates/geno/base.html:23
+msgid "Django site admin"
+msgstr "Django site admin"
+
+#: cohiva/templates/oauth2_provider/authorize.html:8
+msgid "Berechtigung für"
+msgstr "Berechtigung für"
+
+#: cohiva/templates/oauth2_provider/authorize.html:17
+msgid "Die Anwendung benötigt folgende Zugriffsberechtigung:"
+msgstr "Die Anwendung benötigt folgende Zugriffsberechtigung:"
+
+#: cohiva/templates/unfold/helpers/app_list.html:138
+msgid "All applications"
+msgstr "Alle Anwendungen"
+
+#: cohiva/templates/unfold/helpers/app_list.html:174
+#, fuzzy
+#| msgid "You don't have permission to view or edit anything."
+msgid "You don’t have permission to view or edit anything."
+msgstr "Sie haben keine Berechtigung, etwas anzusehen oder zu bearbeiten."
+
+#: geno/admin.py:272
+msgid "Weitere Aktionen"
+msgstr "Weitere Aktionen"
+
+#: geno/admin.py:279 geno/admin.py:731
+msgid "Export"
+msgstr "Export"
+
+#: geno/admin.py:288
+msgid "Export ADIT"
+msgstr "Export ADIT"
+
+#: geno/admin.py:740
+msgid "Export per Ende Vorjahr"
+msgstr "Export per Ende Vorjahr"
+
+#: geno/admin.py:1275
+msgid "Report Pflichtanteile/Belegung"
+msgstr "Report Pflichtanteile/Belegung"
+
+#: geno/admin.py:1284
+msgid "Untervertrag hinzufügen"
+msgstr "Untervertrag hinzufügen"
+
+#: geno/admin.py:1583
+msgid "Mietobjektespiegel"
+msgstr "Mietobjektespiegel"
+
+#: geno/billing.py:125
+#, python-brace-format
+msgid "FEHLER beim Erzeugen der Rechnungen für {contract}: {e}"
+msgstr ""
+
+#: geno/billing.py:133
+msgid "VERARBEITUNG ABGEBROCHEN!"
+msgstr ""
+
+#: geno/billing.py:154
+msgid "Email mit QR-Rechnung an:"
+msgstr ""
+
+#: geno/billing.py:161
+msgid "Email-Versand"
+msgstr ""
+
+#: geno/billing.py:168
+msgid "Monatsrechnungen hinzugefügt"
+msgstr "Monatsrechnungen hinzugefügt"
+
+#: geno/billing.py:176
+msgid "Platzhalter-Monatsrechnungen hinzugefügt"
+msgstr "Platzhalter-Monatsrechnungen hinzugefügt"
+
+#: geno/billing.py:185
+msgid "Rechnungen in Buchhaltung erstellen"
+msgstr "Rechnungen in Buchhaltung erstellen"
+
+#: geno/billing.py:190
+#, python-format
+msgid "%(invoice_count)s für %(contract_count)s"
+msgstr "%(invoice_count)s für %(contract_count)s"
+
+#: geno/billing.py:363
+#, python-format
+msgid "%(month)d.%(year)d: %(contract)s"
+msgstr "%(month)d.%(year)d: %(contract)s"
+
+#: geno/billing.py:389 geno/billing.py:415 geno/billing.py:441
+#: geno/billing.py:467 geno/billing.py:494 geno/billing.py:531
+#, python-format
+msgid "%(description)s für %(contract)s"
+msgstr "%(description)s für %(contract)s"
+
+#: geno/billing.py:793 geno/billing.py:797
+#, python-brace-format
+msgid "Account {account} does not exist."
+msgstr "Konto {account} existiert nicht."
+
+#: geno/billing.py:801
+#, python-brace-format
+msgid "Can't access accounting backend: {error}"
+msgstr "Kann nicht auf Buchhaltung zugreifen: {error}"
+
+#: geno/forms.py:168
+msgid "ist nicht vorhanden"
+msgstr ""
+
+#: geno/forms.py:172
+msgid "ist {}"
+msgstr ""
+
+#: geno/forms.py:190 geno/forms.py:196 geno/forms.py:697 geno/forms.py:708
+msgid "Wert"
+msgstr ""
+
+#: geno/forms.py:214
+#, fuzzy
+#| msgid "Mitglieder"
+msgid "Mitglieder-Filter"
+msgstr "Mitglieder"
+
+#: geno/forms.py:216
+#, fuzzy
+#| msgid "Mitglieder"
+msgid "Mitglieder-Attribute"
+msgstr "Mitglieder"
+
+#: geno/forms.py:220
+msgid "Filter A"
+msgstr ""
+
+#: geno/forms.py:233
+msgid "Filter B"
+msgstr ""
+
+#: geno/forms.py:246
+#, fuzzy
+#| msgid "Weitere Aktionen"
+msgid "Weitere Filter"
+msgstr "Weitere Aktionen"
+
+#: geno/forms.py:268
+#, fuzzy
+#| msgid "Mietobjektespiegel"
+msgid "Mietobjekt-Filter"
+msgstr "Mietobjektespiegel"
+
+#: geno/forms.py:271
+msgid "Allgemeine Attribute"
+msgstr ""
+
+#: geno/forms.py:283
+msgid "Beteiligungen-Filter"
+msgstr ""
+
+#: geno/forms.py:289
+#, fuzzy
+#| msgid "Rechnungen konsolidieren"
+msgid "Rechnungen-Filter"
+msgstr "Rechnungen konsolidieren"
+
+#: geno/forms.py:302
+msgid "Alle Mietenden inkl. Gewerbe/Lager/PP"
+msgstr ""
+
+#: geno/forms.py:303
+msgid "Alle Bewohnenden exkl. Gewerbe/Lager/PP"
+msgstr ""
+
+#: geno/forms.py:304
+msgid "Wohnungen bis 6.5Zi."
+msgstr ""
+
+#: geno/forms.py:305
+msgid "Grosswohnungen ab 7Zi. (ohne Selbstausbau)"
+msgstr ""
+
+#: geno/forms.py:306
+msgid "Selbstausbau"
+msgstr ""
+
+#: geno/forms.py:307
+msgid "Gewerbemietende"
+msgstr ""
+
+#: geno/forms.py:312
+msgid "Kein Kontoauszug in den letzten 6 Monaten"
+msgstr ""
+
+#: geno/forms.py:317
+msgid "Nur Anteilscheine"
+msgstr ""
+
+#: geno/forms.py:318
+msgid "Nur Darlehen+Deposito"
+msgstr ""
+
+#: geno/forms.py:319
+msgid "Nur verzinste Darlehen+Deposito"
+msgstr ""
+
+#: geno/forms.py:324
+msgid "Muss gesetzt sein"
+msgstr ""
+
+#: geno/forms.py:325
+msgid "Ausschliessen"
+msgstr ""
+
+#: geno/forms.py:329
+msgid "Alle aktuellen Mitglieder"
+msgstr ""
+
+#: geno/forms.py:330
+msgid "Alle aktuellen Mieter"
+msgstr ""
+
+#: geno/forms.py:331
+msgid "Alle Personen mit Beteiligungen (ohne Hypothek/Spezial)"
+msgstr ""
+
+#: geno/forms.py:332
+msgid "Alle aktiven Adressen/Kontakte"
+msgstr ""
+
+#: geno/forms.py:337
+msgid "Basis-Datensatz"
+msgstr ""
+
+#: geno/forms.py:339
+msgid "Diese Auswahl kann ggf. mit den Filtern unten noch eingeschränkt werden"
+msgstr ""
+
+#: geno/forms.py:344 geno/forms.py:352 geno/forms.py:426 geno/forms.py:691
+msgid "Attribut"
+msgstr ""
+
+#: geno/forms.py:346 geno/forms.py:354
+msgid "Bitte ein Attribut wählen"
+msgstr ""
+
+#: geno/forms.py:349
+msgid "Filter A - Attribut-Wert"
+msgstr ""
+
+#: geno/forms.py:357
+msgid "Filter B - Attribut-Wert"
+msgstr ""
+
+#: geno/forms.py:390
+msgid "Nur Mitglieder MIT bezahltem Anteilschein Einzelmitglied"
+msgstr ""
+
+#: geno/forms.py:395
+msgid "Nur Mitglieder OHNE Anteilscheine"
+msgstr ""
+
+#: geno/forms.py:401 geno/forms.py:413
+msgid "Typ"
+msgstr ""
+
+#: geno/forms.py:407 geno/forms.py:587
+msgid "Dokumente"
+msgstr ""
+
+#: geno/forms.py:418
+msgid "Beitritts-Datum älter als"
+msgstr ""
+
+#: geno/forms.py:431
+msgid "Allg. Attribut-Wert"
+msgstr ""
+
+#: geno/forms.py:433
+msgid "--OHNE-- eingeben für keinen Wert"
+msgstr ""
+
+#: geno/forms.py:441
+msgid "eine passende Rechnung existiert"
+msgstr ""
+
+#: geno/forms.py:445
+msgid "keine passende Rechnung existiert"
+msgstr ""
+
+#: geno/forms.py:450
+msgid "Empfänger:in nur einschliessen, falls"
+msgstr ""
+
+#: geno/forms.py:456
+#, fuzzy
+#| msgid "Rechnungspositionen"
+msgid "Rechnungstyp"
+msgstr "Rechnungspositionen"
+
+#: geno/forms.py:463
+msgid "Nur konsolidierte Rechnungen"
+msgstr ""
+
+#: geno/forms.py:464
+msgid "Nur NICHT konsolidierte Rechnungen"
+msgstr ""
+
+#: geno/forms.py:468
+#, fuzzy
+#| msgid "Rechnungen konsolidieren"
+msgid "Rechnung konsolidiert"
+msgstr "Rechnungen konsolidieren"
+
+#: geno/forms.py:473
+msgid "Rechnungsdatum älter als"
+msgstr ""
+
+#: geno/forms.py:475 geno/forms.py:481
+msgid "Leer lassen für alle"
+msgstr ""
+
+#: geno/forms.py:479
+msgid "Rechnungsdatum jünger als"
+msgstr ""
+
+#: geno/forms.py:485
+#, fuzzy
+#| msgid "Untervertrag hinzufügen"
+msgid "Unterverträge einbeziehen"
+msgstr "Untervertrag hinzufügen"
+
+#: geno/forms.py:491
+msgid "Mit Vertrag in Liegenschaft(en)"
+msgstr ""
+
+#: geno/forms.py:495 geno/forms.py:560
+msgid "Tippen um zu suchen, mehrere Einträge möglich"
+msgstr ""
+
+#: geno/forms.py:514
+msgid "Empfänger auswählen"
+msgstr ""
+
+#: geno/forms.py:516
+msgid "Empfänger"
+msgstr ""
+
+#: geno/forms.py:557
+msgid "Vorlagen Dokumente/Anhänge"
+msgstr ""
+
+#: geno/forms.py:575
+msgid "Vorlage"
+msgstr ""
+
+#: geno/forms.py:590
+msgid "E-Mail"
+msgstr ""
+
+#: geno/forms.py:601 geno/forms.py:685
+msgid "Attribute ändern"
+msgstr ""
+
+#: geno/forms.py:605
+msgid ""
+"Setzt oder aktualisiert ein Attribut bei allen ausgewählten Empfängern. "
+"Bestehende Werte werden überschrieben."
+msgstr ""
+
+#: geno/forms.py:616
+#, fuzzy
+#| msgid "Mitglieder"
+msgid "Mitglieder-Attribut"
+msgstr "Mitglieder"
+
+#: geno/forms.py:629
+msgid "Allgemeines Attribut"
+msgstr ""
+
+#: geno/forms.py:644
+msgid "Aktion"
+msgstr ""
+
+#: geno/forms.py:646
+msgid "Liste anzeigen / nur Attribute ändern"
+msgstr ""
+
+#: geno/forms.py:647
+msgid "Liste als XLS herunterladen / nur Attribute ändern"
+msgstr ""
+
+#: geno/forms.py:648
+msgid "ZIP-File mit Dokumenten erzeugen (odt)"
+msgstr ""
+
+#: geno/forms.py:649
+msgid "ZIP-File mit Dokumenten erzeugen (pdf)"
+msgstr ""
+
+#: geno/forms.py:650
+msgid "Mails mit Text und evtl. Anhang verschicken"
+msgstr ""
+
+#: geno/forms.py:651
+msgid "Test-Mails nur an Kopie-Adresse verschicken"
+msgstr ""
+
+#: geno/forms.py:657
+msgid "E-Mail versenden"
+msgstr ""
+
+#: geno/forms.py:663
+#, fuzzy
+#| msgid "Betrag"
+msgid "Betreff"
+msgstr "Betrag"
+
+#: geno/forms.py:673
+msgid "Absender"
+msgstr ""
+
+#: geno/forms.py:679
+msgid "Kopie (Bcc) an"
+msgstr ""
+
+#: geno/forms.py:681
+msgid "Leer lassen, falls keine Kopie gewünscht"
+msgstr ""
+
+#: geno/forms.py:702 importer/models.py:72
+msgid "Name"
+msgstr ""
+
+#: geno/forms.py:704
+msgid "Name eines allgemeinen Attributs eingeben"
+msgstr ""
+
+#: geno/forms.py:731
+msgid "Für diese Aktion muss eine Vorlage für das Dokument ausgewählt werden"
+msgstr ""
+
+#: geno/forms.py:736
+msgid "Für diese Aktion muss eine Vorlage für das E-Mail ausgewählt werden"
+msgstr ""
+
+#: geno/forms.py:740
+msgid "Für diese Aktion muss ein E-Mail-Betreff eingegeben werden"
+msgstr ""
+
+#: geno/forms.py:744
+msgid "Für diese Aktion muss ein E-Mail-Absender ausgewählt werden"
+msgstr ""
+
+#: geno/forms.py:748
+msgid "Für diese Aktion muss eine Kopie-E-Mail-Adresse eingegeben werden"
+msgstr ""
+
+#: geno/forms.py:751
+msgid "Der Mitglieder-Attribut-Wert ist leer"
+msgstr ""
+
+#: geno/forms.py:753
+msgid "Der Allg. Attribut-Wert ist leer"
+msgstr ""
+
+#: geno/forms.py:1046
+msgid "ODT-Datei"
+msgstr ""
+
+#: geno/forms.py:1048
+msgid "Wählen Sie eine LibreOffice-Datei (.odt) zum Hochladen aus."
+msgstr ""
+
+#: geno/forms.py:1309
+msgid "Übersicht per Stichtag"
+msgstr ""
+
+#: geno/tables.py:110
+#, python-format
+msgid "%(count)d Eintrag"
+msgid_plural "%(count)d Einträge"
+msgstr[0] ""
+msgstr[1] ""
+
+#: geno/tables.py:114 geno/tables.py:163
+msgid "Link"
+msgstr ""
+
+#: geno/tables.py:114
+msgid "Summe"
+msgstr ""
+
+#: geno/tables.py:115
+msgid "Vertrag/Person/Org."
+msgstr ""
+
+#: geno/tables.py:118
+msgid "Gefordert"
+msgstr ""
+
+#: geno/tables.py:123
+msgid "Bezahlt"
+msgstr ""
+
+#: geno/tables.py:127 geno/tables.py:173
+msgid "Saldo"
+msgstr ""
+
+#: geno/tables.py:131
+msgid "Offene Forderung seit"
+msgstr ""
+
+#: geno/tables.py:136
+msgid "Letzte Zahlung"
+msgstr ""
+
+#: geno/tables.py:158
+#, fuzzy
+#| msgid "Keine Verträge mit Wohneinheiten gefunden."
+msgid "Keine Debitoren gefunden."
+msgstr "Keine Verträge mit Wohneinheiten gefunden."
+
+#: geno/tables.py:165 geno/templates/geno/invoice_manual.html:155
+msgid "Datum"
+msgstr "Datum"
+
+#: geno/tables.py:169
+msgid "Nummer"
+msgstr ""
+
+#: geno/tables.py:170 geno/templates/geno/invoice_manual.html:158
+msgid "Beschreibung"
+msgstr "Beschreibung"
+
+#: geno/tables.py:171 geno/tables.py:178 geno/views.py:4031
+msgid "Rechnung"
+msgstr ""
+
+#: geno/tables.py:172 geno/tables.py:178
+#, fuzzy
+#| msgid "Zahlung erfassen"
+msgid "Zahlung"
+msgstr "Zahlung erfassen"
+
+#: geno/tables.py:174
+msgid "K"
+msgstr ""
+
+#: geno/tables.py:175
+msgid "Zusatzinfo"
+msgstr ""
+
+#: geno/tables.py:194
+#, fuzzy
+#| msgid "Keine Verträge mit Wohneinheiten gefunden."
+msgid "Keine Rechnungen gefunden."
+msgstr "Keine Verträge mit Wohneinheiten gefunden."
+
+#: geno/templates/geno/components/django_tables2_unfold.html:103
+#: geno/templates/geno/components/django_tables2_unfold.html:140
+msgid "Pagination"
+msgstr ""
+
+#: geno/templates/geno/components/django_tables2_unfold.html:109
+#: geno/templates/geno/components/django_tables2_unfold.html:113
+#: geno/templates/geno/components/django_tables2_unfold.html:145
+#: geno/templates/geno/components/django_tables2_unfold.html:150
+msgid "Previous"
+msgstr ""
+
+#: geno/templates/geno/components/django_tables2_unfold.html:120
+#: geno/templates/geno/components/django_tables2_unfold.html:124
+#: geno/templates/geno/components/django_tables2_unfold.html:178
+#: geno/templates/geno/components/django_tables2_unfold.html:183
+msgid "Next"
+msgstr ""
+
+#: geno/templates/geno/components/django_tables2_unfold.html:133
+#, python-format
+msgid ""
+"\n"
+"                    Showing <span class=\"font-medium\">%(start)s</span> to "
+"<span class=\"font-medium\">%(end)s</span> of <span class=\"font-"
+"medium\">%(total)s</span> results\n"
+"                    "
+msgstr ""
+
+#: geno/templates/geno/contract_check_forms.html:22
+msgid "Ergebnis"
+msgstr ""
+
+#: geno/templates/geno/contract_check_forms.html:45
+msgid "Keine Verträge mit Wohneinheiten gefunden."
+msgstr "Keine Verträge mit Wohneinheiten gefunden."
+
+#: geno/templates/geno/contract_check_forms.html:62
+#: geno/templates/geno/member_letter.html:36
+#: geno/templates/geno/share_confirm.html:38
+#: geno/templates/geno/share_duedate_reminder.html:38
+#: geno/templates/geno/share_statement.html:62
+msgid "Als ZIP-Datei generieren"
+msgstr ""
+
+#: geno/templates/geno/contract_check_forms.html:69
+msgid "Einzelne Dokumente generieren"
+msgstr ""
+
+#: geno/templates/geno/contract_check_forms.html:74
+#, python-format
+msgid ""
+"\n"
+"            Es wird ein Formular für %(counter)s Vertrag generiert.\n"
+"          "
+msgid_plural ""
+"\n"
+"            Es werden Formulare für %(counter)s Verträge generiert.\n"
+"          "
+msgstr[0] ""
+msgstr[1] ""
+
+#: geno/templates/geno/debtor.html:15
+msgid "Suchen/Anzeigen"
+msgstr "Suchen/Anzeigen"
+
+#: geno/templates/geno/debtor.html:20
+msgid "Rechnungen konsolidieren"
+msgstr "Rechnungen konsolidieren"
+
+#: geno/templates/geno/debtor.html:26
+msgid "Filter zurücksetzen"
+msgstr "Filter zurücksetzen"
+
+#: geno/templates/geno/debtor.html:38
+msgid "Keine Rechnungen gefunden. Passen Sie die Filterkriterien an."
+msgstr "Keine Rechnungen gefunden. Passen Sie die Filterkriterien an."
+
+#: geno/templates/geno/debtor.html:48
+msgid "Zurück zu"
+msgstr "Zurück zu"
+
+#: geno/templates/geno/default.html:140
+#: geno/templates/geno/dry_run_action.html:137
+#: geno/templates/geno/share_interest.html:103
+msgid "Keine Daten verfügbar."
+msgstr ""
+
+#: geno/templates/geno/dry_run_action.html:18
+#: geno/templates/geno/member_send_mail.html:156
+#, fuzzy
+#| msgid "Zurück zu"
+msgid "Zurück"
+msgstr "Zurück zu"
+
+#: geno/templates/geno/dry_run_action.html:152
+msgid "Jetzt ausführen"
+msgstr ""
+
+#: geno/templates/geno/dry_run_action.html:159
+#, python-format
+msgid ""
+"\n"
+"                  Es wird %(counter)s %(item_label)s verarbeitet.\n"
+"                "
+msgid_plural ""
+"\n"
+"                  Es werden %(counter)s %(item_label)s verarbeitet.\n"
+"                "
+msgstr[0] ""
+msgstr[1] ""
+
+#: geno/templates/geno/dry_run_action.html:165
+msgid "Dies ist ein Probelauf."
+msgstr ""
+
+#: geno/templates/geno/dry_run_action.html:167
+msgid ""
+"Dies ist ein Probelauf. Klicken Sie auf 'Jetzt ausführen', um die Aktion "
+"tatsächlich auszuführen."
+msgstr ""
+
+#: geno/templates/geno/invoice_manual.html:145
+msgid "Rechnungspositionen"
+msgstr "Rechnungspositionen"
+
+#: geno/templates/geno/invoice_manual.html:161
+msgid "Betrag"
+msgstr "Betrag"
+
+#: geno/templates/geno/invoice_manual.html:186
+msgid "Weitere Position hinzufügen"
+msgstr "Weitere Position hinzufügen"
+
+#: geno/templates/geno/invoice_manual.html:189
+msgid "Max."
+msgstr "Max."
+
+#: geno/templates/geno/invoice_manual.html:208
+msgid "Rechnung erstellen und buchen"
+msgstr "Rechnung erstellen und buchen"
+
+#: geno/templates/geno/invoice_manual.html:215
+msgid "Per Email verschicken"
+msgstr "Per Email verschicken"
+
+#: geno/templates/geno/invoice_manual.html:226
+msgid "Vorschau anzeigen (PDF)"
+msgstr "Vorschau anzeigen (PDF)"
+
+#: geno/templates/geno/member_letter.html:21
+#: geno/templates/geno/share_confirm.html:23
+msgid "Keine zu erstellenden Dokumente gefunden."
+msgstr ""
+
+#: geno/templates/geno/member_letter.html:41
+#, python-format
+msgid ""
+"\n"
+"              Es wird ein Dokument für %(counter)s Mitglied generiert.\n"
+"            "
+msgid_plural ""
+"\n"
+"              Es werden Dokumente für %(counter)s Mitglieder generiert.\n"
+"            "
+msgstr[0] ""
+msgstr[1] ""
+
+#: geno/templates/geno/member_overview.html:21
+#, fuzzy
+#| msgid "Mitglieder"
+msgid "Mitgliederentwicklung"
+msgstr "Mitglieder"
+
+#: geno/templates/geno/member_overview.html:24
+#: geno/templates/geno/share_overview.html:25
+#: geno/templates/geno/share_overview.html:29
+msgid "Statistik"
+msgstr ""
+
+#: geno/templates/geno/member_overview.html:37
+#, fuzzy
+#| msgid "Mitglieder"
+msgid "Mitgliederspiegel"
+msgstr "Mitglieder"
+
+#: geno/templates/geno/member_overview.html:60
+msgid "Altersverteilung"
+msgstr ""
+
+#: geno/templates/geno/member_overview.html:83
+#, fuzzy
+#| msgid "Keine Verträge mit Wohneinheiten gefunden."
+msgid "Keine Mitglieder gefunden."
+msgstr "Keine Verträge mit Wohneinheiten gefunden."
+
+#: geno/templates/geno/member_send_mail.html:23
+msgid "Resultat"
+msgstr ""
+
+#: geno/templates/geno/member_send_mail.html:33
+#, fuzzy, python-format
+#| msgid "Es gab %(counter)s Fehler:"
+#| msgid_plural "Es gab %(counter)s Fehler:"
+msgid "Es gab %(counter)s Fehler"
+msgid_plural "Es gab %(counter)s Fehler"
+msgstr[0] "Es gab %(counter)s Fehler:"
+msgstr[1] "Es gab %(counter)s Fehler:"
+
+#: geno/templates/geno/member_send_mail.html:61
+#, python-format
+msgid "Es gab %(counter)s Warnung / übersprungenes Element"
+msgid_plural "Es gab %(counter)s Warnungen / übersprungene Elemente"
+msgstr[0] ""
+msgstr[1] ""
+
+#: geno/templates/geno/member_send_mail.html:89
+#, fuzzy, python-format
+#| msgid "%(counter)s %(item_name)s wurde ignoriert:"
+#| msgid_plural "%(counter)s %(item_name)s wurden ignoriert:"
+msgid "%(counter)s Element wurde erfolgreich verarbeitet"
+msgid_plural "%(counter)s Elemente wurden erfolgreich verarbeitet"
+msgstr[0] "%(counter)s %(item_name)s wurde ignoriert:"
+msgstr[1] "%(counter)s %(item_name)s wurden ignoriert:"
+
+#: geno/templates/geno/member_send_mail.html:93
+#, fuzzy
+#| msgid "Log anzeigen"
+msgid "Details anzeigen"
+msgstr "Log anzeigen"
+
+#: geno/templates/geno/member_send_mail.html:120
+msgid "Es konnten keine Elemente erfolgreich verarbeitet werden"
+msgstr ""
+
+#: geno/templates/geno/member_send_mail.html:140
+msgid "Beenden"
+msgstr ""
+
+#: geno/templates/geno/member_send_mail.html:146
+msgid "Aktion ausführen!"
+msgstr ""
+
+#: geno/templates/geno/member_send_mail.html:150
+#, fuzzy
+#| msgid "Erweitert"
+msgid "Weiter"
+msgstr "Erweitert"
+
+#: geno/templates/geno/odt2pdf.html:13
+msgid ""
+"Laden Sie eine LibreOffice-Datei (.odt) hoch, um sie in ein PDF umzuwandeln."
+msgstr ""
+
+#: geno/templates/geno/odt2pdf.html:15
+msgid ""
+"Die Datei wird auf dem Server verarbeitet und als PDF-Datei zum Download "
+"bereitgestellt."
+msgstr ""
+
+#: geno/templates/geno/odt2pdf.html:39
+msgid "In PDF umwandeln"
+msgstr ""
+
+#: geno/templates/geno/share_confirm.html:43
+#, python-format
+msgid ""
+"\n"
+"            Es wird eine Bestätigung für %(counter)s Beteiligung generiert.\n"
+"          "
+msgid_plural ""
+"\n"
+"            Es werden Bestätigungen für %(counter)s Beteiligungen "
+"generiert.\n"
+"          "
+msgstr[0] ""
+msgstr[1] ""
+
+#: geno/templates/geno/share_duedate_reminder.html:23
+msgid "Keine Darlehen mit Erinnerungsbedarf gefunden."
+msgstr ""
+
+#: geno/templates/geno/share_duedate_reminder.html:43
+#, python-format
+msgid ""
+"\n"
+"            Es wird eine Erinnerung für %(counter)s Darlehen generiert.\n"
+"          "
+msgid_plural ""
+"\n"
+"            Es werden Erinnerungen für %(counter)s Darlehen generiert.\n"
+"          "
+msgstr[0] ""
+msgstr[1] ""
+
+#: geno/templates/geno/share_interest.html:15
+msgid "Bitte wähle eine Aktion."
+msgstr ""
+
+#: geno/templates/geno/share_interest.html:19
+msgid "Zinsen per 31.12. des Vorjahres buchen"
+msgstr ""
+
+#: geno/templates/geno/share_interest.html:123
+msgid "Nur Darlehen"
+msgstr ""
+
+#: geno/templates/geno/share_interest.html:132
+#, fuzzy
+#| msgid "Rechnung erstellen und buchen"
+msgid "Zinsabrechnung herunterladen"
+msgstr "Rechnung erstellen und buchen"
+
+#: geno/templates/geno/share_overview.html:33
+msgid "Die Statistik ist nur für das aktuelle Datum verfügbar."
+msgstr ""
+
+#: geno/templates/geno/share_overview.html:45
+msgid "Datumsfilter"
+msgstr ""
+
+#: geno/templates/geno/share_overview.html:61
+msgid "Anzahl"
+msgstr ""
+
+#: geno/templates/geno/share_overview.html:67
+msgid "Summe CHF"
+msgstr ""
+
+#: geno/templates/geno/share_overview.html:74
+msgid "Letzter Eingang"
+msgstr ""
+
+#: geno/templates/geno/share_overview.html:89
+msgid "TOTAL"
+msgstr ""
+
+#: geno/templates/geno/share_overview.html:92
+#, python-format
+msgid "CHF %(value)s"
+msgstr ""
+
+#: geno/templates/geno/share_overview.html:102
+msgid "WARNUNG: Nichtmitglieder mit Anteilsscheinen"
+msgstr ""
+
+#: geno/templates/geno/share_overview.html:109
+msgid "ausgetreten"
+msgstr ""
+
+#: geno/templates/geno/share_statement.html:23
+msgid "Anzahl Kontoauszüge"
+msgstr ""
+
+#: geno/templates/geno/share_statement.html:30
+msgid "Total Verrechnungssteuer"
+msgstr ""
+
+#: geno/templates/geno/share_statement.html:37
+msgid "Total Zinszahlung"
+msgstr ""
+
+#: geno/templates/geno/share_statement.html:46
+msgid "Keine Kontoauszüge gefunden."
+msgstr ""
+
+#: geno/templates/geno/share_statement.html:67
+#, python-format
+msgid ""
+"\n"
+"            %(counter)s Kontoauszug bereit.\n"
+"          "
+msgid_plural ""
+"\n"
+"            %(counter)s Kontoauszüge bereit.\n"
+"          "
+msgstr[0] ""
+msgstr[1] ""
+
+#: geno/templates/geno/share_statement_form.html:36
+msgid "Dokumente erstellen"
+msgstr ""
+
+#: geno/templates/geno/transaction.html:27
+msgid "Zahlung erfassen"
+msgstr "Zahlung erfassen"
+
+#: geno/templates/geno/transaction_upload.html:21
+msgid ""
+"Zahlungsdatei aus dem E-Banking herunterladen und unten auswählen. Es werden "
+"folgende Dateiformate unterstützt:"
+msgstr ""
+"Zahlungsdatei aus dem E-Banking herunterladen und unten auswählen. Es werden "
+"folgende Dateiformate unterstützt:"
+
+#: geno/templates/geno/transaction_upload.html:24
+msgid "Datei (Endung .xml): Kontoauszug"
+msgstr "Datei (Endung .xml): Kontoauszug"
+
+#: geno/templates/geno/transaction_upload.html:25
+msgid "Datei (Endung .xml): Belastungs-/Gutschriftanzeigen"
+msgstr "Datei (Endung .xml): Belastungs-/Gutschriftanzeigen"
+
+#: geno/templates/geno/transaction_upload.html:28
+msgid ""
+"Mehrere Dateien des gleichen Typs können in einer ZIP-Datei zusammengefasst "
+"hochgeladen werden."
+msgstr ""
+"Mehrere Dateien des gleichen Typs können in einer ZIP-Datei zusammengefasst "
+"hochgeladen werden."
+
+#: geno/templates/geno/transaction_upload.html:52
+#, python-format
+msgid "Es gab %(counter)s Fehler:"
+msgid_plural "Es gab %(counter)s Fehler:"
+msgstr[0] "Es gab %(counter)s Fehler:"
+msgstr[1] "Es gab %(counter)s Fehler:"
+
+#: geno/templates/geno/transaction_upload.html:66
+#, python-format
+msgid "%(counter)s %(item_name)s wurde ignoriert:"
+msgid_plural "%(counter)s %(item_name)s wurden ignoriert:"
+msgstr[0] "%(counter)s %(item_name)s wurde ignoriert:"
+msgstr[1] "%(counter)s %(item_name)s wurden ignoriert:"
+
+#: geno/templates/geno/transaction_upload.html:80
+#, python-format
+msgid "%(counter)s %(item_name)s wurde importiert:"
+msgid_plural "%(counter)s %(item_name)s wurden importiert:"
+msgstr[0] "%(counter)s %(item_name)s wurde importiert:"
+msgstr[1] "%(counter)s %(item_name)s wurden importiert:"
+
+#: geno/templates/geno/transaction_upload.html:91
+#, python-format
+msgid "Es wurden keine gültigen %(item_name)s gefunden."
+msgstr "Es wurden keine gültigen %(item_name)s gefunden."
+
+#: geno/templates/geno/transaction_upload.html:100
+msgid "Log anzeigen"
+msgstr "Log anzeigen"
+
+#: geno/templates/geno/transaction_upload.html:125
+msgid "Datei hochladen und verarbeiten"
+msgstr "Datei hochladen und verarbeiten"
+
+#: geno/views.py:1351 geno/views.py:2032
+#, fuzzy
+#| msgid "Mitglieder"
+msgid "Mitglied"
+msgstr "Mitglieder"
+
+#: geno/views.py:1351
+msgid "Beitrittsdatum"
+msgstr ""
+
+#: geno/views.py:1430 geno/views.py:1584
+msgid "Name/Adresse"
+msgstr ""
+
+#: geno/views.py:1430
+msgid "Details"
+msgstr ""
+
+#: geno/views.py:1584
+msgid "Darlehen Details"
+msgstr ""
+
+#: geno/views.py:1610
+msgid "Zinsabrechung"
+msgstr ""
+
+#: geno/views.py:2033
+msgid "Anteilscheine"
+msgstr ""
+
+#: geno/views.py:2034
+msgid "Darlehen"
+msgstr ""
+
+#: geno/views.py:2035
+msgid "Depositen"
+msgstr ""
+
+#: geno/views.py:2036
+msgid "Verrechnungssteuer"
+msgstr ""
+
+#: geno/views.py:2037
+msgid "Zinszahlung"
+msgstr ""
+
+#: geno/views.py:2733
+msgid ""
+"<i>INFO: Mailman-API ist nicht konfiguriert. Dies ist ein Demo-Output.</i>"
+msgstr ""
+"<i>INFO: Mailman-API ist nicht konfiguriert. Dies ist ein Demo-Output.</i>"
+
+#: geno/views.py:2745
+msgid "Mitglieder ohne Email-Adresse (ignoriert)"
+msgstr "Mitglieder ohne Email-Adresse (ignoriert)"
+
+#: geno/views.py:2753
+msgid "Mitglieder mit doppelter Email-Adresse (ignoriert)"
+msgstr "Mitglieder mit doppelter Email-Adresse (ignoriert)"
+
+#: geno/views.py:2759
+msgid "Mitglied nicht in genossenschaft-ML"
+msgstr "Mitglied nicht in genossenschaft-ML"
+
+#: geno/views.py:2764
+msgid "In genossenschaft-ML aber nicht Mitglied"
+msgstr "In genossenschaft-ML aber nicht Mitglied"
+
+#: geno/views.py:2774
+msgid "Bewohnende ohne Email-Adresse (ignoriert)"
+msgstr "Bewohnende ohne Email-Adresse (ignoriert)"
+
+#: geno/views.py:2782
+msgid "Bewohnende mit doppelter Email-Adresse (ignoriert)"
+msgstr "Bewohnende mit doppelter Email-Adresse (ignoriert)"
+
+#: geno/views.py:2788
+msgid "Bewohnende aber nicht in bewohnende-ML"
+msgstr "Bewohnende aber nicht in bewohnende-ML"
+
+#: geno/views.py:2793
+msgid "In bewohnende-ML aber nicht Bewohnende"
+msgstr "In bewohnende-ML aber nicht Bewohnende"
+
+#: geno/views.py:2798
+msgid "Mitglied aber NICHT in Newsletter(CS)"
+msgstr "Mitglied aber NICHT in Newsletter(CS)"
+
+#: geno/views.py:2802
+msgid "Mitglied aber UNSUBSCRIBED in Newsletter(CS)"
+msgstr "Mitglied aber UNSUBSCRIBED in Newsletter(CS)"
+
+#: geno/views.py:2808
+msgid "Mitglied aber BOUNCED in Newsletter(CS)"
+msgstr "Mitglied aber BOUNCED in Newsletter(CS)"
+
+#: geno/views.py:2814
+msgid "Mitglied aber DELETED in Newsletter(CS)"
+msgstr "Mitglied aber DELETED in Newsletter(CS)"
+
+#: geno/views.py:2820
+#, python-format
+msgid "In genossenschaft-ML aber nicht in Wohnpost (%s)"
+msgstr "In genossenschaft-ML aber nicht in Wohnpost (%s)"
+
+#: geno/views.py:2828
+#, python-format
+msgid ""
+"Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s)"
+msgstr ""
+"Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s)"
+
+#: geno/views.py:2834
+msgid "Mailman warnings"
+msgstr "Mailman warnings"
+
+#: geno/views.py:3152
+#, fuzzy
+#| msgid "Keine Rechnungen gefunden. Passen Sie die Filterkriterien an."
+msgid ""
+"Keine Empfänger:innen gefunden, welche diesen Filterkriterien entsprechen."
+msgstr "Keine Rechnungen gefunden. Passen Sie die Filterkriterien an."
+
+#: geno/views.py:3158
+msgid "Dokumente erstellen/versenden"
+msgstr ""
+
+#: geno/views.py:3159
+msgid "Schritt 1 - Empfänger:innen filtern"
+msgstr ""
+
+#: geno/views.py:3201
+msgid "Ungültiger Basis-Datensatz"
+msgstr ""
+
+#: geno/views.py:3211
+msgid "Schritt 2 - Empfänger:innen auswählen"
+msgstr ""
+
+#: geno/views.py:3233
+msgid "Schritt 3 - Aktionen ausführen"
+msgstr ""
+
+#: geno/views.py:3685
+msgid "Die ersten 3 Nächte sind gemäss Reglement Jokerzimmer kostenlos."
+msgstr ""
+
+#: geno/views.py:3689
+msgid "X Nächte à Fr. 22.00, Gästezimmer 003"
+msgstr ""
+
+#: geno/views.py:3694
+msgid "X Nächte à Fr. 17.00, Gästezimmer 410"
+msgstr ""
+
+#: geno/views.py:3699
+msgid "X Nächte à Fr. 17.00, Gästezimmer 509"
+msgstr ""
+
+#: geno/views.py:3707
+msgid ""
+"Vielen Dank für die Beitrittserklärung. Die Mitgliedschaft in der "
+"Genossenschaft ist verbunden mit dem Zeichnen von Anteilscheinen und einer "
+"einmaligen Beitrittsgeb ühr. Dies stellen wir hiermit in Rechnung. Nach "
+"Zahlungseingang folgt dann die Bestätigung der Mitgliedschaft."
+msgstr ""
+
+#: geno/views.py:3714
+msgid "Beitrittsgeb ühr Genossenschaft"
+msgstr ""
+
+#: geno/views.py:3719
+msgid "Zeichnung von 1 Anteilschein der Genossenschaft"
+msgstr ""
+
+#: geno/views.py:3996
+#, fuzzy
+#| msgid "Rechnung erstellen und buchen"
+msgid "Mietzinsrechnung erstellen"
+msgstr "Rechnung erstellen und buchen"
+
+#: geno/views.py:4040
+#, python-format
+msgid "Ungültige Aktion: %s"
+msgstr ""
+
+#: geno/views.py:4073
+msgid "Optionen"
+msgstr ""
+
+#: geno/views.py:4075
+#, python-format
+msgid "Probelauf: %s"
+msgstr ""
+
+#: geno/views.py:4075
+msgid "Ja"
+msgstr ""
+
+#: geno/views.py:4075
+msgid "Nein"
+msgstr ""
+
+#: geno/views.py:4076
+#, python-format
+msgid "Rechungen bis: %s"
+msgstr ""
+
+#: importer/admin.py:48
+#, fuzzy
+#| msgid "Erweiterte Konfiguration"
+msgid "Konfiguration"
+msgstr "Erweiterte Konfiguration"
+
+#: importer/admin.py:60
+msgid "Ergebnisse"
+msgstr ""
+
+#: importer/admin.py:71 importer/models.py:40
+msgid "Status"
+msgstr ""
+
+#: importer/admin.py:86
+msgid "Datei"
+msgstr ""
+
+#: importer/admin.py:96
+msgid "Import Job ausführen"
+msgstr ""
+
+#: importer/admin.py:104
+msgid "Import-Auftrag nicht gefunden."
+msgstr ""
+
+#: importer/admin.py:112
+msgid "Import-Auftrag kann nicht verarbeitet werden. Status: {}"
+msgstr ""
+
+#: importer/admin.py:124
+msgid "Import erfolgreich verarbeitet: {} Datensätze importiert, {} Fehler"
+msgstr ""
+
+#: importer/admin.py:131
+msgid "Import fehlgeschlagen: {}"
+msgstr ""
+
+#: importer/forms.py:28
+msgid "Bitte laden Sie eine gültige Excel-Datei hoch (.xlsx oder .xls)"
+msgstr ""
+
+#: importer/forms.py:32
+msgid "Dateigrösse darf 10MB nicht überschreiten"
+msgstr ""
+
+#: importer/importer_member_address_it_wgn.py:67
+#, python-format
+msgid "Adresse mit Import-ID %(import_id)s existiert bereits."
+msgstr ""
+
+#: importer/importer_member_address_it_wgn.py:76
+#, python-format
+msgid "Adresse mit E-Mail %(email)s existiert bereits."
+msgstr ""
+
+#: importer/importer_member_address_it_wgn.py:95
+msgid "Mindestens Vor- oder Nachname erforderlich"
+msgstr ""
+
+#: importer/importer_member_address_it_wgn.py:255
+msgid "Eintrittsdatum (X_heute) fehlt oder ist ungültig"
+msgstr ""
+
+#: importer/importer_tenant_property_it_wgn.py:47
+#, python-format
+msgid "Mietobjekt mit Import-ID %(import_id)s existiert bereits."
+msgstr ""
+
+#: importer/importer_tenant_property_it_wgn.py:60
+#, python-format
+msgid ""
+"Mietobjekt %(unit_name)s in Liegenschaft %(building_name)s existiert bereits."
+msgstr ""
+
+#: importer/importer_tenant_property_it_wgn.py:254
+msgid "Verhältnis Gültig-von ist erforderlich für Verträge"
+msgstr ""
+
+#: importer/models.py:18
+msgid "Ausstehend"
+msgstr ""
+
+#: importer/models.py:19
+msgid "In Bearbeitung"
+msgstr ""
+
+#: importer/models.py:20
+msgid "Abgeschlossen"
+msgstr ""
+
+#: importer/models.py:21
+msgid "Fehlgeschlagen"
+msgstr ""
+
+#: importer/models.py:25
+#, fuzzy
+#| msgid "Mitglieder ohne Email-Adresse (ignoriert)"
+msgid "Mitglieder und Adressen (IT-WGN)"
+msgstr "Mitglieder ohne Email-Adresse (ignoriert)"
+
+#: importer/models.py:26
+msgid "Mieter und Liegenschaften (IT-WGN)"
+msgstr ""
+
+#: importer/models.py:28
+msgid "Name des Import-Jobs"
+msgstr ""
+
+#: importer/models.py:33
+msgid "Import-Typ"
+msgstr ""
+
+#: importer/models.py:35
+msgid "Excel-Datei"
+msgstr ""
+
+#: importer/models.py:42
+msgid "Importierte Datensätze"
+msgstr ""
+
+#: importer/models.py:43 importer/models.py:77
+msgid "Fehlermeldung"
+msgstr ""
+
+#: importer/models.py:44
+msgid "Ergebnisdaten"
+msgstr ""
+
+#: importer/models.py:47
+msgid "Vorhandene Datensätze überschreiben"
+msgstr ""
+
+#: importer/models.py:49
+msgid ""
+"Wenn aktiviert, werden vorhandene Datensätze mit den importierten Daten "
+"überschrieben."
+msgstr ""
+
+#: importer/models.py:54 importer/models.py:68
+msgid "Import-Auftrag"
+msgstr ""
+
+#: importer/models.py:55
+msgid "Import-Aufträge"
+msgstr ""
+
+#: importer/models.py:75
+msgid "Zeilennummer"
+msgstr ""
+
+#: importer/models.py:76
+msgid "Daten"
+msgstr ""
+
+#: importer/models.py:78
+msgid "Erfolgreich"
+msgstr ""
+
+#: importer/models.py:81
+msgid "Import-Datensatz"
+msgstr ""
+
+#: importer/models.py:82
+msgid "Import-Datensätze"
+msgstr ""
+
+#: importer/services.py:208
+msgid "Zeile hat keine Daten"
+msgstr ""

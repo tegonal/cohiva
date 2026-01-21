@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
 
-from geno.gnucash import render_qrbill
+from geno.billing import render_qrbill
 from geno.models import Address
 
 from .base import CreditAccountingTestCase

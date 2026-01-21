@@ -1,3 +1,5 @@
+import datetime
+
 from sepa import parser
 
 from geno.sepa_reader import read_camt
@@ -71,6 +73,19 @@ class SepaReaderTest(GenoAdminTestCase):
                     "reference_nr": "360000000002000000003620253",
                     "debtor": "Hans Muster",
                     "extra_info": "Jahresbeitrag 2025",
+                    "date": datetime.date(2025, 6, 27),
+                },
+            },
+            {
+                "file": "camt.054_CH5600790016583351934_2025-06-27_00070_with_charges.xml",
+                "num_transactions": 1,
+                "data": {
+                    "amount": "50.00",
+                    "reference_nr": "360000000002000000003620253",
+                    "debtor": "Hans Muster",
+                    "extra_info": "Jahresbeitrag 2025 mit Gebühren",
+                    "charges": "1.20",
+                    "date": datetime.date(2025, 6, 28),
                 },
             },
         ]

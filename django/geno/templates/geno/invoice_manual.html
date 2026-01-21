@@ -1,97 +1,232 @@
 {% extends "geno/base.html" %}
-{% load static %}
-{% load i18n %}
+{% load static i18n unfold crispy_forms_tags %}
 
-{% block extrastyle %}
-<link rel="stylesheet" href="{% static 'django_tables2/themes/paleblue/css/screen.css' %}" />
-{# For datepicker UI #}
-<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
-<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-<script>
-  /* Configure datepicker */
-  $(function() {
-    $( ".datepicker" ).datepicker({
-      changeMonth: true,
-      changeYear: true,
-      yearRange: "2010:2030",
-      defaultDate: 0,
-      dateFormat: "dd.mm.yy",
-    });
-  });
-  /* Set focus to name field */
-  $(document).ready(function() {
-    window.onload = function() {
-      $("#id_name").focus();
-    };  
-  }); 
-</script>
+{% block extrahead %}
+  {{ block.super }}
+  <script src="{% url 'admin:jsi18n' %}"></script>
+  {{ form.media }}
 
-{# For Select2 #}
-<link href="/static/select2/css/select2.css" type="text/css" media="all" rel="stylesheet">
-<script type="text/javascript" src="/static/select2/js/select2.jquery_ready.js"></script>
-<script type="text/javascript" src="/static/select2/js/select2.jquery_ui_sortable.js"></script>
-<script type="text/javascript" src="/static/select2/js/select2.js"></script>
+  {# Dynamic formset script #}
+  <script>
+      const MAX_FORMS = 5;
 
-{# For form-autofill #}
-<script>
-   $(function() {
-    $('#id_category').change( function() {
-        //Autofill input fields based on option value
-        if (this.value == '3') {
-            // Gästezimmer
-            if ($('#id_extra_text').val() == "") {
-                $('#id_extra_text').val("Die ersten 3 Nächte sind gemäss Reglement Jokerzimmer kostenlos.");
-            }
-            if ($('#id_form-0-text').val() == "") {
-                $('#id_form-0-text').val("X Nächte à Fr. 22.00, Gästezimmer 003");
-            }
-            if ($('#id_form-1-text').val() == "") {
-                $('#id_form-1-text').val("X Nächte à Fr. 17.00, Gästezimmer 410");
-            }
-            if ($('#id_form-2-text').val() == "") {
-                $('#id_form-2-text').val("X Nächte à Fr. 17.00, Gästezimmer 509");
-            }
-        } else if (this.value == '11') {
-            // Mitgliedschaft
-            if ($('#id_extra_text').val() == "") {
-                $('#id_extra_text').val("Vielen Dank für die Beitrittserklärung. Die Mitgliedschaft in der Genossenschaft ist verbunden mit dem Zeichnen von Anteilscheinen und einer einmaligen Beitrittsgebühr. Dies stellen wir hiermit in Rechnung. Nach Zahlungseingang folgt dann die Bestätigung der Mitgliedschaft.");
-            }
-            if ($('#id_form-0-text').val() == "") {
-                $('#id_form-0-text').val("Beitrittsgebühr Genossenschaft");
-                $('#id_form-0-amount').val(200);
-            }
-            if ($('#id_form-1-text').val() == "") {
-                $('#id_form-1-text').val("Zeichnung von 1 Anteilschein der Genossenschaft");
-                $('#id_form-1-amount').val(200);
-            }
-        } else {
-            //$('#id_extra_text').val("");
-        }
-    });
-   });
-</script>
+      document.addEventListener('DOMContentLoaded', function() {
+          const categoryField = document.getElementById('id_category');
+
+          // Reload page with category parameter when category changes
+          if (categoryField) {
+              categoryField.addEventListener('change', function() {
+                  const url = new URL(window.location);
+                  if (this.value) {
+                      url.searchParams.set('category', this.value);
+                  } else {
+                      url.searchParams.delete('category');
+                  }
+                  // Remove extra parameter when category changes to get template defaults
+                  url.searchParams.delete('extra');
+                  window.location.href = url.toString();
+              });
+          }
+
+          // Get current form count
+          function getCurrentFormCount() {
+              const totalForms = document.getElementById('id_form-TOTAL_FORMS');
+              return parseInt(totalForms.value);
+          }
+
+          // Add new form (reload page with extra parameter)
+          window.addForm = function() {
+              const currentCount = getCurrentFormCount();
+              if (currentCount >= MAX_FORMS) {
+                  alert(`Maximal ${MAX_FORMS} Rechnungspositionen erlaubt.`);
+                  return;
+              }
+
+              // Reload page with extra parameter, preserving category if selected
+              const url = new URL(window.location);
+              url.searchParams.set('extra', currentCount); // Request currentCount + 1 forms total
+
+              // Preserve category selection when adding rows
+              const categoryField = document.getElementById('id_category');
+              if (categoryField && categoryField.value) {
+                  url.searchParams.set('category', categoryField.value);
+              }
+
+              window.location.href = url.toString();
+          };
+
+          // Remove form (reload page with fewer forms)
+          window.removeForm = function(index) {
+              const currentCount = getCurrentFormCount();
+              if (currentCount <= 1) {
+                  alert('Mindestens eine Rechnungsposition erforderlich.');
+                  return;
+              }
+
+              // Reload page with one less form, preserving category if selected
+              const url = new URL(window.location);
+              const newExtra = Math.max(0, currentCount - 2); // currentCount - 1 forms, minus the base 1
+              if (newExtra === 0) {
+                  url.searchParams.delete('extra');
+              } else {
+                  url.searchParams.set('extra', newExtra);
+              }
+
+              // Preserve category selection when removing rows
+              const categoryField = document.getElementById('id_category');
+              if (categoryField && categoryField.value) {
+                  url.searchParams.set('category', categoryField.value);
+              }
+
+              window.location.href = url.toString();
+          };
+
+          // Update remove button visibility
+          function updateRemoveButtons() {
+              const currentCount = getCurrentFormCount();
+              const removeButtons = document.querySelectorAll('#invoice_form tbody button[onclick^="removeForm"]');
+              removeButtons.forEach(btn => {
+                  btn.style.display = currentCount <= 1 ? 'none' : 'inline-block';
+              });
+          }
+
+          // Initialize: add delete column header and buttons to existing rows
+          function initializeDynamicFormset() {
+              // Add delete column header
+              const thead = document.querySelector('#invoice_form thead tr');
+              if (thead && !document.querySelector('th[data-delete-column]')) {
+                  const th = document.createElement('th');
+                  th.className = 'px-3 py-2 text-left text-xs font-medium text-font-subtle-light dark:text-font-subtle-dark uppercase tracking-wider w-10';
+                  th.setAttribute('data-delete-column', 'true');
+                  th.textContent = '';
+                  thead.appendChild(th);
+              }
+
+              // Add delete buttons to existing rows
+              const rows = document.querySelectorAll('#invoice_form tbody tr');
+              rows.forEach((row, index) => {
+                  row.setAttribute('data-form-index', index);
+                  if (!row.querySelector('button[onclick^="removeForm"]')) {
+                      const td = document.createElement('td');
+                      td.className = 'px-3 py-2';
+                      td.innerHTML = `
+                          <button type="button" onclick="removeForm(${index})" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">
+                              <span class="material-symbols-outlined text-base">delete</span>
+                          </button>
+                      `;
+                      row.appendChild(td);
+                  }
+              });
+
+              updateRemoveButtons();
+          }
+
+          initializeDynamicFormset();
+      });
+  </script>
 {% endblock %}
 
-{% block content %}
-<form action="{{ form_action }}" method="post">
+{% block custom_content %}
+
+  {# Single card containing entire form - matching Django admin structure #}
+  <form method="post" id="invoice_form">
     {% csrf_token %}
-    {{ form.as_p }}
-    {{ formset.management_form }}
-    <p><b>Rechnungspositionen:</b></p>
-    <table>
-    <tr><td>Datum</td><td>Beschreibung</td><td>Betrag</td></tr>
-    {% for form in formset %}
-        <tr>
-        {% for field in form.visible_fields %}
-            <td><div class="fieldWrapper">{{ field.errors }} {{ field }}</div></td>
-        {% endfor %}
-        {# { form.as_ul } #}
-        </tr>
-    {% endfor %}
-    </table>
-    <input type="submit" name="submit_action_preview" value="Vorschau anzeigen (PDF)" />
-    <input type="submit" name="submit_action_pdf" value="PDF-Rechnung erstellen und buchen" />
-    <input type="submit" name="submit_action_mail" value="PDF-Rechnung per Email verschicken und buchen" />
+
+    {% component "unfold/components/card.html" %}
+    <div class="px-3 py-3">
+      {# Main invoice form fields #}
+      {% crispy form "unfold_crispy" %}
+
+      {# Divider #}
+      {% component "unfold/components/separator.html" %}{% endcomponent %}
+
+      {# Invoice line items formset #}
+      <h3 class="text-font-important-light dark:text-font-important-dark font-semibold mb-4">
+        {% trans "Rechnungspositionen" %}
+      </h3>
+
+      {{ formset.management_form }}
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-base-200 dark:divide-base-800 table-fixed">
+          <thead>
+            <tr class="bg-base-50 dark:bg-base-900">
+              <th class="px-3 py-2 text-left text-xs font-medium text-font-subtle-light dark:text-font-subtle-dark uppercase tracking-wider w-32">
+                {% trans "Datum" %}
+              </th>
+              <th class="px-3 py-2 text-left text-xs font-medium text-font-subtle-light dark:text-font-subtle-dark uppercase tracking-wider">
+                {% trans "Beschreibung" %}
+              </th>
+              <th class="px-3 py-2 text-left text-xs font-medium text-font-subtle-light dark:text-font-subtle-dark uppercase tracking-wider w-32">
+                {% trans "Betrag" %}
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white dark:bg-base-900 divide-y divide-base-200 dark:divide-base-800">
+            {% for line_form in formset %}
+              <tr>
+                {% for field in line_form.visible_fields %}
+                  <td class="px-3 py-2">
+                    {{ field.errors }}
+                    {{ field }}
+                  </td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {# Add row button #}
+      <div class="mt-3">
+        <button type="button"
+                onclick="addForm()"
+                class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 border border-primary-200 dark:border-primary-800 rounded-default hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors">
+          <span class="material-symbols-outlined text-base">add</span>
+          {% trans "Weitere Position hinzufügen" %}
+        </button>
+        <span class="ml-2 text-xs text-font-subtle-light dark:text-font-subtle-dark">
+          ({% trans "Max." %} 5)
+        </span>
+      </div>
+    </div>
+  {% endcomponent %}
 </form>
+
+{% endblock %}
+
+{% block footer %}
+  {# Floating submit row - OUTSIDE form, in footer block like Django admin #}
+  <div class="relative lg:sticky lg:bottom-0 z-40">
+    <div class="backdrop-blur-xs bg-white/80 rounded-b-default pb-4 px-4 dark:bg-base-900/80 lg:border-t lg:border-base-200 relative lg:scrollable-top lg:py-0 dark:border-base-800">
+      <div class="flex flex-col-reverse gap-3 items-center mx-auto lg:flex-row-reverse container lg:h-[64px]">
+        {# Primary action - Create and book invoice #}
+        <button type="submit"
+                form="invoice_form"
+                name="submit_action_save"
+                class="bg-primary-600 block border border-transparent cursor-pointer font-medium px-3 py-2 rounded-default text-white w-full lg:w-auto">
+          {% trans "Rechnung erstellen und buchen" %}
+        </button>
+
+        {# Email toggle - directly to the left of the create button #}
+        <div class="flex items-center gap-3 lg:mr-6">
+          <label for="id_send_email"
+                 class="text-sm font-medium text-font-default-light dark:text-font-default-dark whitespace-nowrap">
+            {% trans "Per Email verschicken" %}
+          </label>
+          {{ form.send_email }}
+        </div>
+
+        {# Preview button on the far left #}
+        <div class="flex flex-col gap-3 mr-auto w-full lg:flex-row lg:w-auto">
+          <button type="submit"
+                  form="invoice_form"
+                  name="submit_action_preview"
+                  class="border border-base-200 cursor-pointer font-medium px-3 py-2 rounded-default transition-all w-full hover:bg-base-50 lg:block lg:w-auto dark:border-base-700 dark:hover:text-base-200 dark:hover:bg-base-900">
+            {% trans "Vorschau anzeigen (PDF)" %}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 {% endblock %}

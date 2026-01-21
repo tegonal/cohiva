@@ -4,13 +4,13 @@ from decimal import Decimal
 from django.conf import settings
 from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
-
-# from pprint import pprint
 from django.db.models import Sum  # , Q
 from django.template import loader
+from django.test import tag
 
 import geno.tests.data as testdata
-from geno.gnucash import create_invoices, get_book, get_reference_nr
+from finance.accounting import AccountingManager, AccountKey
+from geno.billing import consolidate_invoices, create_invoices, get_reference_nr
 from geno.invoice import InvoiceCreator, InvoiceCreatorError, InvoiceNotUnique
 from geno.models import Contract, Invoice, InvoiceCategory
 
@@ -25,43 +25,49 @@ class InvoicesTest(GenoAdminTestCase):
         super().setUpTestData()
         testdata.create_contracts(cls)
 
+    @tag("slow-test")
     def test_invoices_create_and_delete(self):
         create_invoices(dry_run=False, reference_date=datetime.datetime(2001, 4, 15))
 
-        messages = []
-        book = get_book(messages)
         transaction_ids = []
-        for invoice in Invoice.objects.all():
-            self.assertEqual(invoice.year, 2001)
-            self.assertEqual(invoice.month, 4)
-            self.assertEqual(invoice.contract, self.contracts[0])
-            self.assertEqual(invoice.invoice_type, "Invoice")
-            self.assertEqual(
-                invoice.invoice_category, self.invoicecategories[1]
-            )  # Mietzins wiederkehrend
-            if settings.GNUCASH:
-                tr = book.transactions.get(guid=invoice.gnc_transaction)
+        with AccountingManager() as book:
+            for invoice in Invoice.objects.all():
+                self.assertEqual(invoice.year, 2001)
+                self.assertEqual(invoice.month, 4)
+                self.assertEqual(invoice.contract, self.contracts[0])
+                self.assertEqual(invoice.invoice_type, "Invoice")
+                self.assertEqual(
+                    invoice.invoice_category, self.invoicecategories[1]
+                )  # Mietzins wiederkehrend
+                tr = book.get_transaction(invoice.fin_transaction_ref)
                 self.assertIn(invoice.name, tr.description)
-                transaction_ids.append(invoice.gnc_transaction)
-        book.close()
+                transaction_ids.append(invoice.fin_transaction_ref)
 
         Invoice.objects.all().delete()
 
-        if settings.GNUCASH:
-            book = get_book(messages)
+        with AccountingManager() as book:
             for tid in transaction_ids:
-                self.assertRaises(KeyError, book.transactions.get, guid=tid)
-            book.close()
+                with self.assertRaises(KeyError):
+                    book.get_transaction(tid)
 
+    @tag("slow-test")
     def test_invoices_when_rental_object_removed(self):
-        msg = create_invoices(dry_run=False, reference_date=datetime.datetime(2001, 4, 15))
-        # print(msg)
-        # print("=====")
-        self.assertIn("Montasrechnung hinzugefügt: Nettomiete 04.2001 für 001a/001b für", msg[0])
-        self.assertIn("Montasrechnung hinzugefügt: Nebenkosten 04.2001 für 001a/001b für", msg[1])
-        self.assertIn("Email mit QR-Rechnung an &quot;Anna Muster&quot;", msg[2])
-        self.assertEqual("1 Rechnungen", msg[3])
-        self.assertEqual(len(msg), 4)
+        msgs = create_invoices(dry_run=False, reference_date=datetime.datetime(2001, 4, 15))
+        infos = {}
+        for msg in msgs:
+            if "info" in msg:
+                infos[msg["info"]] = msg["objects"]
+        self.assertIn(
+            "Nettomiete 04.2001 für 001a,001b; Musterweg 1 für",
+            infos["Rechnungen in Buchhaltung erstellen"][0]["items"][0],
+        )
+        self.assertIn(
+            "Nebenkosten 04.2001 für 001a,001b; Musterweg 1 für",
+            infos["Rechnungen in Buchhaltung erstellen"][0]["items"][1],
+        )
+        self.assertIn("Email mit QR-Rechnung an:", infos["Email-Versand"][0]["label"])
+        self.assertIn("&quot;Anna Muster&quot;", infos["Email-Versand"][0]["items"][0])
+        self.assertEqual("1 Rechnung für 1 Vertrag", msgs[-1]["info"])
         self.assert_invoices(2, 1100 + 220)
 
         self.assertEmailSent(1, "Mietzinsrechnung 04.2001", "Liebe Anna\n\nAnbei die Rechnung.")
@@ -69,14 +75,23 @@ class InvoicesTest(GenoAdminTestCase):
         rental_unit_to_remove = self.rentalunits[1]
         self.contracts[0].rental_units.remove(rental_unit_to_remove)
 
-        msg = create_invoices(dry_run=False, reference_date=datetime.datetime(2001, 6, 15))
-        # print(msg)
-        # print("=====")
-        self.assertIn("Montasrechnung hinzugefügt: Nettomiete 06.2001 für 001a für", msg[0])
-        self.assertIn("Montasrechnung hinzugefügt: Nettomiete 05.2001 für 001a für", msg[2])
-        self.assertEqual("2 Rechnungen", msg[4])
+        msgs = create_invoices(dry_run=False, reference_date=datetime.datetime(2001, 6, 15))
+        infos = {}
+        for msg in msgs:
+            if "info" in msg:
+                infos[msg["info"]] = msg["objects"]
+        self.assertIn(
+            "Nettomiete 06.2001 für 001a; Musterweg 1 für",
+            infos["Rechnungen in Buchhaltung erstellen"][0]["items"][0],
+        )
+        self.assertIn(
+            "Nettomiete 05.2001 für 001a; Musterweg 1 für",
+            infos["Rechnungen in Buchhaltung erstellen"][0]["items"][2],
+        )
+        self.assertEqual("2 Rechnungen für 1 Vertrag", msgs[-1]["info"])
         self.assert_invoices(3 * 2, 3 * 1100 + 220)
 
+    @tag("slow-test")
     def test_invoices_when_moving_rental_object_to_separate_contract_with_link(self):
         create_invoices(dry_run=False, reference_date=datetime.datetime(2001, 6, 15))
         self.assert_invoices(3 * 2, 3 * 1100 + 3 * 220)
@@ -198,11 +213,7 @@ class InvoicesTest(GenoAdminTestCase):
         self.assertEqual(payment.invoice_category, self.invoicecategories[0])
         self.assertEqual(payment.date, datetime.date(2025, 6, 12))
         self.assertEqual(payment.amount, 100)
-
-        if settings.GNUCASH:
-            self.assertNotEqual(payment.gnc_transaction, "")
-        else:
-            self.assertEqual(payment.gnc_transaction, "")
+        self.assertNotEqual(payment.fin_transaction_ref, "")
         invoice.delete()
         payment.delete()
 
@@ -214,7 +225,7 @@ class InvoicesTest(GenoAdminTestCase):
         for invoice in invoices:
             date = invoice.date + datetime.timedelta(days=10)
             info = {}
-            info["iban"] = settings.GENO_FINANCE_ACCOUNTS["default_debtor"]["iban"]
+            info["iban"] = settings.FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]["iban"]
             info["refnr"] = get_reference_nr(
                 invoice.invoice_category, invoice.person.id, invoice.id
             )
@@ -244,13 +255,13 @@ class InvoicesTest(GenoAdminTestCase):
             amount=Decimal("99.95"),
         )
 
-        if not settings.GENO_FINANCE_ACCOUNTS["default_debtor"]["iban"]:
+        if not settings.FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]["iban"]:
             raise AssertionError(
-                "GENO_FINANCE_ACCOUNTS['default_debtor']['iban'] must be set for this test."
+                "FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]['iban'] must be set for this test."
             )
-        if "account_iban" not in settings.GENO_FINANCE_ACCOUNTS["default_debtor"]:
+        if "account_iban" not in settings.FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]:
             raise AssertionError(
-                "GENO_FINANCE_ACCOUNTS['default_debtor']['account_iban'] "
+                "FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]['account_iban'] "
                 "must be defined for this test."
             )
 
@@ -260,9 +271,7 @@ class InvoicesTest(GenoAdminTestCase):
         )
         response = self.client.post("/geno/transaction_upload/", {"file": camt053_file})
         self.assertEqual(response.status_code, 200)
-        self.assertContains(
-            response, '<b class="success">2 Buchungen wurden importiert:</b>', html=True
-        )
+        self.assertContains(response, "2 Buchungen wurden importiert:", html=True)
 
         payments = Invoice.objects.filter(invoice_type="Payment").order_by("id")
         self.assertEqual(payments.count(), 2)
@@ -278,13 +287,55 @@ class InvoicesTest(GenoAdminTestCase):
         self.assertEqual(payments[1].date, datetime.date(2000, 1, 12))
         self.assertEqual(payments[1].amount, Decimal("99.95"))
 
-        if settings.GNUCASH:
-            self.assertNotEqual(payments[0].gnc_transaction, "")
-            self.assertNotEqual(payments[1].gnc_transaction, "")
-        else:
-            self.assertEqual(payments[0].gnc_transaction, "")
-            self.assertEqual(payments[1].gnc_transaction, "")
+        self.assertNotEqual(payments[0].fin_transaction_ref, "")
+        self.assertNotEqual(payments[1].fin_transaction_ref, "")
         Invoice.objects.all().delete()
+
+    def test_consolidate_invoices(self):
+        Invoice.objects.create(
+            name="Test Invoice",
+            person=self.addresses[0],
+            invoice_type="Invoice",
+            invoice_category=self.invoicecategories[0],
+            date=datetime.date(2000, 1, 1),
+            amount=Decimal("100"),
+        )
+        Invoice.objects.create(
+            name="Test Payment",
+            person=self.addresses[0],
+            invoice_type="Payment",
+            invoice_category=self.invoicecategories[0],
+            date=datetime.date(2000, 1, 1),
+            amount=Decimal("100"),
+        )
+        self.assertEqual(Invoice.objects.all().count(), 2)
+        self.assertEqual(Invoice.objects.filter(consolidated=True).count(), 0)
+
+        consolidate_invoices()
+        self.assertEqual(Invoice.objects.filter(consolidated=True).count(), 2)
+
+    def test_consolidate_invoices_amount_mismatch(self):
+        Invoice.objects.create(
+            name="Test Invoice",
+            person=self.addresses[0],
+            invoice_type="Invoice",
+            invoice_category=self.invoicecategories[0],
+            date=datetime.date(2000, 1, 1),
+            amount=Decimal("100"),
+        )
+        Invoice.objects.create(
+            name="Test Payment",
+            person=self.addresses[0],
+            invoice_type="Payment",
+            invoice_category=self.invoicecategories[0],
+            date=datetime.date(2000, 1, 2),
+            amount=Decimal("101"),
+        )
+        self.assertEqual(Invoice.objects.all().count(), 2)
+        self.assertEqual(Invoice.objects.filter(consolidated=True).count(), 0)
+
+        consolidate_invoices()
+        self.assertEqual(Invoice.objects.filter(consolidated=True).count(), 0)
 
 
 # Create two rental_objects

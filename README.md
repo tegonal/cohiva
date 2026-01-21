@@ -2,7 +2,8 @@
 
 [![Download](https://img.shields.io/badge/Download-v1.3.0-%23007ec6)](https://github.com/tegonal/cohiva/releases/tag/v1.3.0)
 [![AGPL 3](https://img.shields.io/badge/%E2%9A%96-AGPL%203-%230b45a6)](https://www.gnu.org/licenses/agpl-3.0.en.html "License")
-[![Quality Assurance](https://github.com/tegonal/cohiva/actions/workflows/quality-assurance.yml/badge.svg?event=push&branch=main)](https://github.com/tegonal/cohiva/actions/workflows/quality-assurance.yml?query=branch%3Amain)
+[![Quality Assurance](https://github.com/tegonal/cohiva/actions/workflows/quality-assurance.yml/badge.svg?event=push&branch=develop)](https://github.com/tegonal/cohiva/actions/workflows/quality-assurance.yml?query=branch%3Adevelop)
+[![Coverage](https://raw.githubusercontent.com/tegonal/cohiva/python-coverage-comment-action-data/badge.svg)](https://htmlpreview.github.io/?https://github.com/tegonal/cohiva/blob/python-coverage-comment-action-data/htmlcov/index.html)
 [![Newcomers Welcome](https://img.shields.io/badge/%F0%9F%91%8B-Newcomers%20Welcome-blueviolet)](https://github.com/tegonal/cohiva/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22 "Ask in discussions for help")
 
 <!-- for main end -->

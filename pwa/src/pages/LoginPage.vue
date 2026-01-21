@@ -1,69 +1,76 @@
 <template>
   <q-page>
-    <div class="flex flex-center">
+    <div class="flex flex-center q-py-xl">
       <img
-        :alt="settings.SITE_NICKNAME + ' Logo'"
-        src="~assets/logo.svg"
+        :alt="settings.siteNickname + ' Logo'"
+        :src="logoPath"
         style="width: 200px; height: 200px"
       />
     </div>
     <div class="row flex-center q-px-md">
       <div class="col-xs-12 col-sm-8 col-md-6 col-lg-4 text-center">
-        <h6>Melde dich mit deinem {{ settings.SITE_NICKNAME }}-Konto an:</h6>
+        <!-- Backend Status Message -->
+        <div v-if="checkingBackend" class="full-width q-my-md text-center">
+          <q-spinner color="primary" size="2em" />
+          <div class="q-mt-sm">{{ $t('loginPage.checkingServer') }}</div>
+        </div>
+
+        <div v-else-if="authStore.backendError" class="full-width q-my-md">
+          <q-banner class="bg-negative text-white text-left" rounded>
+            <template v-slot:avatar>
+              <q-icon name="error" color="white" />
+            </template>
+            <div class="text-subtitle1">
+              {{ $t('loginPage.backendError.title') }}
+            </div>
+            <div class="q-mt-sm">{{ authStore.backendError }}</div>
+            <template v-slot:action>
+              <q-btn
+                flat
+                color="white"
+                :label="$t('loginPage.backendError.retry')"
+                @click="retryBackendCheck"
+              />
+            </template>
+          </q-banner>
+        </div>
+
+        <!-- OAuth Login Button -->
         <div class="row">
-          <q-input
-            v-model="email"
-            outlined
-            type="email"
-            :rules="[
-              (val, rules) =>
-                rules.email(val) || 'Bitte gib eine gültige Email-Adresse ein',
-            ]"
-            label="Email-Adresse"
-            class="full-width q-my-xs"
-            :autofocus="email.length == 0"
-          >
-            <template v-slot:prepend>
-              <q-icon name="alternate_email" />
-            </template>
-          </q-input>
-          <q-input
-            v-model="password"
-            outlined
-            type="password"
-            :rules="[(val) => !!val || 'Bitte gib ein Passwort ein']"
-            label="Passwort"
-            class="full-width q-mb-md"
-            @keyup.enter="login()"
-            :autofocus="email.length != 0"
-          >
-            <template v-slot:prepend>
-              <q-icon name="lock" />
-            </template>
-          </q-input>
           <q-btn
             color="primary"
-            class="full-width q-my-xs"
-            @click="login()"
-            :disabled="isSubmitting || !password || !email"
-            ><q-spinner
-              v-if="isSubmitting"
-              color="secondary"
-              size="1em"
-              class="q-pa-xs"
-            />Anmelden</q-btn
+            class="full-width q-my-md"
+            @click="loginWithOAuth()"
+            :disabled="isLoading || checkingBackend || !!authStore.backendError"
           >
+            <q-spinner
+              v-if="isLoading"
+              color="white"
+              size="1em"
+              class="q-mr-sm"
+            />
+            <q-icon v-else name="login" class="q-mr-sm" />
+            {{ $t('loginPage.loginButton', { site: settings.siteNickname }) }}
+          </q-btn>
+
           <div
-            v-if="apiError"
+            v-if="error"
             class="q-mt-md text-subtitle-1 text-negative text-center full-width"
           >
             <div>
               <q-icon name="warning" size="2em" />
             </div>
-            <div>{{ apiError }}</div>
+            <div>{{ error }}</div>
           </div>
-          <p class="q-mt-lg text-center full-width text-grey-6 text-subtitle-1">
-            <a :href="settings.PASSWORD_RESET_LINK">Passwort vergessen?</a>
+
+          <p class="q-mt-lg text-center full-width text-grey-6 text-body2">
+            {{ $t('loginPage.redirectNotice') }}
+          </p>
+
+          <p class="q-mt-md text-center full-width text-grey-6 text-subtitle-1">
+            <a :href="settings.passwordResetLink">{{
+              $t('loginPage.forgotPassword')
+            }}</a>
           </p>
         </div>
       </div>
@@ -71,37 +78,62 @@
   </q-page>
 </template>
 
-<script setup>
-import { ref } from "vue";
-import { useAuthStore } from "stores";
-import { settings } from "app/settings.js";
+<script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 
-const email = ref(JSON.parse(localStorage.getItem("user")) || "");
-const password = ref("");
-const apiError = ref("");
-const isSubmitting = ref(false);
+import { useThemedLogo } from 'src/composables/use-themed-logo'
+import { useAuthStore } from 'stores/auth-store'
 
-function login() {
-  const authStore = useAuthStore();
-  apiError.value = "";
-  isSubmitting.value = true;
-  const response = authStore
-    .login(email, password)
-    .then((response) => {
-      //console.log("Got result: " + response);
-      isSubmitting.value = false;
-    })
-    .catch((error) => {
-      isSubmitting.value = false;
-      console.log("ERROR: " + error);
-      apiError.value = "Fehler beim Anmelden";
-    });
-  //;
-  //console.log("After login request");
-  /* if (response) {
+import { settings } from '../../tenant-config/settings'
 
-    apiError.value = response.value;
-  }*/
-  //return authStore.login(email, password).catch((error) => console.log(error));
+// Theme-aware logo
+const { logoPath } = useThemedLogo()
+
+const { t } = useI18n()
+const authStore = useAuthStore()
+const route = useRoute()
+const router = useRouter()
+const isLoading = ref(false)
+const error = ref('')
+const checkingBackend = ref(false)
+
+onMounted(async () => {
+  // First check backend health
+  checkingBackend.value = true
+  await authStore.checkBackendHealth()
+  checkingBackend.value = false
+
+  // Check if user is already authenticated
+  const isAuth = await authStore.checkAuth()
+  if (isAuth) {
+    // Redirect to home or return URL
+    const returnUrl = route.query.returnUrl || authStore.returnUrl || '/'
+    router.push(returnUrl as string)
+  }
+})
+
+async function loginWithOAuth() {
+  isLoading.value = true
+  error.value = ''
+
+  try {
+    // Get return URL from query params or store
+    const returnUrl = route.query.returnUrl || authStore.returnUrl || '/'
+
+    // Start OAuth login flow
+    await authStore.login(returnUrl as string)
+    // Note: This will redirect to the OAuth provider, so the promise won't resolve
+  } catch {
+    error.value = t('loginPage.loginError')
+    isLoading.value = false
+  }
+}
+
+async function retryBackendCheck() {
+  checkingBackend.value = true
+  await authStore.checkBackendHealth()
+  checkingBackend.value = false
 }
 </script>

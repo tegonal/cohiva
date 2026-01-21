@@ -1,0 +1,99 @@
+services:
+  mariadb:
+    image: mariadb:11.8
+    container_name: cohiva-dev-mariadb
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      # Database is created in init script with correct collation
+      MYSQL_USER: cohiva
+      MYSQL_PASSWORD: c0H1v4
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./docker/mariadb-init:/docker-entrypoint-initdb.d
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --character-set-client-handshake=FALSE
+      --init-connect='SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci'
+      --sql-mode=TRADITIONAL,ALLOW_INVALID_DATES
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: cohiva-dev-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mailpit:
+    image: docker.io/axllent/mailpit:v1.28
+    container_name: cohiva-dev-mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"   # Web interface
+      - "1025:1025"   # SMTP
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8025/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - mailpit_data:/data
+    environment:
+      TZ: "Europe/Zurich"
+      MP_MAX_MESSAGES: "50000"
+      MP_MAX_AGE: "45d"
+      MP_DATABASE: "/data/mailpit.db"
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+
+#  cohiva:
+#    image: ghcr.io/tegonal/cohiva:v0
+#    container_name: cohiva
+#    ports:
+#      - "8000:8000"
+#    environment:
+#      - DJANGO_SETTINGS_MODULE=cohiva.settings_docker_compose
+#      - COHIVA_INSTANCE_PATH=/instance_files/override_files
+#      - DB_HOST=mariadb
+#      - DB_ROOT_PASSWORD=root
+#      - DB_USER=cohiva
+#      - DB_PASSWORD=c0H1v4
+#      - DB_NAME=cohiva_django_test
+#      - SUPERUSER_USERNAME=mikel
+#      - SUPERUSER_EMAIL=mikel.cordovilla@tegonal.com
+#      - SUPERUSER_PASSWORD=admin123
+#    volumes:
+#      - ./instance_files/override_files:/instance_files/override_files:ro
+#      - static_data:/tmp/static                            # Collected static files
+#    depends_on:
+#      mariadb:
+#        condition: service_healthy
+#      redis:
+#        condition: service_healthy
+#    restart: unless-stopped
+
+volumes:
+  mariadb_data:
+    name: cohiva-dev-mariadb-data
+  redis_data:
+    name: cohiva-dev-redis-data
+  mailpit_data:
+    name: cohiva-dev-mailpit-data
+  static_data:
+    name: cohiva-dev-static-data

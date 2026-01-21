@@ -29,7 +29,7 @@ from appy.pod.renderer import Renderer
 from django.conf import settings
 
 from cohiva.utils.pdf import PdfGenerator
-from geno.models import Invoice, InvoiceCategory
+from geno.models import Invoice, InvoiceCategory, RentalUnit
 from geno.utils import JSONDecoderDatetime, JSONEncoderDatetime
 from report.models import ReportOutput
 
@@ -419,6 +419,11 @@ def import_messung_data():
                         "Konnte Mieteinheit-Messdaten nicht importieren. Datei im ZIP nicht gefunden: %s"
                         % filename
                     )
+                except Exception as e:
+                    nk.log.append(f"WARNING: Error while reading {filename}: {e}")
+                    raise RuntimeError(
+                        f"Fehler beim Import der Mieteinheit-Messdaten von {filename}: {e}"
+                    )
                 month += 1
 
 
@@ -497,11 +502,15 @@ def add_calculated_weights():
     for o in nk.objects:
         if o["name"] == "0000":
             messung_objname = "_allgemein"
+        elif o["name"] == "9998":
+            messung_objname = "_pauschal_nk"
         elif o["name"] == "9999":
-            messung_objname = "_lager_strom"
+            messung_objname = "_pauschal_strom"
         else:
             messung_objname = o["name"]
-            ## Add Strom pauschal to akonto of special object for Lager-Strom
+            ## Add NK pauschal to akonto of special object for Pauschal-NK
+            nk.objects[nk.object_indices["9998"]]["akonto_obj"] += o["nk_pauschal_obj"]
+            ## Add Strom pauschal to akonto of special object for Pauschal-Strom
             nk.objects[nk.object_indices["9999"]]["akonto_obj"] += o["strom_pauschal_obj"]
         if messung_objname in nk.object_messung and sum(
             nk.object_messung[messung_objname]["warmwasser"]
@@ -844,13 +853,23 @@ def import_from_api():
     if response["next"] or response["previous"]:
         raise RuntimeError("API returned multiple pages but pagination is not implemented yet!")
     for contract in response["results"]:
-        ## Convert dates
+        ## Convert dates and set billing_date_start/end
         if contract["date"]:
             d = contract["date"].split("-")
             contract["date"] = datetime(int(d[0]), int(d[1]), int(d[2]))
         if contract["date_end"]:
             d = contract["date_end"].split("-")
             contract["date_end"] = datetime(int(d[0]), int(d[1]), int(d[2]))
+        if contract["billing_date_start"]:
+            d = contract["billing_date_start"].split("-")
+            contract["billing_date_start"] = datetime(int(d[0]), int(d[1]), int(d[2]))
+        else:
+            contract["billing_date_start"] = contract["date"]
+        if contract["billing_date_end"]:
+            d = contract["billing_date_end"].split("-")
+            contract["billing_date_end"] = datetime(int(d[0]), int(d[1]), int(d[2]))
+        else:
+            contract["billing_date_end"] = contract["date_end"]
         ## Get akonto from billing
         # request_params = {
         #    'contract_id': contract['id'],
@@ -887,15 +906,10 @@ def import_from_api():
                 ]
 
     ## Get RentalUnits
-    response = get_from_api("/geno/rentalunit/")
-    if "count" not in response:
-        if "detail" in response:
-            raise RuntimeError("import_from_api() failed: %s" % response["detail"])
-        else:
-            raise RuntimeError("import_from_api() failed: %s" % response)
-
-    if response["next"] or response["previous"]:
-        raise RuntimeError("API returned multiple pages but pagination is not implemented yet!")
+    response = RentalUnit.objects.filter(active=True).order_by("name")
+    if nk.config["Liegenschaften"]:
+        building_ids = [int(x) for x in json.loads(nk.config["Liegenschaften"].replace("'", '"'))]
+        response = response.filter(building__in=building_ids)
 
     ru_section = {
         "Wohnung": "Wohnen",
@@ -909,42 +923,43 @@ def import_from_api():
         "Lager": "Lager",
         "Hobby": "Gewerbe",
     }
-    for ru in response["results"]:
-        section = ru_section[ru["rental_type"]]
+    for ru in response:
+        section = ru_section[ru.rental_type]
         allgemein = False
         ## Gästerzimmer, Dachküche, Teeküche nicht mehr allgemein (Entscheid Finko/VW 25.10.22)
         # if ru['label'] in ("Gästezimmer", "Dachküche", "Teeküche","Einstellhalle Auto","Einstellhalle Velo"):
-        if ru["label"] in ("Dachküche",):
+        if ru.label in ("Dachküche",):
             section = "Wohnen"
-        elif ru["label"] in (
+        elif ru.label in (
             "Teeküche",
             "Lückenraum Holliger rechts",
             "Lückenraum Holliger links",
             "Quartierraum Holliger",
         ):
             section = "Gewerbe"
-        elif ru["label"] in ("Lagerraum", "Lagerabteil"):
+        elif ru.label in ("Lagerraum", "Lagerabteil"):
             section = "Lager"
-        elif ru["rental_type"] in ("Parkplatz", "Gemeinschaftsräume/Diverses"):
+        elif ru.rental_type in ("Parkplatz", "Gemeinschaftsräume/Diverses"):
             allgemein = True
 
-        if ru["label"]:
-            label = "%s %s" % (ru["label"], ru["name"])  # , ru['label'])
+        if ru.label:
+            label = "%s %s" % (ru.label, ru.name)  # , ru['label'])
         else:
-            label = "%s %s" % (ru["rental_type"], ru["name"])
+            label = "%s %s" % (ru.rental_type, ru.name)
 
         akonto = 0
+        nk_pauschal = 0
         strom_pauschal = 0
         rent_net = 0
         for mw in nk.monthly_weights["default"]:
-            if ru["rent_total"]:
-                rent_net += mw * float(ru["rent_total"])
-            if ru["nk"]:
-                akonto += mw * float(ru["nk"])
-                rent_net -= mw * float(ru["nk"])
-            if ru["nk_electricity"]:
-                strom_pauschal += mw * float(ru["nk_electricity"])
-                rent_net -= mw * float(ru["nk_electricity"])
+            if ru.rent_total:
+                rent_net += mw * float(ru.rent_total)
+            if ru.nk:
+                akonto += mw * float(ru.nk)
+            if ru.nk_flat:
+                nk_pauschal += mw * float(ru.nk_flat)
+            if ru.nk_electricity:
+                strom_pauschal += mw * float(ru.nk_electricity)
         if allgemein:
             area_weight = 0
             volume_weight = 0
@@ -953,34 +968,34 @@ def import_from_api():
             rent_net = 0
         else:
             try:
-                area_weight = float(ru["area"])
-                if ru["volume"]:
-                    volume_weight = float(ru["volume"])
+                area_weight = float(ru.area)
+                if ru.volume:
+                    volume_weight = float(ru.volume)
                 else:
                     nk.log.append("WARNING: Unit %s has no volume." % (label))
                     nk.add_warning("Kein Volumen definiert", label)
                     volume_weight = 0
-                if ru["min_occupancy"]:
-                    min_occupancy = float(ru["min_occupancy"])
+                if ru.min_occupancy:
+                    min_occupancy = float(ru.min_occupancy)
                 else:
                     min_occupancy = 0
-                if ru["rooms"]:
-                    rooms = float(ru["rooms"])
+                if ru.rooms:
+                    rooms = float(ru.rooms)
                 else:
                     rooms = 0
             except TypeError as e:
                 nk.log.append(ru)
                 raise RuntimeError(
                     "ERROR: %s for %s (area=%s, volume=%s, min_occupancy=%s, rooms=%s)"
-                    % (e, ru["name"], ru["area"], ru["volume"], ru["min_occupancy"], ru["rooms"])
+                    % (e, ru.name, ru.area, ru.volume, ru.min_occupancy, ru.rooms)
                 )
 
-        ru_contracts = rental_unit_contracts.get(ru["id"], [])
+        ru_contracts = rental_unit_contracts.get(ru.id, [])
         if section:
             nk.objects.append(
                 {
-                    "id": ru["id"],
-                    "name": ru["name"],
+                    "id": ru.id,
+                    "name": ru.name,
                     "label": label,
                     "section": section,
                     "area": area_weight,
@@ -989,6 +1004,7 @@ def import_from_api():
                     "rooms": rooms,
                     "allgemein": allgemein,
                     "akonto_obj": akonto,
+                    "nk_pauschal_obj": nk_pauschal,
                     "strom_pauschal_obj": strom_pauschal,
                     "rent_net": rent_net,
                     "costs": {},
@@ -1339,7 +1355,7 @@ def plot(spec):
         },
     }
     for o in nk.objects:
-        if o["name"] in ("0000", "9999"):
+        if o["name"] in ("0000", "9998", "9999"):
             continue
         obj_relative_key = o[spec["relative_key"]]
         if not obj_relative_key:
@@ -1696,7 +1712,7 @@ def add_admin_fee():
 
     for obj in nk.objects:
         o = obj["name"]
-        if o in ("0000", "9999"):
+        if o in ("0000", "9998", "9999"):
             continue
         for cost in nk.costs:
             tot["cost_split"]["objects"][o]["annual"]["amount"] += cost["cost_split"]["objects"][
@@ -1759,7 +1775,7 @@ def assign_to_contracts():
     monthly_weights_sum = sum(nk.monthly_weights["default"])
     ## Assign costs for every object and month to a contract or to 'owner' (Genossenschaft) or 'empty' (Leerstand)
     for o in nk.objects:
-        if o["name"] in ("0000", "9999"):
+        if o["name"] in ("0000", "9998", "9999"):
             ## Skip special objects
             continue
         nk.log.append("+++ Object: %s" % o["name"])
@@ -1769,9 +1785,9 @@ def assign_to_contracts():
             active_contract = None
             if "contracts" in o:
                 for c_id in o["contracts"]:
-                    if nk.contracts[c_id]["date"] <= date["start"] and (
-                        not nk.contracts[c_id]["date_end"]
-                        or nk.contracts[c_id]["date_end"] > date["start"]
+                    if nk.contracts[c_id]["billing_date_start"] <= date["start"] and (
+                        not nk.contracts[c_id]["billing_date_end"]
+                        or nk.contracts[c_id]["billing_date_end"] > date["start"]
                     ):
                         ## Contract is active in this month
                         if active_contract:
@@ -1873,6 +1889,7 @@ def assign_to_contracts():
                     "rent_net": 0,
                     "akonto_obj": 0,
                     "akonto_obj_billing": 0,
+                    "nk_pauschal_obj": 0,
                     "strom_pauschal_obj": 0,
                     "area": o["area"],
                     "volume": o["volume"],
@@ -1967,6 +1984,9 @@ def assign_to_contracts():
             )
             nk.contracts[c_id]["all_objects"]["akonto_obj"] += (
                 o["akonto_obj"] / monthly_weights_sum * nk.monthly_weights["default"][idx]
+            )
+            obj_data["unit"]["nk_pauschal_obj"] += (
+                o["nk_pauschal_obj"] / monthly_weights_sum * nk.monthly_weights["default"][idx]
             )
             obj_data["unit"]["strom_pauschal_obj"] += (
                 o["strom_pauschal_obj"] / monthly_weights_sum * nk.monthly_weights["default"][idx]
@@ -2456,7 +2476,7 @@ def create_bills(regenerate_invoice_id=None):
         else:
             nk.log.append("ERROR: Could not get qrbill!")
             raise RuntimeError(
-                "Konnte QR-Rechnung/Buchungen nicht erzeugen. Ist GNUCash gesperrt?"
+                "Konnte QR-Rechnung/Buchungen nicht erzeugen. Ist Buchhaltung gesperrt?"
             )
 
         context["akonto_threshold"] = (
@@ -2703,13 +2723,13 @@ def create_energy_consumption_graph(data, output_filename, context):
 
     fig.update_yaxes(title_text="Relativer Verbrauch in Prozent")
     fig.update_layout(
-        font_family="Korpus",
+        font_family=settings.COHIVA_TEXT_FONT,
         font_size=16,
         font_color="black",
         title={
             "text": "%s Energieverbrauch im Vergleich" % context["Euer"],
             "font": {
-                "family": "National",
+                "family": settings.COHIVA_TITLE_FONT,
                 "size": 30,
             },
         },
@@ -2853,13 +2873,13 @@ def create_energy_timeseries_graph(data, output_filename, context, extra_text=No
 
     fig.update_yaxes(title_text="Relativer Verbrauch in Prozent")
     fig.update_layout(
-        font_family="Korpus",
+        font_family=settings.COHIVA_TEXT_FONT,
         font_size=16,
         font_color="black",
         title={
             "text": context["graph_title"],
             "font": {
-                "family": "National",
+                "family": settings.COHIVA_TITLE_FONT,
                 "size": 30,
             },
         },
@@ -3025,6 +3045,7 @@ class NebenkostenReportGenerator(ReportGenerator):
         "Ausgabe:QR-Rechnungen": False,
         "Strom:Korrekturen": {},
         "Strom:Tarif:Korrekturen": {},
+        "Liegenschaften": [],
     }
 
     def __init__(self, report, dry_run, output_root, *args, **kwargs):
@@ -3053,6 +3074,21 @@ class NebenkostenReportGenerator(ReportGenerator):
                 "rooms": 0,
                 "allgemein": False,
                 "akonto_obj": 0,
+                "nk_pauschal_obj": 0,
+                "strom_pauschal_obj": 0,
+                "rent_net": 0,
+                "costs": {},
+            },
+            {
+                "name": "9998",
+                "section": "Lager",
+                "area": 0,
+                "volume": 0,
+                "min_occupancy": 0,
+                "rooms": 0,
+                "allgemein": False,
+                "akonto_obj": 0,
+                "nk_pauschal_obj": 0,
                 "strom_pauschal_obj": 0,
                 "rent_net": 0,
                 "costs": {},
@@ -3066,6 +3102,7 @@ class NebenkostenReportGenerator(ReportGenerator):
                 "rooms": 0,
                 "allgemein": False,
                 "akonto_obj": 0,
+                "nk_pauschal_obj": 0,
                 "strom_pauschal_obj": 0,
                 "rent_net": 0,
                 "costs": {},

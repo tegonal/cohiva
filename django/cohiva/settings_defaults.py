@@ -1,15 +1,28 @@
 """
-Django default settings for Cohiva.
+Django default base settings for Cohiva.
 
 To change settings, overwrite them in settings.py or settings_production.py
+
+NOTE: Settings are cascaded in the following order (settings in the later files override/extend
+      settings in the earlier files):
+
+  1. settings_defaults.py (default base settings)
+  2. settings.py (custom base settings)
+  3. settings_production_defaults.py (default production settings)
+  4. settings_production.py (custom production settings)
 """
 
+import datetime
 import locale
 from pathlib import Path
 from urllib.parse import quote
 
+from django.contrib import admin
+from django.utils.translation import gettext_lazy as _
+
 import cohiva.base_config as cbc
 from cohiva.version import __version__ as COHIVA_VERSION  # noqa: F401
+from finance.accounting import AccountKey, AccountRole
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -43,6 +56,8 @@ ALLOWED_HOSTS = [
     "test." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
     PORTAL_SECONDARY_HOST,
 ]
+if hasattr(cbc, "DOCKER_IP"):
+    ALLOWED_HOSTS.append(cbc.DOCKER_IP)
 # Developer hosts for debugging
 INTERNAL_IPS = ("localhost", "127.0.0.1")
 
@@ -55,6 +70,10 @@ USE_X_FORWARDED_HOST = True
 CORS_ALLOWED_ORIGINS = [
     "https://chat." + cbc.DOMAIN,
     "https://app." + cbc.DOMAIN,
+    "https://app-test." + cbc.DOMAIN,
+    "https://chat." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
+    "https://app." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
+    "https://app-test." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
     "http://localhost:9000",
     "http://127.0.0.1:9000",
     "http://localhost:9001",
@@ -78,6 +97,18 @@ OAUTH2_PROVIDER = {
     "REQUEST_APPROVAL_PROMPT": "auto",  ## auto / force
     "PKCE_REQUIRED": False,  ## Rocket.Chat does not support PKCE
 }
+
+## Enable OIDC
+OAUTH2_PROVIDER["OIDC_ENABLED"] = True
+with open(str(BASE_DIR / "cohiva/oauth2/oidc.key")) as keyfile:
+    OAUTH2_PROVIDER["OIDC_RSA_PRIVATE_KEY"] = keyfile.read()
+OAUTH2_PROVIDER["SCOPES"].update(
+    {
+        "profile": "Profildaten wie Name, Vorname, etc.",
+        "openid": "OpenID Connect scope",
+    }
+)
+OAUTH2_PROVIDER["OAUTH2_VALIDATOR_CLASS"] = "cohiva.oauth_validators.CohivaOAuth2Validator"
 
 if "portal" in cbc.FEATURES:
     ## SAML 2.0
@@ -164,6 +195,17 @@ if "portal" in cbc.FEATURES:
 INSTALLED_APPS = (
     ## Geno must be before admin so we can extend templates
     "geno",
+    "finance",
+    ## Unfold
+    "cohiva.apps.CohivaUnfoldConfig",  # before django.contrib.admin
+    "unfold.contrib.filters",  # optional, if special filters are needed
+    "unfold.contrib.forms",  # optional, if special form elements are needed
+    "unfold.contrib.inlines",  # optional, if special inlines are needed
+    # "unfold.contrib.import_export",  # optional, if django-import-export package is used
+    # "unfold.contrib.guardian",  # optional, if django-guardian package is used
+    # "unfold.contrib.simple_history",  # optional, if django-simple-history package is used
+    # "unfold.contrib.location_field",  # optional, if django-location-field package is used
+    # "unfold.contrib.constance",  # optional, if django-constance package is used
     ## Django and third party apps
     "django.contrib.admin",
     "django.contrib.auth",
@@ -172,6 +214,7 @@ INSTALLED_APPS = (
     "django.contrib.sites",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "crispy_forms",  # For Unfold forms
     "email_obfuscator",
     "django_tables2",
     "select2",
@@ -186,6 +229,19 @@ if "api" in cbc.FEATURES:
         "rest_framework.authtoken",
         "dj_rest_auth",
         #'rest_framework_jwt',
+    )
+
+if "website" in cbc.FEATURES:
+    INSTALLED_APPS += ("website",)
+
+if "portal" in cbc.FEATURES:
+    INSTALLED_APPS += (
+        "portal",
+        # For oauth
+        "oauth2_provider",
+        "corsheaders",
+        # For SAML 2.0
+        "djangosaml2idp",
     )
 
 if "cms" in cbc.FEATURES:
@@ -207,19 +263,6 @@ if "cms" in cbc.FEATURES:
         "wagtailmenus",
     )
 
-if "website" in cbc.FEATURES:
-    INSTALLED_APPS += ("website",)
-
-if "portal" in cbc.FEATURES:
-    INSTALLED_APPS += (
-        "portal",
-        # For oauth
-        "oauth2_provider",
-        "corsheaders",
-        # For SAML 2.0
-        "djangosaml2idp",
-    )
-
 if "reservation" in cbc.FEATURES:
     INSTALLED_APPS += ("reservation",)
 
@@ -229,6 +272,9 @@ if "credit_accounting" in cbc.FEATURES:
 if "report" in cbc.FEATURES:
     INSTALLED_APPS += ("report",)
 
+if "importer" in cbc.FEATURES:
+    INSTALLED_APPS += ("importer",)
+
 MIDDLEWARE = ()
 if "portal" in cbc.FEATURES:
     MIDDLEWARE += (
@@ -237,14 +283,24 @@ if "portal" in cbc.FEATURES:
         "portal.middleware.SecondaryPortalMiddleware",
         "oauth2_provider.middleware.OAuth2TokenMiddleware",  ## For Oauth2 token authentication
     )
+MIDDLEWARE += ("django.middleware.security.SecurityMiddleware",)
+if getattr(cbc, "USE_WHITENOISE", False):
+    MIDDLEWARE += ("whitenoise.middleware.WhiteNoiseMiddleware",)
 MIDDLEWARE += (
-    "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    # LocaleMiddleware MUST be after SessionMiddleware (needs session data for language preferences)
+    # and BEFORE CommonMiddleware (needs to process language before URL resolution)
+    "django.middleware.locale.LocaleMiddleware",
     #'portal.views.debug_middleware',
-    "geno.middleware.SessionExpiryMiddleware",  ## Restrict cookie timeout for geno module
+    # SessionExpiryMiddleware should run early to set session timeouts before request processing
+    "geno.middleware.SessionExpiryMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    # LoginRedirectMiddleware MUST be after AuthenticationMiddleware because it processes
+    # the 302 redirect responses generated by authentication checks and routes them to
+    # the appropriate login page (/admin/login/ vs /portal/login/)
+    "geno.middleware.LoginRedirectMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     ## For django-datetime-widget
@@ -272,6 +328,9 @@ TEMPLATES = [
                 "cohiva.context_processors.baseconfig",
                 "geno.context_processors.featurelist",
             ],
+            "libraries": {
+                "cohiva_admin": "cohiva.templatetags.admin",
+            },
         },
     },
 ]
@@ -298,6 +357,7 @@ DATABASES = {
             ## ALLOW_INVALID_DATES --> workaround datetime format problem with piecash
             "sql_mode": "traditional,ALLOW_INVALID_DATES",
             "charset": "utf8mb4",
+            "collation": "utf8mb4_unicode_ci",  # Force consistent collation for MariaDB
         },
     }
 }
@@ -330,6 +390,11 @@ AUTH_PASSWORD_VALIDATORS = [
 # http://www.i18nguy.com/unicode/language-identifiers.html
 LANGUAGE_CODE = "de-ch"
 
+# Available languages for the site
+LANGUAGES = [
+    ("de", "Deutsch"),
+]
+
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # although not all choices may be available on all operating systems.
@@ -345,6 +410,15 @@ USE_TZ = True
 
 locale.setlocale(locale.LC_ALL, ("de_CH", "UTF-8"))
 
+# Path to custom format modules for localized date/time formats
+# See cohiva/formats/de/formats.py for Swiss German formats
+FORMAT_MODULE_PATH = "cohiva.formats"
+
+# Locale paths for custom translation files
+LOCALE_PATHS = [
+    BASE_DIR / "locale",
+]
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
@@ -356,8 +430,17 @@ STATIC_ROOT = cbc.INSTALL_DIR + "/django-production/static"
 
 STATIC_URL = "/static/"
 
-## Cache Buster --> Need to test this first! (duplicate files! / error...)
-##STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+## Cache Buster for development: appends file modification time to static URLs
+## This ensures CSS/JS changes are immediately reflected without manual cache clearing
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "cohiva.storage.CacheBustingStaticFilesStorage",
+        # BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage",
+    },
+}
 
 # Additional locations of static files
 # STATICFILES_DIRS = (
@@ -443,6 +526,12 @@ LOGGING = {
             "filename": cbc.INSTALL_DIR + "/django-test/log/credit_accounting.log",
             "formatter": "verbose",
         },
+        "finance_accounting": {
+            "level": "DEBUG",
+            "class": "logging.FileHandler",
+            "filename": cbc.INSTALL_DIR + "/django-test/log/finance_accounting.log",
+            "formatter": "verbose",
+        },
     },
     "loggers": {
         "django.request": {
@@ -475,6 +564,11 @@ LOGGING = {
             "handlers": ["credit_accounting", "mail_admins_debug"],
             "propagate": True,
         },
+        "finance_accounting": {
+            "level": "DEBUG",
+            "handlers": ["finance_accounting", "mail_admins_debug"],
+            "propagate": True,
+        },
     },
 }
 
@@ -488,9 +582,7 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.DjangoModelPermissions",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        #  'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
-        #  'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
-        #  'rest_framework.authentication.BasicAuthentication',
+        "oauth2_provider.contrib.rest_framework.OAuth2Authentication",
         "rest_framework.authentication.TokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
@@ -502,16 +594,18 @@ SITE_ID = 1
 ## django-filer - https://django-filer.readthedocs.io/en/latest/settings.html
 FILER_ENABLE_PERMISSIONS = True
 FILER_IS_PUBLIC_DEFAULT = False
-FILER_SERVERS = {
-    "private": {
-        "main": {
-            "ENGINE": "filer.server.backends.xsendfile.ApacheXSendfileServer",
-        },
-        "thumbnails": {
-            "ENGINE": "filer.server.backends.xsendfile.ApacheXSendfileServer",
-        },
-    },
-}
+## Use upstream Apache to serve private files with X-Sendfile
+## (instead of the default filer.server.backends.default.DefaultServer backend)
+# FILER_SERVERS = {
+#    "private": {
+#        "main": {
+#            "ENGINE": "filer.server.backends.xsendfile.ApacheXSendfileServer",
+#        },
+#        "thumbnails": {
+#            "ENGINE": "filer.server.backends.xsendfile.ApacheXSendfileServer",
+#        },
+#    },
+# }
 
 ## Celery with redis
 CELERY_BROKER_URL = "redis://localhost:6379/0"
@@ -554,12 +648,219 @@ GENO_QRBILL_CREDITOR = {
     "country": cbc.ORG_ADDRESS_COUNTRY,
 }
 
-GENO_FINANCE_ACCOUNTS = {
-    "default_debtor": {
-        "name": "Bankkonto Einzahlungen",
+FINANCIAL_ACCOUNTING_DEFAULT_BACKEND = "dummy"
+FINANCIAL_ACCOUNTING_BACKENDS = {
+    "gnucash": {
+        "BACKEND": "finance.accounting.GnucashBook",
+        "OPTIONS": {
+            "DB_SECRET": (
+                f"mysql://{cbc.DB_PREFIX}:{quote(cbc.DB_PASSWORD)}@{cbc.DB_HOSTNAME}/"
+                f"{cbc.DB_PREFIX}_gnucash_test?charset=utf8"
+            ),
+            "READONLY": False,
+            "IGNORE_SQLALCHEMY_WARNINGS": True,
+        },
+    },
+    "cashctrl": {
+        "BACKEND": "finance.accounting.CashctrlBook",
+        "OPTIONS": {
+            "API_HOST": "cashctrl.com",
+            "API_TOKEN": f"{cbc.CASHCTRL_API_TOKEN}",
+            "TENANT": f"{cbc.CASHCTRL_TENANT}",
+        },
+    },
+    "dummy": {
+        "BACKEND": "finance.accounting.DummyBook",
+        "OPTIONS": {
+            # Save transactions in RAM? (until the server is restarted)
+            "SAVE_TRANSACTIONS": False,
+        },
+    },
+}
+
+FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT = False
+FINANCIAL_ACCOUNTS = {
+    AccountKey.DEFAULT_DEBTOR: {
+        "role": AccountRole.QR_DEBTOR,
+        "name": "Bankkonto QR-Einzahlungen",
         "iban": None,  ## QR-IBAN
         "account_iban": None,
         "account_code": "1020.1",  ## Account number in financial accounting (e.g. GnuCash)
+    },
+    AccountKey.DEFAULT_DEBTOR_MANUAL: {
+        "role": AccountRole.QR_DEBTOR,
+        "name": "Bankkonto manuelle Einzahlungen",
+        "iban": None,
+        "account_iban": None,
+        "account_code": "1010.1",
+    },
+    AccountKey.SHARES_DEBTOR_MANUAL: {
+        "role": AccountRole.QR_DEBTOR,
+        "name": "Bankkonto manuelle Einzahlungen Beteiligungen",
+        "iban": None,
+        "account_iban": None,
+        "account_code": "1020.2",
+    },
+    AccountKey.DEFAULT_RECEIVABLES: {
+        "name": "Debitoren",
+        "account_code": "1102",
+    },
+    AccountKey.NK_RECEIVABLES: {
+        "name": "Forderungen Nebenkosten",
+        "account_code": "1104",
+    },
+    AccountKey.CASH: {
+        "name": "Kassa",
+        "account_code": "1000",
+    },
+    AccountKey.RENT_BUSINESS: {
+        "name": "Mietertrag Gewerbe",
+        "account_code": "3001",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.RENT_PARKING: {
+        "name": "Mietertrag Parkplätze",
+        "account_code": "3002",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.RENT_OTHER: {
+        "name": "Mietertrag andere (Gemeinschaft/Diverses)",
+        "account_code": "3003",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.NK: {
+        "name": "Nebenkosten-Akonto",
+        "account_code": "2301",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.NK_FLAT: {
+        "name": "Nebenkosten-Pauschale",
+        "account_code": "2301",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.STROM: {
+        "name": "Strompauschalen -> NK-Pauschalzahlungen",
+        "account_code": "2302",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.RENT_REDUCTION: {
+        "name": "Mietzinsausfälle",
+        "account_code": "3015",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.RENT_RESERVATION: {
+        "name": "Mietzinsvorbehalt",
+        "account_code": "3016",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.MIETDEPOT: {
+        "name": "Mietdepots",
+        "account_code": "241.0",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.SCHLUESSELDEPOT: {
+        "name": "Schlüsseldepots",
+        "account_code": "241.1",
+    },
+    AccountKey.KIOSK: {
+        "name": "Diverse Einnahmen, Twint GS etc.",
+        "account_code": "3500",
+    },
+    AccountKey.SPENDE: {
+        "name": "Ertrag Spenden",
+        "account_code": "3620",
+    },
+    AccountKey.OTHER: {
+        "name": "Übriger Ertrag",
+        "account_code": "3690",
+    },
+    AccountKey.MEMBER_FEE: {
+        "name": "Mitgliederbeiträge",
+        "account_code": "3610",
+    },
+    AccountKey.MEMBER_FEE_ONETIME: {
+        "name": "Beitrittsgebühren",
+        "account_code": "3600",
+    },
+    AccountKey.SHARES_MEMBERS: {
+        "name": "Genossenschaftsanteile Mitglieder",
+        "account_code": "2800",
+    },
+    AccountKey.SHARES_LOAN_NOINTEREST: {
+        "name": "Darlehen unverzinst",
+        "account_code": "2401",
+    },
+    AccountKey.SHARES_LOAN_INTEREST: {
+        "name": "Darlehen verzinst",
+        "account_code": "2402",
+    },
+    AccountKey.SHARES_DEPOSIT: {
+        "name": "Depositenkasse",
+        "account_code": "2110",
+    },
+    AccountKey.SHARES_CLEARING: {
+        ## Hilfskonto für Beteiligungs-Rechnungen, die erst bei Zahlung auf das definitive
+        ## Konto gebucht werden.
+        "name": "Hilfskonto Mitgliedschaft/Beteiligungen",
+        "account_code": "9250",
+    },
+    AccountKey.SHARES_INTEREST: {
+        "name": "Verbindlichkeiten aus Finanzierung",
+        "account_code": "2070",
+    },
+    AccountKey.SHARES_INTEREST_TAX: {
+        "name": "Verbindlichkeiten aus Verrechnungssteuer",
+        "account_code": "2010",
+    },
+    AccountKey.INTEREST_LOAN: {
+        "name": "Zinsaufwand Darlehen",
+        "account_code": "6920",
+    },
+    AccountKey.INTEREST_DEPOSIT: {
+        "name": "Zinsaufwand Depositenkasse",
+        "account_code": "6940",
+    },
+    AccountKey.NK_VIRTUAL_1: {
+        "role": AccountRole.NK_VIRTUAL,
+        "virtual_id": -1,
+        "name": "Gästezimmer",
+        "account_code": "6700",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.NK_VIRTUAL_2: {
+        "role": AccountRole.NK_VIRTUAL,
+        "virtual_id": -2,
+        "name": "Sitzungszimmer",
+        "account_code": "6720",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.NK_VIRTUAL_3: {
+        "role": AccountRole.NK_VIRTUAL,
+        "virtual_id": -3,
+        "name": "Geschäftsstelle",
+        "account_code": "6500",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.NK_VIRTUAL_4: {
+        "role": AccountRole.NK_VIRTUAL,
+        "virtual_id": -4,
+        "name": "Holliger",
+        "account_code": "4581",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.NK_VIRTUAL_5: {
+        "role": AccountRole.NK_VIRTUAL,
+        "virtual_id": -5,
+        "name": "Allgemein",
+        "account_code": "4581",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
+    },
+    AccountKey.NK_VIRTUAL_6: {
+        "role": AccountRole.NK_VIRTUAL,
+        "virtual_id": -6,
+        "name": "Leerstand",
+        "account_code": "4582",
+        "building_based": FINANCIAL_ACCOUNTS_BUILDING_BASED_DEFAULT,
     },
 }
 
@@ -575,7 +876,14 @@ GENO_CHECK_MAILINGLISTS = {
 GENO_ADDRESSES_WITH_APARTMENT_NUMBER = []
 
 GENO_TRANSACTION_MEMBERFEE_STARTYEAR = 2022
-GENO_GNUCASH_ACC_POST = "1010.1"
+
+# Don't create letters for members or shares before those dates
+GENO_MEMBER_LETTER_CUTOFF_DATE = datetime.date(2020, 1, 1)
+GENO_SHARE_LETTER_CUTOFF_DATE = datetime.date(2018, 7, 1)
+
+# When creating statements, treat persons differently if they own only up to this
+# number of shares (and they have no loans etc).
+GENO_SMALL_NUMBER_OF_SHARES_CUTOFF = 5
 
 GENO_MEMBER_FLAGS = {
     1: "Wohnen",
@@ -622,20 +930,13 @@ CSRF_TRUSTED_ORIGINS = [
     "https://" + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
     "https://test." + cbc.DOMAIN,
     "https://test." + cbc.PROD_HOSTNAME + "." + cbc.DOMAIN,
-    #    "http://localhost:9000",
-    #    "http://127.0.0.1:9000",
-    #    "localhost:9000",
-    #    "127.0.0.1:9000",
+    "http://localhost:9000",
+    "http://127.0.0.1:9000",
+    "http://localhost:9001",
+    "http://127.0.0.1:9001",
 ]
 
 ## GnuCash interface
-GNUCASH = False
-GNUCASH_DB_SECRET = (
-    f"mysql://{cbc.DB_PREFIX}:{quote(cbc.DB_PASSWORD)}@{cbc.DB_HOSTNAME}/"
-    f"{cbc.DB_PREFIX}_gnucash_test?charset=utf8"
-)
-GNUCASH_READONLY = False
-GNUCASH_IGNORE_SQLALCHEMY_WARNINGS = True
 
 ## CreateSend API
 CREATESEND_API_KEY = None
@@ -667,11 +968,30 @@ COHIVA_REPORT_EMAIL = GENO_DEFAULT_EMAIL
 ## With the following option you can change the default configuration of the Django admin site
 # for the Cohiva models (fields, readonly_fields, list_display, list_filter)
 # COHIVA_ADMIN_FIELDS = {
-#   'geno.admin': {
-#        'RentalUnitAdmin.list_display': ['name', 'label', 'rental_type', 'rooms', 'floor',
-#        'area', 'area_add', 'rent_total', 'rent_year', 'nk', 'nk_electricity', 'share',
-#        'status', 'adit_serial', 'comment'],
-#   },
+#     "geno.admin": {
+#         "RentalUnitAdmin.fields": [
+#             "name",
+#             ("label", "label_short"),
+#             ("rental_type", "rooms", "min_occupancy"),
+#             ("building", "floor"),
+#             ("area", "area_balcony", "area_add"),
+#             ("height", "volume"),
+#             ("rent_netto", "nk", "nk_electricity", "rent_total"),
+#             "rent_year", # activate rent per year filed
+#             ("share", "depot"),
+#             "note",
+#             "svg_polygon",
+#             "description",
+#             "status",
+#             "adit_serial",
+#             "active",
+#             "comment",
+#             "ts_created",
+#             "ts_modified",
+#             "links",
+#             "backlinks",
+#         ],
+#     },
 # }
 
 ## Share settings
@@ -687,3 +1007,429 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 10_000
 SILENCED_SYSTEM_CHECKS = [
     "models.W036",
 ]
+
+COHIVA_ADMIN_NAVIGATION = [
+    {
+        "name": _("Stammdaten"),
+        "items": [
+            {
+                "type": "model",
+                "value": "geno.Address",
+                "name": _("Adressen/Personen"),
+                "icon": "contact_page",
+            },
+            {"type": "model", "value": "geno.Child", "icon": "child_care"},
+            {"type": "model", "value": "geno.Tenant", "icon": "account_circle"},
+            {
+                "type": "subgroup",
+                "name": _("Erweitert"),
+                "icon": "manufacturing",
+                "items": [
+                    {"type": "model", "value": "geno.GenericAttribute"},
+                    {"type": "model", "value": "geno.BankAccount"},
+                    {"type": "view", "value": "geno:check-mailinglists"},
+                    {"type": "view", "value": "geno:export_carddav"},
+                    {"type": "model", "value": "portal.TenantAdmin"},
+                    {"type": "model", "value": "geno.Building"},
+                ],
+            },
+            {
+                "type": "subgroup",
+                "name": _("Erweiterte Konfiguration"),
+                "icon": "construction",
+                "items": [],
+            },
+        ],
+    },
+    {
+        "name": _("Mitglieder"),
+        "items": [
+            {
+                "type": "view",
+                "value": "geno:member_overview",
+                "permission": "geno.canview_member_overview",
+                "icon": "show_chart",
+            },
+            {
+                "type": "tabgroup",
+                "items": [
+                    {"type": "model", "value": "geno.Member", "icon": "person_check"},
+                    {"type": "model", "value": "geno.MemberAttribute", "icon": "user_attributes"},
+                ],
+            },
+            {
+                "type": "tabgroup",
+                "name": "Dokumente erzeugen",
+                "items": [
+                    {
+                        "type": "view",
+                        "name": "Bestätigung Neubeitritte",
+                        "value": "geno:member-confirmation-letter",
+                        "icon": "print",
+                    },
+                    {"type": "view", "name": "Zusatzbrief", "value": "geno:member-finance-letter"},
+                ],
+            },
+            {
+                "type": "subgroup",
+                "name": _("Erweitert"),
+                "icon": "manufacturing",
+                "items": [
+                    {"type": "model", "value": "geno.MemberAttributeType"},
+                ],
+            },
+        ],
+    },
+    {
+        "name": _("Vermietung"),
+        "items": [
+            {"type": "model", "value": "geno.TenantsView", "icon": "list"},
+            {"type": "model", "value": "geno.RentalUnit", "icon": "house"},
+            {"type": "model", "value": "geno.Contract", "icon": "contract"},
+            {
+                "type": "tabgroup",
+                "name": "Dokumente erzeugen",
+                "items": [
+                    {
+                        "type": "view",
+                        "value": "geno:contract-check-forms",
+                        "icon": "print",
+                    },
+                ],
+            },
+            {
+                "type": "model",
+                "value": "reservation.Report",
+                "icon": "home_repair_service",
+                "name": "Reparaturmeldungen",
+            },
+            {
+                "type": "tabgroup",
+                "name": "Nebenkostenabrechnung",
+                "items": [
+                    {"type": "model", "value": "report.Report", "icon": "water_heater"},
+                    {"type": "model", "value": "report.ReportInputData"},
+                    {"type": "model", "value": "report.ReportOutput"},
+                ],
+            },
+            {
+                "type": "subgroup",
+                "name": _("Erweitert"),
+                "icon": "manufacturing",
+                "items": [
+                    {"type": "model", "value": "reservation.ReportCategory"},
+                    {"type": "model", "value": "reservation.ReportType"},
+                    {"type": "model", "value": "reservation.ReportPicture"},
+                    {"type": "model", "value": "reservation.ReportLogEntry"},
+                    {"type": "model", "value": "report.ReportType"},
+                    {"type": "model", "value": "report.ReportInputField"},
+                ],
+            },
+        ],
+    },
+    {
+        "name": _("Gemeinschaft"),
+        "items": [
+            {"type": "model", "value": "reservation.Reservation", "icon": "calendar_clock"},
+            {
+                "type": "tabgroup",
+                "items": [
+                    {"type": "model", "value": "geno.Registration", "icon": "how_to_reg"},
+                    {"type": "model", "value": "geno.RegistrationEvent"},
+                    {"type": "model", "value": "geno.RegistrationSlot"},
+                ],
+            },
+            {
+                "type": "tabgroup",
+                "items": [
+                    {"type": "model", "value": "credit_accounting.Vendor", "icon": "storefront"},
+                    {"type": "model", "value": "credit_accounting.VendorAdmin"},
+                    {"type": "model", "value": "credit_accounting.Transaction"},
+                    {"type": "model", "value": "credit_accounting.Account"},
+                    {"type": "model", "value": "credit_accounting.AccountOwner"},
+                    {"type": "model", "value": "credit_accounting.UserAccountSetting"},
+                ],
+            },
+            {
+                "type": "subgroup",
+                "name": _("Erweitert"),
+                "icon": "manufacturing",
+                "items": [
+                    {"type": "model", "value": "reservation.ReservationType"},
+                    {"type": "model", "value": "reservation.ReservationUsageType"},
+                    {"type": "model", "value": "reservation.ReservationPrice"},
+                    {"type": "model", "value": "reservation.ReservationObject"},
+                ],
+            },
+        ],
+    },
+    {
+        "name": _("Inkasso"),
+        "items": [
+            {"type": "view", "value": "geno:debtor-list", "icon": "account_balance"},
+            {
+                "type": "tabgroup",
+                "name": "Rechnungen erstellen",
+                "items": [
+                    {"type": "view", "value": "geno:invoice-manual", "icon": "checkbook"},
+                    {"type": "view", "value": "geno:invoice-batch"},
+                ],
+            },
+            {
+                "type": "tabgroup",
+                "items": [
+                    {
+                        "type": "view",
+                        "value": "geno:transaction-upload",
+                        "icon": "payments",
+                    },
+                    {"type": "view", "value": "geno:transaction-invoice"},
+                    {"type": "view", "value": "geno:transaction-manual"},
+                ],
+            },
+            {
+                "type": "subgroup",
+                "name": _("Erweitert"),
+                "icon": "manufacturing",
+                "items": [
+                    {"type": "model", "value": "geno.Invoice"},
+                    {"type": "model", "value": "geno.InvoiceCategory"},
+                ],
+            },
+        ],
+    },
+    {
+        "name": _("Finanzierung"),
+        "items": [
+            {"type": "view", "value": "geno:share_overview", "icon": "finance"},
+            {"type": "model", "value": "geno.Share", "icon": "request_page"},
+            {"type": "view", "value": "geno:share-interest", "icon": "percent"},
+            {
+                "type": "tabgroup",
+                "name": "Dokumente erzeugen",
+                "items": [
+                    {
+                        "type": "view",
+                        "name": "Bestätigung Einzahlungen",
+                        "value": "geno:share-confirmation-letter",
+                        "icon": "print",
+                    },
+                    {
+                        "type": "view",
+                        "name": "Erinnerung bald fällige Darlehen",
+                        "value": "geno:share-reminder-letter",
+                    },
+                    {"type": "view", "value": "geno:share-statement-form"},
+                ],
+            },
+            {
+                "type": "subgroup",
+                "name": _("Erweitert"),
+                "icon": "manufacturing",
+                "items": [
+                    {"type": "model", "value": "geno.ShareType"},
+                ],
+            },
+        ],
+    },
+    {
+        "name": _("Dokumente & Kommunikation"),
+        "items": [
+            {"type": "view", "value": "geno:mail-wizard-start", "icon": "mail"},
+            {"type": "view", "value": "geno:webstamp", "icon": "local_post_office"},
+            {"type": "model", "value": "geno.Document", "icon": "docs"},
+            {
+                "type": "tabgroup",
+                "items": [
+                    {"type": "model", "value": "geno.ContentTemplate", "icon": "file_copy"},
+                    {"type": "model", "value": "geno.ContentTemplateOption"},
+                ],
+            },
+            {"type": "model", "value": "filer.Folder", "icon": "folder_open"},
+            {
+                "type": "subgroup",
+                "name": _("Erweitert"),
+                "icon": "manufacturing",
+                "items": [
+                    {"type": "view", "value": "geno:odt2pdf"},
+                    {"type": "model", "value": "geno.DocumentType"},
+                    {"type": "model", "value": "geno.ContentTemplateOptionType"},
+                    {"type": "model", "value": "filer.FolderPermission"},
+                    {"type": "model", "value": "filer.ThumbnailOption"},
+                ],
+            },
+        ],
+    },
+    {
+        "name": _("Systemadministration"),
+        "items": [
+            {"type": "view", "value": "geno:sysadmin-overview", "icon": "admin_panel_settings"},
+            {
+                "type": "tabgroup",
+                "name": "Authentifizierung",
+                "items": [
+                    {"type": "model", "value": "auth.User", "icon": "badge"},
+                    {"type": "model", "value": "auth.Group"},
+                    {"type": "model", "value": "authtoken.TokenProxy"},
+                ],
+            },
+            {
+                "type": "tabgroup",
+                "name": "OAuth2",
+                "items": [
+                    {
+                        "type": "model",
+                        "value": "oauth2_provider.Application",
+                        "icon": "identity_platform",
+                    },
+                    {"type": "model", "value": "oauth2_provider.AccessToken"},
+                    {"type": "model", "value": "oauth2_provider.RefreshToken"},
+                    {"type": "model", "value": "oauth2_provider.IdToken"},
+                    {"type": "model", "value": "oauth2_provider.Grant"},
+                ],
+            },
+            {
+                "type": "tabgroup",
+                "name": "SAML2",
+                "items": [
+                    {
+                        "type": "model",
+                        "value": "djangosaml2idp.ServiceProvider",
+                        "icon": "id_card",
+                    },
+                    {"type": "model", "value": "djangosaml2idp.PersistentId"},
+                ],
+            },
+            {"type": "model", "value": "geno.LookupTable", "icon": "table_chart"},
+            # {
+            #     "type": "link",
+            #     "name": "All Models",
+            #     "value": "/admin/",
+            #     "permission": "geno.sysadmin",
+            #     "icon": "list_alt",
+            # },
+        ],
+    },
+]
+
+## Unfold UI config
+UNFOLD = {
+    "SITE_TITLE": "Cohiva " + COHIVA_SITE_NICKNAME,
+    "SITE_SUBHEADER": GENO_NAME,
+    "SITE_HEADER": "Cohiva",
+    "SITE_DROPDOWN": [
+        {
+            "icon": "book_2",
+            "title": _("Dokumentation"),
+            "link": "https://tegonal.github.io/cohiva/",
+        },
+        {
+            "icon": "error",
+            "title": _("GitHub Issues"),
+            "link": "https://github.com/tegonal/cohiva/issues/",
+        },
+        {
+            "icon": "globe",
+            "title": _("Cohiva Website"),
+            "link": "https://cohiva.ch/",
+        },
+    ],
+    #    "SITE_URL": "/",
+    #    # "SITE_ICON": lambda request: static("icon.svg"),  # both modes, optimise for 32px height
+    #    "SITE_ICON": {
+    #        "light": lambda request: static("icon-light.svg"),  # light mode
+    #        "dark": lambda request: static("icon-dark.svg"),  # dark mode
+    #    },
+    #    # "SITE_LOGO": lambda request: static("logo.svg"),  # both modes, optimise for 32px height
+    #    "SITE_LOGO": {
+    #        "light": lambda request: static("logo-light.svg"),  # light mode
+    #        "dark": lambda request: static("logo-dark.svg"),  # dark mode
+    #    },
+    "SITE_SYMBOL": "house",  # symbol from icon set
+    #    "SITE_FAVICONS": [
+    #        {
+    #            "rel": "icon",
+    #            "sizes": "32x32",
+    #            "type": "image/svg+xml",
+    #            "href": lambda request: static("favicon.svg"),
+    #        },
+    #    ],
+    #    "SHOW_HISTORY": True, # show/hide "History" button, default: True
+    "SHOW_VIEW_ON_SITE": False,  # show/hide "View on site" button, default: True
+    "SHOW_BACK_BUTTON": True,  # show/hide "Back" button on changeform in header, default: False
+    "ENVIRONMENT": lambda _: admin.site.get_environment(),  # environment name in header
+    "ENVIRONMENT_TITLE_PREFIX": lambda _: admin.site.get_environment_title(),  # environment name prefix in title tag
+    #    "DASHBOARD_CALLBACK": "sample_app.dashboard_callback",
+    #    "THEME": "dark", # Force theme: "dark" or "light". Will disable theme switcher
+    #    "LOGIN": {
+    #        "image": lambda request: static("sample/login-bg.jpg"),
+    #        "redirect_after": lambda request: reverse_lazy("admin:APP_MODEL_changelist"),
+    #    },
+    #    "STYLES": [
+    #        lambda request: static("css/style.css"),
+    #    ],
+    #    "SCRIPTS": [
+    #        lambda request: static("js/script.js"),
+    #    ],
+    #    "BORDER_RADIUS": "6px",
+    #    "COLORS": {
+    #        "base": {
+    #            "50": "249, 250, 251",
+    #            "100": "243, 244, 246",
+    #            "200": "229, 231, 235",
+    #            "300": "209, 213, 219",
+    #            "400": "156, 163, 175",
+    #            "500": "107, 114, 128",
+    #            "600": "75, 85, 99",
+    #            "700": "55, 65, 81",
+    #            "800": "31, 41, 55",
+    #            "900": "17, 24, 39",
+    #            "950": "3, 7, 18",
+    #        },
+    #        "primary": {
+    #            "50": "250, 245, 255",
+    #            "100": "243, 232, 255",
+    #            "200": "233, 213, 255",
+    #            "300": "216, 180, 254",
+    #            "400": "192, 132, 252",
+    #            "500": "168, 85, 247",
+    #            "600": "147, 51, 234",
+    #            "700": "126, 34, 206",
+    #            "800": "107, 33, 168",
+    #            "900": "88, 28, 135",
+    #            "950": "59, 7, 100",
+    #        },
+    #        "font": {
+    #            "subtle-light": "var(--color-base-500)",  # text-base-500
+    #            "subtle-dark": "var(--color-base-400)",  # text-base-400
+    #            "default-light": "var(--color-base-600)",  # text-base-600
+    #            "default-dark": "var(--color-base-300)",  # text-base-300
+    #            "important-light": "var(--color-base-900)",  # text-base-900
+    #            "important-dark": "var(--color-base-100)",  # text-base-100
+    #        },
+    #    },
+    #    "EXTENSIONS": {
+    #        "modeltranslation": {
+    #            "flags": {
+    #                "en": "🇬🇧",
+    #                "fr": "🇫🇷",
+    #                "nl": "🇧🇪",
+    #            },
+    #        },
+    #    },
+    "SIDEBAR": {
+        "show_search": True,  # Search in applications and models names
+        "command_search": False,  # Replace the sidebar search with the command search
+        "show_all_applications": lambda request: request.user.is_superuser,  # Menu with all applications and models
+        "navigation": lambda request: admin.site.navigation.generate_unfold_navigation(request),
+    },
+    "TABS": lambda request: admin.site.navigation.generate_unfold_tabs(request),
+}
+
+# Crispy Forms Configuration for Unfold
+CRISPY_TEMPLATE_PACK = "unfold_crispy"
+CRISPY_ALLOWED_TEMPLATE_PACKS = ["unfold_crispy"]
+
+# Theme Customization
+COHIVA_TITLE_FONT = "Lato"
+COHIVA_TEXT_FONT = "Liberation Serif"

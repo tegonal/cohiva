@@ -1,54 +1,28 @@
 {% extends "geno/base.html" %}
-{% load static %}
-{% load i18n %}
+{% load static i18n unfold crispy_forms_tags %}
 
-{% block extrastyle %}
-<link rel="stylesheet" href="{% static 'django_tables2/themes/paleblue/css/screen.css' %}" />
-{# For datepicker UI #}
-<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
-<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-<script>
-  /* Configure datepicker */
-  $(function() {
-    $( ".datepicker" ).datepicker({
-      changeMonth: true,
-      changeYear: true,
-      yearRange: "2010:2030",
-      defaultDate: 0,
-      dateFormat: "dd.mm.yy",
-    });
-  });
-  /* Set focus to name field */
-  $(document).ready(function() {
-    window.onload = function() {
-      $("#id_name").focus();
-    };  
-  }); 
-</script>
-{# For Select2 #}
-<link href="/static/select2/css/select2.css" type="text/css" media="all" rel="stylesheet">
-<!--
-<script type="text/javascript" src="/static/admin/js/vendor/jquery/jquery.js"></script>
-<script type="text/javascript" src="/static/admin/js/jquery.init.js"></script>
-<script type="text/javascript" src="/static/admin/js/calendar.js"></script>
-<script type="text/javascript" src="/static/admin/js/admin/DateTimeShortcuts.js"></script>
-<script type="text/javascript" src="/static/admin/js/core.js"></script>
-<script type="text/javascript" src="/static/admin/js/admin/RelatedObjectLookups.js"></script>
-<script type="text/javascript" src="/static/admin/js/actions.js"></script>
-<script type="text/javascript" src="/static/admin/js/urlify.js"></script>
-<script type="text/javascript" src="/static/admin/js/prepopulate.js"></script>
-<script type="text/javascript" src="/static/admin/js/vendor/xregexp/xregexp.js"></script>
--->
-<script type="text/javascript" src="/static/select2/js/select2.jquery_ready.js"></script>
-<script type="text/javascript" src="/static/select2/js/select2.jquery_ui_sortable.js"></script>
-<script type="text/javascript" src="/static/select2/js/select2.js"></script>
+{% block extrahead %}
+  {{ block.super }}
+  <script src="{% url 'admin:jsi18n' %}"></script>
+  {{ form.media }}
 {% endblock %}
 
-{% block content %}
-<form action="{{ form_action }}" method="post">
+{% block custom_content %}
+
+  {# Main form card #}
+  <form method="post" action="{{ form_action }}" id="transaction_form">
     {% csrf_token %}
-    {{ form.as_p }}
-    <input type="submit" />
-</form>
+
+    {% component "unfold/components/card.html" %}
+    <div class="px-3 py-3">
+      {# Render form with Unfold styling #}
+      {% crispy form "unfold_crispy" %}
+    </div>
+    {% endcomponent %}
+  </form>
+
+{% endblock %}
+
+{% block footer %}
+  {% include "geno/components/form_footer.html" with form_id="transaction_form" button_text=_("Zahlung erfassen") %}
 {% endblock %}

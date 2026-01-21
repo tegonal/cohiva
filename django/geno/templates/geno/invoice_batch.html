@@ -1,0 +1,28 @@
+{% extends "geno/base.html" %}
+{% load static i18n unfold crispy_forms_tags %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <script src="{% url 'admin:jsi18n' %}"></script>
+  {{ form.media }}
+{% endblock %}
+
+{% block custom_content %}
+
+  {# Single card containing entire form - matching Django admin structure #}
+  <form method="post" id="invoice_batch_form">
+    {% csrf_token %}
+
+    {% component "unfold/components/card.html" %}
+    <div class="px-3 py-3">
+      {# Batch invoice form fields #}
+      {% crispy form "unfold_crispy" %}
+    </div>
+  {% endcomponent %}
+</form>
+
+{% endblock %}
+
+{% block footer %}
+  {% include "geno/components/form_footer.html" with form_id="invoice_batch_form" button_text=submit_title %}
+{% endblock %}

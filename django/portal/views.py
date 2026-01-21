@@ -156,6 +156,10 @@ def logout(request):
 
 
 class PasswordResetViewHostbased(auth.views.PasswordResetView):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.from_email = settings.GENO_DEFAULT_EMAIL
+
     def get_form_kwargs(self):
         """Add hostname to kwargs."""
         kwargs = super().get_form_kwargs()
@@ -228,7 +232,7 @@ def unauthorized(request):
         "response": [{"info": "Sie haben keine Berechtigung für diese Aktion."}],
         "title": "Keine Berechtigung",
     }
-    return render(request, "geno/messages.html", c)
+    return render(request, "geno/default.html", c)
 
 
 @login_required
@@ -264,48 +268,14 @@ def portal_cms_serve(request: WSGIRequest, path: str = ""):
 
 @protected_resource(scopes=["username", "email", "realname"])
 def oauth_identity(request):
-    # user = request.user
-    user = request.resource_owner
-    host = request.get_host()
-    if user.is_authenticated:
-        auth_info = portal_auth.authorize(user, host)
-        if not auth_info["user_id"]:
-            logger.warning(
-                "%s - %s oauth_identity(): DENIED: %s"
-                % (request.META["REMOTE_ADDR"], host, auth_info["reason"])
-            )
-            return HttpResponse("Unauthorized", status=401)
-
-        if settings.DEBUG:
-            auth_info["user_id"] = "%s_test" % (auth_info["user_id"])
-        logger.info(
-            "%s - %s oauth_identity(): send identity user_id=%s, username=%s, email=%s, name=%s"
-            % (
-                request.META["REMOTE_ADDR"],
-                host,
-                auth_info["user_id"],
-                user.username,
-                user.email,
-                auth_info["name"],
-            )
-        )
+    profile = portal_auth.get_oauth_profile(request)
+    if not profile:
+        return HttpResponse("Unauthorized", status=401)
+    else:
         return HttpResponse(
-            json.dumps(
-                {
-                    "id": auth_info["user_id"],
-                    "username": user.username,
-                    "email": user.email,
-                    "name": auth_info["name"],
-                }
-            ),
+            json.dumps(profile),
             content_type="application/json",
         )
-    else:
-        logger.error(
-            "%s - %s oauth_identity(): DENIED: not authenticated u=%s"
-            % (request.META["REMOTE_ADDR"], host, user.username)
-        )
-        return HttpResponse("Unauthorized", status=401)
 
 
 def debug_middleware(get_response):

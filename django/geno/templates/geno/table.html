@@ -4,69 +4,49 @@
 {% load i18n %}
 
 {% block extrastyle %}
-<link rel="stylesheet" href="{% static 'django_tables2/themes/paleblue/css/screen.css' %}" />
-
-{# For datepicker UI #}
-<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
-<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-<script>
-  /* Configure datepicker */
-  $(function() {
-    $( ".datepicker" ).datepicker({
-      changeMonth: true,
-      changeYear: true,
-      yearRange: "2010:2030",
-      defaultDate: 0,
-      dateFormat: "dd.mm.yy",
-    });
-  });
-  /* Set focus to name field */
-  $(document).ready(function() {
-    window.onload = function() {
-      $("#id_name").focus();
-    };  
-  }); 
-</script>
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'django_tables2/themes/paleblue/css/screen.css' %}"/>
 {% endblock %}
 
-{% block content %}
+{% block custom_content %}
 <div id="toolbar">
 
-{% if invoice_table %}
-<form action="" method="post">
-    {% csrf_token %}
-{% else %}
-<form id="changelist-search" method="get">
-{% endif %}
+    {% if invoice_table %}
+    <form action="" method="post">
+        {% csrf_token %}
+        {% else %}
+        <form id="changelist-search" method="get">
+            {% endif %}
 
-<div><!-- DIV needed for valid HTML -->
-<label for="searchbar"><img src="/static/admin/img/search.svg" alt="Search" /></label>
+            <div
+                class="aligned border border-base-200 mb-8 rounded-default pt-3 px-3 shadow-sm dark:border-base-800 legacyform">
+                <label for="searchbar"><img src="/static/admin/img/search.svg" alt="Search"/></label>
 
-{% if invoice_table %}
-{{ form.search }}
-Filter: {{ form.category_filter }}
-von {{ form.date_from }} bis {{ form.date_to }}
-{{ form.show_consolidated }}&nbsp;{{ form.show_consolidated.label }}
-<br><br>
-<input type="submit" name="show" value="Suchen/Anzeigen" />
-<input type="submit" name="consolidate" value="Rechnungen konsolidieren" />
-<a href="?reset_filter=1">Filter zurücksetzen</a>
-<br>
-<br>
-{% else %}
-<input type="text" size="40" name="q" value="" id="searchbar" autofocus />
-<input type="submit" value="Suchen" />
-{% endif %}
+                {% if invoice_table %}
+                {{ form.search }}
+                Filter: {{ form.category_filter }}
+                von {{ form.date_from }} bis {{ form.date_to }}
+                {{ form.show_consolidated }}&nbsp;{{ form.show_consolidated.label }}
+                <br><br>
+                <input type="submit" name="show" value="Suchen/Anzeigen"/>
+                <input type="submit" name="consolidate" value="Rechnungen konsolidieren"/>
+                <a href="?reset_filter=1">Filter zurücksetzen</a>
+                <br>
+                <br>
+                {% else %}
+                <input type="text" size="40" name="q" value="" id="searchbar" autofocus/>
+                <input type="submit" value="Suchen"/>
+                {% endif %}
+            </div>
+        </form>
 </div>
-</form></div>
 
 {% render_table table %}
 
 {% if breadcrumbs|length %}
 {% with prev=breadcrumbs|last %}
 <div class="backlink" style="margin-top:20px">
-<a href="{{ prev.href }}">&lt; Zurück zu {{ prev.name }}</a>
+    <a href="{{ prev.href }}">&lt; Zurück zu {{ prev.name }}</a>
 </div>
 {% endwith %}
 {% endif %}

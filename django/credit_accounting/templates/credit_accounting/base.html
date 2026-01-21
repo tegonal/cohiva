@@ -4,9 +4,9 @@
 
 <html lang="de" >
 <head>
-<title>Genossenschaft Warmbächli</title>
-<link rel="stylesheet" type="text/css" href="/static/admin/css/base.css">
-<link rel="stylesheet" type="text/css" href="/static/admin/css/dashboard.css">
+    <title>{% block title %}{{ site_title }} – {{ vendor_name }}{% endblock %}</title>
+    <link rel="stylesheet" type="text/css" href="/static/admin/css/base.css">
+    <link rel="stylesheet" type="text/css" href="/static/admin/css/dashboard.css">
 
 
     <style>
@@ -18,10 +18,26 @@
 
     <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <link rel="stylesheet" type="text/css" href="/static/admin/css/responsive.css">
-{% block extrastyle %}
-{% endblock %}
 
-<meta name="robots" content="NONE,NOARCHIVE">
+    <link href="{% static 'geno/css/styles.css' %}" rel="stylesheet">
+    <link href="{% static 'credit_accounting/css/styles.css' %}" rel="stylesheet">
+
+    <script src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+    {# Select2 dropdown #}
+    <link href="{% static 'select2/css/select2.css' %}" type="text/css" media="all" rel="stylesheet">
+    <script src="{% static 'select2/js/select2.jquery_ready.js' %}"></script>
+    <script src="{% static 'select2/js/select2.jquery_ui_sortable.js' %}"></script>
+    <script src="{% static 'select2/js/select2.js' %}"></script>
+
+    {# Datepicker #}
+    <link href="{% static 'geno/css/jquery-ui.css' %}" rel="stylesheet">
+    <script src="{% static 'geno/js/jquery-ui.js' %}"></script>
+    <script src="{% static 'geno/js/datepicker.js' %}"></script>
+
+    {% block extrastyle %}
+    {% endblock %}
+
+    <meta name="robots" content="NONE,NOARCHIVE">
 
 </head>
 
@@ -31,24 +47,26 @@
 <!-- Container -->
 <div id="container">
 
-    
+
     <!-- Header -->
     <div id="header">
         <div id="branding">
-            <h1 id="site-name"><a href="/">Genossenschaft Warmbächli</a></h1>
+        {% block branding %}
+            <h1 id="site-name"><a href="/">{{ site_title }} – {{ vendor_name }}</a></h1>
+        {% endblock %}
         </div>
-        
+
         <div id="user-tools">
-            
+
                 Willkommen,
                 <strong>{{ user }}</strong>.
                 <a href="/portal/">Portal</a> /
                 <a href="/portal/logout/">Abmelden</a>
-            
+
         </div>
-        
-        
-        
+
+
+
     </div>
     <!-- END Header -->
 
@@ -60,7 +78,7 @@
 
     <!-- Content -->
     <div id="content" class="flex"> {# class="colMS"> #}
-        
+
         <h1>{{ title }}</h1>
         {% block messages %}
           {% if messages %}

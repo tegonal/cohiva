@@ -1,6 +1,6 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
+    <q-header class="app-header">
       <q-toolbar>
         <q-btn
           flat
@@ -11,34 +11,35 @@
           @click="$router.back()"
         />
 
-        <q-toolbar-title> {{ subpageTitle }} </q-toolbar-title>
+        <q-toolbar-title> {{ $t(subpageTitleKey) }} </q-toolbar-title>
 
-        <!-- <div>Quasar v{{ $q.version }}</div> -->
-        <div>
-          <img
-            :alt="settings.SITE_NICKNAME + ' Logo'"
-            src="~/assets/logo.svg"
-            style="width: 40px; height: 40px"
-          />
-        </div>
+        <!-- Language Switcher -->
+        <LanguageSwitcher />
       </q-toolbar>
     </q-header>
 
     <q-page-container>
       <router-view />
     </q-page-container>
+
+    <!-- Development Overlay -->
+    <DevOverlay />
   </q-layout>
 </template>
 
-<script>
-import { defineComponent, ref } from "vue";
-import { settings } from "app/settings.js";
+<script lang="ts">
+import { defineComponent } from 'vue'
 
 export default defineComponent({
-  name: "SubpageLayout",
-});
+  name: 'SubpageLayout',
+})
 </script>
 
-<script setup>
-defineProps({ subpageTitle: String });
+<script setup lang="ts">
+import DevOverlay from 'components/DevOverlay.vue'
+import LanguageSwitcher from 'components/LanguageSwitcher.vue'
+
+defineProps<{ subpageTitleKey: string }>()
 </script>
+
+<style lang="scss" scoped></style>

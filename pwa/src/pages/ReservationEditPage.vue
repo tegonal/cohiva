@@ -1,7 +1,6 @@
 <template>
   <q-page padding class="">
-    <!-- <q-page class="flex flex-center">-->
-    <h4 class="q-my-md">Neue Reservation</h4>
+    <h4 class="q-my-md">{{ $t('reservationEditPage.title') }}</h4>
 
     <div class="row flex justify-between" v-if="reservationTypeOptions.length">
       <q-select
@@ -9,15 +8,15 @@
         v-model="reservationType"
         @update:model-value="formUpdated('type')"
         :options="reservationTypeOptions.map((x) => x.name)"
-        label="Was möchtest du reservieren?"
+        :label="$t('reservationEditPage.whatToReserve')"
       />
 
       <q-input
-        v-model="date_start"
+        v-model="date_start_input"
         @update:model-value="formUpdated('date_start')"
         class="col-xs-6 q-col-gutter-xs col-md-3"
         :class="{ hidden: !reservationType }"
-        label="Von"
+        :label="$t('reservationEditPage.from')"
         mask="##.##.####"
         :error="date_start_error"
       >
@@ -37,7 +36,12 @@
             :range="fixedTime"
           >
             <div class="row items-center justify-end">
-              <q-btn v-close-popup label="Schliessen" color="primary" flat />
+              <q-btn
+                v-close-popup
+                :label="$t('reservationEditPage.close')"
+                color="primary"
+                flat
+              />
             </div>
           </q-date>
         </q-popup-proxy>
@@ -67,7 +71,12 @@
             mask="HH:mm"
           >
             <div class="row items-center justify-end">
-              <q-btn v-close-popup label="Schliessen" color="primary" flat />
+              <q-btn
+                v-close-popup
+                :label="$t('reservationEditPage.close')"
+                color="primary"
+                flat
+              />
             </div>
           </q-time>
         </q-popup-proxy>
@@ -77,7 +86,7 @@
         v-model="date_end"
         @update:model-value="formUpdated('date_end')"
         class="col-xs-6 q-col-gutter-xs col-md-3"
-        label="Bis"
+        :label="$t('reservationEditPage.until')"
         mask="##.##.####"
         :error="date_end_error"
         :error_message="date_end_errormsg"
@@ -97,7 +106,12 @@
             @update:model-value="formUpdated('date_end')"
           >
             <div class="row items-center justify-end">
-              <q-btn v-close-popup label="Schliessen" color="primary" flat />
+              <q-btn
+                v-close-popup
+                :label="$t('reservationEditPage.close')"
+                color="primary"
+                flat
+              />
             </div>
           </q-date>
         </q-popup-proxy>
@@ -128,7 +142,12 @@
             mask="HH:mm"
           >
             <div class="row items-center justify-end">
-              <q-btn v-close-popup label="Schliessen" color="primary" flat />
+              <q-btn
+                v-close-popup
+                :label="$t('reservationEditPage.close')"
+                color="primary"
+                flat
+              />
             </div>
           </q-time>
         </q-popup-proxy>
@@ -136,24 +155,9 @@
     </div>
     <div class="row flex justify-between" v-else>
       <p>
-        Es gibt nichts, was du hier reservieren könntest. Möglicherweise fehlt
-        dir die nötige Berechtigung.
+        {{ $t('reservationEditPage.noPermission') }}
       </p>
     </div>
-    <!-- <q-date
-      class="q-ma-md"
-      :class="{ hidden: !reservationType }"
-      v-model="date"
-      @range-end="reservationSearch()"
-      range
-      subtitle="Wähle Start und Enddatum"
-      today-btn
-    />-->
-    <!-- <div class="q-pb-sm">
-      Datum: {{ date_start }} {{ time_start }} - {{ date_end }}
-      {{ time_end }} Typ:
-      {{ reservationType }}
-    </div> -->
     <div
       v-if="apiError"
       class="q-mt-md text-subtitle-1 text-negative text-center full-width"
@@ -175,7 +179,7 @@
           <q-card-section>
             <div class="row no-wrap items-center">
               <div class="col text-h6 ellipsis">
-                {{ room.title }}{{ room.costs ? " &ndash; " + room.costs : "" }}
+                {{ room.title }}{{ room.costs ? ' &ndash; ' + room.costs : '' }}
               </div>
               <div
                 class="col-auto text-grey text-caption q-pt-md row no-wrap items-center"
@@ -208,21 +212,26 @@
               v-if="room.isAvailable"
               @click="roomSelect(room)"
             >
-              Reservieren
+              {{ $t('reservationEditPage.reserve') }}
             </q-btn>
-            <div v-else>Nicht verfügbar<br />{{ room.unavailableDate }}</div>
+            <div v-else>
+              {{ $t('reservationEditPage.notAvailable') }}<br />{{
+                room.unavailableDate
+              }}
+            </div>
           </q-card-actions>
         </q-card>
       </div>
     </div>
     <div v-if="hasLinks">
-      <p v-if="settings.RESERVATION_LINKS.NOTE">
-        <b>Hinweis:</b> {{ settings.RESERVATION_LINKS.NOTE }}
+      <p v-if="settings.reservationLinks.note">
+        <b>{{ $t('reservationEditPage.note') }}</b>
+        {{ settings.reservationLinks.note }}
       </p>
-      <h6 class="q-my-xs">Links</h6>
+      <h6 class="q-my-xs">{{ $t('reservationEditPage.links') }}</h6>
       <q-list bordered separator>
         <q-item
-          v-for="item in settings.RESERVATION_LINKS.LINKS"
+          v-for="item in settings.reservationLinks.links"
           :key="item.title"
           clickable
           v-ripple
@@ -241,18 +250,29 @@
       <q-card>
         <q-card-section class="row items-center">
           <q-avatar icon="question_mark" color="primary" text-color="white" />
-          <span class="q-ml-sm text-h6"
-            >Bitte bestätige deine Reservation:</span
-          >
+          <span class="q-ml-sm text-h6">{{
+            $t('reservationEditPage.confirmDialog.title')
+          }}</span>
           <ul>
-            <li>Raum: {{ selectedRoom.title }}</li>
             <li>
-              Datum: Von {{ date_start }} {{ time_start }} bis {{ date_end }}
+              {{ $t('reservationEditPage.confirmDialog.room') }}
+              {{ selectedRoom?.title }}
+            </li>
+            <li>
+              {{ $t('reservationEditPage.confirmDialog.date') }}
+              {{ $t('reservationEditPage.confirmDialog.dateFrom') }}
+              {{ date_start }} {{ time_start }}
+              {{ $t('reservationEditPage.confirmDialog.dateTo') }}
+              {{ date_end }}
               {{ time_end }}
             </li>
             <li>
-              Kosten:
-              {{ selectedRoom.costs ? selectedRoom.costs : " Fr. 0.00" }}
+              {{ $t('reservationEditPage.confirmDialog.costs') }}:
+              {{
+                selectedRoom?.costs
+                  ? selectedRoom.costs
+                  : $t('reservationEditPage.confirmDialog.defaultCost')
+              }}
             </li>
           </ul>
           <div class="q-px-md">
@@ -260,11 +280,17 @@
               <q-input
                 v-if="summaryRequired"
                 v-model="reservationSummary"
-                label="Anlass/Grund der Reservation"
-                placeholder="Kurze Beschreibung"
+                :label="$t('reservationEditPage.confirmDialog.reason.label')"
+                :placeholder="
+                  $t('reservationEditPage.confirmDialog.reason.placeholder')
+                "
                 required
                 counter
-                :rules="[(val) => !!val || 'Bitte Feld ausfüllen']"
+                :rules="[
+                  (val) =>
+                    !!val ||
+                    $t('reservationEditPage.confirmDialog.reason.validation'),
+                ]"
                 minlength="1"
                 maxlength="120"
                 size="120"
@@ -277,10 +303,15 @@
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="Abbrechen" color="primary" v-close-popup />
           <q-btn
             flat
-            label="Reservieren"
+            :label="$t('reservationEditPage.confirmDialog.cancelButton')"
+            color="primary"
+            v-close-popup
+          />
+          <q-btn
+            flat
+            :label="$t('reservationEditPage.confirmDialog.reserveButton')"
             color="primary"
             v-close-popup
             :disabled="summaryRequired && !reservationSummary"
@@ -293,121 +324,132 @@
     <q-dialog v-model="submissionError">
       <q-card>
         <q-card-section>
-          <div class="text-h6">Fehler</div>
+          <div class="text-h6">
+            {{ $t('reservationEditPage.errorDialog.title') }}
+          </div>
         </q-card-section>
 
         <q-card-section class="q-pt-none">
-          Die Reservation konnte nicht abgeschlossen werden.<br />
-          Grund: {{ submissionErrorMsg }}
+          {{ $t('reservationEditPage.errorDialog.message') }}<br />
+          {{ $t('reservationEditPage.errorDialog.reason') }}
+          {{ submissionErrorMsg }}
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="OK" color="primary" v-close-popup />
+          <q-btn
+            flat
+            :label="$t('reservationEditPage.errorDialog.ok')"
+            color="primary"
+            v-close-popup
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
   </q-page>
 </template>
 
-<script setup>
-import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
-import { api } from "boot/axios";
-import { useAuthStore } from "stores";
-import { settings } from "app/settings.js";
+<script setup lang="ts">
+import { settings } from 'app/tenant-config/settings'
+import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
-const authStore = useAuthStore();
-const router = useRouter();
+import { api } from 'boot/axios'
+import { useAuthStore } from 'stores/auth-store'
 
-function str2date(date_string, time_string) {
-  const ds = date_string.split(".");
-  if (time_string) {
-    const ts = time_string.split(":");
-    return new Date(ds[2], ds[1] - 1, ds[0], ts[0], ts[1]);
-  } else {
-    return new Date(ds[2], ds[1] - 1, ds[0]);
-  }
-}
+const { t } = useI18n()
+const authStore = useAuthStore()
+const router = useRouter()
 
-function formUpdated(what) {
-  //console.log("Form updated");
-
+function formUpdated(what: string): void {
   const current_type = reservationTypeOptions.value.find((obj) => {
-    return obj.name == reservationType.value;
-  });
-  /*console.log(current_type);
-  console.log(reservationType.value);*/
+    return obj.name == reservationType.value
+  })
 
   if (current_type) {
-    summaryRequired.value = current_type.summary_required;
-    fixedTime.value = current_type.fixed_time;
+    summaryRequired.value = Boolean(current_type.summary_required)
+    fixedTime.value = Boolean(current_type.fixed_time)
     if (current_type.fixed_time) {
-      time_start.value = current_type.default_time_start.substring(0, 5);
-      time_end.value = current_type.default_time_end.substring(0, 5);
+      time_start.value = current_type.default_time_start.substring(0, 5)
+      time_end.value = current_type.default_time_end.substring(0, 5)
     } else {
-      if (what == "date_start" || (date_start.value && !date_end.value)) {
-        date_end.value = date_start.value;
+      if (what == 'date_start' || (date_start.value && !date_end.value)) {
+        date_end.value =
+          typeof date_start.value === 'string' ? date_start.value : null
       }
-      if (what == "type") {
-        time_start.value = current_type.default_time_start.substring(0, 5);
-        time_end.value = current_type.default_time_end.substring(0, 5);
+      if (what == 'type') {
+        time_start.value = current_type.default_time_start.substring(0, 5)
+        time_end.value = current_type.default_time_end.substring(0, 5)
       }
     }
   } else {
-    console.error("Current type not found: " + current_type);
+    // Handle other reservation type cases
   }
 
-  if (fixedTime.value && date_start.value && date_start.value.from) {
-    date_end.value = date_start.value.to;
-    date_start.value = date_start.value.from;
+  // Handle range dates for fixed time reservations
+  // When range mode is active, q-date returns an object { from: "DD.MM.YYYY", to: "DD.MM.YYYY" }
+  if (
+    fixedTime.value &&
+    date_start.value &&
+    typeof date_start.value === 'object' &&
+    'from' in date_start.value &&
+    'to' in date_start.value
+  ) {
+    // Extract the actual dates from the range object
+    const rangeStart = date_start.value.from
+    const rangeEnd = date_start.value.to
+
+    // Update date_start to be just the 'from' date string
+    date_start.value = rangeStart
+    // Update date_end to be the 'to' date string
+    date_end.value = rangeEnd
   }
 
   // Automatically hide date pickers
-  if (dateFromProxy.value) {
-    dateFromProxy.value.hide();
+  if (dateFromProxy.value && 'hide' in dateFromProxy.value) {
+    dateFromProxy.value.hide()
   }
-  if (dateToProxy.value) {
-    dateToProxy.value.hide();
+  if (dateToProxy.value && 'hide' in dateToProxy.value) {
+    dateToProxy.value.hide()
   }
 
   // Validation
-  var d_start = null;
-  var d_end = null;
-  if (date_start.value) {
-    date_start_error.value = false;
+  let d_start = null
+  let d_end = null
+  if (date_start.value && typeof date_start.value === 'string') {
+    date_start_error.value = false
     if (/^[0-3]\d\.[0-1]\d\.[\d]+$/.test(date_start.value)) {
-      d_start = str2date(date_start.value, time_start.value);
+      d_start = str2date(date_start.value, time_start.value ?? undefined)
       //console.log(d_start);
     } else {
       //console.log("Invalid date: " + date_start.value);
-      date_start_error.value = true;
+      date_start_error.value = true
     }
-    if (d_start && d_start < Date.now()) {
-      date_start_error.value = true;
+    if (d_start && d_start.getTime() < Date.now()) {
+      date_start_error.value = true
     }
   }
   if (date_end.value) {
-    date_end_error.value = false;
-    time_end_error.value = false;
+    date_end_error.value = false
+    time_end_error.value = false
     if (/^[0-3]\d\.[0-1]\d\.[\d]+$/.test(date_end.value)) {
-      d_end = str2date(date_end.value, time_end.value);
+      d_end = str2date(date_end.value, time_end.value ?? undefined)
       //console.log(d_end);
     } else {
       //console.log("Invalid date: " + date_end.value);
-      date_end_error.value = true;
+      date_end_error.value = true
     }
-    if (d_start && d_end && d_start > d_end) {
+    if (d_start && d_end && d_start.getTime() > d_end.getTime()) {
       if (date_start.value == date_end.value) {
-        time_end_error.value = true;
+        time_end_error.value = true
       } else {
-        date_end_error.value = true;
+        date_end_error.value = true
       }
     }
   }
-  console.log("start: " + d_start + "end: " + d_end);
   if (date_start_error.value || date_end_error.value || time_end_error.value) {
-    searchResult.value = null;
-    return;
+    searchResult.value = null
+    return
   }
 
   if (
@@ -417,234 +459,242 @@ function formUpdated(what) {
     date_end.value &&
     time_end.value
   ) {
-    reservationSearch();
+    reservationSearch()
   }
-}
-
-function reservationSearch() {
-  console.log(
-    "Reservation search: " +
-      reservationType.value +
-      " / " +
-      date_start.value +
-      " " +
-      time_start.value +
-      " - " +
-      date_end.value +
-      " " +
-      time_end.value
-  );
-  api
-    .get("/api/v1/reservation/search/", {
-      params: {
-        reservationType: reservationType.value,
-        dateFrom: date_start.value,
-        dateTo: date_end.value,
-        timeFrom: time_start.value,
-        timeTo: time_end.value,
-      },
-      headers: {
-        Authorization: "Token " + authStore.token,
-        /*"X-CSRFTOKEN":
-            "NuKLxiCI2BFAnWb3cIhmGjxSz0ZP2icLsJsUnvvG7HNtnILP5TtJ4FFBFI2jk1z2",*/
-      },
-    })
-    .then((response) => {
-      //console.log(response);
-      apiError.value = "";
-      searchResult.value = response.data;
-      //console.log(searchResult.value);
-      /*const now = Date.now();
-      for (let i in response.data.results) {
-        let r = response.data.results[i];
-        const date_start = new Date(r.date_start);
-        const date_end = new Date(r.date_end);
-        const res_data = {};
-        if (date_end > now) {
-          reservations.push(res_data);
-        } else {
-          past_reservations.push(res_data);
-        }
-      }*/
-    })
-    .catch((error) => {
-      apiError.value = "Es ist ein Fehler aufgetreten.";
-      if ("response" in error) {
-        console.log("ERROR: " + error.response.data.detail);
-        if (
-          error.response.data.detail == "Anmeldedaten fehlen." ||
-          error.response.data.detail == "Ungültiges Token"
-        ) {
-          // Auth missing -> Force new login
-          //console.log("DISABLED FOR DEBUGGING: Force logout");
-          authStore.logout();
-        }
-      } else {
-        console.log("ERROR: " + error);
-      }
-    });
-}
-
-function roomSelect(room) {
-  selectedRoom.value = room;
-  confirmReservation.value = true;
-  //console.log("Selected: " + room.id);
-}
-
-function submitReservation() {
-  //console.log("Submit reservation");
-  api
-    .post(
-      "/api/v1/reservation/edit/",
-      {
-        action: "add",
-        reservationType: reservationType.value,
-        dateFrom: date_start.value,
-        dateTo: date_end.value,
-        timeFrom: time_start.value,
-        timeTo: time_end.value,
-        selectedRoom: selectedRoom.value.id,
-        summary: reservationSummary.value,
-      },
-      {
-        headers: {
-          Authorization: "Token " + authStore.token,
-        },
-      }
-    )
-    .then((response) => {
-      apiError.value = "";
-      //console.log(response);
-      //console.log(response.data);
-      if (response.data.status == "ERROR") {
-        submissionError.value = true;
-        submissionErrorMsg.value = response.data.msg;
-        reservationSearch();
-      } else {
-        // Submission OK -> Go back to previous page
-        router.go(-1);
-      }
-    })
-    .catch((error) => {
-      apiError.value = "Es ist ein Fehler aufgetreten.";
-      submissionError.value = true;
-      submissionErrorMsg.value = "Fehler beim Speichern.";
-      if ("response" in error) {
-        console.log("ERROR: " + error.response.data.detail);
-        if (
-          error.response.data.detail == "Anmeldedaten fehlen." ||
-          error.response.data.detail == "Ungültiges Token"
-        ) {
-          // Auth missing -> Force new login
-          //console.log("DISABLED FOR DEBUGGING: Force logout");
-          authStore.logout();
-        }
-      } else {
-        console.log("ERROR: " + error);
-      }
-    });
 }
 
 function getReservationTypes() {
   api
-    .get("/api/v1/reservation/reservationtypes/", {
-      headers: {
-        Authorization: "Token " + authStore.token,
-      },
-    })
+    .get('/api/v1/reservation/reservationtypes/')
     .then((response) => {
-      apiError.value = "";
-      reservationTypeOptions.value = response.data.results;
+      apiError.value = ''
+      reservationTypeOptions.value = response.data.results
       if (reservationTypeOptions.value.length) {
         if (!reservationType.value) {
           // Take first as default
-          reservationType.value = reservationTypeOptions.value[0].name;
-          //console.log("Set default type: " + reservationType.value);
+          reservationType.value = reservationTypeOptions.value[0]?.name || null
         }
-        formUpdated();
+        formUpdated('type')
       }
     })
     .catch((error) => {
-      apiError.value = "Es ist ein Fehler aufgetreten.";
-      if ("response" in error) {
-        console.log("ERROR: " + error.response.data.detail);
+      apiError.value = t('reservationEditPage.errors.general')
+      if ('response' in error) {
         if (
-          error.response.data.detail == "Anmeldedaten fehlen." ||
-          error.response.data.detail == "Ungültiges Token"
+          error.response.data.detail ==
+            t('reservationEditPage.errors.missingCredentials') ||
+          error.response.data.detail ==
+            t('reservationEditPage.errors.invalidToken')
         ) {
           // Auth missing -> Force new login
           //console.log("DISABLED FOR DEBUGGING: Force logout");
-          authStore.logout();
+          authStore.logout()
         }
-      } else {
-        console.log("ERROR: " + error);
       }
-    });
+    })
+}
+
+function reservationSearch() {
+  // Ensure we're using string values, not range objects
+  let dateFromValue = date_start.value
+  let dateToValue = date_end.value
+
+  // Handle case where date_start might still be a range object
+  if (
+    dateFromValue &&
+    typeof dateFromValue === 'object' &&
+    'from' in dateFromValue
+  ) {
+    dateToValue = dateFromValue.to
+    dateFromValue = dateFromValue.from
+  }
+
+  console.log(
+    'Reservation search: ' +
+      reservationType.value +
+      ' / ' +
+      dateFromValue +
+      ' ' +
+      time_start.value +
+      ' - ' +
+      dateToValue +
+      ' ' +
+      time_end.value
+  )
+  api
+    .get('/api/v1/reservation/search/', {
+      params: {
+        dateFrom: dateFromValue,
+        dateTo: dateToValue,
+        reservationType: reservationType.value,
+        timeFrom: time_start.value,
+        timeTo: time_end.value,
+      },
+    })
+    .then((response) => {
+      apiError.value = ''
+      searchResult.value = response.data
+    })
+    .catch((error) => {
+      apiError.value = t('reservationEditPage.errors.general')
+      if ('response' in error) {
+        if (
+          error.response.data.detail ==
+            t('reservationEditPage.errors.missingCredentials') ||
+          error.response.data.detail ==
+            t('reservationEditPage.errors.invalidToken')
+        ) {
+          // Auth missing -> Force new login
+          //console.log("DISABLED FOR DEBUGGING: Force logout");
+          authStore.logout()
+        }
+      }
+    })
+}
+
+function roomSelect(room: Room): void {
+  selectedRoom.value = room
+  confirmReservation.value = true
+}
+
+function str2date(date_string: string, time_string?: string): Date {
+  const ds = date_string.split('.')
+  if (time_string) {
+    const ts = time_string.split(':')
+    return new Date(
+      Number(ds[2]),
+      Number(ds[1]) - 1,
+      Number(ds[0]),
+      Number(ts[0]),
+      Number(ts[1])
+    )
+  } else {
+    return new Date(Number(ds[2]), Number(ds[1]) - 1, Number(ds[0]))
+  }
+}
+
+function submitReservation() {
+  // Ensure we're using string values, not range objects
+  let dateFromValue = date_start.value
+  let dateToValue = date_end.value
+
+  // Handle case where date_start might still be a range object
+  if (
+    dateFromValue &&
+    typeof dateFromValue === 'object' &&
+    'from' in dateFromValue
+  ) {
+    dateToValue = dateFromValue.to
+    dateFromValue = dateFromValue.from
+  }
+
+  api
+    .post('/api/v1/reservation/edit/', {
+      action: 'add',
+      dateFrom: dateFromValue,
+      dateTo: dateToValue,
+      reservationType: reservationType.value,
+      selectedRoom: selectedRoom.value?.id ?? null,
+      summary: reservationSummary.value,
+      timeFrom: time_start.value,
+      timeTo: time_end.value,
+    })
+    .then((response) => {
+      apiError.value = ''
+      if (response.data.status == 'ERROR') {
+        submissionError.value = true
+        submissionErrorMsg.value = response.data.msg
+        reservationSearch()
+      } else {
+        // Submission OK -> Go back to previous page
+        router.go(-1)
+      }
+    })
+    .catch((error) => {
+      apiError.value = t('reservationEditPage.errors.general')
+      submissionError.value = true
+      submissionErrorMsg.value = t('reservationEditPage.errors.saveFailed')
+      if ('response' in error) {
+        if (
+          error.response.data.detail ==
+            t('reservationEditPage.errors.missingCredentials') ||
+          error.response.data.detail ==
+            t('reservationEditPage.errors.invalidToken')
+        ) {
+          // Auth missing -> Force new login
+          //console.log("DISABLED FOR DEBUGGING: Force logout");
+          authStore.logout()
+        }
+      }
+    })
 }
 
 onMounted(() => {
-  getReservationTypes();
-});
+  getReservationTypes()
+})
+
+// Type for date range when using range mode
+interface DateRange {
+  from: string
+  to: string
+}
+
+interface PopupProxy {
+  hide(): void
+}
+
+// Interface definitions
+interface ReservationType {
+  default_time_end: string
+  default_time_start: string
+  fixed_time?: boolean
+  name: string
+  summary_required?: boolean
+}
+
+interface Room {
+  costs?: string
+  id: number
+  imageUrl: string
+  isAvailable: boolean
+  subtitle: string
+  text: string
+  title: string
+  unavailableDate?: string
+}
 
 // Search and select room
-const reservationType = ref(null); //ref(null);
-const fixedTime = ref(true);
-const summaryRequired = ref(false);
-const reservationTypeOptions = ref([]);
-const date_start = ref(null); // { from: "2022/10/21", to: "2022/10/25" })
-const date_start_error = ref(false);
-const date_start_errormsg = ref("Datum ungültig");
-const date_end = ref(null);
-const date_end_error = ref(false);
-const date_end_errormsg = ref("Datum ungültig");
-const time_start = ref(null);
-const time_end = ref(null);
-const time_end_error = ref(false);
-const dateFromProxy = ref(null);
-const dateToProxy = ref(null);
-const searchResult = ref(null);
-const selectedRoom = ref(null);
-const apiError = ref(false);
+const reservationType = ref<null | string>(null)
+const fixedTime = ref(true)
+const summaryRequired = ref(false)
+const reservationTypeOptions = ref<ReservationType[]>([])
+const date_start = ref<DateRange | null | string>(null) // Can be string or range object
+const date_start_error = ref(false)
+const date_end = ref<null | string>(null)
+const date_end_error = ref(false)
+const date_end_errormsg = ref('Datum ungültig')
+const time_start = ref<null | string>(null)
+const time_end = ref<null | string>(null)
+const time_end_error = ref(false)
+const dateFromProxy = ref<null | PopupProxy>(null)
+const dateToProxy = ref<null | PopupProxy>(null)
+const searchResult = ref<null | Room[]>(null)
+const selectedRoom = ref<null | Room>(null)
+const apiError = ref('')
 
-const hasLinks = settings.RESERVATION_LINKS.LINKS.length > 0;
+const hasLinks = settings.reservationLinks.links.length > 0
+
+// Computed property to ensure date_start is always string | null for inputs
+const date_start_input = computed({
+  get: () => (typeof date_start.value === 'string' ? date_start.value : null),
+  set: (val: null | string) => {
+    date_start.value = val
+  },
+})
 
 // Dialogs
-const confirmReservation = ref(false);
-const reservationSummary = ref("");
-const submissionError = ref(false);
-const submissionErrorMsg = ref("");
-
-// Mockup data
-/*const rooms = [
-  {
-    nr: "003",
-    title: "Gästezimmer 003",
-    costs: "Fr. 22.00",
-    imageUrl: "https://sandammeer.ch/flink/gaestezimmer-003.jpg",
-    subtitle: "Familiengästezimmer im Erdgeschoss",
-    text: "4(6)+ Schlafplätze (1x 160 cm Bett, 1 x 160 cm Schlafsofa, 1 x Babyreisebett & Wickeltisch). Zusätzliche Matratze (1 x 140) für auf den Boden. 2 Kissen, 4 Duvets, 5 Kissen- & Duvetanzüge, 6 Fixleintücher, 4 Moltons + Baby-Sachen.  Benutzung des öffentlichen Badezimmers (Toiletten und Waschbecken) nebenan. Duschen entweder bei Gastgeber*in oder in den öffentlichen Duschen im Stockwerk -1. Wasserkocher, Kaffeepresse und Tassen. Tisch und Stühle (4).<br /> Preis: 22 CHF / Nacht ab der 4. Nacht.",
-    isAvailable: true,
-    unavailableDate: "von 12.10.2022 bis 15.10.2022",
-  },
-  {
-    nr: "410",
-    title: "Gästezimmer 410",
-    costs: "Fr. 17.00",
-    imageUrl: "https://sandammeer.ch/flink/gaestezimmer-410.jpg",
-    subtitle: "Lesegästezimmer im 4. Stock",
-    text: "2 Schlafplätze (1x 160 cm Bett). 2 Kissen, 2 Duvets, 4 Kissen- & Duvetanzüge, 2 Fixleintücher, & 1 Molton. Badezimmer (Toilette und Waschbecken) im Zimmer. Duschen entweder bei Gastgeber*in oder in den öffentlichen Duschen im Stockwerk -1. Tisch und Stühle (2 + Loungesessel).<br /> Preis: 17 CHF / Nacht ab der 4. Nacht.",
-    isAvailable: false,
-    unavailableDate: "von 12.10.2022 bis 15.10.2022",
-  },
-  {
-    nr: "509",
-    title: "Gästezimmer 509",
-    costs: "Fr. 17.00",
-    imageUrl: "https://sandammeer.ch/flink/gaestezimmer-509.jpg",
-    subtitle: "Relaxgästezimmer im 5. Stock",
-    text: "2 Schlafplätze (2x 90 cm Bett). 2 Kissen, 2 Duvets, 4 Kissen- & Duvetanzüge, 4 Fixleintücher, & 2 Moltons. Badezimmer (Toilette und Waschbecken) im Zimmer. Duschen entweder bei Gastgeber*in oder in den öffentlichen Duschen im Stockwerk -1. Tisch und Stühle (2 + Loungesessel).<br /> Preis: 17 CHF / Nacht ab der 4. Nacht.",
-    isAvailable: true,
-    unavailableDate: "von 12.10.2022 bis 15.10.2022",
-  },
-];*/
+const confirmReservation = ref(false)
+const reservationSummary = ref('')
+const submissionError = ref(false)
+const submissionErrorMsg = ref('')
 </script>

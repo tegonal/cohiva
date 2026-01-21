@@ -1,0 +1,148 @@
+{% extends "geno/base.html" %}
+{% load static i18n unfold %}
+
+{% block custom_content %}
+
+  {% block form %}
+    {% if form %}
+      {% if form_title %}<h2 class="font-semibold mb-3">{{ form_title }}</h2>{% endif %}
+      <form enctype="multipart/form-data"
+            {% if form_action %}action="{{ form_action }}"{% endif %}
+            method="post">
+        {% csrf_token %}
+        <div class="aligned border border-base-200 mb-8 rounded-default pt-3 px-3 pb-3 shadow-sm dark:border-base-800 legacyform">
+          {% if help_text %}
+            <div class="flex items-center pb-2">
+              <span class="material-symbols-outlined md-18 mr-2 w-[18px]">info</span><span>{{ help_text }}</span>
+            </div>
+          {% endif %}
+          {{ form.as_p }}
+          <input type="submit"
+                 {% if submit_title %}value="{{ submit_title }}"{% endif %} />
+        </div>
+      </form>
+    {% endif %}
+  {% endblock %}
+
+  {% block result %}
+    {% if response %}
+      {% for r in response %}
+        {% if r.variant == "error" %}
+          {# Error alert - standalone without card #}
+          <div class="bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400 rounded-default px-3 py-3 mb-3 text-sm"
+               role="alert">
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-[20px] mt-0.5">error</span>
+              <div class="font-medium">{{ r.info|safe }}</div>
+            </div>
+          </div>
+          {% if r.objects %}
+            <div class="bg-base-50 border border-base-200 rounded p-4 mb-6 dark:bg-base-800 dark:border-base-700">
+              <div class="space-y-1">
+                {% for o in r.objects %}
+                  <div class="text-sm text-font-light dark:text-font-dark">{{ o|safe }}</div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+        {% elif r.variant == "warning" %}
+          {# Warning alert - standalone without card #}
+          <div class="bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400 rounded-default px-3 py-3 mb-3 text-sm"
+               role="alert">
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-[20px] mt-0.5">warning</span>
+              <div class="font-medium">{{ r.info|safe }}</div>
+            </div>
+          </div>
+          {% if r.objects %}
+            <div class="bg-base-50 border border-base-200 rounded p-4 mb-6 dark:bg-base-800 dark:border-base-700">
+              <div class="space-y-1">
+                {% for o in r.objects %}
+                  <div class="text-sm text-font-light dark:text-font-dark">{{ o|safe }}</div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+        {% elif r.variant == "success" %}
+          {# Success alert - standalone without card #}
+          <div class="bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400 rounded-default px-3 py-3 mb-3 text-sm"
+               role="alert">
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-[20px] mt-0.5">check_circle</span>
+              <div class="font-medium">{{ r.info|safe }}</div>
+            </div>
+          </div>
+          {% if r.objects %}
+            <div class="bg-base-50 border border-base-200 rounded p-4 mb-6 dark:bg-base-800 dark:border-base-700">
+              <div class="space-y-1">
+                {% for o in r.objects %}
+                  <div class="text-sm text-font-light dark:text-font-dark">{{ o|safe }}</div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+        {% elif r.variant == "info" %}
+          {# Info alert - standalone without card #}
+          <div class="bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400 rounded-default px-3 py-3 mb-3 text-sm"
+               role="alert">
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-[20px] mt-0.5">info</span>
+              <div class="font-medium">{{ r.info|safe }}</div>
+            </div>
+          </div>
+          {% if r.objects %}
+            <div class="bg-base-50 border border-base-200 rounded p-4 mb-6 dark:bg-base-800 dark:border-base-700">
+              <div class="space-y-1">
+                {% for o in r.objects %}
+                  <div class="text-sm text-font-light dark:text-font-dark">{{ o|safe }}</div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+        {% else %}
+          {# Default variant - keep card wrapper #}
+          <div class="bg-white border border-base-200 rounded-default shadow-sm dark:border-base-800 dark:bg-base-900 mb-6">
+            <div class="p-6">
+              <h2 class="text-lg font-semibold mb-4 text-font-important-light dark:text-font-important-dark">
+                {{ r.info|safe }}
+              </h2>
+              {% if r.objects %}
+                <div class="bg-base-50 border border-base-200 rounded p-4 dark:bg-base-800 dark:border-base-700">
+                  <div class="space-y-3">
+                    {% for o in r.objects %}
+                      {% if o.label %}
+                        {# Sub-group with its own label and styling #}
+                        <div class="space-y-2">
+                          <div class="text-sm font-medium mt-3 mb-2 {% if o.variant == 'info' %}text-blue-700 dark:text-blue-400{% elif o.variant == 'warning' %}text-orange-700 dark:text-orange-400{% elif o.variant == 'error' %}text-red-700 dark:text-red-400{% elif o.variant == 'success' %}text-green-700 dark:text-green-400{% else %}text-font-important-light dark:text-font-important-dark{% endif %}">
+                            {{ o.label|safe }}
+                          </div>
+                          <div class="space-y-1">
+                            {% for item in o.items %}
+                              <div class="text-sm text-font-light dark:text-font-dark">{{ item|safe }}</div>
+                            {% endfor %}
+                          </div>
+                        </div>
+                      {% else %}
+                        {# Regular string item #}
+                        <div class="text-sm text-font-light dark:text-font-dark">{{ o|safe }}</div>
+                      {% endif %}
+                    {% endfor %}
+                  </div>
+                </div>
+              {% else %}
+                <div class="text-sm text-font-muted-light dark:text-font-muted-dark italic">Keine Einträge</div>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% else %}
+      {% component "geno/components/empty_state.html" with message=_("Keine Daten verfügbar.") icon="inbox" %}{% endcomponent %}
+    {% endif %}
+  {% endblock %}
+
+  {% if download_file_url %}
+    <iframe width="1" height="1" frameborder="0" src="{{ download_file_url }}"></iframe>
+  {% endif %}
+
+{% endblock %}

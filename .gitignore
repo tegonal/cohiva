@@ -23,3 +23,10 @@ build
 
 # vim specific
 .*.swp
+
+.serena
+django/cohiva/base_config.py
+django/.envrc
+django/.venv-path
+django/.playwright-mcp
+django/.mcp.json

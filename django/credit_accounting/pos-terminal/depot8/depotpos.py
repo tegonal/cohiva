@@ -12,10 +12,9 @@ import sys
 from datetime import datetime
 from signal import SIGINT, signal
 
-import PySimpleGUI as sg
+import FreeSimpleGUI as sg
 import requests
 import settings
-from depot8_migration import import_accounts
 
 PRODUCTION = False
 
@@ -88,7 +87,7 @@ class PosTerminal:
             fcntl.lockf(self.lock_file_pointer, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError:
             sg.theme("DarkBlue13")
-            font = ("Helvetia", 20)
+            font = ("Helvetica", 20)
             layout = [
                 [
                     sg.Text(
@@ -133,9 +132,12 @@ class PosTerminal:
         msg["From"] = "admin@warmbaechli.ch"
         msg["To"] = "admin@warmbaechli.ch"
         msg["Date"] = email.utils.formatdate(localtime=True)
-        s = smtplib.SMTP("mail.websource.ch")
-        s.send_message(msg)
-        s.quit()
+        try:
+            s = smtplib.SMTP(settings.POS_SETTINGS[SETTINGS_KEY]["SMTP_SERVER"])
+            s.send_message(msg)
+            s.quit()
+        except Exception as e:
+            logging.error(f"Could not send notification email: {e}. Please check SMTP settings.")
 
     def sync_remote_data(self):
         logging.info("Sync with remote database.")
@@ -303,6 +305,8 @@ class PosTerminal:
         return None
 
     def migrate_data(self):
+        from depot8_migration import import_accounts
+
         for account in import_accounts():
             import_transactions = []
             for deposit in account.deposits:
@@ -344,7 +348,7 @@ class PosTerminal:
 
     def init_ui(self):
         sg.theme("DarkBlue13")
-        font = ("Helvetia", 20)
+        font = ("Helvetica", 20)
 
         col1 = [
             [sg.Text("Wohnungsnummer/PIN", font=font)],

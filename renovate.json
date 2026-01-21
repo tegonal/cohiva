@@ -13,16 +13,32 @@
     },
     {
       "matchManagers": ["pip_requirements", "pip_setup"],
-      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "minimumReleaseAge": "30 days",
       "groupName": "Python Packages Updates (minor/patch)",
       "schedule": ["* * 1 * *"]
     },
     {
-      "matchManagers": ["pip_requirements", "pip_setup"],
-      "matchUpdateTypes": ["security", "pin"],
-      "minimumReleaseAge": "0 days",
-      "groupName": "Python Packages SECURITY Updates"
-    }
-  ]
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["major"],
+      "minimumReleaseAge": "180 days",
+      "groupName": "npm Packages Updates (major)",
+      "schedule": ["* * 1 */3 *"]
+    },
+    {
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "minimumReleaseAge": "30 days",
+      "groupName": "npm Packages Updates (minor/patch)",
+      "schedule": ["* * 1 * *"]
+    },
+	{
+	  "matchManagers":  ["github-action","dockerfile","docker-compose"],
+	  "enabled": false
+	}
+  ],
+    "vulnerabilityAlerts": {
+    "enabled": true
+  },
+  "osvVulnerabilityAlerts": true
 }

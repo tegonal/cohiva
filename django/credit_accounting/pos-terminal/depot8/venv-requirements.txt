@@ -1,1 +1,6 @@
-PySimpleGUI==4.60.5
+certifi==2025.11.12
+charset-normalizer==3.4.4
+FreeSimpleGUI==5.2.0.post1
+idna==3.11
+requests==2.32.5
+urllib3==2.6.3
