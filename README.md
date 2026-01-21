@@ -1,18 +1,18 @@
 <!-- for main -->
-<!--
+
 [![Download](https://img.shields.io/badge/Download-v1.4.0-%23007ec6)](https://github.com/tegonal/cohiva/releases/tag/v1.4.0)
 [![AGPL 3](https://img.shields.io/badge/%E2%9A%96-AGPL%203-%230b45a6)](https://www.gnu.org/licenses/agpl-3.0.en.html "License")
 [![Quality Assurance](https://github.com/tegonal/cohiva/actions/workflows/quality-assurance.yml/badge.svg?event=push&branch=develop)](https://github.com/tegonal/cohiva/actions/workflows/quality-assurance.yml?query=branch%3Adevelop)
 [![Coverage](https://raw.githubusercontent.com/tegonal/cohiva/python-coverage-comment-action-data/badge.svg)](https://htmlpreview.github.io/?https://github.com/tegonal/cohiva/blob/python-coverage-comment-action-data/htmlcov/index.html)
 [![Newcomers Welcome](https://img.shields.io/badge/%F0%9F%91%8B-Newcomers%20Welcome-blueviolet)](https://github.com/tegonal/cohiva/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22 "Ask in discussions for help")
--->
+
 <!-- for main end -->
 <!-- for release -->
-
+<!--
 [![Download](https://img.shields.io/badge/Download-v1.4.0-%23007ec6)](https://github.com/tegonal/cohiva/releases/tag/v1.4.0)
 [![AGPL 3](https://img.shields.io/badge/%E2%9A%96-AGPL%203-%230b45a6)](https://www.gnu.org/licenses/agpl-3.0.en.html "License")
 [![Newcomers Welcome](https://img.shields.io/badge/%F0%9F%91%8B-Newcomers%20Welcome-blueviolet)](https://github.com/tegonal/cohiva/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22 "Ask in discussions for help")
-
+-->
 <!-- for release end -->
 
 # Cohiva
@@ -25,13 +25,13 @@ The core of Cohiva is built on the Python web framework <a href="https://www.dja
 
 For more information see https://www.cohiva.ch (in German).
 
-<!---
+---
 ❗ You are taking a *sneak peek* at the next version. It could be that some features you find on this page are not
 released yet.
 Please have a look at the README of the corresponding release/git tag. Latest
 version: [README of v1.4.0](https://github.com/tegonal/cohiva/tree/v1.4.0/README.md).
 
---->
+---
 
 **Table of Contents**
 
