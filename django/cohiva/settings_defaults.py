@@ -966,7 +966,7 @@ COHIVA_REPORT_API_TOKEN = None
 COHIVA_REPORT_EMAIL = GENO_DEFAULT_EMAIL
 
 ## With the following option you can change the default configuration of the Django admin site
-# for the Cohiva models (fields, readonly_fields, list_display, list_filter)
+# for the Cohiva models (fields, fieldsets, readonly_fields, search_fields, autocomplete_fields, list_display, list_filter)
 # COHIVA_ADMIN_FIELDS = {
 #     "geno.admin": {
 #         "RentalUnitAdmin.fields": [
