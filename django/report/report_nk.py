@@ -805,6 +805,10 @@ def internetrechnung():
 
 def get_object_name(name):
     ## Map imported data names to object names
+    if name in ("Allgemein Warmwasser u Heizen", "Allgemein"):
+        return "_allgemein"
+    if name == "Hobbyräume und Lager Gesamtstromverbrauch":
+        return "_lager_strom"
     # match = re.search(r"^(\d{3,4}\.?\d?) ", name)
     match = re.search(r"^([0-9a-zA-Z.-]+) ?", name)
     if match:
@@ -812,12 +816,7 @@ def get_object_name(name):
         if match.group(1) == "9696":
             return "_lager_strom"
         return match.group(1)
-    elif name in ("Allgemein Warmwasser u Heizen", "Allgemein"):
-        return "_allgemein"
-    elif name == "Hobbyräume und Lager Gesamtstromverbrauch":
-        return "_lager_strom"
-    else:
-        raise RuntimeError("Could not match object: %s" % name)
+    raise RuntimeError("Ungültiger Objektname in den Messdaten: %s" % name)
 
 
 def get_from_api(uri, params=None):
