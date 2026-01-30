@@ -3,6 +3,7 @@ import io
 import json
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 import zipfile
@@ -16,7 +17,12 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.db.models import Q
 from django.forms import formset_factory
-from django.http import FileResponse, Http404, HttpResponse, HttpResponseRedirect
+from django.http import (
+    FileResponse,
+    Http404,
+    HttpResponse,
+    HttpResponseRedirect,
+)
 from django.shortcuts import redirect, render
 from django.template import Context
 from django.urls import reverse, reverse_lazy
@@ -32,6 +38,7 @@ from oauthlib.oauth2 import TokenExpiredError
 from requests_oauthlib import OAuth2Session
 from stdnum.ch import esr
 
+from cohiva.views.generic import UploadedFileProcessorMixin
 from finance.accounting import Account, AccountingManager, AccountKey
 
 if hasattr(settings, "SHARE_PLOT") and settings.SHARE_PLOT:
@@ -4418,7 +4425,7 @@ def check_duplicate_invoices(request):
     )
 
 
-class Odt2PdfView(CohivaAdminViewMixin, FormView):
+class Odt2PdfView(CohivaAdminViewMixin, UploadedFileProcessorMixin, FormView):
     title = "ODT in PDF umwandeln"
     form_class = Odt2PdfForm
     template_name = "geno/odt2pdf.html"
@@ -4426,25 +4433,27 @@ class Odt2PdfView(CohivaAdminViewMixin, FormView):
     tmpdir = "/tmp/odt2pdf"
 
     def form_valid(self, form):
+        self.set_uploaded_file(form.cleaned_data["file"])
         if not os.path.isdir(self.tmpdir):
             os.mkdir(self.tmpdir)
-        tmp_file = tempfile.NamedTemporaryFile(
-            suffix=".odt", prefix="django_odt2pdf_input_", dir=self.tmpdir, delete=False
-        )
-        with open(tmp_file.name, "wb+") as destination:
-            for chunk in self.request.FILES["file"].chunks():
-                destination.write(chunk)
-        # resp = HttpResponse(odt2pdf(tmp_file.name), content_type = "application/pdf")
-        pdf_file_path = odt2pdf(tmp_file.name, self.request.user.get_username())
-        pdf_file = open(pdf_file_path, "rb")
-        pdf_file_name = self.request.FILES["file"].name[0:-4]
-        resp = FileResponse(pdf_file, content_type="application/pdf")
-        resp["Content-Disposition"] = "attachment; filename=%s.pdf" % pdf_file_name
-        if os.path.isfile(tmp_file.name):
-            os.remove(tmp_file.name)
-        if os.path.isfile(pdf_file_path):
-            os.remove(pdf_file_path)
-        return resp
+        for input_file in self.get_input_files():
+            with tempfile.NamedTemporaryFile(
+                suffix=".odt", prefix="django_odt2pdf_input_", dir=self.tmpdir, delete=True
+            ) as tmp_file:
+                shutil.copyfileobj(input_file, tmp_file, length=8192)
+                tmp_file.flush()
+                try:
+                    pdf_file_path = odt2pdf(tmp_file.name, self.request.user.get_username())
+                except Exception as e:
+                    messages.error(
+                        self.request, f"Fehler beim Umwandeln der Datei {input_file.name}: {e}"
+                    )
+                    return self.render_to_response(self.get_context_data(form=form))
+            pdf_file_name = input_file.name[0:-4] + ".pdf"
+            self.add_output_file(
+                pdf_file_path, pdf_file_name, "application/pdf", delete_after=True
+            )
+        return self.get_response()
 
 
 class WebstampView(CohivaAdminViewMixin, FormView):
