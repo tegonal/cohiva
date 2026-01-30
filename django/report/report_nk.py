@@ -2663,7 +2663,7 @@ def get_qrbill(context):
         return None
     # nk.log.append('Got response: %s' % response.headers)
     if response.headers["Content-Type"] == "application/pdf":
-        return response.getvalue()
+        return response.content
     else:
         nk.log.append("ERROR: qrbill API did not return a application/pdf data.")
         nk.log.append(response.headers)
