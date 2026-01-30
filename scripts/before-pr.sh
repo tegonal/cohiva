@@ -27,6 +27,11 @@ if ! [[ -v dir_of_tegonal_scripts ]]; then
 	source "$dir_of_tegonal_scripts/setup.sh" "$dir_of_tegonal_scripts"
 fi
 
+if ! [[ -v SKIP_PWA ]]; then
+	SKIP_PWA="false"
+	readonly SKIP_PWA
+fi
+
 sourceOnce "$scriptsDir/cleanup-on-push-to-main.sh"
 sourceOnce "$scriptsDir/run-shellcheck.sh"
 
@@ -38,6 +43,9 @@ function checkPython() {
 }
 
 function checkPWA() {
+	if [[ "$SKIP_PWA" != "false" && "$SKIP_PWA" != "0" ]]; then
+		return
+	fi
 	(
 		cd "$projectDir/pwa"
 		yarn build

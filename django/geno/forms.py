@@ -1052,13 +1052,17 @@ class TransactionUploadFileForm(forms.Form):
 class Odt2PdfForm(forms.Form):
     """Form for uploading ODT files to convert to PDF."""
 
+    form_id = "odt2pdf-form"
+
     file = forms.FileField(
-        label=_("ODT-Datei"),
+        label=_("ODT- oder ZIP-Datei"),
         required=True,
-        help_text=_("Wählen Sie eine LibreOffice-Datei (.odt) zum Hochladen aus."),
+        help_text=_(
+            "Wähle eine LibreOffice-Datei (.odt) oder eine ZIP-Datei (.odt) zum Hochladen aus."
+        ),
         widget=UnfoldAdminFileFieldWidget(
             attrs={
-                "accept": ".odt",
+                "accept": ".odt,.zip",
             }
         ),
     )
@@ -1072,6 +1076,10 @@ class Odt2PdfForm(forms.Form):
         self.helper.layout = Layout(
             Div("file", css_class="mb-4"),
         )
+
+    @property
+    def button_attrs(self):
+        return {"form": self.form_id}
 
 
 class TransactionUploadProcessForm(forms.Form):

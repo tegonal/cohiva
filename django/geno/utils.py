@@ -51,9 +51,11 @@ def odt2pdf(odtfile, instance_tag="default"):
             p = Popen(cmd, stdout=PIPE, stderr=PIPE)
             output, err = p.communicate()
             if p.returncode or len(err):
-                raise Exception("odt2pdf failed: %s - %s (2. attempt)" % (output, err))
+                raise Exception(
+                    "odt2pdf for %s failed: %s - %s (2. attempt)" % (odtfile, output, err)
+                )
         else:
-            raise Exception("odt2pdf failed: %s - %s (1. attempt)" % (output, err))
+            raise Exception("odt2pdf for %s failed: %s - %s (1. attempt)" % (odtfile, output, err))
 
     pdf_file = "%s/%s.pdf" % (path, outfile[0])
     if not os.path.isfile(pdf_file):
