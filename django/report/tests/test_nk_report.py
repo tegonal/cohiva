@@ -4,8 +4,10 @@ from decimal import Decimal
 from pprint import pprint
 from unittest.mock import patch
 
+import requests
 from django.conf import settings
 from django.test import Client, tag
+from requests.structures import CaseInsensitiveDict
 
 import report.tests.data as testdata
 from geno.models import Invoice, InvoiceCategory
@@ -22,6 +24,21 @@ def redirect_get_request(*args, **kwargs):
 
 def redirect_post_request(*args, **kwargs):
     return redirect_request("POST", *args, **kwargs)
+
+
+def convert_to_requests_response(response, url_path):
+    ## Convert response to a requests-like response
+    r = requests.Response()
+    r.status_code = response.status_code
+    if hasattr(response, "content"):
+        r._content = response.content
+    else:
+        r._content = response.getvalue()
+    r.headers = CaseInsensitiveDict(response.headers)
+    r.url = url_path
+    r.encoding = response.charset
+    r.reason = response.reason_phrase
+    return r
 
 
 def redirect_request(method, *args, **kwargs):
@@ -61,7 +78,7 @@ def redirect_request(method, *args, **kwargs):
         )
     else:
         raise ValueError(f"Method {method} not implemented.")
-    return response
+    return convert_to_requests_response(response, url_path)
 
 
 class NKReportTest(ReportTestCase):
