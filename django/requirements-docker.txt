@@ -371,7 +371,7 @@ vine==5.1.0
     #   kombu
 vobject==0.9.9
     # via caldav
-wagtail==7.0.3
+wagtail==7.0.4
     # via
     #   -r requirements.in
     #   wagtailmenus
