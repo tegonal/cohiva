@@ -181,7 +181,7 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
         """
         form = super().get_form(request, obj, **kwargs)
         try:
-            for name, field in form.base_fields.items():
+            for _name, field in form.base_fields.items():
                 if isinstance(field, forms.DecimalField):
                     w = field.widget
                     w.attrs.setdefault("data-apostrophe", "1")
