@@ -1,7 +1,6 @@
 import io
 import os
 import tempfile
-import zipfile
 from zipfile import ZipFile
 
 from django.core.exceptions import ImproperlyConfigured
@@ -22,9 +21,14 @@ class UploadedFileProcessorMixin:
         if not self.uploaded_file:
             return
         if self.uploaded_file.name.endswith(".zip"):
-            with zipfile.ZipFile(io.BytesIO(self.uploaded_file.read())) as zip_file:
+            with ZipFile(io.BytesIO(self.uploaded_file.read())) as zip_file:
                 for zipinfo in zip_file.infolist():
-                    if not zipinfo.is_dir():
+                    if not (
+                        zipinfo.is_dir()
+                        or zipinfo.filename.startswith(".")
+                        or zipinfo.filename.startswith("_")
+                        or ".DS_Store" in zipinfo.filename
+                    ):
                         file_like_object = io.BytesIO(zip_file.read(zipinfo))
                         file_like_object.name = zipinfo.filename
                         yield file_like_object

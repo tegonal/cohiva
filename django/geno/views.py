@@ -17,12 +17,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.db.models import Q
 from django.forms import formset_factory
-from django.http import (
-    FileResponse,
-    Http404,
-    HttpResponse,
-    HttpResponseRedirect,
-)
+from django.http import FileResponse, Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.template import Context
 from django.urls import reverse, reverse_lazy

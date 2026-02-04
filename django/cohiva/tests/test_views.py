@@ -176,3 +176,25 @@ class UploadedFileProcessorMixinTestCase(TestCase):
         )
         response.close()
         os.unlink(response_file_a)
+
+    def test_ignore_hidden_files_in_archive(self):
+        file_like_object = io.BytesIO()
+        with zipfile.ZipFile(file_like_object, "w") as archive:
+            archive.writestr(".hidden.txt", b"Testing A")
+            archive.writestr(".hidden_dir/testB.txt", b"Testing B")
+            archive.writestr("__MACOSX/testC.txt", b"Testing C")
+            archive.writestr("Test.DS_Store/testD.txt", b"Testing D")
+            archive.writestr("testE.txt", b"Testing E")
+            archive.writestr("not_hidden/testF.txt", b"Testing F")
+        file_like_object.seek(0)
+        test_upload = SimpleUploadedFile(
+            "test_files.zip",
+            file_like_object.getvalue(),
+            content_type="application/zip",
+        )
+        cls = UploadedFileProcessorMixin()
+        cls.set_uploaded_file(test_upload)
+        input_files = [f for f in cls.get_input_files()]
+        self.assertEqual(len(input_files), 2)
+        self.assertEqual(input_files[0].read(), b"Testing E")
+        self.assertEqual(input_files[1].read(), b"Testing F")
