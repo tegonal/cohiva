@@ -10,16 +10,19 @@
     <div class="flex items-start gap-3">
       <span class="material-symbols-outlined text-base-400 dark:text-base-600 text-[20px] flex-shrink-0 mt-0.5">info</span>
       <div class="text-sm text-font-light dark:text-font-dark">
-        <p>{% trans "Laden Sie eine LibreOffice-Datei (.odt) hoch, um sie in ein PDF umzuwandeln." %}</p>
+        <p>{% trans "Lade eine LibreOffice-Datei (.odt) hoch, um sie in ein PDF umzuwandeln." %}</p>
+          <p class="mt-2">
+              {% trans "Die Datei wird auf dem Server verarbeitet und als PDF-Datei zum Download bereitgestellt." %}
+          </p>
         <p class="mt-2">
-          {% trans "Die Datei wird auf dem Server verarbeitet und als PDF-Datei zum Download bereitgestellt." %}
+          {% trans "Du kannst auch mehrere LibreOffice-Dateien in einer ZIP-Datei (.zip) zusammengefasst hochladen. Dann erhältst du wiederum eine ZIP-Datei mit den PDF-Dateien zurück." %}
         </p>
       </div>
     </div>
   </div>
 
   {# Form with custom layout #}
-  <form method="post" enctype="multipart/form-data" id="odt2pdf-form">
+  <form method="post" enctype="multipart/form-data" id="{{ form.form_id }}">
     {% csrf_token %}
 
     {% component "unfold/components/card.html" %}
@@ -35,7 +38,7 @@
     <div class="backdrop-blur-xs bg-white/80 rounded-b-default pb-4 px-4 dark:bg-base-900/80 lg:border-t lg:border-base-200 relative lg:scrollable-top lg:py-0 dark:border-base-800">
       <div class="flex flex-col-reverse gap-3 items-center mx-auto lg:flex-row-reverse container lg:h-[64px]">
         {# Primary action - Submit form using form attribute #}
-        {% component "unfold/components/button.html" with submit=1 attrs="form='odt2pdf-form'" %}
+        {% component "unfold/components/button.html" with submit=1 attrs=form.button_attrs %}
         {% trans "In PDF umwandeln" %}
       {% endcomponent %}
     </div>

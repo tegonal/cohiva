@@ -1,8 +1,12 @@
 import datetime
+import io
+import zipfile
 from unittest.mock import DEFAULT, patch
 
 from django.apps import apps as django_apps
 from django.conf import settings
+from django.http import FileResponse
+from django.test import tag
 from django.urls import reverse
 
 import geno.tests.data as geno_testdata
@@ -223,3 +227,31 @@ class GenoViewsTest(GenoAdminTestCase):
             raw=True,
         )
         self.assertEqual(Invoice.objects.count(), 0)
+
+
+class Odt2PdfViewTest(GenoAdminTestCase):
+    @tag("slow-test")
+    def test_odt2pdf_view_singlefile(self):
+        self.client.login(username="superuser", password="secret")
+        with open("geno/tests/template_test.odt", "rb") as dummy_file:
+            response = self.client.post(reverse("geno:odt2pdf"), {"file": dummy_file})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(isinstance(response, FileResponse))
+        self.assertEqual(response.headers["Content-Type"], "application/pdf")
+        self.assertInPDF(response.getvalue(), "Template-Test")
+
+    @tag("slow-test")
+    def test_odt2pdf_view_multifile(self):
+        self.client.login(username="superuser", password="secret")
+        with open("/tmp/test.zip", "wb") as zipfile_object:
+            with zipfile.ZipFile(zipfile_object, "w") as archive:
+                archive.write("geno/tests/template_test.odt", "testA.odt")
+                archive.write("geno/tests/template_test.odt", "testB.odt")
+        with open("/tmp/test.zip", "rb") as inputfile:
+            response = self.client.post(reverse("geno:odt2pdf"), {"file": inputfile})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(isinstance(response, FileResponse))
+        self.assertEqual(response.headers["Content-Type"], "application/zip")
+        with zipfile.ZipFile(io.BytesIO(response.getvalue())) as zip_file:
+            self.assertInPDF(zip_file.read("testA.pdf"), "Template-Test")
+            self.assertInPDF(zip_file.read("testB.pdf"), "Template-Test")

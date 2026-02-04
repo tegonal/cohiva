@@ -27,6 +27,12 @@ if ! [[ -v dir_of_tegonal_scripts ]]; then
 	source "$dir_of_tegonal_scripts/setup.sh" "$dir_of_tegonal_scripts"
 fi
 
+if ! [[ -v SKIP_PWA ]]; then
+	SKIP_PWA="false"
+	readonly SKIP_PWA
+fi
+
+
 sourceOnce "$dir_of_tegonal_scripts/utility/log.sh"
 
 function cleanupPython() {
@@ -39,6 +45,9 @@ function cleanupPython() {
 }
 
 function cleanupPWA() {
+	if [[ "$SKIP_PWA" != "false" && "$SKIP_PWA" != "0" ]]; then
+		return
+	fi
 	(
 		cd "$projectDir/pwa"
 		yarn lint:fix

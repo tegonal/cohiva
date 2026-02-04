@@ -1327,6 +1327,13 @@ def process_transaction_file(uploadfile, max_filesize=50 * 1024 * 1024, allowed_
         ret = None
         with zipfile.ZipFile(io.BytesIO(uploadfile.read())) as thezip:
             for zipinfo in thezip.infolist():
+                if (
+                    zipinfo.is_dir()
+                    or zipinfo.filename.startswith(".")
+                    or zipinfo.filename.startswith("_")
+                    or ".DS_Store" in zipinfo.filename
+                ):
+                    continue
                 with thezip.open(zipinfo) as thefile:
                     filedata = parse_transaction_file_camt(thefile)
                     if filedata["error"]:
