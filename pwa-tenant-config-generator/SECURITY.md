@@ -9,8 +9,8 @@ when upstream packages have not yet released fixes.
   - CVE: CVE-2025-64756
   - Remove when: pwa-asset-generator > 8.1.2
 
-- **tar → ^7.5.4**
-  - CVE: CVE-2025-64118, CVE-2026-23745
+- **tar → ^7.5.7**
+  - CVE: CVE-2025-64118, CVE-2026-23745, CVE-2026-24842
   - Remove when: tsx > 4.21.0
 
 - **js-yaml → ^4.1.1**
