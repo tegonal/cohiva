@@ -92,8 +92,8 @@ whitenoise
 coverage
 
 ## For development
-#ruff
-#pylint
-#djlint
+ruff
+pylint
+djlint
 
 #EOF
