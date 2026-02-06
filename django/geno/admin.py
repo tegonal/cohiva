@@ -1184,7 +1184,7 @@ class ContractAdmin(GenoBaseAdmin):
         "backlinks",
     ]
     readonly_fields = ["ts_created", "ts_modified", "object_actions", "links", "backlinks"]
-    list_display = ["label_with_badge", "__str__", "state", "date", "date_end", "note", "comment"]
+    list_display = ["label_with_badge", "state", "date", "date_end", "note", "comment"]
     search_fields = [
         "contractors__name",
         "contractors__first_name",
