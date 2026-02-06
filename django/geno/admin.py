@@ -48,6 +48,7 @@ from geno.models import (
     TenantsView,
 )
 
+
 @admin.display(description="Ausgewählte Objekte kopieren")
 def copy_objects(modeladmin, request, queryset):
     count = 0
@@ -1240,15 +1241,20 @@ class ContractAdmin(GenoBaseAdmin):
     ]
 
     @display(
-        description='Vertrag',
+        description="Vertrag",
     )
     def label_with_badge(self, contract):
-        uv_str = ''
+        uv_str = ""
         if contract.main_contract:
             uv_str = "Untervertrag"
-        return format_html(
-            '{}',
-            contract.__str__()) + (format_html('<span class="leading-[18px] ml-2 px-1 relative rounded-xs text-center text-[11px] whitespace-nowrap uppercase min-w-[18px] bg-primary-100 text-primary-700 dark:bg-primary-500/20 dark:text-primary-400">{}</span>', uv_str) if uv_str else '')
+        return format_html("{}", contract.__str__()) + (
+            format_html(
+                '<span class="leading-[18px] ml-2 px-1 relative rounded-xs text-center text-[11px] whitespace-nowrap uppercase min-w-[18px] bg-primary-100 text-primary-700 dark:bg-primary-500/20 dark:text-primary-400">{}</span>',
+                uv_str,
+            )
+            if uv_str
+            else ""
+        )
 
     label_with_badge.allow_tags = True
 

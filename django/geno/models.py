@@ -33,7 +33,6 @@ from geno.utils import (
     nformat,
     sanitize_filename,
 )  # , send_info_mail, send_error_mail
-from unfold.decorators import display
 
 logger = logging.getLogger("access_portal")
 
