@@ -1249,14 +1249,12 @@ class ContractAdmin(GenoBaseAdmin):
             uv_str = "Untervertrag"
         return format_html("{}", contract.__str__()) + (
             format_html(
-                '<span class="leading-[18px] ml-2 px-1 relative rounded-xs text-center text-[11px] whitespace-nowrap uppercase min-w-[18px] bg-primary-100 text-primary-700 dark:bg-primary-500/20 dark:text-primary-400">{}</span>',
+                '<span class="leading-[18px] ml-2 p-1 relative rounded-xs text-center text-[11px] whitespace-nowrap uppercase min-w-[18px] bg-primary-100 text-primary-700 dark:bg-primary-500/20 dark:text-primary-400">{}</span>',
                 uv_str,
             )
             if uv_str
             else ""
         )
-
-    label_with_badge.allow_tags = True
 
     @action(
         description=_("Report Pflichtanteile/Belegung"),
