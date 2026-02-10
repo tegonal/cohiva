@@ -121,6 +121,10 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
     save_on_top = True
     actions = ["export_as_xls", copy_objects]
 
+    # Add custom admin JS (focus handling for select2 focus)
+    class Media:
+        js = ("geno/js/select2-focus.js",)
+
     def __init__(self, model, admin_site):
         super().__init__(model, admin_site)
         ## Load custom admin config
