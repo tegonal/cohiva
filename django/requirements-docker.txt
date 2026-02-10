@@ -138,7 +138,7 @@ django-permissionedforms==0.1
     # via wagtail
 django-polymorphic==3.1.0
     # via django-filer
-django-select2-forms==3.0.0
+django-select2-forms==3.1.0
     # via -r requirements.in
 django-sortedm2m==4.0.0
     # via django-select2-forms
@@ -152,7 +152,7 @@ django-tasks==0.7.0
     # via wagtail
 django-treebeard==4.7.1
     # via wagtail
-django-unfold==0.67.0
+django-unfold==0.78.1
     # via -r requirements.in
 djangorestframework==3.16.1
     # via
