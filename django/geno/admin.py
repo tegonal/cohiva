@@ -1,4 +1,5 @@
 import datetime
+from decimal import Decimal, InvalidOperation
 
 from dateutil.relativedelta import relativedelta
 from django import forms
@@ -63,6 +64,36 @@ def copy_objects(modeladmin, request, queryset):
             return
     messages.success(request, f"{count} Objekt(e) kopiert.")
 
+class ApostropheDecimalField(forms.DecimalField):
+    def to_python(self, value):
+        if value in self.empty_values:
+            return None
+
+        if isinstance(value, str):
+            value = value.replace("'", "").strip()
+
+        return super().to_python(value)
+
+    def prepare_value(self, value):
+        """Return a plain numeric string (dot as decimal sep, no thousands) for the widget's value.
+        This ensures the original input's value is a machine-friendly number (e.g. 1234.56)
+        and lets the admin JS format it with apostrophes for display.
+        """
+        if value in self.empty_values or value is None:
+            return ""
+        try:
+            # Handle Decimal/float/int and strings with possible thousands/commas
+            if isinstance(value, Decimal):
+                d = value.quantize(Decimal("0.01"))
+                return format(d, 'f')
+            # string or other numeric
+            s = str(value).replace("'", "").replace(" ", "").replace(",", ".")
+            d = Decimal(s)
+            d = d.quantize(Decimal("0.01"))
+            return format(d, 'f')
+        except Exception:
+            # fallback to default representation
+            return str(value)
 
 class BooleanFieldDefaultTrueListFilter(admin.BooleanFieldListFilter):
     """
@@ -143,6 +174,25 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
                 setting_name = f"{class_name}.{attr}"
                 if setting_name in settings.COHIVA_ADMIN_FIELDS[module_name]:
                     setattr(self, attr, settings.COHIVA_ADMIN_FIELDS[module_name][setting_name])
+
+    def get_form(self, request, obj=None, **kwargs):
+        """Ensure DecimalFields rendered in admin forms get the widget attributes
+        required for apostrophe formatting JS: data-apostrophe, lang, inputmode, step.
+        This applies globally to admin forms inheriting from GenoBaseAdmin.
+        """
+        form = super().get_form(request, obj, **kwargs)
+        try:
+            for _name, field in form.base_fields.items():
+                if isinstance(field, forms.DecimalField):
+                    w = field.widget
+                    w.attrs.setdefault("data-apostrophe", "1")
+                    w.attrs.setdefault("inputmode", "decimal")
+                    w.attrs.setdefault("step", "0.01")
+                    w.attrs.setdefault("lang", "en")
+        except Exception:
+            # keep behaviour stable if something unexpected occurs
+            pass
+        return form
 
 
 @admin.display(description="Anrede auf 'Herr' setzen")
@@ -988,9 +1038,10 @@ class RegistrationEventAdmin(GenoBaseAdmin):
         request._obj_ = obj
         return super().get_form(request, obj, **kwargs)
 
-
 @admin.decorators.register(RentalUnit)
 class RentalUnitAdmin(GenoBaseAdmin):
+    class Media:
+        js = ("geno/js/apostrophe_decimal.js",)
     fields = [
         "name",
         ("label", "label_short"),
@@ -1696,7 +1747,6 @@ class GenericAttributeAdmin(GenoBaseAdmin):
     list_display = ["name", "value", "date", "content_type", "ts_created", "ts_modified"]
     search_fields = ["name", "comment", "value"]
     list_filter = ["name", "ts_created", "ts_modified", "content_type"]
-
 
 ## Unregister default admin classes and re-register with unfold classes to provide the correct
 ## styling.

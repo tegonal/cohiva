@@ -570,11 +570,11 @@ class Address(GenoBase):
         today = datetime.date.today()
         c["datum"] = today.strftime("%d.%m.%Y")
         c["monat"] = today.strftime("%B")
-        c["jahr"] = today.year
+        c["jahr"] = str(today.year)
         today_plus30 = today + datetime.timedelta(days=30)
         c["datum_plus30"] = today_plus30.strftime("%d.%m.%Y")
         c["monat_plus30"] = today_plus30.strftime("%B")
-        c["jahr_plus30"] = today_plus30.year
+        c["jahr_plus30"] = str(today_plus30.year)
 
         c["org_info"] = settings.GENO_ORG_INFO
 
