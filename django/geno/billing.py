@@ -2049,6 +2049,8 @@ def transform_qrbill_country(country):
         return "IT"
     if country.lower() in ("spanien", "españa", "espana", "spain"):
         return "ES"
+    if country.lower() in ("brasilien", "brazil"):
+        return "BR"
     return country
 
 

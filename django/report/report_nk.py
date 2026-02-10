@@ -2476,7 +2476,8 @@ def create_bills(regenerate_invoice_id=None):
         else:
             nk.log.append("ERROR: Could not get qrbill!")
             raise RuntimeError(
-                "Konnte QR-Rechnung/Buchungen nicht erzeugen. Ist Buchhaltung gesperrt?"
+                "Konnte QR-Rechnung/Buchungen nicht erzeugen. Ist Buchhaltung gesperrt?\n\n"
+                f"{nk.get_log_tail(5)}"
             )
 
         context["akonto_threshold"] = (
@@ -3416,6 +3417,11 @@ class NebenkostenReportGenerator(ReportGenerator):
             self.dates[self.period_start_index]["start"].strftime("%d.%m.%Y"),
             self.dates[-1]["end"].strftime("%d.%m.%Y"),
         )
+
+    def get_log_tail(self, lines=5):
+        log = f"== Letzte {lines} Zeilen des Logs: ==\n"
+        log += "\n".join(nk.log[-lines:])
+        return log
 
 
 def main(report, dry_run=True, output_root=settings.SMEDIA_ROOT):
