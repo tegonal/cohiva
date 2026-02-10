@@ -10,10 +10,11 @@ from django.contrib.auth.models import Group, User
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from stdnum import iban as iban_util
 from unfold.admin import ModelAdmin, TabularInline
-from unfold.decorators import action
+from unfold.decorators import action, display
 from unfold.enums import ActionVariant
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 
@@ -1179,14 +1180,14 @@ class VertragstypFilter(admin.SimpleListFilter):
         # define the filter options
         return (
             ("hv", "Hauptvertrag"),
-            ("zv", "Zusatzvertrag"),
+            ("uv", "Untervertrag"),
         )
 
     def queryset(self, request, queryset):
         # apply the filter to the queryset
         if self.value() == "hv":
             return queryset.filter(main_contract=None)
-        if self.value() == "zv":
+        if self.value() == "uv":
             return queryset.filter(main_contract__isnull=False)
 
 
@@ -1216,7 +1217,7 @@ class ContractAdmin(GenoBaseAdmin):
         "backlinks",
     ]
     readonly_fields = ["ts_created", "ts_modified", "object_actions", "links", "backlinks"]
-    list_display = ["__str__", "state", "date", "date_end", "note", "comment"]
+    list_display = ["label_with_badge", "state", "date", "date_end", "note", "comment"]
     search_fields = [
         "contractors__name",
         "contractors__first_name",
@@ -1271,6 +1272,22 @@ class ContractAdmin(GenoBaseAdmin):
     actions_detail = [
         "add_subcontract",
     ]
+
+    @display(
+        description="Vertrag",
+    )
+    def label_with_badge(self, contract):
+        uv_str = ""
+        if contract.main_contract:
+            uv_str = "Untervertrag"
+        return format_html("{}", contract.__str__()) + (
+            format_html(
+                '<span class="leading-[18px] ml-2 p-1 relative rounded-xs text-center text-[11px] whitespace-nowrap uppercase min-w-[18px] bg-primary-100 text-primary-700 dark:bg-primary-500/20 dark:text-primary-400">{}</span>',
+                uv_str,
+            )
+            if uv_str
+            else ""
+        )
 
     @action(
         description=_("Report Pflichtanteile/Belegung"),
