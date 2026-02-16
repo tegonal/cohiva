@@ -152,7 +152,7 @@ django-tasks==0.7.0
     # via wagtail
 django-treebeard==4.7.1
     # via wagtail
-django-unfold==0.67.0
+django-unfold==0.78.1
     # via -r requirements.in
 djangorestframework==3.16.1
     # via
@@ -417,7 +417,8 @@ zope-proxy==6.1
     # via zope-deferredimport
 
 # The following packages are considered to be unsafe in a requirements file:
-# setuptools
+# TODO: remove this dependency by making sure all dependencies are compatible with setuptools 82 or later (by not using pkg_resources)
+setuptools<82
 
 # Packages added/managed by install.py:
 sepa==0.5.4+mst1

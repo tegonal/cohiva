@@ -24,7 +24,8 @@ mysqlclient
 
 ## Misc Django admin/UI enhancements and tools
 django-tables2
-django-select2-forms
+## django-select2-form v3.1.0 has issues with django forms
+django-select2-forms < 3.1.0
 django-datetime-widget
 django-email-obfuscator
 django-unfold
