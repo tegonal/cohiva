@@ -1,11 +1,17 @@
-## For backwards compatibility with Python 3.9 (to support the | operator for types)
-from __future__ import annotations
-
 import datetime
 from dataclasses import dataclass
 from decimal import Decimal
 
 from .account import Account
+
+
+@dataclass
+class Split:
+    """A split of a transaction."""
+
+    account: Account
+    amount: Decimal | float | str
+    "Positive for debit, negative for credit."
 
 
 @dataclass
@@ -32,12 +38,3 @@ class Transaction:
 
     def __repr__(self):
         return f"Transaction(date={self.date}, description='{self.description}')"
-
-
-@dataclass
-class Split:
-    """A split of a transaction."""
-
-    account: Account
-    amount: Decimal | float | str
-    "Positive for debit, negative for credit."
