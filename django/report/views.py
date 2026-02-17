@@ -57,6 +57,7 @@ def test_celery_nobackend(request):
 
 class ReportViewMixin(CohivaAdminViewMixin):
     model_admin = None
+    back_url = None  # No back button by default
 
     def setup(self, request, *args, **kwargs):
         super().setup(request, *args, **kwargs)
@@ -69,6 +70,7 @@ class ReportViewMixin(CohivaAdminViewMixin):
         context = super().get_context_data(**kwargs)
         context["report"] = self.report
         context["is_popup"] = True
+        context["back_url"] = self.back_url
         return context
 
 class ReportConfigView(ReportViewMixin, FormView):
@@ -78,7 +80,7 @@ class ReportConfigView(ReportViewMixin, FormView):
 
     step_title = _("Kongiguration")
     form_action = reverse_lazy("report:report-config")
-    back_url = None  # No back button on step 1
+    back_url = reverse_lazy("report:report-config")  # No back button on step 1
     permission_required = "report.report_change"
     last_step = False
 
@@ -132,8 +134,18 @@ class ReportConfigView(ReportViewMixin, FormView):
         return HttpResponseRedirect(f"/admin/report/report/{self.report.id}/change")
 
 
-class ReportOutputView(LoginRequiredMixin, ReportViewMixin, ListView):
+class ReportOutputView(ReportViewMixin, ListView):
     ordering = ("group", "name")
+
+    template_name = "report/reportoutput_list.html"
+    form_class = ReportConfigForm
+    title = _("Report: Resultate")
+
+    step_title = _("Liste der Resultate")
+    form_action = None
+    back_url = reverse_lazy("report:reportoutput-list")  # No back button on step 1
+    permission_required = "report.report_read"
+    last_step = True
 
     def setup(self, request, *args, **kwargs):
         super().setup(request, *args, **kwargs)
@@ -174,7 +186,7 @@ class ReportDeleteAllOutputView(ReportOutputView):
         return resp
 
 
-class ReportDownloadView(LoginRequiredMixin, ReportViewMixin, BaseDetailView):
+class ReportDownloadView(ReportViewMixin, BaseDetailView):
     model = ReportOutput
 
     def render_to_response(self, context):
@@ -187,7 +199,7 @@ class ReportDownloadView(LoginRequiredMixin, ReportViewMixin, BaseDetailView):
         return FileResponse(open(filename, "rb"), as_attachment=context["as_attachment"])
 
 
-class ReportDownloadAllView(LoginRequiredMixin, ReportViewMixin, ZipDownloadView):
+class ReportDownloadAllView(ReportViewMixin, ZipDownloadView):
     def get_zipfile_name(self):
         return f"{self.report.name}.zip"
 

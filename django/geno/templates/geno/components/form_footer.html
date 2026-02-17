@@ -3,16 +3,26 @@
 {# Parameters: #}
 {#   - form_id: ID of the form to submit #}
 {#   - button_text: Text to display on the submit button #}
+{#   - back_url: Optional URL for a secondary back button #}
 
 <div class="relative lg:sticky lg:bottom-0 z-40">
   <div class="backdrop-blur-xs bg-white/80 rounded-b-default pb-4 px-4 dark:bg-base-900/80 lg:border-t lg:border-base-200 relative lg:scrollable-top lg:py-0 dark:border-base-800">
     <div class="flex flex-col-reverse gap-3 items-center mx-auto lg:flex-row-reverse container lg:h-[64px]">
       {# Primary action - Submit #}
-      <button type="submit"
-              form="{{ form_id }}"
-              class="bg-primary-600 block border border-transparent cursor-pointer font-medium px-3 py-2 rounded-default text-white w-full lg:w-auto">
-        {{ button_text }}
-      </button>
+      {% if form_id != 'None' %}
+          <button type="submit"
+                  form="{{ form_id }}"
+                  class="bg-primary-600 block border border-transparent cursor-pointer font-medium px-3 py-2 rounded-default text-white w-full lg:w-auto">
+            {{ button_text }}
+          </button>
+      {% endif %}
+      {# Optional secondary action - Back #}
+      {% if display_back != None %}
+        <a href="javascript:history.back()"
+           class="block border border-base-200 bg-white cursor-pointer font-medium px-3 py-2 rounded-default text-font-default-light w-full lg:w-auto text-center dark:bg-base-900 dark:text-font-default-dark dark:border-base-800 hover:bg-base-50 dark:hover:bg-base-800">
+          {% trans "Zurück" %}
+        </a>
+      {% endif %}
     </div>
   </div>
 </div>

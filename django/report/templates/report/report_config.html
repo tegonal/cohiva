@@ -1,7 +1,6 @@
 {% extends "geno/base.html" %}
 {% load static i18n unfold crispy_forms_tags %}
 
-
 {% block object-tools %}{# Override to hide tab list when there's only one view #}{% endblock %}
 
 {% block custom_content %}
@@ -21,5 +20,5 @@
 {% endblock custom_content %}
 
 {% block footer %}
-  {% include "geno/components/form_footer.html" with form_id="report_config_form" button_text=_("Konfiguration speichern") %}
+  {% include "geno/components/form_footer.html" with form_id="report_config_form" button_text=_("Konfiguration speichern") display_back=True %}
 {% endblock %}
