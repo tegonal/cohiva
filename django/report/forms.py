@@ -87,7 +87,7 @@ from .models import ReportInputField
 #        return {}
 
 
-class FilerModelChoiceField(select2.fields.ModelChoiceField):
+class FilerModelChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
         return f"{obj.logical_path[-1]}/{obj}"
 
@@ -130,16 +130,20 @@ def _make_report_input_field(field):
             queryset=FilerFile.objects,
             label=name,
             help_text=desc,
-            name=None,
-            model=None,
             widget=UnfoldAdminSelect2Widget(),
         )
-        f.widget.attrs.update({"style": "width: 750px;"})
+        f.widget.attrs.update({"style": "min-width: 750px;"})
         return f
     if ft == "buildingIds":
         buildingList = Building.objects.filter(active=True).order_by("name")
         buildingMapping = [(b.id, b.name) for b in buildingList]
-        return forms.MultipleChoiceField(required=False, label=name, help_text=desc, widget=UnfoldAdminSelect2MultipleWidget(), choices=buildingMapping)
+        return forms.ChoiceField(
+            label=name,
+            required=False,
+            choices=buildingMapping,
+            widget=UnfoldAdminSelect2Widget(),
+            help_text=desc,
+        )
 
     # default
     return forms.CharField(required=False, label=name, help_text=desc, widget=UnfoldAdminTextInputWidget())
