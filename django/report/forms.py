@@ -7,23 +7,21 @@ import jsonc
 # from django.utils.http import urlencode
 # from django.utils.safestring import mark_safe
 # from django.contrib.admin.sites import site
-import select2.fields
 from django import forms
 from django.core.exceptions import ValidationError
+
+# from filer.fields.file import AdminFileFormField, FilerFileField, AdminFileWidget
+from filer.models.filemodels import File as FilerFile
 
 # Add Unfold widgets for consistent admin styling and focus behavior
 from unfold.widgets import (
     UnfoldAdminDateWidget,
     UnfoldAdminDecimalFieldWidget,
-    UnfoldAdminSelect2MultipleWidget,
     UnfoldAdminSelect2Widget,
     UnfoldAdminTextareaWidget,
     UnfoldAdminTextInputWidget,
     UnfoldBooleanSwitchWidget,
 )
-
-# from filer.fields.file import AdminFileFormField, FilerFileField, AdminFileWidget
-from filer.models.filemodels import File as FilerFile
 
 from geno.models import Building
 
@@ -113,15 +111,25 @@ def _make_report_input_field(field):
     ft = field.field_type
 
     if ft == "int":
-        return forms.IntegerField(required=False, label=name, help_text=desc, widget=UnfoldAdminDecimalFieldWidget())
+        return forms.IntegerField(
+            required=False, label=name, help_text=desc, widget=UnfoldAdminDecimalFieldWidget()
+        )
     if ft == "float":
-        return forms.FloatField(required=False, label=name, help_text=desc, widget=UnfoldAdminDecimalFieldWidget())
+        return forms.FloatField(
+            required=False, label=name, help_text=desc, widget=UnfoldAdminDecimalFieldWidget()
+        )
     if ft == "date":
-        return forms.DateField(required=False, label=name, help_text=desc, widget=UnfoldAdminDateWidget())
+        return forms.DateField(
+            required=False, label=name, help_text=desc, widget=UnfoldAdminDateWidget()
+        )
     if ft == "bool":
-        return forms.BooleanField(required=False, label=name, help_text=desc, widget=UnfoldBooleanSwitchWidget())
+        return forms.BooleanField(
+            required=False, label=name, help_text=desc, widget=UnfoldBooleanSwitchWidget()
+        )
     if ft == "json":
-        f = JSONField(required=False, label=name, help_text=desc, widget=UnfoldAdminTextareaWidget())
+        f = JSONField(
+            required=False, label=name, help_text=desc, widget=UnfoldAdminTextareaWidget()
+        )
         f.widget.attrs.update({"style": "width: 750px;"})
         return f
     if ft == "file":
@@ -146,7 +154,9 @@ def _make_report_input_field(field):
         )
 
     # default
-    return forms.CharField(required=False, label=name, help_text=desc, widget=UnfoldAdminTextInputWidget())
+    return forms.CharField(
+        required=False, label=name, help_text=desc, widget=UnfoldAdminTextInputWidget()
+    )
 
 
 class ReportConfigForm(forms.Form):
@@ -155,6 +165,8 @@ class ReportConfigForm(forms.Form):
         super().__init__(*args, **kwargs)
         if not self.report:
             return
-        for field in ReportInputField.objects.filter(report_type=self.report.report_type).filter(active=True):
+        for field in ReportInputField.objects.filter(report_type=self.report.report_type).filter(
+            active=True
+        ):
             field_name = f"report_input_{field.id}"
             self.fields[field_name] = _make_report_input_field(field)

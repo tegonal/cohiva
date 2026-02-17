@@ -4,27 +4,25 @@ from celery.result import AsyncResult
 from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
 
 # from django.core.exceptions import ImproperlyConfigured
 from django.http import FileResponse, HttpResponse, HttpResponseRedirect
 from django.http.request import QueryDict
 from django.urls import reverse_lazy
-from django.utils.decorators import classonlymethod
+from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView
 from django.views.generic.detail import BaseDetailView
 
 # from django.views.generic.base import View
 from django.views.generic.list import ListView
-from django.utils.translation import gettext_lazy as _
 
+from cohiva.views.admin import CohivaAdminViewMixin
 from cohiva.views.generic import ZipDownloadView
 
 from .admin import ReportOutputAdmin
 from .forms import ReportConfigForm
 from .models import Report, ReportInputData, ReportInputField, ReportOutput
 from .tasks import generate_nk_report, regenerate_nk_output, test_task
-from cohiva.views.admin import CohivaAdminViewMixin
 
 
 ## Test task and querying result backend
@@ -72,6 +70,7 @@ class ReportViewMixin(CohivaAdminViewMixin):
         context["is_popup"] = True
         context["back_url"] = self.back_url
         return context
+
 
 class ReportConfigView(ReportViewMixin, FormView):
     template_name = "report/report_config.html"
