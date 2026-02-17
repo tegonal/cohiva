@@ -9,11 +9,14 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 # from django.core.exceptions import ImproperlyConfigured
 from django.http import FileResponse, HttpResponse, HttpResponseRedirect
 from django.http.request import QueryDict
+from django.urls import reverse_lazy
+from django.utils.decorators import classonlymethod
+from django.views.generic import FormView
 from django.views.generic.detail import BaseDetailView
 
 # from django.views.generic.base import View
-from django.views.generic.edit import FormView
 from django.views.generic.list import ListView
+from django.utils.translation import gettext_lazy as _
 
 from cohiva.views.generic import ZipDownloadView
 
@@ -21,6 +24,7 @@ from .admin import ReportOutputAdmin
 from .forms import ReportConfigForm
 from .models import Report, ReportInputData, ReportInputField, ReportOutput
 from .tasks import generate_nk_report, regenerate_nk_output, test_task
+from cohiva.views.admin import CohivaAdminViewMixin
 
 
 ## Test task and querying result backend
@@ -51,7 +55,9 @@ def test_celery_nobackend(request):
     return HttpResponse(f"Test task started (without result backend).<br>res.id={res.id}")
 
 
-class ReportViewMixin:
+class ReportViewMixin(CohivaAdminViewMixin):
+    model_admin = None
+
     def setup(self, request, *args, **kwargs):
         super().setup(request, *args, **kwargs)
         try:
@@ -62,12 +68,19 @@ class ReportViewMixin:
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["report"] = self.report
+        context["is_popup"] = True
         return context
 
-
-class ReportConfigView(LoginRequiredMixin, ReportViewMixin, FormView):
+class ReportConfigView(ReportViewMixin, FormView):
     template_name = "report/report_config.html"
     form_class = ReportConfigForm
+    title = _("Report konfigurieren")
+
+    step_title = _("Kongiguration")
+    form_action = reverse_lazy("report:report-config")
+    back_url = None  # No back button on step 1
+    permission_required = "report.report_change"
+    last_step = False
 
     def get_initial(self):
         initial = super().get_initial()
