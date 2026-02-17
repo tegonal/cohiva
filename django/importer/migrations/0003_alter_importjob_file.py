@@ -2,7 +2,6 @@
 
 import django.core.files.storage
 from django.conf import settings
-from django.core.files.storage import FileSystemStorage
 from django.db import migrations, models
 
 
@@ -11,16 +10,14 @@ class Migration(migrations.Migration):
         ("importer", "0002_importjob_override_existing"),
     ]
 
-    smedia_storage = FileSystemStorage(location=settings.SMEDIA_ROOT)
-
     operations = [
         migrations.AlterField(
             model_name="importjob",
             name="file",
             field=models.FileField(
-                storage=django.core.files.storage.FileSystemStorage(
-                    upload_to="imports/%Y/%m/", verbose_name="Excel-Datei", storage=smedia_storage
-                ),
+                upload_to="imports/%Y/%m/",
+                verbose_name="Excel-Datei",
+                storage=django.core.files.storage.FileSystemStorage(location=settings.SMEDIA_ROOT),
             ),
         )
     ]
