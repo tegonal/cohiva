@@ -114,7 +114,7 @@ class TransactionFormInvoice(forms.Form):
         min_value=0.01,
         required=False,
         widget=UnfoldAdminDecimalFieldWidget(),
-        help_text="(falls abweichend von Rechnung)",
+        help_text="(nur ausfüllen, falls abweichend von Rechnung)",
     )
 
     def __init__(self, *args, **kwargs):
@@ -133,27 +133,18 @@ class TransactionFormInvoice(forms.Form):
         """Cross-field validation for invoice payment."""
         cleaned_data = super().clean()
         invoice = cleaned_data.get("invoice")
-        amount = cleaned_data.get("amount")
         date = cleaned_data.get("date")
 
         if not invoice:
+            self.add_error("invoice", "Bitte eine Rechnung auswählen.")
             return cleaned_data
 
-        # Validate amount is not greater than invoice amount
-        if amount and invoice.amount and amount > invoice.amount:
-            self.add_error(
-                "amount",
-                f"Betrag darf nicht grösser sein als Rechnungsbetrag ({invoice.total_amount}).",
-            )
-
-        # Validate date is not before invoice date
         if date and invoice.date and date < invoice.date:
             formatted_date = date_format(invoice.date, format="SHORT_DATE_FORMAT")
             self.add_error(
                 "date", f"Datum darf nicht vor Rechnungsdatum ({formatted_date}) liegen."
             )
 
-        # Validate date is not in the future
         if date and date > datetime.date.today():
             self.add_error("date", "Datum darf nicht in der Zukunft liegen.")
 
