@@ -106,6 +106,7 @@ class DocumentTemplate:
         self.update_context_options()
         self.dry_run = dry_run
         self.temp_files = []
+        self.regenerate_from_invoice = None
 
     def __str__(self):
         return str(self.content_template)
@@ -124,6 +125,10 @@ class DocumentTemplate:
     def get_context(self, recipient):
         ctx = {"qr_account": None}
         ctx.update(recipient.address.get_context())
+        ## HACK!!
+        if self.regenerate_from_invoice:
+            ctx["datum"] = self.regenerate_from_invoice.date.strftime("%d.%m.%Y")
+            ctx["jahr"] = self.regenerate_from_invoice.date.strftime("%Y")
         if self.context_options["billing_context"]:
             ctx.update(self.get_billing_context(recipient))
         if self.context_options["share_statement_context"]:
@@ -265,7 +270,9 @@ class DocumentTemplate:
                     f"Rechnungs-Typ {self.context_options['qrbill_invoice_type_id']} nicht gefunden!"
                 )
             if ctx["bill_amount"]:
-                if not self.dry_run:
+                if self.regenerate_from_invoice:
+                    invoice_id = self.regenerate_from_invoice.id
+                elif not self.dry_run:
                     ctx["invoice"] = self.do_invoice_accounting(recipient, ctx, invoice_category)
                     invoice_id = ctx["invoice"].id
                 else:
@@ -352,6 +359,9 @@ class DocumentTemplate:
         )  # use template name as filename tag
         if self.content_template.template_type == "OpenDocument":
             ctx = self.get_context(recipient)
+            ## Hack!!!
+            if self.regenerate_from_invoice:
+                print(ctx)
             logger.info(
                 " > fill template %s with context: anrede=%s, name=%s, vorname=%s, org=%s"
                 % (

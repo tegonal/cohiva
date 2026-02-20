@@ -4159,6 +4159,20 @@ class InvoiceBatchGenerateView(DryRunActionView):
         return ret
 
 
+class InvoiceRegenerateView(CohivaAdminViewMixin, TemplateView):
+    title = "Mietobjektespiegel"
+    permission_required = ("geno.invoice", "geno.transaction_invoice")
+
+    def get(self, *args, **kwargs):
+        invoice = Invoice.objects.get(pk=kwargs["key"])
+        output = invoice.regenerate_invoice_document()
+        print(output)
+        pdf_file = open(output.file, "rb")
+        resp = FileResponse(pdf_file, content_type="application/pdf")
+        resp["Content-Disposition"] = "attachment; filename=%s" % output.filename
+        return resp
+
+
 class ResidentUnitListView(CohivaAdminViewMixin, TemplateView):
     title = "Mietobjektespiegel"
     permission_required = "geno.rental_objects"

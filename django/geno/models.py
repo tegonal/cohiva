@@ -2098,6 +2098,78 @@ class Invoice(GenoBase):
             namestr = "%s" % self.contract
         return "%s/%s %s CHF %.2f" % (namestr, self.name, self.invoice_type, self.amount)
 
+    @property
+    def content_template(self):
+        return "ContentTemplate:36"
+
+    def get_object_actions(self):
+        ## HACK!
+        if self.invoice_type == "Invoice" and self.invoice_category.name == "Mitgliedschaft":
+            return [
+                (
+                    "/geno/invoice/regenerate/%s/" % self.pk,
+                    "Rechnung nochmals erzeugen (PDF)",
+                ),
+            ]
+        return None
+
+    def regenerate_invoice_document(self):
+        from geno.documents import ProcessDocuments
+        # data["template_files"] = ...
+        template = self.content_template
+
+        process = ProcessDocuments(dry_run=True)
+        process.set_output_format("pdf")
+        process.add_document_template(template)
+        ## HACK!
+        process.templates[0].regenerate_from_invoice=self
+        try:
+            member = Member.objects.get(name=self.person)
+            process.add_recipient(member, None, "")
+        except Member.DoesNotExist:
+            process.add_recipient(self.person, self.contract, "")
+        try:
+            process.generate_documents()
+        except Exception as e:
+            logger.error(f"Fehler beim Erstellen der Dokumente: {e}")
+            return None
+
+        output_doc = process.recipients[0].documents[0]
+        #process.cleanup()
+        return output_doc
+
+    #        self.content_template = None
+    #        self.doctype = None
+    #        template = DocumentTemplate(
+    #                    self.content_template,
+    #                    self.doctype=doctype,
+    #                    output_format="odt",
+    #                    dry_run=True,
+    #                   )
+    #
+    #        if self.person:
+    #            address = self.person
+    #        else:
+    #            return None
+    #        ctx = self.get_context(address)
+    #        #content_template_file_path = invoice.content_template
+    #        content_template_file_path = ""
+    #        output_file = fill_template_pod(
+    #            content_template_file_path, ctx, output_format="odt"
+    #        )
+    #        output_filename = (
+    #            f"{address.get_filename_str()}_{filename_tag}.odt"
+    #        )
+    #        if ctx["qr_account"]:
+    #            render_qrbill(
+    #                None,
+    #                ctx,
+    #                output.filename,
+    #                base_pdf_file=output.file,
+    #                append_pdf_file=None,
+    #                output_dir=output_dir,
+    #            )
+
     class Meta:
         verbose_name = "Rechnung"
         verbose_name_plural = "Rechnungen"
