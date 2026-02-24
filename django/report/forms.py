@@ -7,13 +7,21 @@ import jsonc
 # from django.utils.http import urlencode
 # from django.utils.safestring import mark_safe
 # from django.contrib.admin.sites import site
-import select2.fields
 from django import forms
 from django.core.exceptions import ValidationError
-from django.forms.widgets import Textarea
 
 # from filer.fields.file import AdminFileFormField, FilerFileField, AdminFileWidget
 from filer.models.filemodels import File as FilerFile
+
+# Add Unfold widgets for consistent admin styling and focus behavior
+from unfold.widgets import (
+    UnfoldAdminDateWidget,
+    UnfoldAdminDecimalFieldWidget,
+    UnfoldAdminSelect2Widget,
+    UnfoldAdminTextareaWidget,
+    UnfoldAdminTextInputWidget,
+    UnfoldBooleanSwitchWidget,
+)
 
 from geno.models import Building
 
@@ -77,7 +85,7 @@ from .models import ReportInputField
 #        return {}
 
 
-class FilerModelChoiceField(select2.fields.ModelChoiceField):
+class FilerModelChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
         return f"{obj.logical_path[-1]}/{obj}"
 
@@ -92,6 +100,65 @@ class JSONField(forms.CharField):
                 raise ValidationError(f"Ungültiger JSON-Code: {e}")
 
 
+# Generic helper to construct Unfold-styled form fields for report inputs
+def _make_report_input_field(field):
+    """Return a django form Field instance for a ReportInputField-like object.
+
+    This centralizes the widget mapping so migrating other forms is simpler.
+    """
+    name = field.name
+    desc = field.description
+    ft = field.field_type
+
+    if ft == "int":
+        return forms.IntegerField(
+            required=False, label=name, help_text=desc, widget=UnfoldAdminDecimalFieldWidget()
+        )
+    if ft == "float":
+        return forms.FloatField(
+            required=False, label=name, help_text=desc, widget=UnfoldAdminDecimalFieldWidget()
+        )
+    if ft == "date":
+        return forms.DateField(
+            required=False, label=name, help_text=desc, widget=UnfoldAdminDateWidget()
+        )
+    if ft == "bool":
+        return forms.BooleanField(
+            required=False, label=name, help_text=desc, widget=UnfoldBooleanSwitchWidget()
+        )
+    if ft == "json":
+        f = JSONField(
+            required=False, label=name, help_text=desc, widget=UnfoldAdminTextareaWidget()
+        )
+        f.widget.attrs.update({"style": "width: 750px;"})
+        return f
+    if ft == "file":
+        f = FilerModelChoiceField(
+            required=False,
+            queryset=FilerFile.objects,
+            label=name,
+            help_text=desc,
+            widget=UnfoldAdminSelect2Widget(),
+        )
+        f.widget.attrs.update({"style": "min-width: 750px;"})
+        return f
+    if ft == "buildingIds":
+        buildingList = Building.objects.filter(active=True).order_by("name")
+        buildingMapping = [(b.id, b.name) for b in buildingList]
+        return forms.ChoiceField(
+            label=name,
+            required=False,
+            choices=buildingMapping,
+            widget=UnfoldAdminSelect2Widget(),
+            help_text=desc,
+        )
+
+    # default
+    return forms.CharField(
+        required=False, label=name, help_text=desc, widget=UnfoldAdminTextInputWidget()
+    )
+
+
 class ReportConfigForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.report = kwargs.pop("report")
@@ -102,49 +169,4 @@ class ReportConfigForm(forms.Form):
             active=True
         ):
             field_name = f"report_input_{field.id}"
-            if field.field_type == "int":
-                self.fields[field_name] = forms.IntegerField(
-                    required=False, label=field.name, help_text=field.description
-                )
-            elif field.field_type == "float":
-                self.fields[field_name] = forms.FloatField(
-                    required=False, label=field.name, help_text=field.description
-                )
-            elif field.field_type == "date":
-                self.fields[field_name] = forms.DateField(
-                    required=False, label=field.name, help_text=field.description
-                )
-            elif field.field_type == "bool":
-                self.fields[field_name] = forms.BooleanField(
-                    required=False, label=field.name, help_text=field.description
-                )
-            elif field.field_type == "json":
-                self.fields[field_name] = JSONField(
-                    required=False, label=field.name, help_text=field.description, widget=Textarea
-                )
-                self.fields[field_name].widget.attrs.update({"style": "width: 750px;"})
-            elif field.field_type == "file":
-                # self.fields[field_name] = FilerFileFormField(queryset=FilerFile.objects, required=False, label=field.name, help_text=field.description)
-                self.fields[field_name] = FilerModelChoiceField(
-                    required=False,
-                    queryset=FilerFile.objects,
-                    label=field.name,
-                    help_text=field.description,
-                    name=None,
-                    model=None,
-                )
-                self.fields[field_name].widget.attrs.update({"style": "width: 750px;"})
-            elif field.field_type == "buildingIds":
-                buildingList = Building.objects.filter(active=True).order_by("name")
-                buildingMapping = [(b.id, b.name) for b in buildingList]
-                self.fields[field_name] = forms.MultipleChoiceField(
-                    required=False,
-                    label=field.name,
-                    help_text=field.description,
-                    widget=forms.SelectMultiple(attrs={"size": 5}),
-                    choices=buildingMapping,
-                )
-            else:
-                self.fields[field_name] = forms.CharField(
-                    required=False, label=field.name, help_text=field.description
-                )
+            self.fields[field_name] = _make_report_input_field(field)

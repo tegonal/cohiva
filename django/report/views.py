@@ -4,17 +4,19 @@ from celery.result import AsyncResult
 from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
 
 # from django.core.exceptions import ImproperlyConfigured
 from django.http import FileResponse, HttpResponse, HttpResponseRedirect
 from django.http.request import QueryDict
+from django.urls import reverse_lazy
+from django.utils.translation import gettext_lazy as _
+from django.views.generic import FormView
 from django.views.generic.detail import BaseDetailView
 
 # from django.views.generic.base import View
-from django.views.generic.edit import FormView
 from django.views.generic.list import ListView
 
+from cohiva.views.admin import CohivaAdminViewMixin
 from cohiva.views.generic import ZipDownloadView
 
 from .admin import ReportOutputAdmin
@@ -51,7 +53,10 @@ def test_celery_nobackend(request):
     return HttpResponse(f"Test task started (without result backend).<br>res.id={res.id}")
 
 
-class ReportViewMixin:
+class ReportViewMixin(CohivaAdminViewMixin):
+    model_admin = None
+    back_url = None  # No back button by default
+
     def setup(self, request, *args, **kwargs):
         super().setup(request, *args, **kwargs)
         try:
@@ -62,12 +67,21 @@ class ReportViewMixin:
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["report"] = self.report
+        context["is_popup"] = True
+        context["back_url"] = self.back_url
         return context
 
 
-class ReportConfigView(LoginRequiredMixin, ReportViewMixin, FormView):
+class ReportConfigView(ReportViewMixin, FormView):
     template_name = "report/report_config.html"
     form_class = ReportConfigForm
+    title = _("Report konfigurieren")
+
+    step_title = _("Kongiguration")
+    form_action = reverse_lazy("report:report-config")
+    back_url = reverse_lazy("report:report-config")  # No back button on step 1
+    permission_required = "report.report_change"
+    last_step = False
 
     def get_initial(self):
         initial = super().get_initial()
@@ -119,8 +133,18 @@ class ReportConfigView(LoginRequiredMixin, ReportViewMixin, FormView):
         return HttpResponseRedirect(f"/admin/report/report/{self.report.id}/change")
 
 
-class ReportOutputView(LoginRequiredMixin, ReportViewMixin, ListView):
+class ReportOutputView(ReportViewMixin, ListView):
     ordering = ("group", "name")
+
+    template_name = "report/reportoutput_list.html"
+    form_class = ReportConfigForm
+    title = _("Report: Resultate")
+
+    step_title = _("Liste der Resultate")
+    form_action = None
+    back_url = reverse_lazy("report:reportoutput-list")  # No back button on step 1
+    permission_required = "report.report_read"
+    last_step = True
 
     def setup(self, request, *args, **kwargs):
         super().setup(request, *args, **kwargs)
@@ -161,7 +185,7 @@ class ReportDeleteAllOutputView(ReportOutputView):
         return resp
 
 
-class ReportDownloadView(LoginRequiredMixin, ReportViewMixin, BaseDetailView):
+class ReportDownloadView(ReportViewMixin, BaseDetailView):
     model = ReportOutput
 
     def render_to_response(self, context):
@@ -174,7 +198,7 @@ class ReportDownloadView(LoginRequiredMixin, ReportViewMixin, BaseDetailView):
         return FileResponse(open(filename, "rb"), as_attachment=context["as_attachment"])
 
 
-class ReportDownloadAllView(LoginRequiredMixin, ReportViewMixin, ZipDownloadView):
+class ReportDownloadAllView(ReportViewMixin, ZipDownloadView):
     def get_zipfile_name(self):
         return f"{self.report.name}.zip"
 
