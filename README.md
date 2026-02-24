@@ -136,8 +136,9 @@
 | importer/management/commands/\_\_init\_\_.py                                                           |        0 |        0 |    100% |           |
 | importer/migrations/0001\_initial.py                                                                   |        6 |        0 |    100% |           |
 | importer/migrations/0002\_importjob\_override\_existing.py                                             |        4 |        0 |    100% |           |
+| importer/migrations/0003\_alter\_importjob\_file.py                                                    |        6 |        0 |    100% |           |
 | importer/migrations/\_\_init\_\_.py                                                                    |        1 |        0 |    100% |           |
-| importer/models.py                                                                                     |       35 |        0 |    100% |           |
+| importer/models.py                                                                                     |       38 |        0 |    100% |           |
 | importer/services.py                                                                                   |       98 |        8 |     92% |79-80, 98, 208, 238-240, 242-244 |
 | importer/tests/\_\_init\_\_.py                                                                         |        0 |        0 |    100% |           |
 | importer/tests/test\_importer\_member\_address\_it\_wgn.py                                             |      160 |        0 |    100% |           |
@@ -170,7 +171,7 @@
 | report/\_\_init\_\_.py                                                                                 |        5 |        0 |    100% |           |
 | report/admin.py                                                                                        |       47 |        0 |    100% |           |
 | report/apps.py                                                                                         |        3 |        0 |    100% |           |
-| report/forms.py                                                                                        |       46 |       28 |     39% |82, 87-92, 101-148 |
+| report/forms.py                                                                                        |       52 |       34 |     35% |90, 95-100, 109-157, 168-172 |
 | report/migrations/0001\_initial.py                                                                     |        7 |        0 |    100% |           |
 | report/migrations/0002\_alter\_report\_comment\_alter\_report\_report\_type\_and\_more.py              |        5 |        0 |    100% |           |
 | report/migrations/\_\_init\_\_.py                                                                      |        0 |        0 |    100% |           |
@@ -185,7 +186,7 @@
 | report/tests/test\_tasks.py                                                                            |       23 |        0 |    100% |           |
 | report/tests/test\_views.py                                                                            |       12 |        2 |     83% |     25-26 |
 | report/urls.py                                                                                         |        3 |        0 |    100% |           |
-| report/views.py                                                                                        |      169 |      107 |     37% |29-42, 50-51, 75-85, 98-115, 118-119, 128-132, 139-156, 159-161, 168-174, 179, 182-188, 193-226, 230-261 |
+| report/views.py                                                                                        |      189 |      107 |     43% |31-44, 52-53, 89-99, 112-129, 132-133, 152-156, 163-180, 183-185, 192-198, 203, 206-212, 217-250, 254-285 |
 | reservation/\_\_init\_\_.py                                                                            |        5 |        0 |    100% |           |
 | reservation/admin.py                                                                                   |      155 |       34 |     78% |31, 42-72, 146-148, 310-312 |
 | reservation/api\_urls.py                                                                               |        7 |        0 |    100% |           |
@@ -206,7 +207,7 @@
 | reservation/tests/test\_views.py                                                                       |       10 |        2 |     80% |     21-22 |
 | reservation/urls.py                                                                                    |        4 |        0 |    100% |           |
 | reservation/views.py                                                                                   |      136 |      112 |     18% |22-201, 240-263 |
-| **TOTAL**                                                                                              | **21656** | **5711** | **74%** |           |
+| **TOTAL**                                                                                              | **21691** | **5717** | **74%** |           |
 
 
 ## Setup coverage badge
