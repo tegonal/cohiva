@@ -264,6 +264,10 @@ class CashctrlBookTestCase(TestCase):
                 "Test CashCtrl add_transaction", form_data_constructed["data"]["title"]
             )
             self.assertEqual("2026-01-01", form_data_constructed["data"]["dateAdded"])
+            self.assertEqual(
+                "<values><customField1>true</customField1></values>",
+                form_data_constructed["data"].get("custom"),
+            )
 
     @patch("finance.accounting.cashctrl.requests.get")
     @patch("finance.accounting.cashctrl.requests.post")
