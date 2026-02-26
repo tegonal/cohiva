@@ -18,9 +18,8 @@ class Migration(migrations.Migration):
         ("geno", "0018_alter_address_bankaccount_alter_contract_bankaccount"),
     ]
 
-    (migrations.RunPython(mark_jokerzimmer_as_zimmer_and_set_short_description),)
-
     operations = [
+        migrations.RunPython(mark_jokerzimmer_as_zimmer_and_set_short_description),
         migrations.AlterField(
             model_name="rentalunit",
             name="rental_type",
