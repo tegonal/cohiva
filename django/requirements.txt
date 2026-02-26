@@ -296,6 +296,8 @@ propcache==0.3.2
     #   yarl
 pycparser==2.22
     # via cffi
+pycountry==24.6.1
+    # via -r requirements.in
 pylint==3.3.8
     # via -r requirements.in
 pyopenssl==24.2.1

@@ -34,6 +34,11 @@ from geno.utils import (
     nformat,
     sanitize_filename,
 )  # , send_info_mail, send_error_mail
+from geno.countries import (
+    country_name_from_code,
+    get_country_choices,
+    get_default_country_code,
+)
 
 logger = logging.getLogger("access_portal")
 
@@ -236,7 +241,13 @@ class Address(GenoBase):
     po_box_number = models.CharField("Postfach Nr.", max_length=100, blank=True)
     city_zipcode = models.CharField("PLZ", max_length=30, blank=True)
     city_name = models.CharField("Ort", max_length=100, blank=True)
-    country = models.CharField("Land", max_length=100, blank=True, default="Schweiz")
+    country = models.CharField(
+        "Land",
+        max_length=2,
+        blank=True,
+        default=get_default_country_code,
+        choices=get_country_choices(),
+    )
     telephone = models.CharField("Telefon", max_length=30, blank=True)
     mobile = models.CharField("2. Telefon", max_length=30, blank=True)
     telephoneOffice = models.CharField("Telefon Geschäft", max_length=30, blank=True)
