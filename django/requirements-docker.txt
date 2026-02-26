@@ -126,7 +126,7 @@ django-datetime-widget==0.9.3
     # via -r requirements.in
 django-email-obfuscator==0.1.5
     # via -r requirements.in
-django-filer==3.3.2
+django-filer==3.4.4
     # via -r requirements.in
 django-filter==23.5
     # via wagtail
