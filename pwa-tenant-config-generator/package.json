@@ -48,6 +48,8 @@
   },
   "packageManager": "yarn@4.10.3",
   "resolutions": {
-    "js-yaml": "^4.1.1"
+    "js-yaml": "^4.1.1",
+    "basic-ftp": "^5.2.0",
+    "minimatch": "^9.0.7"
   }
 }
