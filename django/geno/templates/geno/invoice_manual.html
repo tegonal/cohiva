@@ -34,6 +34,12 @@
               return parseInt(totalForms.value);
           }
 
+        /*
+          ////////////////////////////////////////////////////////////////////
+          // Disabled dynamic form fields because this does not work correctly
+          // (content of fields disappears on reload)
+          ////////////////////////////////////////////////////////////////////
+
           // Add new form (reload page with extra parameter)
           window.addForm = function() {
               const currentCount = getCurrentFormCount();
@@ -120,6 +126,7 @@
 
               updateRemoveButtons();
           }
+        */
 
           initializeDynamicFormset();
       });
@@ -174,9 +181,15 @@
               </tr>
             {% endfor %}
           </tbody>
+          <tfoot class="ml-2 text-xs text-font-subtle-light dark:text-font-subtle-dark text-right">
+              <tr>
+                  <td colspan="3" class="px-3">({% trans "Betrag leer lassen für ungenutzte Zeilen" %})</td>
+              </tr>
+          </tfoot>
         </table>
       </div>
 
+      {% comment %}
       {# Add row button #}
       <div class="mt-3">
         <button type="button"
@@ -189,6 +202,7 @@
           ({% trans "Max." %} 5)
         </span>
       </div>
+      {% endcomment %}
     </div>
   {% endcomponent %}
 </form>
