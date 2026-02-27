@@ -1240,7 +1240,7 @@ class Registration(GenoBase):
 RENTAL_UNIT_TYPES = (
     ("Wohnung", "Wohnung"),
     ("Grosswohnung", "Grosswohnung"),
-    ("Jokerzimmer", "Jokerzimmer"),
+    ("Zimmer", "Zimmer"),
     ("Selbstausbau", "Selbstausbau"),
     ("Kellerabteil", "Kellerabteil"),
     ("Gewerbe", "Gewerbefläche"),
