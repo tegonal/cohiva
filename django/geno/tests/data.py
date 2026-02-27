@@ -372,6 +372,12 @@ def create_invoicecategories(cls):
             reference_id=13,
             linked_object_type="Contract",
         ),
+        InvoiceCategory.objects.create(
+            name="Contract manual",
+            reference_id=14,
+            manual_allowed=True,
+            linked_object_type="Contract",
+        ),
     ]
 
 

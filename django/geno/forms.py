@@ -1214,7 +1214,7 @@ class ManualInvoiceForm(forms.Form):
         category = cleaned_data.get("category")
         if category.linked_object_type == "Contract" and not contract:
             raise forms.ValidationError(
-                "Für diesen Rechnungstyp muss ein Vetrag angegeben werden, "
+                "Für diesen Rechnungstyp muss ein Vertrag angegeben werden, "
                 "um eine Rechnung zu erstellen!"
             )
         if category.linked_object_type == "Address" and not address:

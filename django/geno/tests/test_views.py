@@ -10,7 +10,7 @@ from django.test import tag
 from django.urls import reverse
 
 import geno.tests.data as geno_testdata
-from geno.models import Invoice, Share, ShareType
+from geno.models import Invoice, InvoiceCategory, Share, ShareType
 from geno.views import ShareStatementView
 
 from .base import GenoAdminTestCase
@@ -228,6 +228,38 @@ class GenoViewsTest(GenoAdminTestCase):
             raw=True,
         )
         self.assertEqual(Invoice.objects.count(), 0)
+
+    @patch("geno.views.create_qrbill", side_effect=create_fake_pdf, return_value=([], 0, None))
+    def test_invoice_manual_address_and_contract_validation(self, mock_create_qrbill):
+        self.client.login(username="superuser", password="secret")
+        path = reverse("geno:invoice-manual")
+        data = self.get_invoice_manual_data(preview=False, send_email=False)
+        data["address"] = ""
+        data["contract"] = self.contracts[0].pk
+        response = self.client.post(path, data=data)
+        self.assertInHTMLResponse(
+            "Für diesen Rechnungstyp muss eine Adresse angegeben werden",
+            response,
+            raw=True,
+        )
+        data["category"] = InvoiceCategory.objects.get(name="Contract manual").pk
+        data["address"] = self.addresses[0].pk
+        data["contract"] = ""
+        response = self.client.post(path, data=data)
+        self.assertInHTMLResponse(
+            "Für diesen Rechnungstyp muss ein Vertrag angegeben werden",
+            response,
+            raw=True,
+        )
+        data["contract"] = self.contracts[0].pk
+        response = self.client.post(path, data=data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["Content-Type"], "application/pdf")
+        self.assertEqual(b"".join(response.streaming_content), b"Dummy PDF")
+        self.assertEqual(Invoice.objects.count(), 1)
+        invoice = Invoice.objects.first()
+        self.assertEqual(invoice.contract, self.contracts[0])
+        self.assertEqual(invoice.person, None)
 
 
 class Odt2PdfViewTest(GenoAdminTestCase):
