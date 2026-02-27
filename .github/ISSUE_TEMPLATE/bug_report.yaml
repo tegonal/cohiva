@@ -11,7 +11,7 @@ body:
     attributes:
       label: Affected Version
       description: What version of cohiva are you using?
-      placeholder: "v1.4.0"
+      placeholder: "v1.4.1"
     validations:
       required: true
   - type: textarea
