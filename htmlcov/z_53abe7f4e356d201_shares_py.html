@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for geno/shares.py: 85%</title>
+    <title>Coverage for geno/shares.py: 86%</title>
     <link rel="icon" sizes="32x32" href="favicon_32_cb_c827f16f.png">
     <link rel="stylesheet" href="style_cb_9ff733b0.css" type="text/css">
     <script src="coverage_html_cb_dd2e7eb5.js" defer></script>
@@ -12,7 +12,7 @@
     <div class="content">
         <h1>
             <span class="text">Coverage for </span><b>geno&#8201;/&#8201;shares.py</b>:
-            <span class="pc_cov">85%</span>
+            <span class="pc_cov">86%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -55,8 +55,8 @@
         </aside>
         <h2>
             <span class="text">537 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">455<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">82<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">462<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">75<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">0<span class="text"> excluded</span></button>
         </h2>
         <p class="text">
@@ -65,7 +65,7 @@
             <a id="nextFileLink" class="nav" href="z_53abe7f4e356d201_tables_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-27 08:47 +0000
+            created at 2026-02-27 13:12 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -181,7 +181,7 @@
     <p class="run"><span class="n"><a id="t99" href="#t99">99</a></span><span class="t">        <span class="key">if</span> <span class="nam">statement_data</span><span class="op">[</span><span class="str">"s_shares_bvg"</span><span class="op">]</span> <span class="op">></span> <span class="num">0</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t100" href="#t100">100</a></span><span class="t">            <span class="nam">statement_data</span><span class="op">[</span><span class="str">"sect_bvg"</span><span class="op">]</span> <span class="op">=</span> <span class="key">True</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t101" href="#t101">101</a></span><span class="t">        <span class="key">if</span> <span class="nam">statement_data</span><span class="op">[</span><span class="str">"n_shares"</span><span class="op">]</span> <span class="op">></span> <span class="nam">settings</span><span class="op">.</span><span class="nam">GENO_SMALL_NUMBER_OF_SHARES_CUTOFF</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t102" href="#t102">102</a></span><span class="t">            <span class="nam">statement_data</span><span class="op">[</span><span class="str">"thankyou"</span><span class="op">]</span> <span class="op">=</span> <span class="key">True</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t102" href="#t102">102</a></span><span class="t">            <span class="nam">statement_data</span><span class="op">[</span><span class="str">"thankyou"</span><span class="op">]</span> <span class="op">=</span> <span class="key">True</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t103" href="#t103">103</a></span><span class="t">    <span class="key">if</span> <span class="nam">inter</span><span class="op">[</span><span class="str">"end_amount"</span><span class="op">]</span><span class="op">[</span><span class="num">1</span><span class="op">]</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t104" href="#t104">104</a></span><span class="t">        <span class="com">## Zinslose Darlehen</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t105" href="#t105">105</a></span><span class="t">        <span class="nam">statement_data</span><span class="op">[</span><span class="str">"sect_loan"</span><span class="op">]</span> <span class="op">=</span> <span class="key">True</span>&nbsp;</span><span class="r"></span></p>
@@ -224,16 +224,16 @@
     <p class="pln"><span class="n"><a id="t142" href="#t142">142</a></span><span class="t">            <span class="com"># pprint.pprint(d)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t143" href="#t143">143</a></span><span class="t">            <span class="nam">diff</span> <span class="op">=</span> <span class="nam">d</span><span class="op">[</span><span class="str">"amount"</span><span class="op">]</span> <span class="op">-</span> <span class="nam">last</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t144" href="#t144">144</a></span><span class="t">            <span class="key">if</span> <span class="nam">diff</span> <span class="op">></span> <span class="num">0</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t145" href="#t145">145</a></span><span class="t">                <span class="nam">statement_data</span><span class="op">[</span><span class="str">"dep_in"</span><span class="op">]</span> <span class="op">+=</span> <span class="nam">diff</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t146" href="#t146">146</a></span><span class="t">                <span class="nam">statement_data</span><span class="op">[</span><span class="str">"deposit_changes"</span><span class="op">]</span><span class="op">.</span><span class="nam">append</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis mis2 show_mis"><span class="n"><a id="t147" href="#t147">147</a></span><span class="t">                    <span class="op">{</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis mis2 show_mis"><span class="n"><a id="t148" href="#t148">148</a></span><span class="t">                        <span class="str">"date"</span><span class="op">:</span> <span class="nam">d</span><span class="op">[</span><span class="str">"start"</span><span class="op">]</span><span class="op">.</span><span class="nam">strftime</span><span class="op">(</span><span class="str">"%d.%m.%Y"</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis mis2 show_mis"><span class="n"><a id="t149" href="#t149">149</a></span><span class="t">                        <span class="str">"text"</span><span class="op">:</span> <span class="str">"Einzahlung"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis mis2 show_mis"><span class="n"><a id="t150" href="#t150">150</a></span><span class="t">                        <span class="str">"out"</span><span class="op">:</span> <span class="str">""</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis mis2 show_mis"><span class="n"><a id="t151" href="#t151">151</a></span><span class="t">                        <span class="str">"in"</span><span class="op">:</span> <span class="nam">nformat</span><span class="op">(</span><span class="nam">diff</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis mis2 show_mis"><span class="n"><a id="t152" href="#t152">152</a></span><span class="t">                        <span class="str">"bal"</span><span class="op">:</span> <span class="nam">nformat</span><span class="op">(</span><span class="nam">d</span><span class="op">[</span><span class="str">"amount"</span><span class="op">]</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis mis2 show_mis"><span class="n"><a id="t153" href="#t153">153</a></span><span class="t">                    <span class="op">}</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis mis2 show_mis"><span class="n"><a id="t154" href="#t154">154</a></span><span class="t">                <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t145" href="#t145">145</a></span><span class="t">                <span class="nam">statement_data</span><span class="op">[</span><span class="str">"dep_in"</span><span class="op">]</span> <span class="op">+=</span> <span class="nam">diff</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t146" href="#t146">146</a></span><span class="t">                <span class="nam">statement_data</span><span class="op">[</span><span class="str">"deposit_changes"</span><span class="op">]</span><span class="op">.</span><span class="nam">append</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t147" href="#t147">147</a></span><span class="t">                    <span class="op">{</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t148" href="#t148">148</a></span><span class="t">                        <span class="str">"date"</span><span class="op">:</span> <span class="nam">d</span><span class="op">[</span><span class="str">"start"</span><span class="op">]</span><span class="op">.</span><span class="nam">strftime</span><span class="op">(</span><span class="str">"%d.%m.%Y"</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t149" href="#t149">149</a></span><span class="t">                        <span class="str">"text"</span><span class="op">:</span> <span class="str">"Einzahlung"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t150" href="#t150">150</a></span><span class="t">                        <span class="str">"out"</span><span class="op">:</span> <span class="str">""</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t151" href="#t151">151</a></span><span class="t">                        <span class="str">"in"</span><span class="op">:</span> <span class="nam">nformat</span><span class="op">(</span><span class="nam">diff</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t152" href="#t152">152</a></span><span class="t">                        <span class="str">"bal"</span><span class="op">:</span> <span class="nam">nformat</span><span class="op">(</span><span class="nam">d</span><span class="op">[</span><span class="str">"amount"</span><span class="op">]</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t153" href="#t153">153</a></span><span class="t">                    <span class="op">}</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t154" href="#t154">154</a></span><span class="t">                <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t155" href="#t155">155</a></span><span class="t">            <span class="key">elif</span> <span class="nam">diff</span> <span class="op">&lt;</span> <span class="num">0</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t156" href="#t156">156</a></span><span class="t">                <span class="nam">statement_data</span><span class="op">[</span><span class="str">"dep_out"</span><span class="op">]</span> <span class="op">+=</span> <span class="op">-</span><span class="num">1</span> <span class="op">*</span> <span class="nam">diff</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t157" href="#t157">157</a></span><span class="t">                <span class="nam">statement_data</span><span class="op">[</span><span class="str">"deposit_changes"</span><span class="op">]</span><span class="op">.</span><span class="nam">append</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
@@ -289,10 +289,10 @@
     <p class="run"><span class="n"><a id="t207" href="#t207">207</a></span><span class="t">            <span class="nam">inter_total</span> <span class="op">=</span> <span class="nam">inter</span><span class="op">[</span><span class="str">"total"</span><span class="op">]</span><span class="op">[</span><span class="num">4</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t208" href="#t208">208</a></span><span class="t">        <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t209" href="#t209">209</a></span><span class="t">            <span class="com">## Darlehen Normal</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t210" href="#t210">210</a></span><span class="t">            <span class="nam">statement_data</span><span class="op">[</span><span class="str">"p_loan"</span><span class="op">]</span> <span class="op">=</span> <span class="nam">nformat</span><span class="op">(</span><span class="nam">inter</span><span class="op">[</span><span class="str">"pay"</span><span class="op">]</span><span class="op">[</span><span class="num">2</span><span class="op">]</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t211" href="#t211">211</a></span><span class="t">            <span class="nam">inter_dates</span> <span class="op">=</span> <span class="nam">inter</span><span class="op">[</span><span class="str">"dates"</span><span class="op">]</span><span class="op">[</span><span class="num">2</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t212" href="#t212">212</a></span><span class="t">            <span class="nam">inter_tax</span> <span class="op">=</span> <span class="nam">inter</span><span class="op">[</span><span class="str">"tax"</span><span class="op">]</span><span class="op">[</span><span class="num">2</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t213" href="#t213">213</a></span><span class="t">            <span class="nam">inter_total</span> <span class="op">=</span> <span class="nam">inter</span><span class="op">[</span><span class="str">"total"</span><span class="op">]</span><span class="op">[</span><span class="num">2</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t210" href="#t210">210</a></span><span class="t">            <span class="nam">statement_data</span><span class="op">[</span><span class="str">"p_loan"</span><span class="op">]</span> <span class="op">=</span> <span class="nam">nformat</span><span class="op">(</span><span class="nam">inter</span><span class="op">[</span><span class="str">"pay"</span><span class="op">]</span><span class="op">[</span><span class="num">2</span><span class="op">]</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t211" href="#t211">211</a></span><span class="t">            <span class="nam">inter_dates</span> <span class="op">=</span> <span class="nam">inter</span><span class="op">[</span><span class="str">"dates"</span><span class="op">]</span><span class="op">[</span><span class="num">2</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t212" href="#t212">212</a></span><span class="t">            <span class="nam">inter_tax</span> <span class="op">=</span> <span class="nam">inter</span><span class="op">[</span><span class="str">"tax"</span><span class="op">]</span><span class="op">[</span><span class="num">2</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t213" href="#t213">213</a></span><span class="t">            <span class="nam">inter_total</span> <span class="op">=</span> <span class="nam">inter</span><span class="op">[</span><span class="str">"total"</span><span class="op">]</span><span class="op">[</span><span class="num">2</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t214" href="#t214">214</a></span><span class="t">        <span class="key">for</span> <span class="nam">d</span> <span class="key">in</span> <span class="nam">inter_dates</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t215" href="#t215">215</a></span><span class="t">            <span class="nam">statement_data</span><span class="op">[</span><span class="str">"inter_loan_int"</span><span class="op">]</span><span class="op">.</span><span class="nam">append</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t216" href="#t216">216</a></span><span class="t">                <span class="op">{</span>&nbsp;</span><span class="r"></span></p>
@@ -1166,7 +1166,7 @@
             <a class="nav" href="z_53abe7f4e356d201_tables_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-02-27 08:47 +0000
+            created at 2026-02-27 13:12 +0000
         </p>
     </div>
 </footer>
