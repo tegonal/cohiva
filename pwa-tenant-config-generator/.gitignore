@@ -1,3 +1,5 @@
+/tenant-config/
+/tenant-configs/
 node_modules/
 dist/
 *.log
