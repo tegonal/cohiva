@@ -55,12 +55,12 @@
 | credit\_accounting/views.py                                                                            |      331 |       96 |     71% |48, 62, 77, 80, 87-95, 113, 117-145, 184-189, 199, 217, 221, 234, 243-247, 261, 265-284, 302, 306, 310-329, 343-344, 347-352, 392, 394, 396-403, 407, 412-424, 436-437, 477, 481-497, 518, 524 |
 | finance/\_\_init\_\_.py                                                                                |        0 |        0 |    100% |           |
 | finance/accounting/\_\_init\_\_.py                                                                     |        7 |        0 |    100% |           |
-| finance/accounting/account.py                                                                          |       77 |        1 |     99% |        72 |
-| finance/accounting/book.py                                                                             |      100 |        5 |     95% |67, 70, 73, 76, 79 |
-| finance/accounting/cashctrl.py                                                                         |      227 |       19 |     92% |68, 76, 81, 90, 110, 116, 190, 195-196, 236-237, 283, 314-317, 326, 338, 348 |
+| finance/accounting/account.py                                                                          |       72 |        1 |     99% |        69 |
+| finance/accounting/book.py                                                                             |       99 |        5 |     95% |64, 67, 70, 73, 76 |
+| finance/accounting/cashctrl.py                                                                         |      226 |       19 |     92% |65, 73, 78, 87, 107, 113, 187, 192-193, 233-234, 280, 311-314, 323, 335, 345 |
 | finance/accounting/gnucash.py                                                                          |       61 |        3 |     95% |36, 80, 101 |
-| finance/accounting/manager.py                                                                          |       94 |        0 |    100% |           |
-| finance/accounting/transaction.py                                                                      |       29 |        0 |    100% |           |
+| finance/accounting/manager.py                                                                          |       93 |        0 |    100% |           |
+| finance/accounting/transaction.py                                                                      |       24 |        0 |    100% |           |
 | finance/apps.py                                                                                        |        6 |        0 |    100% |           |
 | finance/tests/\_\_init\_\_.py                                                                          |        0 |        0 |    100% |           |
 | finance/tests/test\_accounting.py                                                                      |      260 |        2 |     99% |    53, 66 |
@@ -77,7 +77,7 @@
 | geno/context\_processors.py                                                                            |        6 |        0 |    100% |           |
 | geno/documents.py                                                                                      |      679 |      221 |     67% |50, 56-61, 162-175, 199, 220, 261-262, 290-294, 311, 335, 368-371, 396, 398, 445-447, 477-479, 484-488, 492-495, 516, 578-582, 590, 596-598, 606, 637, 756-761, 768, 812-813, 871-964, 968-1142, 1154 |
 | geno/exporter.py                                                                                       |      369 |      278 |     25% |21-60, 65-144, 149, 221-227, 248, 253-339, 361-465, 469-487, 491-503 |
-| geno/forms.py                                                                                          |      461 |       90 |     80% |89-92, 96-99, 140, 144, 151-152, 158, 171, 202-203, 388-393, 570-572, 670, 728-729, 734, 738, 742, 746, 750, 752, 774, 780-791, 829, 846, 859, 865-866, 876-879, 881-884, 894, 902-904, 914-915, 943, 957, 963-969, 977, 1129-1140, 1151, 1156-1160, 1238-1243, 1254-1260 |
+| geno/forms.py                                                                                          |      459 |       90 |     80% |89-92, 96-99, 139-140, 143-144, 149, 162, 193-194, 379-384, 561-563, 661, 719-720, 725, 729, 733, 737, 741, 743, 765, 771-782, 820, 837, 850, 856-857, 867-870, 872-875, 885, 893-895, 905-906, 934, 948, 954-960, 968, 1120-1131, 1142, 1147-1151, 1229-1234, 1245-1251 |
 | geno/importer.py                                                                                       |      945 |      891 |      6% |39-280, 284-548, 553-637, 641-727, 731-819, 823-888, 892-951, 955-1117, 1121-1200, 1204-1279, 1283-1297, 1312-1313, 1321, 1324, 1327-1359, 1366-1368, 1372-1525, 1529-1634 |
 | geno/invoice.py                                                                                        |       90 |       12 |     87% |47, 49, 51, 65, 79, 81, 90, 117, 132, 157-160 |
 | geno/layout\_helpers.py                                                                                |       46 |        0 |    100% |           |
@@ -91,7 +91,7 @@
 | geno/migrations/0007\_address\_building\_extension.py                                                  |        4 |        0 |    100% |           |
 | geno/migrations/0008\_migrate\_emonitor2import.py                                                      |        4 |        0 |    100% |           |
 | geno/migrations/0009\_nk\_flat.py                                                                      |        4 |        0 |    100% |           |
-| geno/migrations/0010\_bankaccount\_alter\_address\_bankaccount\_and\_more.py                           |       70 |       55 |     21% |13-24, 33-47, 50-64, 68-98 |
+| geno/migrations/0010\_bankaccount\_alter\_address\_bankaccount\_and\_more.py                           |       69 |       55 |     20% |10-21, 30-44, 47-61, 65-95 |
 | geno/migrations/0011\_tenantsview\_alter\_rentalunit\_import\_id.py                                    |        4 |        0 |    100% |           |
 | geno/migrations/0012\_alter\_bankaccount\_options\_alter\_contract\_options\_and\_more.py              |        5 |        0 |    100% |           |
 | geno/migrations/0013\_building\_accounting\_postfix\_and\_more.py                                      |        4 |        0 |    100% |           |
@@ -207,7 +207,7 @@
 | reservation/tests/test\_views.py                                                                       |       10 |        2 |     80% |     21-22 |
 | reservation/urls.py                                                                                    |        4 |        0 |    100% |           |
 | reservation/views.py                                                                                   |      136 |      112 |     18% |22-201, 240-263 |
-| **TOTAL**                                                                                              | **21691** | **5717** | **74%** |           |
+| **TOTAL**                                                                                              | **21675** | **5717** | **74%** |           |
 
 
 ## Setup coverage badge
