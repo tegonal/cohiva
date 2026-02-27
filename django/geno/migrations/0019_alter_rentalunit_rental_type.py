@@ -3,14 +3,14 @@
 from django.db import migrations, models
 
 
-# Migrate rental objects of type "Jokerzimmer" to "Zimmer" by setting the short description to "Jokerzimmer", but ONLY IF the short description is empty. If the short description is not empty, leave it as is!
-def mark_jokerzimmer_as_zimmer_and_set_short_description(apps, schema_editor):
+# Migrate rental objects of type "Jokerzimmer" to "Zimmer" by setting the label to "Jokerzimmer", but ONLY IF the label is empty. If the label is not empty, leave it as is!
+def mark_jokerzimmer_as_zimmer_and_set_label(apps, schema_editor):
     RentalUnit = apps.get_model("geno", "RentalUnit")
     for rental in RentalUnit.objects.filter(rental_type="Jokerzimmer"):
-        if not rental.short_description:
-            rental.short_description = "Jokerzimmer"
+        if not rental.label:
+            rental.label = "Jokerzimmer"
         rental.rental_type = "Zimmer"
-        rental.save(update_fields=["rental_type", "short_description"])
+        rental.save(update_fields=["rental_type", "label"])
 
 
 class Migration(migrations.Migration):
@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(mark_jokerzimmer_as_zimmer_and_set_short_description),
+        migrations.RunPython(mark_jokerzimmer_as_zimmer_and_set_label),
         migrations.AlterField(
             model_name="rentalunit",
             name="rental_type",
