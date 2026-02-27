@@ -30,6 +30,7 @@ from .models import (
     Address,
     Building,
     ContentTemplate,
+    Contract,
     GenericAttribute,
     Invoice,
     InvoiceCategory,
@@ -1162,9 +1163,16 @@ class ManualInvoiceForm(forms.Form):
         widget=UnfoldAdminDateWidget(),
     )
     address = forms.ModelChoiceField(
-        label="Rechnungsempfänger*in",
+        label="Rechnungsempfänger:in",
         queryset=Address.objects.filter(active=True),
         widget=UnfoldAdminSelect2Widget(),
+        required=False,
+    )
+    contract = forms.ModelChoiceField(
+        label="Rechnungsempfänger:in/Vertrag",
+        queryset=Contract.objects.filter(state="unterzeichnet"),
+        widget=UnfoldAdminSelect2Widget(),
+        required=False,
     )
     extra_text = forms.CharField(
         label="Zusatztext",
@@ -1180,19 +1188,40 @@ class ManualInvoiceForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
+        linked_object_type = kwargs.pop("linked_object_type", None)
         super().__init__(*args, **kwargs)
         # Add Crispy Forms helper for Unfold styling
         self.helper = FormHelper()
         self.helper.form_tag = False  # Form tag handled in template
         self.helper.form_class = ""
+        if linked_object_type == "Contract":
+            recipient_field = "contract"
+        else:
+            recipient_field = "address"
         self.helper.layout = Layout(
             Div("category", css_class="mb-4"),
             UnfoldSeparator(),
             Div("date", css_class="mb-4"),
-            Div("address", css_class="mb-4"),
+            Div(recipient_field, css_class="mb-4"),
             Div("extra_text", css_class="mb-4"),
             # Note: send_email is rendered in footer submit bar, not in form content
         )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        address = cleaned_data.get("address")
+        contract = cleaned_data.get("contract")
+        category = cleaned_data.get("category")
+        if category.linked_object_type == "Contract" and not contract:
+            raise forms.ValidationError(
+                "Für diesen Rechnungstyp muss ein Vetrag angegeben werden, "
+                "um eine Rechnung zu erstellen!"
+            )
+        if category.linked_object_type == "Address" and not address:
+            raise forms.ValidationError(
+                "Für diesen Rechnungstyp muss eine Adresse angegeben werden, "
+                "um eine Rechnung zu erstellen!"
+            )
 
 
 class ManualInvoiceLineForm(forms.Form):

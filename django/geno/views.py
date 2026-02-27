@@ -3734,8 +3734,13 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
         return context
 
     def get_form(self):
+        linked_object_type = None
         if self.request.method == "POST":
-            form = ManualInvoiceForm(self.request.POST)
+            category_id = self.request.POST.get("category")
+            if category_id:
+                category = InvoiceCategory.objects.get(id=category_id)
+                linked_object_type = category.linked_object_type
+            form = ManualInvoiceForm(self.request.POST, linked_object_type=linked_object_type)
         else:
             initial_data = {"date": datetime.date.today()}
 
@@ -3751,6 +3756,7 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
                     if category:
                         # Always preserve the selected category (as model instance)
                         initial_data["category"] = category
+                        linked_object_type = category.linked_object_type
 
                         # Apply template data if available for this category (by name)
                         templates = self.get_invoice_templates()
@@ -3760,7 +3766,7 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
                 except (ValueError, TypeError):
                     pass
 
-            form = ManualInvoiceForm(initial=initial_data)
+            form = ManualInvoiceForm(initial=initial_data, linked_object_type=linked_object_type)
         return form
 
     def get_formset(self):
@@ -3824,7 +3830,12 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
 
         ## TODO: Use InvoiceCreator to do this
         invoice_category = form.cleaned_data["category"]
-        address = form.cleaned_data["address"]
+        if invoice_category.linked_object_type == "Contract":
+            contract = form.cleaned_data["contract"]
+            address = contract.get_contact_address()
+        else:
+            contract = None
+            address = form.cleaned_data["address"]
         invoice_date = form.cleaned_data["date"]
 
         lines_count = 0
@@ -3869,7 +3880,8 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
                     invoice_category.name,
                     invoice_date,
                     total_amount,
-                    address=address,
+                    address=None if contract else address,
+                    contract=contract,
                     comment="/".join(comment),
                 )
                 invoice_id = invoice.id
@@ -3903,7 +3915,7 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
             )
             context["invoice_nr"] = invoice_id
             context["show_liegenschaft"] = False
-            context["contract_info"] = None
+            context["contract_info"] = contract.get_contract_label() if contract else None
             context["sect_rent"] = False
             context["sect_generic"] = True
             context["generic_info"] = invoice_lines
