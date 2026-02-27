@@ -4160,17 +4160,31 @@ class InvoiceBatchGenerateView(DryRunActionView):
 
 
 class InvoiceRegenerateView(CohivaAdminViewMixin, TemplateView):
-    title = "Mietobjektespiegel"
+    title = "Rechnung neu erstellen"
     permission_required = ("geno.invoice", "geno.transaction_invoice")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "response": [{"variant": "error", "info": self.error_msg}],
+            }
+        )
+        return context
 
     def get(self, *args, **kwargs):
         invoice = Invoice.objects.get(pk=kwargs["key"])
-        output = invoice.regenerate_invoice_document()
-        print(output)
-        pdf_file = open(output.file, "rb")
-        resp = FileResponse(pdf_file, content_type="application/pdf")
-        resp["Content-Disposition"] = "attachment; filename=%s" % output.filename
-        return resp
+        logger.info(f"Regenerating invoice {invoice.id}")
+        try:
+            output = invoice.regenerate_invoice_document()
+            pdf_file = open(output.file, "rb")
+            resp = FileResponse(pdf_file, content_type="application/pdf")
+            resp["Content-Disposition"] = "attachment; filename=%s" % output.filename
+            return resp
+        except Exception as e:
+            logger.error(f"Could not create PDF for invoice {invoice.id}: {e}")
+            self.error_msg = f'Konnte PDF für Rechnung "{invoice}" nicht erstellen: {e}'
+            return super().get(*args, **kwargs)
 
 
 class ResidentUnitListView(CohivaAdminViewMixin, TemplateView):

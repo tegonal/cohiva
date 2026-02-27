@@ -2115,6 +2115,7 @@ class Invoice(GenoBase):
 
     def regenerate_invoice_document(self):
         from geno.documents import ProcessDocuments
+
         # data["template_files"] = ...
         template = self.content_template
 
@@ -2122,7 +2123,7 @@ class Invoice(GenoBase):
         process.set_output_format("pdf")
         process.add_document_template(template)
         ## HACK!
-        process.templates[0].regenerate_from_invoice=self
+        process.templates[0].regenerate_from_invoice = self
         try:
             member = Member.objects.get(name=self.person)
             process.add_recipient(member, None, "")
@@ -2135,7 +2136,7 @@ class Invoice(GenoBase):
             return None
 
         output_doc = process.recipients[0].documents[0]
-        #process.cleanup()
+        # process.cleanup()
         return output_doc
 
     #        self.content_template = None

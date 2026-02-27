@@ -359,9 +359,6 @@ class DocumentTemplate:
         )  # use template name as filename tag
         if self.content_template.template_type == "OpenDocument":
             ctx = self.get_context(recipient)
-            ## Hack!!!
-            if self.regenerate_from_invoice:
-                print(ctx)
             logger.info(
                 " > fill template %s with context: anrede=%s, name=%s, vorname=%s, org=%s"
                 % (
