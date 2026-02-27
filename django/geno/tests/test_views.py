@@ -10,7 +10,8 @@ from django.test import tag
 from django.urls import reverse
 
 import geno.tests.data as geno_testdata
-from geno.models import Invoice
+from geno.models import Invoice, Share, ShareType
+from geno.views import ShareStatementView
 
 from .base import GenoAdminTestCase
 
@@ -255,3 +256,67 @@ class Odt2PdfViewTest(GenoAdminTestCase):
         with zipfile.ZipFile(io.BytesIO(response.getvalue())) as zip_file:
             self.assertInPDF(zip_file.read("testA.pdf"), "Template-Test")
             self.assertInPDF(zip_file.read("testB.pdf"), "Template-Test")
+
+
+class ShareStatementViewTest(GenoAdminTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        stype_as = ShareType.objects.get(name="Anteilschein")
+        Share.objects.all().delete()
+        Share.objects.create(
+            value=200,
+            quantity=1,
+            share_type=stype_as,
+            date=datetime.date(2020, 1, 1),
+            name=cls.addresses[0],
+            state="bezahlt",
+        )
+        Share.objects.create(
+            value=200,
+            quantity=5,
+            share_type=stype_as,
+            date=datetime.date(2020, 1, 1),
+            name=cls.addresses[1],
+            state="bezahlt",
+        )
+        Share.objects.create(
+            value=200,
+            quantity=6,
+            share_type=stype_as,
+            date=datetime.date(2020, 1, 1),
+            name=cls.addresses[2],
+            state="bezahlt",
+        )
+        Share.objects.create(
+            value=200,
+            quantity=10,
+            share_type=stype_as,
+            date=datetime.date(2020, 1, 1),
+            name=cls.addresses[3],
+            state="bezahlt",
+        )
+
+    def test_get_object_skips(self):
+        view = ShareStatementView()
+        view.enddate = datetime.date(2020, 12, 31)
+        obj = view.get_objects()
+        self.assertEqual(len(obj), 2)
+        self.assertIn("Anzahl ignoriert=2", view.extra_description_info)
+
+        Share.objects.create(
+            value=500,
+            quantity=1,
+            share_type=ShareType.objects.get(name="Depositenkasse"),
+            date=datetime.date(2020, 1, 1),
+            name=self.addresses[1],
+            state="bezahlt",
+        )
+        obj = view.get_objects()
+        self.assertEqual(len(obj), 3)
+        self.assertIn("Anzahl ignoriert=1", view.extra_description_info)
+
+        view.address_id = self.addresses[0].pk
+        obj = view.get_objects()
+        self.assertEqual(len(obj), 1)
+        self.assertIn("Anzahl ignoriert=0", view.extra_description_info)

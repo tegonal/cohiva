@@ -1997,7 +1997,7 @@ class ShareStatementView(DocumentGeneratorView):
                 or statement_data["sect_loan"]
                 or statement_data["sect_deposit"]
             ):
-                if not statement_data["thankyou"]:
+                if not self.address_id and not statement_data["thankyou"]:
                     ## Skip if max. GENO_SMALL_NUMBER_OF_SHARES_CUTOFF shares and no loan etc.
                     skip_count += 1
                 else:
