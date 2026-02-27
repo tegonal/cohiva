@@ -1,9 +1,9 @@
 import datetime
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from finance.accounting import AccountingManager
-from geno.billing import get_income_account, get_receivables_account
+from finance.accounting import Account, AccountingManager
 from geno.models import Invoice
 
 
@@ -55,35 +55,61 @@ class Command(BaseCommand):
         if not invoices:
             return ["No invoices found that need transaction recreation."]
         output.append("Recreate transactions for the following invoices:")
+        accounts_summary = {}
         for invoice in invoices:
+            warnings = []
             output.append(f"  - {invoice.date} {invoice} CHF {invoice.amount}")
             if invoice.contract and invoice.person:
                 raise RuntimeError("Can't specify address AND contract.")
-            account_key = None
-            ## Special cases are not handled yet!
-            #  rent_account_key:
-            #  AccountKey.RENT_BUSINESS
-            #  AccountKey.RENT_OTHER
-            #  AccountKey.RENT_PARKING
-            #  "Nebenkosten "
-            #  "Nebenkosten pauschal "
-            #  AccountKey.NK_FLAT
-            #  AccountKey.RENT_REDUCTION
-            #    ...
 
-            account = get_income_account(invoice.invoice_category, account_key, invoice.contract)
-            receivables_account = get_receivables_account(
-                invoice.invoice_category, invoice.contract
-            )
+            old_fin_account = invoice.fin_account
+            old_fin_account_receivables = invoice.fin_account_receivables
+            ## Optional mapping to new account numbers, if configured in settings
+            if hasattr(settings, "FINANCIAL_ACCOUNTING_OLD_ACCOUNT_MAPPING"):
+                if old_fin_account in settings.FINANCIAL_ACCOUNTING_OLD_ACCOUNT_MAPPING:
+                    invoice.fin_account = str(
+                        settings.FINANCIAL_ACCOUNTING_OLD_ACCOUNT_MAPPING[old_fin_account]
+                    )
+                if (
+                    old_fin_account_receivables
+                    in settings.FINANCIAL_ACCOUNTING_OLD_ACCOUNT_MAPPING
+                ):
+                    invoice.fin_account_receivables = str(
+                        settings.FINANCIAL_ACCOUNTING_OLD_ACCOUNT_MAPPING[
+                            old_fin_account_receivables
+                        ]
+                    )
 
             if invoice.invoice_type == "Invoice":
-                acc_debit = receivables_account
-                acc_credit = account  # revenue account
+                acc_debit = Account(
+                    name="Recreate-Inv-Debit", prefix=invoice.fin_account_receivables
+                )
+                acc_credit = Account(name="Recreate-Inv-Credit", prefix=invoice.fin_account)
             elif invoice.invoice_type == "Payment":
-                acc_debit = account  # bank account
-                acc_credit = receivables_account
+                acc_debit = Account(name="Recreate-Pay-Credit", prefix=invoice.fin_account)
+                acc_credit = Account(
+                    name="Recreate-Pay-Debit", prefix=invoice.fin_account_receivables
+                )
             else:
                 raise RuntimeError(f"Invoice type {invoice.invoice_type} is not implemented.")
+
+            if invoice.fin_account not in accounts_summary:
+                accounts_summary[invoice.fin_account] = []
+            if (
+                invoice.fin_account != old_fin_account
+                and old_fin_account not in accounts_summary[invoice.fin_account]
+            ):
+                accounts_summary[invoice.fin_account].append(old_fin_account)
+            if invoice.fin_account_receivables not in accounts_summary:
+                accounts_summary[invoice.fin_account_receivables] = []
+            if (
+                invoice.fin_account_receivables != old_fin_account_receivables
+                and old_fin_account_receivables
+                not in accounts_summary[invoice.fin_account_receivables]
+            ):
+                accounts_summary[invoice.fin_account_receivables].append(
+                    old_fin_account_receivables
+                )
 
             if invoice.contract:
                 txn_description = "%s [%s]" % (invoice.name, invoice.contract.get_contract_label())
@@ -102,18 +128,7 @@ class Command(BaseCommand):
             )
             old_fin_transaction_ref = invoice.fin_transaction_ref
             invoice.fin_transaction_ref = fin_transaction_ref
-            warnings = []
-            if invoice.fin_account != account.code:
-                warnings.append(
-                    f"Will change invoice fin_account: {invoice.fin_account} => {account.code}"
-                )
-                invoice.fin_account = account.code
-            if invoice.fin_account_receivables != receivables_account.code:
-                warnings.append(
-                    "Will change invoice fin_account_receivables: "
-                    f"{invoice.fin_account_receivables} => {receivables_account.code}"
-                )
-                invoice.fin_account_receivables = receivables_account.code
+
             if dry_run:
                 text = "Would add"
             else:
@@ -138,4 +153,15 @@ class Command(BaseCommand):
                 output.append("      WARNINGS:")
                 for warning in warnings:
                     output.append(f"        * {warning}")
+        if accounts_summary:
+            output.append("")
+            output.append("Summary of new accounts that need to exist")
+            output.append("(and the old account numbers, if mapped)")
+            output.append("=============================================")
+            for account_code in sorted(accounts_summary.keys()):
+                old = accounts_summary[account_code]
+                if old:
+                    output.append(f"  {account_code} <= {', '.join(old)}")
+                else:
+                    output.append(f"  {account_code}")
         return output

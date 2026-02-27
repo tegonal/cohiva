@@ -151,22 +151,12 @@ class ManagementRecreateTransactionTestCase(GenoAdminTestCase):
             old_refs.append(invoice.fin_transaction_ref)
         with AccountingManager() as book:
             output = command.recreate_transactions(book, invoices, dry_run=True)
-        print(output)
-        self.assertEqual(len(output), len(old_refs) * 2 + 1)
+        self.assertEqual(len(output), len(old_refs) * 2 + 7)
         invoices_new = Invoice.objects.filter(name__startswith="Test other")
         for i, invoice_new in enumerate(invoices_new):
             self.assertEqual(old_refs[i], invoice_new.fin_transaction_ref)
             with self.assertRaises(ValueError):
                 book.get_transaction(invoice_new.fin_transaction_ref)
-
-    def test_recreate_transactions_dry_run_warnings(self):
-        command = recreate_transactions()
-        invoices = Invoice.objects.filter(name__startswith="Test with different accounts")
-        with AccountingManager() as book:
-            output = command.recreate_transactions(book, invoices, dry_run=True)
-        print(output)
-        self.assertEqual(len(output), 4)
-        self.assertIn("WARNING: Will change invoice fin_account: 1020.1 => 3000", output[3])
 
     def test_recreate_transactions(self):
         command = recreate_transactions()
@@ -176,8 +166,7 @@ class ManagementRecreateTransactionTestCase(GenoAdminTestCase):
             old_refs.append(invoice.fin_transaction_ref)
         with AccountingManager() as book:
             output = command.recreate_transactions(book, invoices, dry_run=False)
-        print(output)
-        self.assertEqual(len(output), len(old_refs) * 2 + 1)
+        self.assertEqual(len(output), len(old_refs) * 2 + 7)
         invoices_new = Invoice.objects.filter(name__startswith="Test other")
         for i, invoice_new in enumerate(invoices_new):
             self.assertNotEqual(old_refs[i], invoice_new.fin_transaction_ref)
