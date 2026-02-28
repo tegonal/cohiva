@@ -183,11 +183,12 @@ class DocumentCreationTest(GenoAdminTestCase):
         content_template = ContentTemplate.objects.get(name="Simple")
         ctx = self.members[1].name.get_context()
 
+        tmp_dir = f"/tmp/django_pod_{settings.GENO_ID}"
         output_odt_file = fill_template_pod(content_template.file.path, ctx, output_format="odt")
-        self.assertRegex(output_odt_file, r"^/tmp/django_pod_Musterweg/django_pod_\w+\.odt$")
+        self.assertRegex(output_odt_file, rf"^{tmp_dir}/django_pod_\w+\.odt$")
 
         output_pdf_file = odt2pdf(output_odt_file, "document_creation_test")
-        self.assertRegex(output_pdf_file, r"^/tmp/django_pod_Musterweg/django_pod_\w+\.pdf$")
+        self.assertRegex(output_pdf_file, rf"^{tmp_dir}/django_pod_\w+\.pdf$")
 
         current_year = datetime.datetime.now().year
         expected = f"""General:

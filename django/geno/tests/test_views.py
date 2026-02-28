@@ -261,6 +261,18 @@ class GenoViewsTest(GenoAdminTestCase):
         self.assertEqual(invoice.contract, self.contracts[0])
         self.assertEqual(invoice.person, None)
 
+    def test_invoice_manual_address_and_contract_form_field(self):
+        self.client.login(username="superuser", password="secret")
+        path = reverse("geno:invoice-manual")
+        data = {"category": self.invoicecategories[0].pk}
+        response = self.client.get(path, data=data)
+        self.assertInHTMLResponse('<select name="address"', response, raw=True)
+        self.assertNotInHTMLResponse('<select name="contract"', response, raw=True)
+        data = {"category": InvoiceCategory.objects.get(name="Contract manual").pk}
+        response = self.client.get(path, data=data)
+        self.assertInHTMLResponse('<select name="contract"', response, raw=True)
+        self.assertNotInHTMLResponse('<select name="address"', response, raw=True)
+
 
 class Odt2PdfViewTest(GenoAdminTestCase):
     @tag("slow-test")

@@ -1231,6 +1231,7 @@ class ManualInvoiceForm(forms.Form):
                 "Für diesen Rechnungstyp muss eine Adresse angegeben werden, "
                 "um eine Rechnung zu erstellen!"
             )
+        return cleaned_data
 
     class Media:
         js = ("geno/js/select2-focus.js",)
