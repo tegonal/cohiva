@@ -99,6 +99,9 @@ class TransactionForm(forms.Form):
             raise forms.ValidationError("Datum darf nicht in der Zukunft liegen.")
         return date
 
+    class Media:
+        js = ("geno/js/select2-focus.js",)
+
 
 class TransactionFormInvoice(forms.Form):
     invoice = forms.ModelChoiceField(
@@ -150,6 +153,9 @@ class TransactionFormInvoice(forms.Form):
             self.add_error("date", "Datum darf nicht in der Zukunft liegen.")
 
         return cleaned_data
+
+    class Media:
+        js = ("geno/js/select2-focus.js",)
 
 
 class MemberMailForm(forms.Form):
@@ -1151,6 +1157,9 @@ class TransactionUploadProcessForm(forms.Form):
         if ttype != "ignore" and ttype != "kiosk_payment" and not name:
             raise forms.ValidationError("Bitte einen Namen (Zahlungsabsender) wählen.")
 
+    class Media:
+        js = ("geno/js/select2-focus.js",)
+
 
 class ManualInvoiceForm(forms.Form):
     category = forms.ModelChoiceField(
@@ -1222,6 +1231,9 @@ class ManualInvoiceForm(forms.Form):
                 "Für diesen Rechnungstyp muss eine Adresse angegeben werden, "
                 "um eine Rechnung zu erstellen!"
             )
+
+    class Media:
+        js = ("geno/js/select2-focus.js",)
 
 
 class ManualInvoiceLineForm(forms.Form):
