@@ -158,6 +158,9 @@ def _make_report_input_field(field):
         required=False, label=name, help_text=desc, widget=UnfoldAdminTextInputWidget()
     )
 
+    class Media:
+        js = ("geno/js/select2-focus.js",)
+
 
 class ReportConfigForm(forms.Form):
     def __init__(self, *args, **kwargs):
