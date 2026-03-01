@@ -864,6 +864,13 @@ FINANCIAL_ACCOUNTS = {
     },
 }
 
+FINANCIAL_ACCOUNTING_OLD_ACCOUNT_MAPPING = {
+    ## Mapping of old account codes to new account codes for migration/re-creation of old transactions
+    # "1020.1": "1021",
+    # "246": "9999",
+    # "3500": 1021,
+}
+
 ## Additional email senders for email sending forms (list of "Name <email>" strings).
 GENO_EXTRA_EMAIL_SENDER_CHOICES = ()
 
