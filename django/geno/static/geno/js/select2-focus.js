@@ -37,22 +37,24 @@
     }
   }
 
-  document.addEventListener('click', function(e){
-    var t = e.target;
-    var row = t.closest('[class*="field-"]');
+  function filterAutocompleteInRow(target) {
+    let row = target.closest('[class*="field-"]');
+    if (!row) {
+      // Try the "group" class (for custom forms)
+      row = target.closest('.group');
+    }
     if(!row) return;
     if(!hasAutocompleteWidget(row)) return;
-    focusAutocompleteInRow(row);
+    return row;
+  }
+
+  document.addEventListener('click', function(e){
+    focusAutocompleteInRow(filterAutocompleteInRow(e.target));
   }, true);
 
   // allow keyboard activation when focusing label or row (Enter / Space)
   document.addEventListener('keydown', function(e){
     if(e.key !== 'Enter' && e.key !== ' ') return;
-    var t = e.target;
-    var row = t.closest('[class*="field-"]');
-    if(!row) return;
-    if(!hasAutocompleteWidget(row)) return;
-    focusAutocompleteInRow(row);
-    if(e.key === ' ') e.preventDefault();
+    focusAutocompleteInRow(filterAutocompleteInRow(e.target));
   }, true);
 })();
