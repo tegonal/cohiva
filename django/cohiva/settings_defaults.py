@@ -1327,8 +1327,8 @@ UNFOLD = {
     "SITE_DROPDOWN": [
         {
             "icon": "book_2",
-            "title": _("Dokumentation"),
-            "link": "https://tegonal.github.io/cohiva/",
+            "title": _("Dokumentation/Wiki"),
+            "link": "https://wiki.cohiva.ch/",
         },
         {
             "icon": "error",
