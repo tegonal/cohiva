@@ -1205,7 +1205,7 @@ class ManualInvoiceLineForm(forms.Form):
         label="Beschreibung",
         max_length=50,
         min_length=3,
-        widget=UnfoldAdminTextInputWidget(),
+        widget=UnfoldAdminTextInputWidget(attrs={"size": 50}),
         required=False,
     )
     amount = forms.DecimalField(
