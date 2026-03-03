@@ -3683,7 +3683,7 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
         """
         ## Templates are currently Warmbächli-specific. This needs to be changed to allow
         ## a more flexible template configuration per instance.
-        if settings.GENO_ID != "Warmbächli":
+        if settings.GENO_ID != "Warmbaechli":
             return {}
         return {
             "Miete Gästezimmer": {
