@@ -2999,11 +2999,21 @@ def send_member_mail_filter_shares(form, member_list):
     return []
 
 
-def send_member_mail_filter_members(form, member_list):
+def send_member_mail_filter_members(form, member_list, only_active=True):
     errors = []
     members = Member.objects.all()
-    if "ignore_join_date" in form.cleaned_data and form.cleaned_data["ignore_join_date"]:
-        members = members.exclude(date_join__gt=form.cleaned_data["ignore_join_date"])
+    if "join_date_to" in form.cleaned_data and form.cleaned_data["join_date_to"]:
+        members = members.exclude(date_join__gt=form.cleaned_data["join_date_to"])
+    if "join_date_from" in form.cleaned_data and form.cleaned_data["join_date_from"]:
+        members = members.exclude(date_join__lt=form.cleaned_data["join_date_from"])
+    if "leave_date_to" in form.cleaned_data and form.cleaned_data["leave_date_to"]:
+        members = members.exclude(date_leave__gt=form.cleaned_data["leave_date_to"]).filter(
+            date_leave__isnull=False
+        )
+    if "leave_date_from" in form.cleaned_data and form.cleaned_data["leave_date_from"]:
+        members = members.exclude(date_leave__lt=form.cleaned_data["leave_date_from"]).filter(
+            date_leave__isnull=False
+        )
     if form.cleaned_data["select_flag_01"] == "true":
         members = members.filter(flag_01=True)
     elif form.cleaned_data["select_flag_01"] == "false":
@@ -3034,7 +3044,7 @@ def send_member_mail_filter_members(form, member_list):
         stype02 = None
     for member in members:
         ## Filter active membership
-        if not is_member(member.name):
+        if only_active and not is_member(member.name):
             continue
         ## Filter out members without shares
         if "share_paid_01" in form.cleaned_data and form.cleaned_data["share_paid_01"]:
@@ -3197,8 +3207,13 @@ class MailWizardView(CohivaAdminViewMixin, FormView):
         elif form.cleaned_data["base_dataset"] == "shares":
             errors = send_member_mail_filter_shares(form, self.request.session["members"])
         elif form.cleaned_data["base_dataset"] == "active_members":
-            ## Filter members
+            ## Filter active members
             errors = send_member_mail_filter_members(form, self.request.session["members"])
+        elif form.cleaned_data["base_dataset"] == "members":
+            ## Filter all members
+            errors = send_member_mail_filter_members(
+                form, self.request.session["members"], only_active=False
+            )
         else:
             errors.append(_("Ungültiger Basis-Datensatz"))
         ## Filter by invoice existence

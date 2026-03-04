@@ -174,6 +174,7 @@
               if (!baseDataset) return;
 
               const memberFilters = document.getElementById('member-filters');
+              const membershipDateFilters = document.getElementById('membership-date-filters');
               const renterFilters = document.getElementById('renter-filters');
               const shareFilters = document.getElementById('share-filters');
 
@@ -181,12 +182,16 @@
 
               // Hide all by default
               if (memberFilters) memberFilters.style.display = 'none';
+              if (membershipDateFilters) membershipDateFilters.style.display = 'none';
               if (renterFilters) renterFilters.style.display = 'none';
               if (shareFilters) shareFilters.style.display = 'none';
 
               // Show relevant filters
-              if (value === 'active_members' && memberFilters) {
+              if ((value === 'active_members' || value === 'members') && memberFilters) {
                   memberFilters.style.display = 'block';
+                  if (membershipDateFilters) {
+                      membershipDateFilters.style.display = 'block';
+                  }
               } else if (value === 'renters' && renterFilters) {
                   renterFilters.style.display = 'block';
               } else if (value === 'shares' && shareFilters) {
