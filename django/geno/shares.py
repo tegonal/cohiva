@@ -74,6 +74,7 @@ def get_share_statement_data(adr, year, enddate=None):
         "sect_donation": False,
         "s_donation": 0,
         "year": year,
+        "jahr": year,
         "year_current": year_current,
         "year_prev": year_prev,
         "enddate": enddate_str,
