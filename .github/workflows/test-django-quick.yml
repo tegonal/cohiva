@@ -20,7 +20,7 @@ jobs:
 
     services:
       mariadb:
-        image: mariadb:11.8
+        image: mariadb:12.2
         env:
           MARIADB_ROOT_PASSWORD: itsASecretToEveryone
           MARIADB_DATABASE: cohiva
