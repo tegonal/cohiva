@@ -246,7 +246,14 @@ class MemberMailForm(forms.Form):
                     Div("select_flag_03", css_class="mb-4"),
                     Div("select_flag_04", css_class="mb-4"),
                     Div("select_flag_05", css_class="mb-4"),
-                    Div("ignore_join_date", css_class="mb-4"),
+                    ConditionalDiv(
+                        "membership-date-filters",
+                        Div("join_date_from", css_class="mb-4"),
+                        Div("join_date_to", css_class="mb-4"),
+                        Div("leave_date_from", css_class="mb-4"),
+                        Div("leave_date_to", css_class="mb-4"),
+                        initial_display="none",
+                    ),
                     *(
                         [
                             Div("share_paid_01", css_class="mb-4"),
@@ -324,6 +331,7 @@ class MemberMailForm(forms.Form):
 
     base_dataset_choices = [
         ("active_members", _("Alle aktuellen Mitglieder")),
+        ("members", _("Alle Mitglieder (auch ehemalige/zukünftige)")),
         ("renters", _("Alle aktuellen Mieter")),
         ("shares", _("Alle Personen mit Beteiligungen (ohne Hypothek/Spezial)")),
         ("addresses", _("Alle aktiven Adressen/Kontakte")),
@@ -411,8 +419,23 @@ class MemberMailForm(forms.Form):
         required=False,
         widget=UnfoldAdminSelectWidget(),
     )
-    ignore_join_date = forms.DateField(
-        label=_("Beitritts-Datum älter als"),
+    join_date_from = forms.DateField(
+        label=_("Beitritts-Datum von"),
+        required=False,
+        widget=UnfoldAdminDateWidget(),
+    )
+    join_date_to = forms.DateField(
+        label=_("Beitritts-Datum bis"),
+        required=False,
+        widget=UnfoldAdminDateWidget(),
+    )
+    leave_date_from = forms.DateField(
+        label=_("Austritts-Datum von"),
+        required=False,
+        widget=UnfoldAdminDateWidget(),
+    )
+    leave_date_to = forms.DateField(
+        label=_("Austritts-Datum bis"),
         required=False,
         widget=UnfoldAdminDateWidget(),
     )
