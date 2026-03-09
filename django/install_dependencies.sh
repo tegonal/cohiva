@@ -26,14 +26,14 @@ PYTHON_MINOR=$($PYTHON_CMD -c "import sys; print(sys.version_info[1])")
 
 echo "Found Python $PYTHON_VERSION"
 
-# Check if version is >= 3.9
-if [ "$PYTHON_MAJOR" -lt 3 ] || { [ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 9 ]; }; then
-    echo "ERROR: Python 3.9 or higher is required."
+# Check if version is >= 3.11
+if [ "$PYTHON_MAJOR" -lt 3 ] || { [ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 11 ]; }; then
+    echo "ERROR: Python 3.11 or higher is required."
     echo "Current version: $PYTHON_VERSION"
     exit 1
 fi
 
-echo "Python version check passed (>= 3.9)"
+echo "Python version check passed (>= 3.11)"
 echo "Running install.py..."
 echo ""
 

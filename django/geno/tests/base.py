@@ -23,16 +23,20 @@ class CohivaTestBase:
     UserModel = get_user_model()
     local_tz = zoneinfo.ZoneInfo(settings.TIME_ZONE)
 
-    def assertInHTML(self, needle, haystack):
+    def assertInHTML(self, needle, haystack, dump_on_fail=True):
         try:
             super().assertInHTML(needle, haystack)
         except (self.failureException, AssertionError):
-            with open("test-failure.html", "w") as outfile:
-                outfile.write(haystack)
-                print("Wrote assertInHTML haystack to test-failure.html")
+            if dump_on_fail:
+                dump_filename = "test-failure_assertInHTML_haystack.html"
+                with open(dump_filename, "w") as outfile:
+                    outfile.write(haystack)
+                raise AssertionError(
+                    f"Needle '{needle}' not found in haystack! Check {dump_filename}."
+                ) from None
             raise
 
-    def assertNotInHTML(self, needle, haystack):
+    def assertNotInHTML(self, needle, haystack, dump_on_fail=True):
         ## super().assertNotInHTML() will be available in Django 5.1
         ## For now just invert assertInHTML()
         try:
@@ -40,29 +44,43 @@ class CohivaTestBase:
         except AssertionError:
             return
 
-        with open("test-failure.html", "w") as outfile:
-            outfile.write(haystack)
-            print("Wrote assertInHTML haystack to test-failure.html")
-        raise AssertionError(f"Needle {needle} found in HTML!")
+        if dump_on_fail:
+            dump_filename = "test-failure_assertNotInHTML_haystack.html"
+            with open(dump_filename, "w") as outfile:
+                outfile.write(haystack)
+                raise AssertionError(f"Needle '{needle}' found in HTML! Check {dump_filename}")
+        raise AssertionError(f"Needle '{needle}' found in HTML!")
 
     def assertContains(
-        self, response, text, count=None, status_code=200, msg_prefix="", html=False
+        self,
+        response,
+        text,
+        count=None,
+        status_code=200,
+        msg_prefix="",
+        html=False,
+        dump_on_fail=True,
     ):
         try:
             super().assertContains(response, text, count, status_code, msg_prefix, html)
         except self.failureException:
             if status_code in (301, 302):
                 print(f"Got redirect: {response.url}")
-            if html:
-                outfilename = "test-failure.html"
-            else:
-                outfilename = "test-failure.txt"
-            with open(outfilename, "w") as outfile:
-                outfile.write(response.content.decode())
-                print(f"Wrote assertContains response.content to {outfilename}")
+            if dump_on_fail:
+                if html:
+                    dump_filename = "test-failure_assertContains_response.html"
+                else:
+                    dump_filename = "test-failure_assertContains_response.txt"
+                with open(dump_filename, "w") as outfile:
+                    outfile.write(response.content.decode())
+                raise AssertionError(
+                    f"Text '{text}' not found in response! Check {dump_filename}."
+                ) from None
             raise
 
-    def assertInHTMLResponse(self, needle, response, raw=False, allow_redirect=True):
+    def assertInHTMLResponse(
+        self, needle, response, raw=False, allow_redirect=True, dump_on_fail=True
+    ):
         last_redirect = None
         if allow_redirect:
             max_redirect = 3
@@ -76,10 +94,35 @@ class CohivaTestBase:
         self.assertEqual(response.status_code, 200)
         content = response.content.decode()
         if raw:
-            self.assertIn(needle, content)
+            try:
+                self.assertIn(needle, content)
+            except (self.failureException, AssertionError):
+                if dump_on_fail:
+                    dump_filename = "test-failure_assertInHTMLResponse_content.html"
+                    with open(dump_filename, "w") as outfile:
+                        outfile.write(content)
+                    raise AssertionError(
+                        f"Needle '{needle}' not found in response! Check {dump_filename}"
+                    ) from None
+                raise
         else:
-            self.assertInHTML(needle, content)
+            self.assertInHTML(needle, content, dump_on_fail)
         return (response, content, last_redirect)
+
+    def assertNotInHTMLResponse(
+        self, needle, response, raw=False, allow_redirect=True, dump_on_fail=True
+    ):
+        try:
+            self.assertInHTMLResponse(needle, response, raw, allow_redirect, dump_on_fail=False)
+        except AssertionError:
+            return
+
+        if dump_on_fail:
+            dump_filename = "test-failure_assertNotInHTMLResponse_content.html"
+            with open(dump_filename, "w") as outfile:
+                outfile.write(response.content.decode())
+            raise AssertionError(f"Needle '{needle}' found in response! Check {dump_filename}")
+        raise AssertionError(f"Needle '{needle}' found in response!")
 
     def assertEmailSent(
         self,

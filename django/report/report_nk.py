@@ -913,7 +913,7 @@ def import_from_api():
     ru_section = {
         "Wohnung": "Wohnen",
         "Grosswohnung": "Wohnen",
-        "Jokerzimmer": "Wohnen",
+        "Zimmer": "Wohnen",
         "Selbstausbau": "Wohnen",
         "Kellerabteil": None,
         "Gewerbe": "Gewerbe",
