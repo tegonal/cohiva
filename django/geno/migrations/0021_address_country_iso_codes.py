@@ -20,7 +20,7 @@ def migrate_country_to_iso(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("geno", "0018_alter_address_bankaccount_alter_contract_bankaccount"),
+        ("geno", "0020_alter_registrationevent_enable_telephone"),
     ]
 
     operations = [

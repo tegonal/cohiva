@@ -7,8 +7,12 @@ from functools import lru_cache
 from typing import Iterable, List, Tuple
 
 import pycountry
+import gettext
+import locale
 
 DEFAULT_COUNTRY_CODE = "CH"
+PRIORITY_CODES = ["CH", "DE", "AT", "FR", "IT"]
+_COUNTRY_CHOICES_CACHE = {}
 
 # Map common legacy spellings to ISO alpha-2 codes.
 LEGACY_COUNTRY_MAP = {
@@ -43,10 +47,40 @@ def _sorted_countries() -> Iterable:
     return sorted(pycountry.countries, key=lambda c: c.name)
 
 
+def _current_language() -> str:
+    try:
+        from django.utils.translation import get_language
+
+        lang = get_language() or ""
+    except Exception:
+        lang = ""
+    return lang.split("-")[0].lower()
+
+
 @lru_cache(maxsize=1)
 def get_country_choices() -> List[Tuple[str, str]]:
-    """Return country choices as (ISO alpha-2 code, name)."""
-    return [(country.alpha_2, country.name) for country in _sorted_countries()]
+    """Return country choices as (ISO alpha-2 code, localized name)."""
+    lang = _current_language()
+    if lang in _COUNTRY_CHOICES_CACHE:
+        return _COUNTRY_CHOICES_CACHE[lang]
+
+    # Keep the five most-used countries at the top, others stay alphabetically sorted
+    priority = []
+    remaining = []
+    countries_trans = gettext.translation('iso3166-1', pycountry.LOCALES_DIR, languages = [lang])
+    for country in _sorted_countries():
+        entry = (country.alpha_2, countries_trans.gettext(country.name))
+        if country.alpha_2 in PRIORITY_CODES:
+            priority.append(entry)
+        else:
+            remaining.append(entry)
+    # Preserve PRIORITY_CODES order explicitly
+    priority_sorted = sorted(priority, key=lambda c: PRIORITY_CODES.index(c[0]))
+    # sort remaining alphabetically by localized name (respecting german umlauts etc.)
+    remaining.sort(key=lambda c: locale.strxfrm(c[1]))
+    result = priority_sorted + remaining
+    _COUNTRY_CHOICES_CACHE[lang] = result
+    return result
 
 
 def get_default_country_code() -> str:
@@ -57,7 +91,11 @@ def country_name_from_code(code: str) -> str:
     if not code:
         return ""
     match = pycountry.countries.get(alpha_2=code.upper())
-    return match.name if match else ""
+    if not match:
+        return ""
+    lang = _current_language()
+    countries_trans = gettext.translation('iso3166-1', pycountry.LOCALES_DIR, languages=[lang])
+    return countries_trans.gettext(match.name)
 
 
 def normalize_country_code(value: str) -> str:
