@@ -4,7 +4,6 @@ This centralizes ISO alpha-2 codes and helps translate between
 legacy free-text values and normalized codes.
 """
 from functools import lru_cache
-from typing import Iterable, List, Tuple
 
 import pycountry
 import gettext
@@ -53,7 +52,7 @@ def _current_language() -> str:
 
 
 @lru_cache(maxsize=1)
-def get_country_choices() -> List[Tuple[str, str]]:
+def get_country_choices() -> list[tuple[str, str]]:
     """Return country choices as (ISO alpha-2 code, localized name)."""
     lang = _current_language()
     if lang in _COUNTRY_CHOICES_CACHE:
