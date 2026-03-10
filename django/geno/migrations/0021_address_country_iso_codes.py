@@ -36,5 +36,16 @@ class Migration(migrations.Migration):
                 choices=COUNTRY_CHOICES,
             ),
         ),
+        migrations.AlterField(
+            model_name='building',
+            name='country',
+            field=models.CharField(
+                "Land",
+                max_length=2,
+                blank=True,
+                default=get_default_country_code,
+                choices=COUNTRY_CHOICES,
+            ),
+        ),
     ]
 
