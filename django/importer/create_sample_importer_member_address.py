@@ -80,7 +80,7 @@ sample_data = [
         "3011 Bern",  # P_plzort
         "Herr",  # P_geschlecht
         "Herr",  # P_anrede
-        "Schweiz",  # P_land
+        "CH",  # P_land
         "",  # P_titel
         "",  # P_briefanrede
         "",  # ____Kontakt (section header)
@@ -129,7 +129,7 @@ sample_data = [
         "8001 Zürich",
         "Frau",
         "Frau",
-        "Schweiz",
+        "CH",
         "Dr.",
         "",
         "",
@@ -178,7 +178,7 @@ sample_data = [
         "4000 Basel",
         "Firma",
         "Firma",
-        "Schweiz",
+        "CH",
         "",
         "",
         "",

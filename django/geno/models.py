@@ -709,7 +709,13 @@ class Building(GenoBase):
     house_number = models.CharField("Hausnummer", max_length=100, blank=True)
     city_zipcode = models.CharField("PLZ", max_length=30, blank=True)
     city_name = models.CharField("Ort", max_length=100, blank=True)
-    country = models.CharField("Land", max_length=100, blank=True, default="Schweiz")
+    country = models.CharField(
+        "Land",
+        max_length=2,
+        blank=True,
+        default=get_default_country_code,
+        choices=get_country_choices(),
+    )
     value_insurance = models.DecimalField(
         "Gebäudeversicherungswert (Fr.)", max_digits=12, decimal_places=2, null=True, blank=True
     )
