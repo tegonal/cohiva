@@ -42,11 +42,6 @@ LEGACY_COUNTRY_MAP = {
     "brazil": "BR",
 }
 
-
-def _sorted_countries() -> Iterable:
-    return sorted(pycountry.countries, key=lambda c: c.name)
-
-
 def _current_language() -> str:
     try:
         from django.utils.translation import get_language
@@ -68,7 +63,7 @@ def get_country_choices() -> List[Tuple[str, str]]:
     priority = []
     remaining = []
     countries_trans = gettext.translation('iso3166-1', pycountry.LOCALES_DIR, languages = [lang])
-    for country in _sorted_countries():
+    for country in pycountry.countries:
         entry = (country.alpha_2, countries_trans.gettext(country.name))
         if country.alpha_2 in PRIORITY_CODES:
             priority.append(entry)
