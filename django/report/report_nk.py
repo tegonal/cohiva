@@ -2475,7 +2475,7 @@ def create_bills(regenerate_invoice_id=None):
         else:
             nk.log.append("ERROR: Could not get qrbill!")
             raise RuntimeError(
-                "Konnte QR-Rechnung/Buchungen nicht erzeugen. Ist Buchhaltung gesperrt?\n\n"
+                "Konnte QR-Rechnung/Buchungen nicht erzeugen.\n\n"
                 f"{nk.get_log_tail(5)}"
             )
 
