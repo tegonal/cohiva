@@ -185,7 +185,7 @@ class ImporterMemberAddressITWGN(ExcelImporter):
         address.city_zipcode = city_zipcode or ""
         address.city_name = city_name or ""
 
-        address.country = row_data.get("P_land") or "Schweiz"
+        address.country = row_data.get("P_land") or "CH"
 
         # Contact fields - Priority: P_telp/P_mobilep for private, P_telg/P_mobileg for office
         # Clean phone numbers to remove extra leading zeros

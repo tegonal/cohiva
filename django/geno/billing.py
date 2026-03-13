@@ -38,6 +38,7 @@ from finance.accounting import (
     Split,
     Transaction,
 )
+from geno.countries import normalize_country_code
 
 from .models import (
     Address,
@@ -2030,28 +2031,8 @@ def build_structured_qrbill_address(adr):
 
 
 def transform_qrbill_country(country):
-    country = (country or "").strip()
-    if country.lower() in ("schweiz", "suisse", "svizzera", "svizra", "switzerland"):
-        return "CH"
-    if country.lower() in (
-        "fürstentum liechtenstein",
-        "fuerstentum liechtenstein",
-        "liechtenstein",
-    ):
-        return "LI"
-    if country.lower() in ("deutschland", "germany"):
-        return "DE"
-    if country.lower() in ("österreich", "oesterreich", "austria"):
-        return "AT"
-    if country.lower() in ("frankreich", "france"):
-        return "FR"
-    if country.lower() in ("italien", "italia", "italy"):
-        return "IT"
-    if country.lower() in ("spanien", "españa", "espana", "spain"):
-        return "ES"
-    if country.lower() in ("brasilien", "brazil"):
-        return "BR"
-    return country
+    code = normalize_country_code(country)
+    return code or (country or "").strip()
 
 
 def get_duplicate_invoices():
