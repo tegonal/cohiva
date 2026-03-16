@@ -22,7 +22,7 @@ from geno.billing import (
     get_reference_nr,
     render_qrbill,
 )
-from geno.models import Address, Contract, Invoice, InvoiceCategory, RentalUnit
+from geno.models import Address, Building, Contract, Invoice, InvoiceCategory, RentalUnit
 from geno.serializers import (
     ContractSerializer,
     GroupSerializer,
@@ -187,6 +187,7 @@ class QRBill(APIView):
                 self.virtual_contract_accounts[account["virtual_id"]] = Account.from_settings(key)
         self.invoice_id = None
         self.contract = None
+        self.building = None
         self.address = None
         self.invoice_category = None
         self.context = {}
@@ -199,6 +200,8 @@ class QRBill(APIView):
         account = copy.copy(self.virtual_contract_accounts[virt_contract_id])
         if self.contract:
             account.set_code(contract=self.contract)
+        elif self.building:
+            account.set_code(building=self.building)
         return account
 
     def get_akonto_qrbill(self, request):
@@ -338,6 +341,8 @@ class QRBill(APIView):
         else:
             self.contract = Contract.objects.get(id=request.data["contract_id"])
             self.address = self.contract.get_contact_address()
+        if "building_id" in request.data:
+            self.building = Building.objects.get(id=int(request.data["building_id"]))
         self.context = self.address.get_context()
         logger.debug(
             "Getting QR-bill for contract %s (id=%s)"
