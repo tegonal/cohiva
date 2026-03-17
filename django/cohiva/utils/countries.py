@@ -41,6 +41,7 @@ LEGACY_COUNTRY_MAP = {
     "brazil": "BR",
 }
 
+
 def _current_language() -> str:
     try:
         from django.utils.translation import get_language
@@ -61,7 +62,7 @@ def get_country_choices() -> list[tuple[str, str]]:
     # Keep the five most-used countries at the top, others stay alphabetically sorted
     priority = []
     remaining = []
-    countries_trans = gettext.translation('iso3166-1', pycountry.LOCALES_DIR, languages = [lang])
+    countries_trans = gettext.translation("iso3166-1", pycountry.LOCALES_DIR, languages=[lang])
     for country in pycountry.countries:
         entry = (country.alpha_2, countries_trans.gettext(country.name))
         if country.alpha_2 in PRIORITY_CODES:
@@ -88,7 +89,7 @@ def country_name_from_code(code: str) -> str:
     if not match:
         return ""
     lang = _current_language()
-    countries_trans = gettext.translation('iso3166-1', pycountry.LOCALES_DIR, languages=[lang])
+    countries_trans = gettext.translation("iso3166-1", pycountry.LOCALES_DIR, languages=[lang])
     return countries_trans.gettext(match.name)
 
 
@@ -117,4 +118,5 @@ def normalize_country_code(value: str) -> str:
     except LookupError:
         return ""
     return match.alpha_2
+
 

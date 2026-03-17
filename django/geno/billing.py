@@ -38,7 +38,7 @@ from finance.accounting import (
     Split,
     Transaction,
 )
-from geno.countries import normalize_country_code
+from cohiva.utils.countries import normalize_country_code
 
 from .models import (
     Address,

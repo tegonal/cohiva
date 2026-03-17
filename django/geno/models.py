@@ -34,7 +34,7 @@ from geno.utils import (
     nformat,
     sanitize_filename,
 )  # , send_info_mail, send_error_mail
-from geno.countries import (
+from cohiva.utils.countries import (
     country_name_from_code,
     get_country_choices,
     get_default_country_code,

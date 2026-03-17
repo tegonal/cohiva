@@ -1,6 +1,6 @@
 from django.db import migrations, models
 
-from geno.countries import (
+from cohiva.utils.countries import (
     get_country_choices,
     get_default_country_code,
     normalize_country_code,

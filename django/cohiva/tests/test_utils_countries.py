@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 import pycountry
 from django.test import SimpleTestCase
 
-from geno import countries
+from cohiva.utils import countries
 
 
 class DummyTranslation:
@@ -42,10 +42,10 @@ class CountriesTests(SimpleTestCase):
             }
         )
         with (
-            patch("geno.countries.pycountry.countries", fake_countries),
-            patch("geno.countries._current_language", return_value="de"),
-            patch("geno.countries.locale.strxfrm", side_effect=lambda value: value),
-            patch("geno.countries.gettext.translation", return_value=translation) as translation_mock,
+            patch("cohiva.utils.countries.pycountry.countries", fake_countries),
+            patch("cohiva.utils.countries._current_language", return_value="de"),
+            patch("cohiva.utils.countries.locale.strxfrm", side_effect=lambda value: value),
+            patch("cohiva.utils.countries.gettext.translation", return_value=translation) as translation_mock,
         ):
             choices = countries.get_country_choices()
 
@@ -66,10 +66,10 @@ class CountriesTests(SimpleTestCase):
         fake_countries = [SimpleNamespace(alpha_2="DE", name="Germany")]
         translation_mock = Mock(return_value=DummyTranslation({"Germany": "Deutschland"}))
         with (
-            patch("geno.countries.pycountry.countries", fake_countries),
-            patch("geno.countries._current_language", return_value="de"),
-            patch("geno.countries.locale.strxfrm", side_effect=lambda value: value),
-            patch("geno.countries.gettext.translation", translation_mock),
+            patch("cohiva.utils.countries.pycountry.countries", fake_countries),
+            patch("cohiva.utils.countries._current_language", return_value="de"),
+            patch("cohiva.utils.countries.locale.strxfrm", side_effect=lambda value: value),
+            patch("cohiva.utils.countries.gettext.translation", translation_mock),
         ):
             first = countries.get_country_choices()
             second = countries.get_country_choices()
@@ -82,10 +82,10 @@ class CountriesTests(SimpleTestCase):
 
         translation_fr = Mock(return_value=DummyTranslation({"Germany": "Allemagne"}))
         with (
-            patch("geno.countries.pycountry.countries", fake_countries),
-            patch("geno.countries._current_language", return_value="fr"),
-            patch("geno.countries.locale.strxfrm", side_effect=lambda value: value),
-            patch("geno.countries.gettext.translation", translation_fr),
+            patch("cohiva.utils.countries.pycountry.countries", fake_countries),
+            patch("cohiva.utils.countries._current_language", return_value="fr"),
+            patch("cohiva.utils.countries.locale.strxfrm", side_effect=lambda value: value),
+            patch("cohiva.utils.countries.gettext.translation", translation_fr),
         ):
             french = countries.get_country_choices()
 
@@ -95,18 +95,18 @@ class CountriesTests(SimpleTestCase):
     def test_country_name_from_code_returns_localized_name(self):
         translation = DummyTranslation({"Germany": "Deutschland"})
         with (
-            patch("geno.countries._current_language", return_value="de"),
-            patch("geno.countries.gettext.translation", return_value=translation) as translation_mock,
-            patch("geno.countries.pycountry.countries.get", return_value=SimpleNamespace(name="Germany")),
+            patch("cohiva.utils.countries._current_language", return_value="de"),
+            patch("cohiva.utils.countries.gettext.translation", return_value=translation) as translation_mock,
+            patch("cohiva.utils.countries.pycountry.countries.get", return_value=SimpleNamespace(name="Germany")),
         ):
             self.assertEqual(countries.country_name_from_code("de"), "Deutschland")
         translation_mock.assert_called_once()
 
     def test_country_name_from_code_handles_missing(self):
         with (
-            patch("geno.countries._current_language", return_value="de"),
-            patch("geno.countries.gettext.translation") as translation_mock,
-            patch("geno.countries.pycountry.countries.get", return_value=None),
+            patch("cohiva.utils.countries._current_language", return_value="de"),
+            patch("cohiva.utils.countries.gettext.translation") as translation_mock,
+            patch("cohiva.utils.countries.pycountry.countries.get", return_value=None),
         ):
             self.assertEqual(countries.country_name_from_code(""), "")
             self.assertEqual(countries.country_name_from_code("zz"), "")
@@ -123,8 +123,8 @@ class CountriesTests(SimpleTestCase):
             raise LookupError()
 
         with (
-            patch("geno.countries.pycountry.countries.get", side_effect=fake_get),
-            patch("geno.countries.pycountry.countries.search_fuzzy", side_effect=fake_search_fuzzy),
+            patch("cohiva.utils.countries.pycountry.countries.get", side_effect=fake_get),
+            patch("cohiva.utils.countries.pycountry.countries.search_fuzzy", side_effect=fake_search_fuzzy),
         ):
             self.assertEqual(countries.normalize_country_code(""), "")
             self.assertEqual(countries.normalize_country_code("   "), "")
