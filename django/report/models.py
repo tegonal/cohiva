@@ -9,17 +9,6 @@ from filer.models.filemodels import File as FilerFile
 from geno.models import GenoBase
 from geno.utils import send_error_mail
 
-
-class ReportType(GenoBase):
-    name = models.CharField("Name", max_length=50, unique=True)
-    description = models.CharField("Beschreibung", max_length=200)
-    active = models.BooleanField("Aktiv", default=True)
-
-    class Meta:
-        verbose_name = "Reporttyp"
-        verbose_name_plural = "Reporttypen"
-
-
 REPORT_STATE_CHOICES = (
     ("new", "Neu"),
     ("pending", "Wird erstellt..."),
@@ -28,10 +17,13 @@ REPORT_STATE_CHOICES = (
     ("invalid", "Ungültig"),
 )
 
+REPORT_TYPE_CHOICES = (
+    ("NK", "Nebenkostenabrechnung"),
+)
 
 class Report(GenoBase):
     name = models.CharField("Name", max_length=80)
-    report_type = models.ForeignKey(ReportType, verbose_name="Reporttyp", on_delete=models.CASCADE)
+    report_type = models.CharField("Reporttyp", choices=REPORT_TYPE_CHOICES, max_length=30)
     task_id = models.UUIDField("Task-ID", editable=False, blank=True, null=True)
     state = models.CharField("Status", default="new", choices=REPORT_STATE_CHOICES, max_length=30)
     state_info = models.TextField("Statusinfo", blank=True)
@@ -89,19 +81,44 @@ REPORT_FIELDTYPE_CHOICES = (
     ("buildingIds", "Liegenschaften"),
 )
 
+class ReportConfiguration(GenoBase):
+    name = models.CharField("Name", max_length=80)
+    report_type = models.CharField("Reporttyp", choices=REPORT_TYPE_CHOICES, max_length=30)
+    buildings = models.ManyToManyField("geno.Building", verbose_name="Liegenschaften", blank=True)
+
+    class Meta:
+        verbose_name = "Report-Konfiguration"
+        verbose_name_plural = "Report-Konfigurationen"
+
+REPORT_ITEM_CATEGORY = (
+    ("SHORT", "Name"),
+)
+
+class ReportItemConfiguration(GenoBase):
+    name = models.CharField("Element-Bezeichnung", max_length=80)
+    item_category = models.CharField("Element-Kategorie", choices=REPORT_ITEM_CATEGORY, max_length=30)
+    report_configuration = models.ForeignKey(ReportConfiguration, verbose_name="Report-Konfiguration", related_name="report_items",
+                                           on_delete=models.CASCADE, default=1)
+
+    class Meta:
+        verbose_name = "Report-Element"
+        verbose_name_plural = "Report-Elemente"
+        unique_together = ["name", "item_category"] ## TODO können mehrere "gleiche" ReportItems auf dem selben Report sein?
+        ordering = ["item_category", "name"]
 
 class ReportInputField(GenoBase):
     name = models.CharField("Name", max_length=80)
     description = models.CharField("Beschreibung", max_length=200, blank=True)
-    report_type = models.ForeignKey(ReportType, verbose_name="Reporttyp", on_delete=models.CASCADE)
+    item_configuration = models.ForeignKey(ReportItemConfiguration, verbose_name="Report-Element", on_delete=models.CASCADE, default=1)
     field_type = models.CharField("Feldtyp", choices=REPORT_FIELDTYPE_CHOICES, max_length=30)
     active = models.BooleanField("Aktiv", default=True)
+    value_default = models.TextField("Standardwert", blank=True)
 
     class Meta:
         verbose_name = "Eingabefeld"
         verbose_name_plural = "Eingabefelder"
-        unique_together = ["name", "report_type"]
-        ordering = ["report_type", "name"]
+        unique_together = ["name", "item_configuration"]
+        ordering = ["item_configuration", "name"]
 
 
 class ReportInputData(GenoBase):

@@ -1,25 +1,9 @@
 from django.contrib import admin
 
 from geno.admin import GenoBaseAdmin
-from report.models import Report, ReportInputData, ReportInputField, ReportOutput, ReportType
 
-
-@admin.register(ReportType)
-class ReportTypeAdmin(GenoBaseAdmin):
-    model = ReportType
-    fields = [
-        "name",
-        "description",
-        "active",
-        "comment",
-        ("ts_created", "ts_modified"),
-        "links",
-        "backlinks",
-    ]
-    readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
-    list_display = ["name", "description", "active"]
-    list_filter = ["active"]
-    search_fields = ["name", "description", "comment"]
+from report.models import Report, ReportConfiguration, ReportInputData, ReportInputField, ReportOutput
+from unfold.admin import TabularInline
 
 
 @admin.register(Report)
@@ -39,6 +23,7 @@ class ReportAdmin(GenoBaseAdmin):
     ]
     readonly_fields = [
         "task_id",
+        "report_type",
         "object_actions",
         "ts_created",
         "ts_modified",
@@ -48,7 +33,26 @@ class ReportAdmin(GenoBaseAdmin):
     list_display = ["name", "report_type", "state", "task_id", "comment"]
     list_filter = ["report_type", "state", "ts_created", "ts_modified"]
     search_fields = ["name", "state_info", "task_id", "comment"]
-    autocomplete_fields = ["report_type"]
+
+class ReportItemsInline(TabularInline):  # oder admin.StackedInline
+    model = ReportConfiguration.report_items.rel.related_model
+    fields = ["name", "item_category"]
+    extra = 1
+
+@admin.register(ReportConfiguration)
+class ReportConfigurationAdmin(GenoBaseAdmin):
+    model = ReportConfiguration
+    title = "Report-Konfiguration"
+    fields = [
+        "name",
+        "report_type",
+        "buildings",
+    ]
+    inlines = [ReportItemsInline]
+    readonly_fields = [ ]
+    list_display = ["name", "report_type"]
+
+    prevent_add_permission = ["buildings"]
 
 
 @admin.register(ReportInputField)
@@ -57,7 +61,7 @@ class ReportInputFieldAdmin(GenoBaseAdmin):
     fields = [
         "name",
         "description",
-        "report_type",
+        "item_configuration",
         "field_type",
         "active",
         "comment",
@@ -66,10 +70,9 @@ class ReportInputFieldAdmin(GenoBaseAdmin):
         "backlinks",
     ]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
-    list_display = ["name", "report_type", "field_type", "active"]
-    list_filter = ["report_type", "field_type", "active"]
+    list_display = ["name", "item_configuration", "field_type", "active"]
+    list_filter = ["item_configuration", "field_type", "active"]
     search_fields = ["name", "description", "comment"]
-    autocomplete_fields = ["report_type"]
 
 
 @admin.register(ReportInputData)

@@ -126,6 +126,15 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
     class Media:
         js = ("geno/js/select2-focus.js",)
 
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        ## Prevent adding related objects defined in prevent_add_permission
+        if hasattr(self, "prevent_add_permission"):
+            for field_name in self.prevent_add_permission:
+                if field_name in form.base_fields:
+                    form.base_fields[field_name].widget.can_add_related = False
+        return form
+
     def __init__(self, model, admin_site):
         super().__init__(model, admin_site)
         ## Load custom admin config
