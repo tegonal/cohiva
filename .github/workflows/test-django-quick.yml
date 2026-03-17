@@ -17,8 +17,6 @@ permissions:
 
 jobs:
   test:
-    # Skip entirely for pull_request events
-    if: github.event_name != 'pull_request'
     runs-on: [self-hosted] # uses your self-hosted runner pool
 
     services:
