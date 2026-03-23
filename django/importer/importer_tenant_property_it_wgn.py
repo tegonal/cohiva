@@ -136,7 +136,7 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
 
         building.city_zipcode = row_data.get("Liegenschaft Postleitzahl", "") or ""
         building.city_name = row_data.get("Liegenschaft Ort", "") or ""
-        building.country = "Schweiz"  # Default
+        building.country = "CH"  # Default
 
         # EGID (Eidgenössischer Gebäudeidentifikator)
         egid_str = row_data.get("Liegenschaft Gebaeudeideidg", "")
@@ -409,7 +409,7 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
                 address.city_zipcode = address_parts.get("zipcode", "")
                 address.city_name = address_parts.get("city", "")
 
-        address.country = "Schweiz"  # Default
+        address.country = "CH"  # Default
         address.save()
 
         logger.debug(f"Created new contractor address: {address}")
