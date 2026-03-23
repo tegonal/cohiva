@@ -65,7 +65,7 @@
             <a id="nextFileLink" class="nav" href="z_1542c82bf7c7f661_0001_initial_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-03-23 08:01 +0000
+            created at 2026-03-23 10:08 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -218,7 +218,7 @@
     <p class="pln"><span class="n"><a id="t136" href="#t136">136</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t137" href="#t137">137</a></span><span class="t">        <span class="nam">building</span><span class="op">.</span><span class="nam">city_zipcode</span> <span class="op">=</span> <span class="nam">row_data</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"Liegenschaft Postleitzahl"</span><span class="op">,</span> <span class="str">""</span><span class="op">)</span> <span class="key">or</span> <span class="str">""</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t138" href="#t138">138</a></span><span class="t">        <span class="nam">building</span><span class="op">.</span><span class="nam">city_name</span> <span class="op">=</span> <span class="nam">row_data</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"Liegenschaft Ort"</span><span class="op">,</span> <span class="str">""</span><span class="op">)</span> <span class="key">or</span> <span class="str">""</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t139" href="#t139">139</a></span><span class="t">        <span class="nam">building</span><span class="op">.</span><span class="nam">country</span> <span class="op">=</span> <span class="str">"Schweiz"</span>  <span class="com"># Default</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t139" href="#t139">139</a></span><span class="t">        <span class="nam">building</span><span class="op">.</span><span class="nam">country</span> <span class="op">=</span> <span class="str">"CH"</span>  <span class="com"># Default</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t140" href="#t140">140</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t141" href="#t141">141</a></span><span class="t">        <span class="com"># EGID (Eidgen&#246;ssischer Geb&#228;udeidentifikator)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t142" href="#t142">142</a></span><span class="t">        <span class="nam">egid_str</span> <span class="op">=</span> <span class="nam">row_data</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"Liegenschaft Gebaeudeideidg"</span><span class="op">,</span> <span class="str">""</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -491,7 +491,7 @@
     <p class="run"><span class="n"><a id="t409" href="#t409">409</a></span><span class="t">                <span class="nam">address</span><span class="op">.</span><span class="nam">city_zipcode</span> <span class="op">=</span> <span class="nam">address_parts</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"zipcode"</span><span class="op">,</span> <span class="str">""</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t410" href="#t410">410</a></span><span class="t">                <span class="nam">address</span><span class="op">.</span><span class="nam">city_name</span> <span class="op">=</span> <span class="nam">address_parts</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">"city"</span><span class="op">,</span> <span class="str">""</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t411" href="#t411">411</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t412" href="#t412">412</a></span><span class="t">        <span class="nam">address</span><span class="op">.</span><span class="nam">country</span> <span class="op">=</span> <span class="str">"Schweiz"</span>  <span class="com"># Default</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t412" href="#t412">412</a></span><span class="t">        <span class="nam">address</span><span class="op">.</span><span class="nam">country</span> <span class="op">=</span> <span class="str">"CH"</span>  <span class="com"># Default</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t413" href="#t413">413</a></span><span class="t">        <span class="nam">address</span><span class="op">.</span><span class="nam">save</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t414" href="#t414">414</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t415" href="#t415">415</a></span><span class="t">        <span class="nam">logger</span><span class="op">.</span><span class="nam">debug</span><span class="op">(</span><span class="fst">f"</span><span class="fst">Created new contractor address: </span><span class="op">{</span><span class="nam">address</span><span class="op">}</span><span class="fst">"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -677,7 +677,7 @@
             <a class="nav" href="z_1542c82bf7c7f661_0001_initial_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.13.1">coverage.py v7.13.1</a>,
-            created at 2026-03-23 08:01 +0000
+            created at 2026-03-23 10:08 +0000
         </p>
     </div>
 </footer>
