@@ -161,7 +161,7 @@ django-tasks==0.7.0
     # via wagtail
 django-treebeard==4.7.1
     # via wagtail
-django-unfold==0.78.1
+django-unfold==0.85.0
     # via -r requirements.in
 djangorestframework==3.16.1
     # via

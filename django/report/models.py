@@ -97,7 +97,7 @@ REPORT_ITEM_CATEGORY = (
 class ReportItemConfiguration(GenoBase):
     name = models.CharField("Element-Bezeichnung", max_length=80)
     item_category = models.CharField("Element-Kategorie", choices=REPORT_ITEM_CATEGORY, max_length=30)
-    report_configuration = models.ForeignKey(ReportConfiguration, verbose_name="Report-Konfiguration", related_name="report_items",
+    report_configuration = models.ForeignKey(ReportConfiguration, verbose_name="Report-Konfiguration", related_name="report_configuration",
                                            on_delete=models.CASCADE, default=1)
 
     class Meta:
@@ -109,7 +109,7 @@ class ReportItemConfiguration(GenoBase):
 class ReportInputField(GenoBase):
     name = models.CharField("Name", max_length=80)
     description = models.CharField("Beschreibung", max_length=200, blank=True)
-    item_configuration = models.ForeignKey(ReportItemConfiguration, verbose_name="Report-Element", on_delete=models.CASCADE, default=1)
+    item_configuration = models.ForeignKey(ReportItemConfiguration, verbose_name="Report-Element", related_name="report_item_configuration", on_delete=models.CASCADE, default=1)
     field_type = models.CharField("Feldtyp", choices=REPORT_FIELDTYPE_CHOICES, max_length=30)
     active = models.BooleanField("Aktiv", default=True)
     value_default = models.TextField("Standardwert", blank=True)

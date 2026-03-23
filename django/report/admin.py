@@ -3,7 +3,9 @@ from django.contrib import admin
 from geno.admin import GenoBaseAdmin
 
 from report.models import Report, ReportConfiguration, ReportInputData, ReportInputField, ReportOutput
-from unfold.admin import TabularInline
+from unfold.admin import TabularInline, StackedInline
+
+from report.models import ReportItemConfiguration
 
 
 @admin.register(Report)
@@ -34,10 +36,20 @@ class ReportAdmin(GenoBaseAdmin):
     list_filter = ["report_type", "state", "ts_created", "ts_modified"]
     search_fields = ["name", "state_info", "task_id", "comment"]
 
+class ReportInputFieldInline(TabularInline):  # oder admin.StackedInline
+    model = ReportConfiguration.report_configuration.rel.related_model.report_item_configuration.rel.related_model
+    fields = ["name", "description", "field_type", "active"]
+    can_delete = False
+
+    def has_add_permission(self, request, obj):
+        return False''
+    extra = 0
+
 class ReportItemsInline(TabularInline):  # oder admin.StackedInline
-    model = ReportConfiguration.report_items.rel.related_model
+    model = ReportConfiguration.report_configuration.rel.related_model
     fields = ["name", "item_category"]
-    extra = 1
+    inlines = [ReportInputFieldInline]
+    extra = 0
 
 @admin.register(ReportConfiguration)
 class ReportConfigurationAdmin(GenoBaseAdmin):
@@ -53,7 +65,6 @@ class ReportConfigurationAdmin(GenoBaseAdmin):
     list_display = ["name", "report_type"]
 
     prevent_add_permission = ["buildings"]
-
 
 @admin.register(ReportInputField)
 class ReportInputFieldAdmin(GenoBaseAdmin):
@@ -103,7 +114,7 @@ class ReportOutputAdmin(GenoBaseAdmin):
         "report",
         "output_type",
         "value",
-        "regeneration_json",
+        "regeneration_json",''
         "comment",
         ("ts_created", "ts_modified"),
         "links",
