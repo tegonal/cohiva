@@ -22,6 +22,10 @@ from django.utils.html import format_html, format_html_join, mark_safe
 from filer.fields.file import FilerFileField
 
 import geno.settings as geno_settings
+from cohiva.utils.countries import (
+    get_country_choices,
+    get_default_country_code,
+)
 from cohiva.utils.settings import (
     get_default_email,
     get_default_formal_choice,
@@ -34,11 +38,6 @@ from geno.utils import (
     nformat,
     sanitize_filename,
 )  # , send_info_mail, send_error_mail
-from cohiva.utils.countries import (
-    country_name_from_code,
-    get_country_choices,
-    get_default_country_code,
-)
 
 logger = logging.getLogger("access_portal")
 

@@ -45,7 +45,9 @@ class CountriesTests(SimpleTestCase):
             patch("cohiva.utils.countries.pycountry.countries", fake_countries),
             patch("cohiva.utils.countries._current_language", return_value="de"),
             patch("cohiva.utils.countries.locale.strxfrm", side_effect=lambda value: value),
-            patch("cohiva.utils.countries.gettext.translation", return_value=translation) as translation_mock,
+            patch(
+                "cohiva.utils.countries.gettext.translation", return_value=translation
+            ) as translation_mock,
         ):
             choices = countries.get_country_choices()
 
@@ -96,8 +98,13 @@ class CountriesTests(SimpleTestCase):
         translation = DummyTranslation({"Germany": "Deutschland"})
         with (
             patch("cohiva.utils.countries._current_language", return_value="de"),
-            patch("cohiva.utils.countries.gettext.translation", return_value=translation) as translation_mock,
-            patch("cohiva.utils.countries.pycountry.countries.get", return_value=SimpleNamespace(name="Germany")),
+            patch(
+                "cohiva.utils.countries.gettext.translation", return_value=translation
+            ) as translation_mock,
+            patch(
+                "cohiva.utils.countries.pycountry.countries.get",
+                return_value=SimpleNamespace(name="Germany"),
+            ),
         ):
             self.assertEqual(countries.country_name_from_code("de"), "Deutschland")
         translation_mock.assert_called_once()
@@ -124,7 +131,10 @@ class CountriesTests(SimpleTestCase):
 
         with (
             patch("cohiva.utils.countries.pycountry.countries.get", side_effect=fake_get),
-            patch("cohiva.utils.countries.pycountry.countries.search_fuzzy", side_effect=fake_search_fuzzy),
+            patch(
+                "cohiva.utils.countries.pycountry.countries.search_fuzzy",
+                side_effect=fake_search_fuzzy,
+            ),
         ):
             self.assertEqual(countries.normalize_country_code(""), "")
             self.assertEqual(countries.normalize_country_code("   "), "")
