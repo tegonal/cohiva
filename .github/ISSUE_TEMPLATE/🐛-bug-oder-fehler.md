@@ -1,6 +1,6 @@
 ---
-name: Bug oder Fehler
-about: "\U0001F41B Bug oder Fehler melden"
+name: "\U0001F41B Bug oder Fehler"
+about: Bug oder Fehler melden
 title: ''
 labels: ''
 assignees: ''
