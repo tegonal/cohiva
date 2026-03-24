@@ -1,34 +1,53 @@
-name: 🐛 Bug Report
-description: File a bug report to help us improve
-labels: [ bug ]
+name: 🐛 Bug oder Fehler
+description: Bug oder Fehler melden
+labels: []
+type: Bug
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to fill out this bug report!
+        Danke, dass du dir die Zeit nimmst, diesen Fehler zu melden und die folgenden Informationen zusammen zu tragen!
+  - type: input
+    id: component
+    attributes:
+      label: Betroffene Komponente(n)
+      description: Welche Komponente(n) von COHVIA sind betroffen?
+      placeholder: "COHIVA ERP, Seafile (Deteiablage), App, Rocket Chat, ..."
+    validations:
+      required: false
   - type: input
     id: version
     attributes:
-      label: Affected Version
-      description: What version of cohiva are you using?
+      label: Betroffene Version
+      description: Welche Version von COHVIA verwenden Sie?
       placeholder: "v1.4.3"
     validations:
       required: true
   - type: textarea
     id: reproduce
     attributes:
-      label: How to reproduce the problem?
+      label: Beschreibe die Schritte um das Problem zu reproduzieren
+      placeholder: "1. Gehe zu '...'\n2. Klicke auf '....'\n3. Scrolle nach unten zu '....'\n4. Sieh den Fehler"
     validations:
       required: false
   - type: textarea
-    id: describe-bug
+    id: expected-behaviour
     attributes:
-      label: Describe the bug
+      label: Wie sollte sich das System eigentlich verhalten?
+      placeholder: "Beschreibe hier, wie sich das System deiner Meinung nach verhalten sollte, damit es für dich richtig funktioniert."
     validations:
       required: true
   - type: textarea
-    id: expected-behaviour
+    id: screenshots
+    label: Screenshots
     attributes:
-      label: Expected behaviour
+      label: Falls du Screenshots hast, bitte hier einfügen. Diese helfen uns sehr!
     validations:
-      required: true
+      required: false
+  - type: textarea
+    id: environment
+    label: Umgebung
+    attributes:
+      label: Falls du Informationen über deine Umgebung hast, z.B. Betriebssystem, Browser, App-Version, etc., kannst du diese hier angeben. Diese Informationen können uns helfen, das Problem besser zu verstehen und zu beheben.
+    validations:
+      required: false
