@@ -20,18 +20,8 @@ body:
     validations:
       required: false
   - type: input
-    id: component
-    attributes:
-      label: Betroffene Komponente(n)
-      description: Welche Komponente(n) von COHVIA sind betroffen?
-      placeholder: "COHIVA ERP, Seafile (Deteiablage), App, Rocket Chat, ..."
-    validations:
-      required: false
-  - type: input
     id: version
     attributes:
-      label: Betroffene Version
-      description: Welche Version von COHVIA verwenden Sie?
       label: Betroffene Version
       description: Welche Version von COHVIA verwenden Sie?
       placeholder: "v1.4.3"
@@ -46,7 +36,6 @@ body:
     validations:
       required: false
   - type: textarea
-    id: expected-behaviour
     id: expected-behaviour
     attributes:
       label: Erwartetes Verhalten
