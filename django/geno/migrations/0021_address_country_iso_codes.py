@@ -5,7 +5,6 @@ from cohiva.utils.countries import (
     get_default_country_code,
     normalize_country_code,
 )
-
 from geno.utils import send_info_mail
 
 COUNTRY_CHOICES = get_country_choices()
@@ -16,7 +15,10 @@ def migrate_country_to_iso(apps, schema_editor):
     for address in Address.objects.all():
         code = normalize_country_code(address.country)
         if code is None:
-            send_info_mail(f"Problem migrating Address.country to code", f"Could not normalize country code '{address.country}' for Address {address.pk} (setting to empty)")
+            send_info_mail(
+                "Problem migrating Address.country to code",
+                f"Could not normalize country code '{address.country}' for Address {address.pk} (setting to empty)",
+            )
             code = ""
         address.country = code
         address.save(update_fields=["country"])
@@ -24,13 +26,16 @@ def migrate_country_to_iso(apps, schema_editor):
     for building in Building.objects.all():
         code = normalize_country_code(building.country)
         if code is None:
-            send_info_mail(f"Problem migrating Building.country to code", f"Could not normalize country code '{building.country}' for Building {building.pk} (setting to empty)")
+            send_info_mail(
+                "Problem migrating Building.country to code",
+                f"Could not normalize country code '{building.country}' for Building {building.pk} (setting to empty)",
+            )
             code = ""
         building.country = code
         building.save(update_fields=["country"])
 
-class Migration(migrations.Migration):
 
+class Migration(migrations.Migration):
     dependencies = [
         ("geno", "0020_alter_registrationevent_enable_telephone"),
     ]
@@ -60,4 +65,3 @@ class Migration(migrations.Migration):
             ),
         ),
     ]
-
