@@ -18,22 +18,24 @@ body:
   - type: textarea
     id: task
     attributes:
-      label: Welche Aufgabe wird mit der Anforderung erleichtert / abgedeckt
+      label: Aufgabe
+      description: Welche Aufgabe wird mit der Anforderung erleichtert / abgedeckt?
       placeholder: "Beschreibe in einigen Sätzen, welche Arbeiten du durch die Verfügbarkeit der neuen Funktionalität (besser) erledigen könntest."
     validations:
       required: false
   - type: textarea
     id: solution
     attributes:
-      label: Wie würdest du die Anforderung in COHIVA umsetzen?
+      label: Lösungsvorschlag
+      description: Wie würdest du die Anforderung in COHIVA umsetzen?
       placeholder: "Falls du eine Idee hast, beschreibe wie du dir die Anforderung in COVHIA umsetzt wünschst. Füge auch gerne Screenshots ein."
     validations:
       required: true
   - type: textarea
     id: users
-    label: Nutzende
     attributes:
-      label: Welche User-Gruppe(n) würden die neue Funktion nutzen?
+      label: Nutzende
+      description: Welche User-Gruppe(n) würden die neue Funktion nutzen?
       placeholder: "Nach deiner Einschätzung: Ist dies eine Anforderung, welche nur für deinen spezifischen Fall wichtig ist oder für alle Nutzenden spannend sein kann?"
     validations:
       required: false

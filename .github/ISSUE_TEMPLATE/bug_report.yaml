@@ -26,28 +26,30 @@ body:
   - type: textarea
     id: reproduce
     attributes:
-      label: Beschreibe die Schritte um das Problem zu reproduzieren
+      label: Nachvollziehbarkeit / Reproduzierbarkeit
+      description: Beschreibe die Schritte, um das Problem zu reproduzieren.
       placeholder: "1. Gehe zu '...'\n2. Klicke auf '....'\n3. Scrolle nach unten zu '....'\n4. Sieh den Fehler"
     validations:
       required: false
   - type: textarea
     id: expected-behaviour
     attributes:
-      label: Wie sollte sich das System eigentlich verhalten?
+      label: Erwartetes Verhalten
+      description: Wie sollte sich das System eigentlich verhalten?
       placeholder: "Beschreibe hier, wie sich das System deiner Meinung nach verhalten sollte, damit es für dich richtig funktioniert."
     validations:
       required: true
   - type: textarea
     id: screenshots
-    label: Screenshots
     attributes:
-      label: Falls du Screenshots hast, bitte hier einfügen. Diese helfen uns sehr!
+      label: Screenshots
+      description: Falls du Screenshots hast, bitte hier einfügen. Diese helfen uns sehr!
     validations:
       required: false
   - type: textarea
     id: environment
-    label: Umgebung
     attributes:
-      label: Falls du Informationen über deine Umgebung hast, z.B. Betriebssystem, Browser, App-Version, etc., kannst du diese hier angeben. Diese Informationen können uns helfen, das Problem besser zu verstehen und zu beheben.
+      label: Umgebung
+      description: Falls du Informationen über deine Umgebung hast, z.B. Betriebssystem, Browser, App-Version, etc., kannst du diese hier angeben. Diese Informationen können uns helfen, das Problem besser zu verstehen und zu beheben.
     validations:
       required: false
