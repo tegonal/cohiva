@@ -1,0 +1,45 @@
+# Basic configuration of your Cohiva instance.
+#
+# More advanced configuration can be done in settings.py and
+# settings_production.py (see settings_defaults.py and
+# settings_production_defaults.py for available options
+# and default values).
+
+INSTALL_DIR = "/home/mai-bee/tmp/cohiva/www/"
+DB_PREFIX = "cohiva"
+DB_PASSWORD = "-_E{TRo#H8*w(k!C!X"
+DB_HOSTNAME = "127.0.0.1"
+PROD_HOSTNAME = "demo"
+DOMAIN = "cohiva.ch"
+
+# Container IP address, if you run Cohiva in Docker (optional, comment out to disable).
+DOCKER_IP = "172.20.42.100"
+
+SITE_NAME = "Genossenschaft Musterweg"
+SITE_NICKNAME = "Musterweg"
+SITE_SECRET = "jm&x__78ifku20%6b^=ry)tmgpu#)_64a)i6e9g&t1yxx7)36j"
+## The SITE_SECRET can be generated with:
+##      python3 -c 'from django.core.management.utils import get_random_secret_key;
+##                  print(get_random_secret_key())'
+
+ORG_NAME = "Genossenschaft Musterweg"
+ORG_ADDRESS_STREET_NAME = "Musterweg"
+ORG_ADDRESS_HOUSE_NUMBER = "1"
+ORG_ADDRESS_CITY_ZIPCODE = "3000"
+ORG_ADDRESS_CITY_NAME = "Bern"
+ORG_ADDRESS_COUNTRY = "Schweiz"
+
+ADMINS = (("Hans Muster", "info@example.com"),)
+
+CASHCTRL_API_TOKEN = ""
+CASHCTRL_TENANT = ""
+
+FEATURES = [
+    "api",
+    "portal",
+    "reservation",
+    "report",
+    "credit_accounting",
+    "website",
+    "cms",
+]
