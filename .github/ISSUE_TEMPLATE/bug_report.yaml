@@ -19,7 +19,6 @@ body:
       placeholder: "COHIVA ERP, Seafile (Deteiablage), App, Rocket Chat, ..."
     validations:
       required: false
-        Danke, dass du dir die Zeit nimmst, diesen Fehler zu melden und die folgenden Informationen zusammen zu tragen!
   - type: input
     id: component
     attributes:
@@ -68,5 +67,4 @@ body:
       label: Umgebung
       description: Falls du Informationen über deine Umgebung hast, z.B. Betriebssystem, Browser, App-Version, etc., kannst du diese hier angeben. Diese Informationen können uns helfen, das Problem besser zu verstehen und zu beheben.
     validations:
-      required: false
       required: false
