@@ -21,9 +21,39 @@ REPORT_TYPE_CHOICES = (
     ("NK", "Nebenkostenabrechnung"),
 )
 
-class Report(GenoBase):
+REPORT_FIELDTYPE_CHOICES = (
+    ("char", "Text"),
+    ("int", "Ganzzahl"),
+    ("float", "Dezimalzahl"),
+    ("date", "Datum"),
+    ("bool", "Boolean"),
+    ("list_12months_float", "Dezimalzahlen, 12 Monatswerte"),
+    ("file", "Datei"),
+    ("json", "JSON-Daten"),
+    ("buildingIds", "Liegenschaften"),
+)
+
+class ReportConfiguration(GenoBase):
     name = models.CharField("Name", max_length=80)
     report_type = models.CharField("Reporttyp", choices=REPORT_TYPE_CHOICES, max_length=30)
+    buildings = models.ManyToManyField("geno.Building", verbose_name="Liegenschaften", blank=True)
+
+    def save_as_copy(self):
+        old_report_configuration_id = self.id
+        new_report_configuration = super().save_as_copy()
+        old_report_configuration = ReportConfiguration.objects.get(id=old_report_configuration_id)
+        for report_item_configuration in ReportItemConfiguration.objects.filter(report_configuration=old_report_configuration):
+            new_report_item_configuration = report_item_configuration.save_as_copy()
+            new_report_item_configuration.report_configuration = new_report_configuration
+            new_report_item_configuration.save()
+
+    class Meta:
+        verbose_name = "Report-Konfiguration"
+        verbose_name_plural = "Report-Konfigurationen"
+
+class Report(GenoBase):
+    name = models.CharField("Name", max_length=80)
+    report_configuration = models.ForeignKey(ReportConfiguration, verbose_name="Report-Konfiguration", on_delete=models.CASCADE, default=1)
     task_id = models.UUIDField("Task-ID", editable=False, blank=True, null=True)
     state = models.CharField("Status", default="new", choices=REPORT_STATE_CHOICES, max_length=30)
     state_info = models.TextField("Statusinfo", blank=True)
@@ -38,7 +68,6 @@ class Report(GenoBase):
     def get_object_actions(self):
         actions = []
         if self.state == "new":
-            actions.append((f"/report/configure/{self.pk}/", "Report konfigurieren"))
             actions.append((f"/report/generate_dryrun/{self.pk}/", "Report erzeugen (Testlauf)"))
             actions.append((f"/report/generate/{self.pk}/", "Report erzeugen"))
         elif self.state != "pending":
@@ -66,29 +95,7 @@ class Report(GenoBase):
     class Meta:
         verbose_name = "Report"
         verbose_name_plural = "Reports"
-        unique_together = ["name", "report_type"]
-
-
-REPORT_FIELDTYPE_CHOICES = (
-    ("char", "Text"),
-    ("int", "Ganzzahl"),
-    ("float", "Dezimalzahl"),
-    ("date", "Datum"),
-    ("bool", "Boolean"),
-    ("list_12months_float", "Dezimalzahlen, 12 Monatswerte"),
-    ("file", "Datei"),
-    ("json", "JSON-Daten"),
-    ("buildingIds", "Liegenschaften"),
-)
-
-class ReportConfiguration(GenoBase):
-    name = models.CharField("Name", max_length=80)
-    report_type = models.CharField("Reporttyp", choices=REPORT_TYPE_CHOICES, max_length=30)
-    buildings = models.ManyToManyField("geno.Building", verbose_name="Liegenschaften", blank=True)
-
-    class Meta:
-        verbose_name = "Report-Konfiguration"
-        verbose_name_plural = "Report-Konfigurationen"
+        unique_together = ["name", "report_configuration"]
 
 REPORT_ITEM_CATEGORY = (
     ("SHORT", "Name"),
@@ -100,11 +107,34 @@ class ReportItemConfiguration(GenoBase):
     report_configuration = models.ForeignKey(ReportConfiguration, verbose_name="Report-Konfiguration", related_name="report_configuration",
                                            on_delete=models.CASCADE, default=1)
 
+    def save_as_copy(self):
+        old_report_item_configuration_id = self.id
+        new_report_item_configuration = super().save_as_copy()
+        old_report_item_configuration = ReportItemConfiguration.objects.get(id=old_report_item_configuration_id)
+        for repot_input_field in ReportInputField.objects.filter(item_configuration=old_report_item_configuration):
+            new_report_item_configuration = report_item_configuration.save_as_copy()
+            new_report_item_configuration.report_configuration = new_report_configuration
+            new_report_item_configuration.save()
+        new_report_item_configuration
+
     class Meta:
         verbose_name = "Report-Element"
         verbose_name_plural = "Report-Elemente"
-        unique_together = ["name", "item_category"] ## TODO können mehrere "gleiche" ReportItems auf dem selben Report sein?
+        unique_together = ["name", "item_category"]
         ordering = ["item_category", "name"]
+
+class ReportItem(GenoBase):
+    name = models.CharField("Element-Bezeichnung", max_length=80)
+    item_category = models.CharField("Element-Kategorie", choices=REPORT_ITEM_CATEGORY, max_length=30)
+    report_configuration = models.ForeignKey(Report, verbose_name="Report-Konfiguration", related_name="report",
+                                           on_delete=models.CASCADE, default=1)
+
+    class Meta:
+        verbose_name = "Report-Element"
+        verbose_name_plural = "Report-Elemente"
+        unique_together = ["name", "item_category"]
+        ordering = ["item_category", "name"]
+
 
 class ReportInputField(GenoBase):
     name = models.CharField("Name", max_length=80)
@@ -126,6 +156,9 @@ class ReportInputData(GenoBase):
         ReportInputField, verbose_name="Eingabefeld", on_delete=models.CASCADE
     )
     report = models.ForeignKey(Report, verbose_name="Report", on_delete=models.CASCADE)
+    item = models.ForeignKey(ReportItem, verbose_name="Report-Element",
+                                           related_name="report_item",
+                                           on_delete=models.CASCADE, default=1)
     value = models.TextField(
         "Wert"
     )  ## store lists in value?  Should be able to copy list values from spreadsheet in UI!

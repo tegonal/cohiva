@@ -7,13 +7,27 @@ from unfold.admin import TabularInline, StackedInline
 
 from report.models import ReportItemConfiguration
 
+class ReportInputDataInline(TabularInline):  # oder admin.StackedInline
+    model = Report.report.rel.related_model.report_item.rel.related_model
+    fields = ["name", "value"]
+    can_delete = False
+
+    def has_add_permission(self, request, obj):
+        return False
+    extra = 0
+
+class ReportItemsInline(TabularInline):  # oder admin.StackedInline
+    model = Report.report.rel.related_model
+    fields = ["name", "item_category"]
+    inlines = [ReportInputDataInline]
+    extra = 0
 
 @admin.register(Report)
 class ReportAdmin(GenoBaseAdmin):
     model = Report
     fields = [
         "name",
-        "report_type",
+        "report_configuration",
         "state",
         "state_info",
         "comment",
@@ -25,15 +39,16 @@ class ReportAdmin(GenoBaseAdmin):
     ]
     readonly_fields = [
         "task_id",
-        "report_type",
+        "report_configuration",
         "object_actions",
         "ts_created",
         "ts_modified",
         "links",
         "backlinks",
     ]
-    list_display = ["name", "report_type", "state", "task_id", "comment"]
-    list_filter = ["report_type", "state", "ts_created", "ts_modified"]
+    inlines = [ReportItemsInline]
+    list_display = ["name", "report_configuration", "state", "task_id", "comment"]
+    list_filter = ["report_configuration", "state", "ts_created", "ts_modified"]
     search_fields = ["name", "state_info", "task_id", "comment"]
 
 class ReportInputFieldInline(TabularInline):  # oder admin.StackedInline
@@ -42,10 +57,10 @@ class ReportInputFieldInline(TabularInline):  # oder admin.StackedInline
     can_delete = False
 
     def has_add_permission(self, request, obj):
-        return False''
+        return False
     extra = 0
 
-class ReportItemsInline(TabularInline):  # oder admin.StackedInline
+class ReportItemConfigurationsInline(TabularInline):  # oder admin.StackedInline
     model = ReportConfiguration.report_configuration.rel.related_model
     fields = ["name", "item_category"]
     inlines = [ReportInputFieldInline]
@@ -60,7 +75,7 @@ class ReportConfigurationAdmin(GenoBaseAdmin):
         "report_type",
         "buildings",
     ]
-    inlines = [ReportItemsInline]
+    inlines = [ReportItemConfigurationsInline]
     readonly_fields = [ ]
     list_display = ["name", "report_type"]
 
