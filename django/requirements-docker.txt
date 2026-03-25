@@ -306,7 +306,7 @@ reportlab==4.4.4
     # via
     #   easy-thumbnails
     #   svglib
-requests==2.32.4
+requests==2.33.0
     # via
     #   caldav
     #   django-oauth-toolkit
