@@ -25,7 +25,7 @@
 | cohiva/ui.py                                                                                           |      144 |       13 |     91% |56, 90, 134, 137-138, 158-160, 169, 175-178, 210 |
 | cohiva/urls.py                                                                                         |       37 |        4 |     89% |60, 82, 120, 124 |
 | cohiva/utils/\_\_init\_\_.py                                                                           |        0 |        0 |    100% |           |
-| cohiva/utils/countries.py                                                                              |       61 |        3 |     95% | 50-51, 60 |
+| cohiva/utils/countries.py                                                                              |       61 |        3 |     95% | 51-52, 61 |
 | cohiva/utils/pdf.py                                                                                    |       66 |        2 |     97% |    23, 44 |
 | cohiva/utils/settings.py                                                                               |       15 |        2 |     87% |    12, 19 |
 | cohiva/utils/strings.py                                                                                |        4 |        0 |    100% |           |
@@ -106,10 +106,10 @@
 | geno/migrations/0018\_alter\_address\_bankaccount\_alter\_contract\_bankaccount.py                     |        5 |        0 |    100% |           |
 | geno/migrations/0019\_alter\_rentalunit\_rental\_type.py                                               |       11 |        4 |     64% |     10-13 |
 | geno/migrations/0020\_alter\_registrationevent\_enable\_telephone.py                                   |        4 |        0 |    100% |           |
-| geno/migrations/0021\_address\_country\_iso\_codes.py                                                  |       24 |       12 |     50% |17-22, 25-30 |
+| geno/migrations/0021\_address\_country\_iso\_codes.py                                                  |       24 |       12 |     50% |16-24, 27-35 |
 | geno/migrations/\_\_init\_\_.py                                                                        |        0 |        0 |    100% |           |
 | geno/model\_fields.py                                                                                  |        7 |        1 |     86% |        16 |
-| geno/models.py                                                                                         |      982 |      112 |     89% |143, 189-200, 360-368, 380-381, 474, 482-488, 496, 498, 500, 504, 511-512, 517-518, 530-534, 536-540, 547-549, 563, 567, 647-660, 691, 697, 761-764, 793, 796, 801, 855-858, 957, 964, 970, 983, 991, 1053-1060, 1080-1085, 1088, 1213, 1215, 1220, 1250, 1379, 1506, 1512, 1518, 1524-1528, 1554, 1584, 1622, 1627, 1677-1679, 1773, 1797, 1843, 1884-1896, 1901-1904 |
+| geno/models.py                                                                                         |      982 |      112 |     89% |142, 188-199, 359-367, 379-380, 473, 481-487, 495, 497, 499, 503, 510-511, 516-517, 529-533, 535-539, 546-548, 562, 566, 646-659, 690, 696, 760-763, 792, 795, 800, 854-857, 956, 963, 969, 982, 990, 1052-1059, 1079-1084, 1087, 1212, 1214, 1219, 1249, 1378, 1505, 1511, 1517, 1523-1527, 1553, 1583, 1621, 1626, 1676-1678, 1772, 1796, 1842, 1883-1895, 1900-1903 |
 | geno/sepa\_reader.py                                                                                   |       97 |       14 |     86% |16, 30, 35, 48-51, 71, 80, 96, 101, 135, 139, 172, 182 |
 | geno/serializers.py                                                                                    |       25 |        1 |     96% |        65 |
 | geno/settings.py                                                                                       |        8 |        0 |    100% |           |
@@ -120,7 +120,7 @@
 | geno/tests/data.py                                                                                     |      154 |        0 |    100% |           |
 | geno/tests/test\_admin.py                                                                              |      224 |        5 |     98% |58-60, 62, 241 |
 | geno/tests/test\_api\_views.py                                                                         |      198 |        2 |     99% |  260, 281 |
-| geno/tests/test\_billing.py                                                                            |      422 |       13 |     97% |306, 326, 343, 373, 396, 415, 440, 462, 494, 733, 741-743 |
+| geno/tests/test\_billing.py                                                                            |      422 |       13 |     97% |305, 325, 342, 372, 395, 414, 439, 461, 493, 732, 740-742 |
 | geno/tests/test\_documents.py                                                                          |      474 |        2 |     99% |  521, 527 |
 | geno/tests/test\_invoices.py                                                                           |      198 |        2 |     99% |  259, 263 |
 | geno/tests/test\_models.py                                                                             |      109 |        1 |     99% |         9 |
