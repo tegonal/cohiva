@@ -31,6 +31,7 @@ from django.conf import settings
 from cohiva.utils.pdf import PdfGenerator
 from geno.models import Invoice, InvoiceCategory, RentalUnit
 from geno.utils import JSONDecoderDatetime, JSONEncoderDatetime
+from report.generator import ReportGenerator
 from report.models import ReportOutput
 
 pio.kaleido.scope.mathjax = None
@@ -2896,34 +2897,6 @@ def create_energy_timeseries_graph(data, output_filename, context, extra_text=No
     fig.write_image(output_filename)
     if not os.path.isfile(output_filename):
         raise RuntimeError(f"Could not write {output_filename}")
-
-
-## TODO: Make this a class-based report generator
-class ReportGenerator:
-    default_config = {}
-
-    def __init__(self, report, *args, **kwargs):
-        self.config = copy.deepcopy(self.default_config)
-        self.config.update(report.get_report_config())
-
-        self._warnings = {}
-
-    def add_warning(self, text, obj):
-        if text in self._warnings:
-            if obj not in self._warnings[text]:
-                self._warnings[text].append(obj)
-        else:
-            self._warnings[text] = [obj]
-
-    def get_warnings(self, space_lines_longer_than=250):
-        lines = []
-        for warning, objects in self._warnings.items():
-            line = f"{warning}: {', '.join(objects)}"
-            if space_lines_longer_than and len(line) > space_lines_longer_than:
-                lines.extend(["", line, ""])
-            else:
-                lines.append(line)
-        return lines
 
 
 class Nebenkosten:
