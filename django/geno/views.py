@@ -4490,7 +4490,7 @@ class Odt2PdfView(CohivaAdminViewMixin, UploadedFileProcessorMixin, FormView):
 class WebstampView(CohivaAdminViewMixin, FormView):
     title = "PDFs frankieren"
     form_class = WebstampForm
-    permission_required = ("geno.tools_webstmap",)
+    permission_required = ("geno.tools_webstamp",)
     tmpdir = "/tmp/webstamp"
 
     def __init__(self, *args, **kwargs):
@@ -4515,6 +4515,7 @@ class WebstampView(CohivaAdminViewMixin, FormView):
                     "PDF Dateien hochladen. Die erste Seite wird frankiert (Fenster-Couvert links)"
                 ),
                 "download_file_url": self.download_file_url,
+                "submit_title": "Datei(en) frankieren",
             }
         )
         return context
@@ -4525,23 +4526,41 @@ class WebstampView(CohivaAdminViewMixin, FormView):
         return super().get(request, *args, **kwargs)
 
     def form_valid(self, form):
-        self.result = self.add_webstamps(
-            form.cleaned_data["files"], form.cleaned_data["stamp_type"]
-        )
-        if isinstance(self.result, str):
-            self.download_file_url = (
-                f"{reverse('geno:webstamp')}?download={os.path.basename(self.result)}"
-            )
+        ret = self.add_webstamps(form.cleaned_data["files"], form.cleaned_data["stamp_type"])
+        if isinstance(ret, str):
+            self.download_file_url = f"{reverse('geno:webstamp')}?download={os.path.basename(ret)}"
+            self.result = [
+                {
+                    "info": "Die Frankierung war erfolgreich.",
+                    "variant": ResponseVariant.SUCCESS.value,
+                    "objects": [
+                        "Falls der Download nicht automatisch startet, bitte "
+                        f'<a href="{self.download_file_url}" '
+                        'class="text-blue-700 dark:text-blue-400">hier</a> klicken.'
+                    ],
+                }
+            ]
+
+        else:
+            self.result = [
+                {
+                    "info": "Fehler beim Frankieren der Datei(en)",
+                    "variant": ResponseVariant.ERROR.value,
+                    "objects": ret,
+                }
+            ]
         return self.get(self.request)
 
     def send_file(self, tmp_file_name):
         tmp_file_path = os.path.normpath(os.path.join(self.tmpdir, tmp_file_name))
         if not tmp_file_path.startswith(self.tmpdir):
+            logger.error(f"Can't send file {tmp_file_path}: Permission denied.")
             raise PermissionDenied()
         if os.path.isfile(tmp_file_path):
             pdf_file_name = "PDF_frankiert"
             resp = FileResponse(open(tmp_file_path, "rb"), content_type="application/pdf")
             resp["Content-Disposition"] = "attachment; filename=%s.pdf" % pdf_file_name
+            logger.info(f"Send {tmp_file_path} (and delete).")
             os.remove(tmp_file_path)
             return resp
         else:
@@ -4589,12 +4608,7 @@ class WebstampView(CohivaAdminViewMixin, FormView):
         cmd_out = subprocess.run(
             ["/usr/local/bin/webstamp", "-t", stamp_type] + tmp_files, stdout=subprocess.PIPE
         )
-        ret.append(
-            {
-                "info": "Webstamp output:",
-                "objects": ["<pre>%s</pre>" % cmd_out.stdout.decode("utf-8")],
-            }
-        )
+        ret.append("Webstamp output: <pre>%s</pre>" % cmd_out.stdout.decode("utf-8"))
         ## Check if output files are there
         for f in tmp_files:
             outfile = f[0:-4] + "_stamp.pdf"
@@ -4612,16 +4626,13 @@ class WebstampView(CohivaAdminViewMixin, FormView):
             stdout=subprocess.PIPE,
         )
         # print(pdfcat_out.stdout.decode('utf-8'))
-        ret.append(
-            {
-                "info": "PDFtk output:",
-                "objects": ["<pre>%s</pre>" % pdfcat_out.stdout.decode("utf-8")],
-            }
-        )
+        ret.append("PDFtk output: <pre>%s</pre>" % pdfcat_out.stdout.decode("utf-8"))
         for f in tmp_files:
             os.remove(f)
         if os.path.isfile(tmp_file.name):
+            logger.info(" / ".join(ret))
             return tmp_file.name
+        logger.warning(f"No stamped file found {tmp_file}: {' / '.join(ret)}")
         return ret
 
 

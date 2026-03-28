@@ -1281,7 +1281,7 @@ class ManualInvoiceLineForm(forms.Form):
     )
 
 
-class MultipleFileInput(forms.ClearableFileInput):
+class MultipleFileInput(UnfoldAdminFileFieldWidget):
     allow_multiple_selected = True
 
 
@@ -1313,7 +1313,18 @@ class WebstampForm(forms.Form):
         if stamps:
             for key in sorted(stamps):
                 choices.append((key, stamps[key]))
-        self.fields["stamp_type"] = forms.ChoiceField(choices=choices, label="Frankierung")
+        self.fields["stamp_type"] = forms.ChoiceField(
+            choices=choices, label="Frankierung", widget=UnfoldAdminSelectWidget()
+        )
+
+        # Add Crispy Forms helper for Unfold styling
+        self.helper = FormHelper()
+        self.helper.form_tag = False  # Form tag handled in template
+        self.helper.form_class = ""
+        self.helper.layout = Layout(
+            Div("files", css_class="mb-4"),
+            Div("stamp_type", css_class="mb-4"),
+        )
 
 
 class InvoiceFilterForm(forms.Form):
