@@ -2,6 +2,9 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING
 
+from report.nk.contract import NkContract
+from report.nk.rental_unit import NkRentalUnit
+
 if TYPE_CHECKING:
     from report.nk.generator import NkReportGenerator
 
@@ -33,6 +36,7 @@ class NkCost:
     def __init__(self, report: "NkReportGenerator", cost_config: dict):
         self.report = report
         self.name = cost_config.get("name")
+        self.billing_group = cost_config.get("billing_group", self.name)
         self.total_values = {}
         self.section_values = {}
         self.rental_unit_values = {}
@@ -196,3 +200,25 @@ class NkCost:
         for ru in self.report.rental_units:
             row.append(self.rental_unit_values[ru.id][kind].amount)
         return row
+
+    def get_assigned_amount(
+        self,
+        value_type: NkCostValueType,
+        contract: NkContract,
+        rental_unit: NkRentalUnit | None = None,
+    ):
+        ret = 0
+        rental_units = [rental_unit] if rental_unit else contract.rental_units
+        for ru in rental_units:
+            for idx, amount in enumerate(
+                self.rental_unit_values[ru.id][value_type].monthly_amounts
+            ):
+                assigned_ru = contract.assigned_rental_unit_per_month.get(idx, None)
+                if assigned_ru == ru:
+                    ret += amount
+        return ret
+
+    def get_building_amount(self, value_type: NkCostValueType):
+        return self.total_values[value_type].amount
+
+    # def update_context(self, context, ru, contract):

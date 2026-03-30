@@ -116,3 +116,6 @@ class NkRentalUnit:
             self.contract_ids = []
         if contract_id not in self.contract_ids:
             self.contract_ids.append(contract_id)
+
+    def get_contract_ids(self):
+        return self.contract_ids or []

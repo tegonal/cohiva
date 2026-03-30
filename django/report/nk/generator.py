@@ -7,11 +7,12 @@ from datetime import datetime, timedelta
 from django.db.models import Q
 
 from geno.models import Contract, RentalUnit
-from geno.utils import JSONDecoderDatetime
-from report import nk
+from geno.utils import JSONDecoderDatetime, nformat
 from report.generator import ReportGenerator
 from report.models import ReportOutput
+from report.nk.bill import NkBill
 from report.nk.contract import NkContract
+from report.nk.cost.base import NkCostValueType
 from report.nk.cost_config import get_costs_from_config
 from report.nk.export_csv import ExportCSV
 from report.nk.rental_unit import NkRentalUnit
@@ -32,6 +33,7 @@ class NkReportGenerator(ReportGenerator):
         self.start_year = int(self.config["Startjahr"])
         self.start_month = 7
         self.num_months = 12
+        self.num_months_passed = 0
         self.period_start_index = 0
         self.dry_run = dry_run
         self.report = report
@@ -183,8 +185,66 @@ class NkReportGenerator(ReportGenerator):
 
         # self.assign_costs_to_contracts()
         # self.export_contract_output()
-        # self.create_bills()
+        self.create_bills()
         self.finalize_output()
+
+    def create_bills(self):
+        total_building_costs = self.get_cost_sum()
+        for contract in self.contracts:
+            bill = NkBill(contract, self.period_end.date(), self.dry_run)
+            bill.set_templates(
+                self.config["Vorlage:Abrechnung"],
+                self.config["Vorlage:EmpfehlungAkonto"],
+            )
+            filename = f"Nebenkosten-{contract.get_ru_list_string()}-{contract}.pdf"
+            bill.set_output_filename(
+                self.get_output_filename(
+                    f"bills/{filename}",
+                    filename,
+                    "Abrechnungen",
+                    regeneration_data=bill.get_regeneration_data(),
+                )
+            )
+            try:
+                bill.create(self.costs, total_building_costs, self.get_context())
+                self.log.append(
+                    "Did accounting on server and got QR-Bill: %s" % bill.output_pdf_filename
+                )
+            except Exception as e:
+                self.log.append(
+                    "Konnte Abrechnung für Vertrag %s nicht erstellen: %s: %s"
+                    % (contract, e.__class__.__name__, e)
+                )
+                raise RuntimeError(
+                    f"Konnte QR-Rechnung/Buchungen nicht erzeugen.\n\n{self.get_log_tail(5)}"
+                )
+
+    def get_context(self):
+        billing_period = (
+            f"{self.period_start.strftime('%d.%m.%Y')} – {self.period_end.strftime('%d.%m.%Y')}"
+        )
+        return {
+            "betreff": f"Nebenkostenabrechnung {billing_period}",
+            "billing_period": billing_period,
+            "billing_period_start": self.period_start.strftime("%Y-%m-%d"),
+            "billing_period_end": self.period_end.strftime("%Y-%m-%d"),
+            "s_chft": nformat(self.get_cost_sum()),  # sum of total costs
+            "num_months": self.num_months,
+            "num_months_passed": self.num_months_passed,
+        }
+
+    def get_cost_sum(self, section=None, ru=None, value_type=NkCostValueType.COST):
+        if section and ru:
+            raise ValueError("section and ru cannot be specified at the same time")
+        ret = 0
+        for cost in self.costs:
+            if ru:
+                ret += cost.rental_unit_values[ru.id][value_type].amount
+            elif section:
+                ret += cost.section_values[section.id][value_type].amount
+            else:
+                ret += cost.total_values[value_type].amount
+        return ret
 
     def finalize_output(self):
         self.text_output("Log", "Rohdaten", "\n".join(self.log))
@@ -281,6 +341,57 @@ class NkReportGenerator(ReportGenerator):
                     f'WARNUNG: Ignoriere Vertrag "{contract.id}" wegen fehlenden Daten: {e}'
                 )
                 self.add_warning(f"Ignoriere Vertrag wegen fehlenden Daten: {e}", contract)
+        # Also add rental units to contracts (for easier access when creating bills)
+        for ru in self.rental_units:
+            for contract_id in ru.get_contracts_ids():
+                self.get_contract_by_id(contract_id).add_rental_unit(ru)
+        self._load_virtual_contracts()
+
+    def _load_virtual_contracts(self):
+        for virtual_id, name in self.virtual_contracts.items():
+            contract = NkContract(
+                id=int(virtual_id),
+                name=name,
+                is_virtual=True,
+                date_start=self.period_start,
+                date_end=self.period_end,
+            )
+            self.contracts.append(contract)
+
+    def assign_rental_unit_months_to_contracts(self):
+        for ru in self.rental_units:
+            if ru.is_virtual:
+                continue
+            for idx, date in enumerate(self.dates):
+                active_contract = self._get_active_contract(date["start"])
+                if not active_contract:
+                    ## Assign to a virtual contract
+                    active_contract = self._get_virtual_contract(ru)
+                if not active_contract.period_start:
+                    active_contract.period_start = date["start"]
+                if not active_contract.period_end or date["end"] > active_contract.period_end:
+                    active_contract.period_end = date["end"]
+                active_contract.assign_month(idx, ru)
+
+    def _get_active_contract(self, date: datetime):
+        active_contract = None
+        for contract in self.contracts:
+            if not contract.is_virtual and contract.is_active_on(date):
+                if active_contract:
+                    raise ValueError(
+                        f"Multiple active contracts on {date}: {active_contract} and {contract}"
+                    )
+                active_contract = contract
+        return active_contract
+
+    def _get_virtual_contract(self, ru):
+        if ru.name in self.virtual_contracts_map:
+            contract_id = self.virtual_contracts_map[ru.name]
+        elif ru.is_allgemein:
+            contract_id = -5  # Allgemein
+        else:
+            contract_id = -6  # Leerstand
+        return self.get_contract_by_id(contract_id)
 
     def load_costs(self):
         ## Create cost objects from report config
@@ -354,7 +465,7 @@ class NkReportGenerator(ReportGenerator):
             self._output_text[name]["lines"].append(text)
 
     def get_output_filename(self, filename, name, group, regeneration_data=None):
-        temp_out_file = f"%s/{filename}" % (self.output_dir)
+        temp_out_file = f"{self.output_dir}/{filename}"
         self._output_files.append(
             {
                 "temp_file": temp_out_file,
@@ -365,7 +476,8 @@ class NkReportGenerator(ReportGenerator):
         )
         return temp_out_file
 
-    def get_group_name(self, group):
+    @classmethod
+    def get_group_name(cls, group):
         group_prefix = {
             "Übersicht": "A",
             "Manuelle Weiterverrechnung": "B",
@@ -433,6 +545,8 @@ class NkReportGenerator(ReportGenerator):
             else:
                 year = self.start_year
             start_date = datetime(year, month, 1)
+            if start_date < datetime.now():
+                self.num_months_passed += 1
 
             next_month = month + 1
             if next_month > 12:
@@ -450,20 +564,33 @@ class NkReportGenerator(ReportGenerator):
         return NK_SECTIONS
 
     @property
-    def period_name(self):
-        first_year = self.dates[0]["start"].year
-        last_year = self.dates[-1]["end"].year
-        if first_year == last_year:
-            return f"{first_year}"
-        return f"{first_year}-{last_year}"
-
-    @property
     def period_start(self):
         return self.dates[0]["start"]
 
     @property
     def period_end(self):
         return self.dates[-1]["end"]
+
+    @property
+    def period_name(self):
+        first_year = self.period_start.year
+        last_year = self.period_end.year
+        if first_year == last_year:
+            return f"{first_year}"
+        return f"{first_year}-{last_year}"
+
+    @property
+    def period_string(self):
+        return "%s-%s" % (
+            self.period_start.strftime("%d.%m.%Y"),
+            self.period_end.strftime("%d.%m.%Y"),
+        )
+
+    def get_contract_by_id(self, contract_id):
+        for contract in self.contracts:
+            if contract.id == contract_id:
+                return contract
+        raise ValueError(f"Rental unit with id {contract_id} not found")
 
     def get_rental_unit_by_id(self, ru_id):
         for unit in self.rental_units:
@@ -487,8 +614,8 @@ class NkReportGenerator(ReportGenerator):
         for dataset in data:
             setattr(self, dataset, data[dataset])
         if "cost_indices" not in data:
-            for i in range(len(nk.costs)):
-                self.cost_indices[nk.costs[i]["name"]] = i
+            for i in range(len(self.costs)):
+                self.cost_indices[self.costs[i]["name"]] = i
         if not isinstance(self.active_contracts[0], str):
             self.active_contracts = list(map(str, self.active_contracts))
 
@@ -502,13 +629,7 @@ class NkReportGenerator(ReportGenerator):
                     map(str, self.previous_data[period_name]["active_contracts"])
                 )
 
-    def get_period_string(self):
-        return "%s-%s" % (
-            self.dates[self.period_start_index]["start"].strftime("%d.%m.%Y"),
-            self.dates[-1]["end"].strftime("%d.%m.%Y"),
-        )
-
     def get_log_tail(self, lines=5):
         log = f"== Letzte {lines} Zeilen des Logs: ==\n"
-        log += "\n".join(nk.log[-lines:])
+        log += "\n".join(self.log[-lines:])
         return log

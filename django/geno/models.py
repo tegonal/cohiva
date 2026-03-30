@@ -1227,9 +1227,7 @@ class Registration(GenoBase):
     name = models.CharField("Nachname", max_length=30)
     first_name = models.CharField("Vorname", max_length=30)
     email = models.EmailField("Email")
-    telephone = models.CharField(
-        "Telefon", max_length=30, blank=True, help_text="Angabe zwingend wegen COVID-19 Massnahmen"
-    )
+    telephone = models.CharField("Telefon", max_length=30, blank=True)
     slot = models.ForeignKey(
         RegistrationSlot, verbose_name="Datum/Zeit Beginn", on_delete=models.CASCADE
     )
