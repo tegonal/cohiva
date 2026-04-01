@@ -33,6 +33,7 @@ ADMINS = (("Hans Muster", "admin@example.tld"),)
 
 CASHCTRL_API_TOKEN = ""
 CASHCTRL_TENANT = ""
+CASHCTRL_CUSTOM_FIELD_CREATED_BY_COHIVA = "customField1"
 
 FEATURES = [
     "api",
