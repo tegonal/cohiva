@@ -22,6 +22,10 @@ from django.utils.html import format_html, format_html_join, mark_safe
 from filer.fields.file import FilerFileField
 
 import geno.settings as geno_settings
+from cohiva.utils.countries import (
+    get_country_choices,
+    get_default_country_code,
+)
 from cohiva.utils.settings import (
     get_default_email,
     get_default_formal_choice,
@@ -236,7 +240,13 @@ class Address(GenoBase):
     po_box_number = models.CharField("Postfach Nr.", max_length=100, blank=True)
     city_zipcode = models.CharField("PLZ", max_length=30, blank=True)
     city_name = models.CharField("Ort", max_length=100, blank=True)
-    country = models.CharField("Land", max_length=100, blank=True, default="Schweiz")
+    country = models.CharField(
+        "Land",
+        max_length=2,
+        blank=True,
+        default=get_default_country_code,
+        choices=get_country_choices(),
+    )
     telephone = models.CharField("Telefon", max_length=30, blank=True)
     mobile = models.CharField("2. Telefon", max_length=30, blank=True)
     telephoneOffice = models.CharField("Telefon Geschäft", max_length=30, blank=True)
@@ -698,7 +708,13 @@ class Building(GenoBase):
     house_number = models.CharField("Hausnummer", max_length=100, blank=True)
     city_zipcode = models.CharField("PLZ", max_length=30, blank=True)
     city_name = models.CharField("Ort", max_length=100, blank=True)
-    country = models.CharField("Land", max_length=100, blank=True, default="Schweiz")
+    country = models.CharField(
+        "Land",
+        max_length=2,
+        blank=True,
+        default=get_default_country_code,
+        choices=get_country_choices(),
+    )
     value_insurance = models.DecimalField(
         "Gebäudeversicherungswert (Fr.)", max_digits=12, decimal_places=2, null=True, blank=True
     )
@@ -1240,7 +1256,7 @@ class Registration(GenoBase):
 RENTAL_UNIT_TYPES = (
     ("Wohnung", "Wohnung"),
     ("Grosswohnung", "Grosswohnung"),
-    ("Jokerzimmer", "Jokerzimmer"),
+    ("Zimmer", "Zimmer"),
     ("Selbstausbau", "Selbstausbau"),
     ("Kellerabteil", "Kellerabteil"),
     ("Gewerbe", "Gewerbefläche"),

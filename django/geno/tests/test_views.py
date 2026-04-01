@@ -10,7 +10,8 @@ from django.test import tag
 from django.urls import reverse
 
 import geno.tests.data as geno_testdata
-from geno.models import Invoice
+from geno.models import Invoice, InvoiceCategory, Share, ShareType
+from geno.views import ShareStatementView
 
 from .base import GenoAdminTestCase
 
@@ -228,6 +229,50 @@ class GenoViewsTest(GenoAdminTestCase):
         )
         self.assertEqual(Invoice.objects.count(), 0)
 
+    @patch("geno.views.create_qrbill", side_effect=create_fake_pdf, return_value=([], 0, None))
+    def test_invoice_manual_address_and_contract_validation(self, mock_create_qrbill):
+        self.client.login(username="superuser", password="secret")
+        path = reverse("geno:invoice-manual")
+        data = self.get_invoice_manual_data(preview=False, send_email=False)
+        data["address"] = ""
+        data["contract"] = self.contracts[0].pk
+        response = self.client.post(path, data=data)
+        self.assertInHTMLResponse(
+            "Für diesen Rechnungstyp muss eine Adresse angegeben werden",
+            response,
+            raw=True,
+        )
+        data["category"] = InvoiceCategory.objects.get(name="Contract manual").pk
+        data["address"] = self.addresses[0].pk
+        data["contract"] = ""
+        response = self.client.post(path, data=data)
+        self.assertInHTMLResponse(
+            "Für diesen Rechnungstyp muss ein Vertrag angegeben werden",
+            response,
+            raw=True,
+        )
+        data["contract"] = self.contracts[0].pk
+        response = self.client.post(path, data=data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["Content-Type"], "application/pdf")
+        self.assertEqual(b"".join(response.streaming_content), b"Dummy PDF")
+        self.assertEqual(Invoice.objects.count(), 1)
+        invoice = Invoice.objects.first()
+        self.assertEqual(invoice.contract, self.contracts[0])
+        self.assertEqual(invoice.person, None)
+
+    def test_invoice_manual_address_and_contract_form_field(self):
+        self.client.login(username="superuser", password="secret")
+        path = reverse("geno:invoice-manual")
+        data = {"category": self.invoicecategories[0].pk}
+        response = self.client.get(path, data=data)
+        self.assertInHTMLResponse('<select name="address"', response, raw=True)
+        self.assertNotInHTMLResponse('<select name="contract"', response, raw=True)
+        data = {"category": InvoiceCategory.objects.get(name="Contract manual").pk}
+        response = self.client.get(path, data=data)
+        self.assertInHTMLResponse('<select name="contract"', response, raw=True)
+        self.assertNotInHTMLResponse('<select name="address"', response, raw=True)
+
 
 class Odt2PdfViewTest(GenoAdminTestCase):
     @tag("slow-test")
@@ -255,3 +300,67 @@ class Odt2PdfViewTest(GenoAdminTestCase):
         with zipfile.ZipFile(io.BytesIO(response.getvalue())) as zip_file:
             self.assertInPDF(zip_file.read("testA.pdf"), "Template-Test")
             self.assertInPDF(zip_file.read("testB.pdf"), "Template-Test")
+
+
+class ShareStatementViewTest(GenoAdminTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        stype_as = ShareType.objects.get(name="Anteilschein")
+        Share.objects.all().delete()
+        Share.objects.create(
+            value=200,
+            quantity=1,
+            share_type=stype_as,
+            date=datetime.date(2020, 1, 1),
+            name=cls.addresses[0],
+            state="bezahlt",
+        )
+        Share.objects.create(
+            value=200,
+            quantity=5,
+            share_type=stype_as,
+            date=datetime.date(2020, 1, 1),
+            name=cls.addresses[1],
+            state="bezahlt",
+        )
+        Share.objects.create(
+            value=200,
+            quantity=6,
+            share_type=stype_as,
+            date=datetime.date(2020, 1, 1),
+            name=cls.addresses[2],
+            state="bezahlt",
+        )
+        Share.objects.create(
+            value=200,
+            quantity=10,
+            share_type=stype_as,
+            date=datetime.date(2020, 1, 1),
+            name=cls.addresses[3],
+            state="bezahlt",
+        )
+
+    def test_get_object_skips(self):
+        view = ShareStatementView()
+        view.enddate = datetime.date(2020, 12, 31)
+        obj = view.get_objects()
+        self.assertEqual(len(obj), 2)
+        self.assertIn("Anzahl ignoriert=2", view.extra_description_info)
+
+        Share.objects.create(
+            value=500,
+            quantity=1,
+            share_type=ShareType.objects.get(name="Depositenkasse"),
+            date=datetime.date(2020, 1, 1),
+            name=self.addresses[1],
+            state="bezahlt",
+        )
+        obj = view.get_objects()
+        self.assertEqual(len(obj), 3)
+        self.assertIn("Anzahl ignoriert=1", view.extra_description_info)
+
+        view.address_id = self.addresses[0].pk
+        obj = view.get_objects()
+        self.assertEqual(len(obj), 1)
+        self.assertIn("Anzahl ignoriert=0", view.extra_description_info)

@@ -82,6 +82,9 @@ class TransactionFilterForm(forms.Form):
         #    choices=account_options, label="Konto", widget=UnfoldAdminSelect2Widget()
         # )
 
+    class Media:
+        js = ("geno/js/select2-focus.js",)
+
 
 class TransactionUploadForm(forms.Form):
     file = forms.FileField(
@@ -142,6 +145,9 @@ class AccountEditForm(forms.ModelForm):
                 raise ValidationError("Es existiert bereits ein Konto mit diesem Namen.")
         return cleaned_data
 
+    class Media:
+        js = ("geno/js/select2-focus.js",)
+
 
 class AccountFilterForm(forms.Form):
     search = forms.CharField(
@@ -180,3 +186,6 @@ class RevenueReportForm(forms.Form):
             choices=period_options, label="Zeitraum"
         )
         self.fields["period"].widget.choices = iter(period_options)
+
+    class Media:
+        js = ("geno/js/select2-focus.js",)

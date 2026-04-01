@@ -2,13 +2,17 @@
 Models for the importer app.
 """
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.files.storage import FileSystemStorage
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from geno.models import GenoBase
 
 User = get_user_model()
+
+smedia_storage = FileSystemStorage(location=settings.SMEDIA_ROOT)
 
 
 class ImportJob(GenoBase):
@@ -32,7 +36,9 @@ class ImportJob(GenoBase):
         default="member_address",
         verbose_name=_("Import-Typ"),
     )
-    file = models.FileField(upload_to="imports/%Y/%m/", verbose_name=_("Excel-Datei"))
+    file = models.FileField(
+        upload_to="imports/%Y/%m/", verbose_name=_("Excel-Datei"), storage=smedia_storage
+    )
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,

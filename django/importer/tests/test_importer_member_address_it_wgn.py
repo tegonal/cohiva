@@ -114,7 +114,7 @@ class ImporterMemberAddressITWGNTest(TestCase):
                 "3011 Bern",  # Address
                 "Herr",
                 "Herr",
-                "Schweiz",
+                "CH",
                 "",
                 "",  # Title/salutation
                 "",
@@ -197,7 +197,7 @@ class ImporterMemberAddressITWGNTest(TestCase):
                 "3011 Bern",  # Address
                 "Herr",
                 "Herr",
-                "Schweiz",
+                "CH",
                 "",
                 "",  # Title/salutation
                 "",
@@ -270,7 +270,7 @@ class ImporterMemberAddressITWGNTest(TestCase):
                 "3011 Bern",  # Address
                 "Herr",
                 "Herr",
-                "Schweiz",
+                "CH",
                 "",
                 "",  # Title/salutation
                 "",
@@ -327,6 +327,8 @@ class ImporterMemberAddressITWGNTest(TestCase):
         member = Member.objects.get(name=address)
         self.assertEqual(member.date_join, date(2024, 1, 17))
 
+        self.assertEqual(address.country, "CH")  # Check country code was set correctly
+
     def test_import_organization(self):
         """Test importing an organization."""
         rows = [
@@ -343,7 +345,7 @@ class ImporterMemberAddressITWGNTest(TestCase):
                 "4000 Basel",  # P_ansprechperson = Weber (contact person)
                 "Firma",
                 "Firma",
-                "Schweiz",
+                "CH",
                 "",
                 "",
                 "",
@@ -414,7 +416,7 @@ class ImporterMemberAddressITWGNTest(TestCase):
                 "3000 Bern",
                 "Frau",
                 "Frau",
-                "Schweiz",
+                "CH",
                 "",
                 "",
                 "",
@@ -497,7 +499,7 @@ class ImporterMemberAddressITWGNTest(TestCase):
                 "8000 Zürich",
                 "Herr",
                 "Herr",
-                "Schweiz",
+                "CH",
                 "",
                 "",
                 "",
@@ -583,7 +585,7 @@ class ImporterMemberAddressITWGNTest(TestCase):
                 "8000 Zürich",
                 "Herr",
                 "Herr",
-                "Schweiz",
+                "CH",
                 "",
                 "",
                 "",
@@ -663,7 +665,7 @@ class ImporterMemberAddressITWGNTest(TestCase):
                 "3000 Bern",
                 "",
                 "",
-                "Schweiz",
+                "CH",
                 "",
                 "",
                 "",
@@ -728,7 +730,7 @@ class ImporterMemberAddressITWGNTest(TestCase):
                 "3011 Bern",
                 "Herr",
                 "Herr",
-                "Schweiz",
+                "CH",
                 "",
                 "",
                 "",

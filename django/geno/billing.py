@@ -26,6 +26,7 @@ from stdnum.ch import esr
 from svglib.svglib import svg2rlg
 
 import geno.settings as geno_settings
+from cohiva.utils.countries import normalize_country_code
 from cohiva.utils.pdf import PdfGenerator
 from cohiva.utils.strings import pluralize
 from cohiva.views.admin import CohivaAdminViewMixin, ResponseVariant
@@ -614,7 +615,7 @@ def add_payment(date, amount, person, invoice=None, note=None, cash=False):
     if not invoice:
         return "Kein Rechnungstyp für diese Zahlung definiert."
 
-    receivables = Account.from_settings(AccountKey.DEFAULT_RECEIVABLES)  ## Debitoren
+    receivables = get_receivables_account(invoice.invoice_category, invoice.contract)
     if cash:
         payment_account = Account.from_settings(AccountKey.CASH)
     else:
@@ -656,6 +657,8 @@ def get_income_account(invoice_category, account_key, contract=None):
 
 
 def get_receivables_account(invoice_category, contract=None):
+    if not invoice_category or not invoice_category.receivables_account:
+        return None
     account = Account(
         name="Forderungen aus Rechnung",
         prefix=invoice_category.receivables_account,
@@ -1566,7 +1569,8 @@ def add_sepa_transaction(book, tx, errors, skipped, success):
         "/".join(addtl_info),
     )
     payment_account = None
-    receivables_account = None
+    invoice_category = bill_info.get("invoice_category", None)
+    contract = bill_info.get("contract", None)
     try:
         for account in settings.FINANCIAL_ACCOUNTS.values():
             if account.get(
@@ -1579,10 +1583,7 @@ def add_sepa_transaction(book, tx, errors, skipped, success):
                 break
         if not payment_account:
             raise Exception(f"IBAN {tx['account']} nicht gefunden in settings.FINANCIAL_ACCOUNTS")
-        receivables_account = Account(
-            name="Debitoren von Rechnung",
-            prefix=bill_info["receivables_account"],
-        )
+        receivables_account = get_receivables_account(invoice_category, contract)
     except Exception as e:
         errors.append(
             "Buchhaltungs-Konten nicht gefunden: %s/%s (%s) [%s]"
@@ -2030,28 +2031,8 @@ def build_structured_qrbill_address(adr):
 
 
 def transform_qrbill_country(country):
-    country = (country or "").strip()
-    if country.lower() in ("schweiz", "suisse", "svizzera", "svizra", "switzerland"):
-        return "CH"
-    if country.lower() in (
-        "fürstentum liechtenstein",
-        "fuerstentum liechtenstein",
-        "liechtenstein",
-    ):
-        return "LI"
-    if country.lower() in ("deutschland", "germany"):
-        return "DE"
-    if country.lower() in ("österreich", "oesterreich", "austria"):
-        return "AT"
-    if country.lower() in ("frankreich", "france"):
-        return "FR"
-    if country.lower() in ("italien", "italia", "italy"):
-        return "IT"
-    if country.lower() in ("spanien", "españa", "espana", "spain"):
-        return "ES"
-    if country.lower() in ("brasilien", "brazil"):
-        return "BR"
-    return country
+    code = normalize_country_code(country)
+    return code or (country or "").strip()
 
 
 def get_duplicate_invoices():

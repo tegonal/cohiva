@@ -907,13 +907,21 @@ def import_from_api():
     ## Get RentalUnits
     response = RentalUnit.objects.filter(active=True).order_by("name")
     if nk.config["Liegenschaften"]:
-        building_ids = [int(x) for x in json.loads(nk.config["Liegenschaften"].replace("'", '"'))]
+        value = json.loads(nk.config["Liegenschaften"].replace("'", '"'))
+        if isinstance(value, list):
+            building_ids = [int(x) for x in value]
+        else:
+            building_ids = [int(value)]
         response = response.filter(building__in=building_ids)
+    buildings = response.order_by("building").values_list("building", flat=True).distinct()
+    if buildings.count() != 1:
+        raise RuntimeError("Die Nebenkostenabrechung benötigt derzeit genau eine Liegenschaft.")
+    nk.building_id = buildings.first()
 
     ru_section = {
         "Wohnung": "Wohnen",
         "Grosswohnung": "Wohnen",
-        "Jokerzimmer": "Wohnen",
+        "Zimmer": "Wohnen",
         "Selbstausbau": "Wohnen",
         "Kellerabteil": None,
         "Gewerbe": "Gewerbe",
@@ -2198,6 +2206,7 @@ def create_bills(regenerate_invoice_id=None):
         nk.log.append("Creating bill for contract %s" % contract_str)
         context = {
             "contract_id": c_id,
+            "building_id": nk.building_id,
             "Euer": contract_formal_str,
             "contract_info": contract_info,
             "contract_period": "%s – %s"
@@ -2475,8 +2484,7 @@ def create_bills(regenerate_invoice_id=None):
         else:
             nk.log.append("ERROR: Could not get qrbill!")
             raise RuntimeError(
-                "Konnte QR-Rechnung/Buchungen nicht erzeugen. Ist Buchhaltung gesperrt?\n\n"
-                f"{nk.get_log_tail(5)}"
+                f"Konnte QR-Rechnung/Buchungen nicht erzeugen.\n\n{nk.get_log_tail(5)}"
             )
 
         context["akonto_threshold"] = (
@@ -3110,6 +3118,7 @@ class NebenkostenReportGenerator(ReportGenerator):
         ]
         self.object_indices = {}
 
+        self.building_id = None
         self.contracts = {}
         self.active_contracts = []
 

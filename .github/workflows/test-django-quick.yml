@@ -5,6 +5,7 @@ on:
     branches-ignore: # ignore branches where the full test suite is run
       - main
       - develop
+
   workflow_dispatch: # allow manual trigger
 
 concurrency:
@@ -42,7 +43,7 @@ jobs:
     steps:
       - uses: kacus/github-action-container-cleanup@v1.0.1
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Execute init-script on MariaDB
         run: |
