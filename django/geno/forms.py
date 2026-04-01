@@ -30,6 +30,7 @@ from .models import (
     Address,
     Building,
     ContentTemplate,
+    Contract,
     GenericAttribute,
     Invoice,
     InvoiceCategory,
@@ -98,6 +99,9 @@ class TransactionForm(forms.Form):
             raise forms.ValidationError("Datum darf nicht in der Zukunft liegen.")
         return date
 
+    class Media:
+        js = ("geno/js/select2-focus.js",)
+
 
 class TransactionFormInvoice(forms.Form):
     invoice = forms.ModelChoiceField(
@@ -114,7 +118,7 @@ class TransactionFormInvoice(forms.Form):
         min_value=0.01,
         required=False,
         widget=UnfoldAdminDecimalFieldWidget(),
-        help_text="(falls abweichend von Rechnung)",
+        help_text="(nur ausfüllen, falls abweichend von Rechnung)",
     )
 
     def __init__(self, *args, **kwargs):
@@ -133,31 +137,25 @@ class TransactionFormInvoice(forms.Form):
         """Cross-field validation for invoice payment."""
         cleaned_data = super().clean()
         invoice = cleaned_data.get("invoice")
-        amount = cleaned_data.get("amount")
         date = cleaned_data.get("date")
 
         if not invoice:
+            self.add_error("invoice", "Bitte eine Rechnung auswählen.")
             return cleaned_data
 
-        # Validate amount is not greater than invoice amount
-        if amount and invoice.amount and amount > invoice.amount:
-            self.add_error(
-                "amount",
-                f"Betrag darf nicht grösser sein als Rechnungsbetrag ({invoice.total_amount}).",
-            )
-
-        # Validate date is not before invoice date
         if date and invoice.date and date < invoice.date:
             formatted_date = date_format(invoice.date, format="SHORT_DATE_FORMAT")
             self.add_error(
                 "date", f"Datum darf nicht vor Rechnungsdatum ({formatted_date}) liegen."
             )
 
-        # Validate date is not in the future
         if date and date > datetime.date.today():
             self.add_error("date", "Datum darf nicht in der Zukunft liegen.")
 
         return cleaned_data
+
+    class Media:
+        js = ("geno/js/select2-focus.js",)
 
 
 class MemberMailForm(forms.Form):
@@ -248,7 +246,14 @@ class MemberMailForm(forms.Form):
                     Div("select_flag_03", css_class="mb-4"),
                     Div("select_flag_04", css_class="mb-4"),
                     Div("select_flag_05", css_class="mb-4"),
-                    Div("ignore_join_date", css_class="mb-4"),
+                    ConditionalDiv(
+                        "membership-date-filters",
+                        Div("join_date_from", css_class="mb-4"),
+                        Div("join_date_to", css_class="mb-4"),
+                        Div("leave_date_from", css_class="mb-4"),
+                        Div("leave_date_to", css_class="mb-4"),
+                        initial_display="none",
+                    ),
                     *(
                         [
                             Div("share_paid_01", css_class="mb-4"),
@@ -326,6 +331,7 @@ class MemberMailForm(forms.Form):
 
     base_dataset_choices = [
         ("active_members", _("Alle aktuellen Mitglieder")),
+        ("members", _("Alle Mitglieder (auch ehemalige/zukünftige)")),
         ("renters", _("Alle aktuellen Mieter")),
         ("shares", _("Alle Personen mit Beteiligungen (ohne Hypothek/Spezial)")),
         ("addresses", _("Alle aktiven Adressen/Kontakte")),
@@ -413,8 +419,23 @@ class MemberMailForm(forms.Form):
         required=False,
         widget=UnfoldAdminSelectWidget(),
     )
-    ignore_join_date = forms.DateField(
-        label=_("Beitritts-Datum älter als"),
+    join_date_from = forms.DateField(
+        label=_("Beitritts-Datum von"),
+        required=False,
+        widget=UnfoldAdminDateWidget(),
+    )
+    join_date_to = forms.DateField(
+        label=_("Beitritts-Datum bis"),
+        required=False,
+        widget=UnfoldAdminDateWidget(),
+    )
+    leave_date_from = forms.DateField(
+        label=_("Austritts-Datum von"),
+        required=False,
+        widget=UnfoldAdminDateWidget(),
+    )
+    leave_date_to = forms.DateField(
+        label=_("Austritts-Datum bis"),
         required=False,
         widget=UnfoldAdminDateWidget(),
     )
@@ -1159,6 +1180,9 @@ class TransactionUploadProcessForm(forms.Form):
         if ttype != "ignore" and ttype != "kiosk_payment" and not name:
             raise forms.ValidationError("Bitte einen Namen (Zahlungsabsender) wählen.")
 
+    class Media:
+        js = ("geno/js/select2-focus.js",)
+
 
 class ManualInvoiceForm(forms.Form):
     category = forms.ModelChoiceField(
@@ -1171,9 +1195,16 @@ class ManualInvoiceForm(forms.Form):
         widget=UnfoldAdminDateWidget(),
     )
     address = forms.ModelChoiceField(
-        label="Rechnungsempfänger*in",
+        label="Rechnungsempfänger:in",
         queryset=Address.objects.filter(active=True),
         widget=UnfoldAdminSelect2Widget(),
+        required=False,
+    )
+    contract = forms.ModelChoiceField(
+        label="Rechnungsempfänger:in/Vertrag",
+        queryset=Contract.objects.filter(state="unterzeichnet"),
+        widget=UnfoldAdminSelect2Widget(),
+        required=False,
     )
     extra_text = forms.CharField(
         label="Zusatztext",
@@ -1189,19 +1220,44 @@ class ManualInvoiceForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
+        linked_object_type = kwargs.pop("linked_object_type", None)
         super().__init__(*args, **kwargs)
         # Add Crispy Forms helper for Unfold styling
         self.helper = FormHelper()
         self.helper.form_tag = False  # Form tag handled in template
         self.helper.form_class = ""
+        if linked_object_type == "Contract":
+            recipient_field = "contract"
+        else:
+            recipient_field = "address"
         self.helper.layout = Layout(
             Div("category", css_class="mb-4"),
             UnfoldSeparator(),
             Div("date", css_class="mb-4"),
-            Div("address", css_class="mb-4"),
+            Div(recipient_field, css_class="mb-4"),
             Div("extra_text", css_class="mb-4"),
             # Note: send_email is rendered in footer submit bar, not in form content
         )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        address = cleaned_data.get("address")
+        contract = cleaned_data.get("contract")
+        category = cleaned_data.get("category")
+        if category.linked_object_type == "Contract" and not contract:
+            raise forms.ValidationError(
+                "Für diesen Rechnungstyp muss ein Vertrag angegeben werden, "
+                "um eine Rechnung zu erstellen!"
+            )
+        if category.linked_object_type == "Address" and not address:
+            raise forms.ValidationError(
+                "Für diesen Rechnungstyp muss eine Adresse angegeben werden, "
+                "um eine Rechnung zu erstellen!"
+            )
+        return cleaned_data
+
+    class Media:
+        js = ("geno/js/select2-focus.js",)
 
 
 class ManualInvoiceLineForm(forms.Form):
@@ -1214,7 +1270,7 @@ class ManualInvoiceLineForm(forms.Form):
         label="Beschreibung",
         max_length=50,
         min_length=3,
-        widget=UnfoldAdminTextInputWidget(),
+        widget=UnfoldAdminTextInputWidget(attrs={"size": 50}),
         required=False,
     )
     amount = forms.DecimalField(

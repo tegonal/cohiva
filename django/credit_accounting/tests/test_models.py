@@ -67,7 +67,7 @@ class AccountTests(CreditAccountingTestCase):
                 "house_num": "8",
                 "pcode": "9999",
                 "city": "Vendor-City",
-                "country": "Schweiz",
+                "country": "CH",
             },
         )
 

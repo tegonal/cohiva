@@ -1997,7 +1997,7 @@ class ShareStatementView(DocumentGeneratorView):
                 or statement_data["sect_loan"]
                 or statement_data["sect_deposit"]
             ):
-                if not statement_data["thankyou"]:
+                if not self.address_id and not statement_data["thankyou"]:
                     ## Skip if max. GENO_SMALL_NUMBER_OF_SHARES_CUTOFF shares and no loan etc.
                     skip_count += 1
                 else:
@@ -2999,11 +2999,21 @@ def send_member_mail_filter_shares(form, member_list):
     return []
 
 
-def send_member_mail_filter_members(form, member_list):
+def send_member_mail_filter_members(form, member_list, only_active=True):
     errors = []
     members = Member.objects.all()
-    if "ignore_join_date" in form.cleaned_data and form.cleaned_data["ignore_join_date"]:
-        members = members.exclude(date_join__gt=form.cleaned_data["ignore_join_date"])
+    if "join_date_to" in form.cleaned_data and form.cleaned_data["join_date_to"]:
+        members = members.exclude(date_join__gt=form.cleaned_data["join_date_to"])
+    if "join_date_from" in form.cleaned_data and form.cleaned_data["join_date_from"]:
+        members = members.exclude(date_join__lt=form.cleaned_data["join_date_from"])
+    if "leave_date_to" in form.cleaned_data and form.cleaned_data["leave_date_to"]:
+        members = members.exclude(date_leave__gt=form.cleaned_data["leave_date_to"]).filter(
+            date_leave__isnull=False
+        )
+    if "leave_date_from" in form.cleaned_data and form.cleaned_data["leave_date_from"]:
+        members = members.exclude(date_leave__lt=form.cleaned_data["leave_date_from"]).filter(
+            date_leave__isnull=False
+        )
     if form.cleaned_data["select_flag_01"] == "true":
         members = members.filter(flag_01=True)
     elif form.cleaned_data["select_flag_01"] == "false":
@@ -3034,7 +3044,7 @@ def send_member_mail_filter_members(form, member_list):
         stype02 = None
     for member in members:
         ## Filter active membership
-        if not is_member(member.name):
+        if only_active and not is_member(member.name):
             continue
         ## Filter out members without shares
         if "share_paid_01" in form.cleaned_data and form.cleaned_data["share_paid_01"]:
@@ -3197,8 +3207,13 @@ class MailWizardView(CohivaAdminViewMixin, FormView):
         elif form.cleaned_data["base_dataset"] == "shares":
             errors = send_member_mail_filter_shares(form, self.request.session["members"])
         elif form.cleaned_data["base_dataset"] == "active_members":
-            ## Filter members
+            ## Filter active members
             errors = send_member_mail_filter_members(form, self.request.session["members"])
+        elif form.cleaned_data["base_dataset"] == "members":
+            ## Filter all members
+            errors = send_member_mail_filter_members(
+                form, self.request.session["members"], only_active=False
+            )
         else:
             errors.append(_("Ungültiger Basis-Datensatz"))
         ## Filter by invoice existence
@@ -3681,6 +3696,10 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
         NOTE: Keys must match the exact InvoiceCategory.name values in the database.
         If category names change in the admin, update these keys accordingly.
         """
+        ## Templates are currently Warmbächli-specific. This needs to be changed to allow
+        ## a more flexible template configuration per instance.
+        if settings.GENO_ID != "Warmbaechli":
+            return {}
         return {
             "Miete Gästezimmer": {
                 "extra_text": _(
@@ -3708,12 +3727,12 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
                 "extra_text": _(
                     "Vielen Dank für die Beitrittserklärung. Die Mitgliedschaft in der "
                     "Genossenschaft ist verbunden mit dem Zeichnen von Anteilscheinen und einer "
-                    "einmaligen Beitrittsgeb ühr. Dies stellen wir hiermit in Rechnung. Nach "
+                    "einmaligen Beitrittsgebühr. Dies stellen wir hiermit in Rechnung. Nach "
                     "Zahlungseingang folgt dann die Bestätigung der Mitgliedschaft."
                 ),
                 "lines": [
                     {
-                        "text": _("Beitrittsgeb ühr Genossenschaft"),
+                        "text": _("Beitrittsgebühr Genossenschaft"),
                         "amount": 200,
                         "date": datetime.date.today(),
                     },
@@ -3734,8 +3753,13 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
         return context
 
     def get_form(self):
+        linked_object_type = None
         if self.request.method == "POST":
-            form = ManualInvoiceForm(self.request.POST)
+            category_id = self.request.POST.get("category")
+            if category_id:
+                category = InvoiceCategory.objects.get(id=category_id)
+                linked_object_type = category.linked_object_type
+            form = ManualInvoiceForm(self.request.POST, linked_object_type=linked_object_type)
         else:
             initial_data = {"date": datetime.date.today()}
 
@@ -3751,6 +3775,7 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
                     if category:
                         # Always preserve the selected category (as model instance)
                         initial_data["category"] = category
+                        linked_object_type = category.linked_object_type
 
                         # Apply template data if available for this category (by name)
                         templates = self.get_invoice_templates()
@@ -3760,7 +3785,7 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
                 except (ValueError, TypeError):
                     pass
 
-            form = ManualInvoiceForm(initial=initial_data)
+            form = ManualInvoiceForm(initial=initial_data, linked_object_type=linked_object_type)
         return form
 
     def get_formset(self):
@@ -3768,7 +3793,7 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
 
         invoice_formset_class = formset_factory(
             ManualInvoiceLineForm,
-            extra=0,
+            extra=4,
             max_num=MAX_FORMS,
             validate_max=True,
             min_num=1,
@@ -3780,7 +3805,8 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
         else:
             # Check if category is selected via GET parameter
             category_id = self.request.GET.get("category")
-            extra_param = self.request.GET.get("extra")
+            # Disable dynamic form fields, since the current implementation does not work properly
+            extra_param = None  # self.request.GET.get("extra")
             templates = self.get_invoice_templates()
 
             # Determine initial data based on parameters
@@ -3816,6 +3842,10 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
                 # No category or extra param - default to 1 empty form
                 initial_data = [{"date": datetime.date.today()}]
 
+            # Init empty extra lines
+            for _i in range(MAX_FORMS - len(initial_data)):
+                initial_data.append({"date": datetime.date.today()})
+
             formset = invoice_formset_class(initial=initial_data)
         return formset
 
@@ -3824,7 +3854,12 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
 
         ## TODO: Use InvoiceCreator to do this
         invoice_category = form.cleaned_data["category"]
-        address = form.cleaned_data["address"]
+        if invoice_category.linked_object_type == "Contract":
+            contract = form.cleaned_data["contract"]
+            address = contract.get_contact_address()
+        else:
+            contract = None
+            address = form.cleaned_data["address"]
         invoice_date = form.cleaned_data["date"]
 
         lines_count = 0
@@ -3869,7 +3904,8 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
                     invoice_category.name,
                     invoice_date,
                     total_amount,
-                    address=address,
+                    address=None if contract else address,
+                    contract=contract,
                     comment="/".join(comment),
                 )
                 invoice_id = invoice.id
@@ -3903,7 +3939,7 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
             )
             context["invoice_nr"] = invoice_id
             context["show_liegenschaft"] = False
-            context["contract_info"] = None
+            context["contract_info"] = contract.get_contract_label() if contract else None
             context["sect_rent"] = False
             context["sect_generic"] = True
             context["generic_info"] = invoice_lines

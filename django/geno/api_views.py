@@ -22,7 +22,7 @@ from geno.billing import (
     get_reference_nr,
     render_qrbill,
 )
-from geno.models import Address, Contract, Invoice, InvoiceCategory, RentalUnit
+from geno.models import Address, Building, Contract, Invoice, InvoiceCategory, RentalUnit
 from geno.serializers import (
     ContractSerializer,
     GroupSerializer,
@@ -187,6 +187,7 @@ class QRBill(APIView):
                 self.virtual_contract_accounts[account["virtual_id"]] = Account.from_settings(key)
         self.invoice_id = None
         self.contract = None
+        self.building = None
         self.address = None
         self.invoice_category = None
         self.context = {}
@@ -199,6 +200,8 @@ class QRBill(APIView):
         account = copy.copy(self.virtual_contract_accounts[virt_contract_id])
         if self.contract:
             account.set_code(contract=self.contract)
+        elif self.building:
+            account.set_code(building=self.building)
         return account
 
     def get_akonto_qrbill(self, request):
@@ -250,14 +253,19 @@ class QRBill(APIView):
             ## Transaction: Forderungen>Nebenkosten [1104] -> Passive Abgenzung>NK-Akonto [2301]
             description = "NK-Abrechnung Verrechnung Akontozahlungen %s" % (self.contract)
             amount = request.data["total_akonto"]
-            book.add_transaction(
-                amount,
-                fiaccount_nk,
-                fiaccount_nk_receivables,
-                billing_period_end.date(),
-                description,
-                autosave=False,
-            )
+            try:
+                book.add_transaction(
+                    amount,
+                    fiaccount_nk,
+                    fiaccount_nk_receivables,
+                    billing_period_end.date(),
+                    description,
+                    autosave=False,
+                )
+            except Exception as e:
+                raise ValidationError(
+                    f"Konnte Buchung für {description} nicht erstellen: {e}"
+                ) from None
             logger.info(
                 "%sAdded transaction: Verrechnnung Akontozahlung CHF %s for contract %s (id=%s)."
                 % (self.dry_run_tag, amount, self.contract, request.data["contract_id"])
@@ -305,14 +313,19 @@ class QRBill(APIView):
         else:
             virtual_account = self.get_virtual_contract_account(request.data["contract_id"])
             description = f"NK-Abrechnung {virtual_account.name}"
-            book.add_transaction(
-                total_amount,
-                virtual_account,
-                fiaccount_nk_receivables,
-                billing_period_end.date(),
-                description,
-                autosave=not self.dry_run,
-            )
+            try:
+                book.add_transaction(
+                    total_amount,
+                    virtual_account,
+                    fiaccount_nk_receivables,
+                    billing_period_end.date(),
+                    description,
+                    autosave=not self.dry_run,
+                )
+            except Exception as e:
+                raise ValidationError(
+                    f"Konnte Buchung für {description} nicht erstellen: {e}"
+                ) from None
             logger.info(
                 "%sAdded transaction: %s CHF %s for virtual contract (id=%s)."
                 % (self.dry_run_tag, description, total_amount, request.data["contract_id"])
@@ -328,6 +341,8 @@ class QRBill(APIView):
         else:
             self.contract = Contract.objects.get(id=request.data["contract_id"])
             self.address = self.contract.get_contact_address()
+        if "building_id" in request.data:
+            self.building = Building.objects.get(id=int(request.data["building_id"]))
         self.context = self.address.get_context()
         logger.debug(
             "Getting QR-bill for contract %s (id=%s)"

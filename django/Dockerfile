@@ -34,7 +34,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 # Install runtime dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends xmlsec1 libreoffice-writer-nogui mariadb-client locales fonts-lato fonts-liberation rsync && \
+    apt-get install -y --no-install-recommends xmlsec1 libreoffice-writer-nogui mariadb-client locales media-types fonts-lato fonts-liberation rsync && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

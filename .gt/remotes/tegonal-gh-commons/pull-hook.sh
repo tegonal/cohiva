@@ -11,7 +11,7 @@
 set -euo pipefail
 shopt -s inherit_errexit
 unset CDPATH
-COHIVA_LATEST_VERSION="v1.4.0"
+COHIVA_LATEST_VERSION="v1.4.3"
 
 if ! [[ -v dir_of_tegonal_scripts ]]; then
 	dir_of_tegonal_scripts="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-$0}")" >/dev/null && pwd 2>/dev/null)/../../../lib/tegonal-scripts/src"
