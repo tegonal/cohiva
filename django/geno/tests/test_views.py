@@ -1,8 +1,10 @@
 import datetime
 import io
 import zipfile
+from decimal import Decimal
 from unittest.mock import DEFAULT, patch
 
+import openpyxl
 from django.apps import apps as django_apps
 from django.conf import settings
 from django.http import FileResponse
@@ -106,6 +108,70 @@ class GenoViewsTest(GenoAdminTestCase):
             if response.status_code != 200:
                 print(f"FAILED PATH: {path} [{response.status_code}]")
             self.assertEqual(response.status_code, 200)
+
+    def test_resident_unit_list_view(self):
+        """Request the rental units (resident unit) list as XLSX and check response.
+
+        Additionally verify that the calculated 'Bruttomiete' (ru_rent_total)
+        takes contract.rent_reduction and contract.rent_reservation into
+        account: ru_rent_total = rent_total - rent_reduction - rent_reservation.
+        """
+        # Ensure we have test data
+        self.assertTrue(hasattr(self, "rentalunits"))
+        self.assertTrue(len(self.rentalunits) > 0)
+
+        # Attach a contract reduction to the first contract/rentalunit to test
+        ru = self.rentalunits[0]
+        contract = self.contracts[0]
+        # Set monthly reductions (Fr./Monat)
+        contract.rent_reduction = Decimal("50.00")
+        contract.rent_reservation = Decimal("20.00")
+        contract.save()
+
+        expected_adjusted = ru.rent_total - Decimal("50.00") - Decimal("20.00")
+
+        logged_in = self.client.login(username="superuser", password="secret")
+        self.assertTrue(logged_in)
+        path = reverse("geno:resident-list-units")
+        response = self.client.get(path)
+        self.assertEqual(response.status_code, 200)
+
+        # export_data_to_xls returns an XLSX HttpResponse
+        self.assertEqual(
+            response.headers["Content-Type"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+
+        # Load workbook from response bytes and find the row for our rental unit
+        wb = openpyxl.load_workbook(io.BytesIO(response.content), data_only=True)
+        ws = wb.active
+
+        # Map header names to column indices
+        header_map = {}
+        for col in range(1, ws.max_column + 1):
+            cell = ws.cell(row=1, column=col)
+            header_map[cell.value] = col
+
+        # Expect headers 'Bezeichnung' and 'Bruttomiete' to be present
+        self.assertIn("Bezeichnung", header_map)
+        self.assertIn("Bruttomiete", header_map)
+
+        bezeichnung_col = header_map["Bezeichnung"]
+        brutto_col = header_map["Bruttomiete"]
+
+        found = False
+        for row in range(2, ws.max_row + 1):
+            bezeichnung = ws.cell(row=row, column=bezeichnung_col).value
+            if bezeichnung and str(ru.name) in str(bezeichnung):
+                brutto_val = ws.cell(row=row, column=brutto_col).value
+                # Convert to Decimal for comparison
+                brutto_dec = Decimal(str(brutto_val)) if brutto_val is not None else None
+                self.assertIsNotNone(brutto_dec)
+                self.assertEqual(brutto_dec, expected_adjusted)
+                found = True
+                break
+
+        self.assertTrue(found, f"Row for rental unit {ru} not found in XLSX export")
 
     @patch("geno.views.consolidate_invoices")
     def test_debtor_view_consolidate_invoices(self, mock_consolidate_invoices):
