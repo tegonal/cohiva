@@ -667,6 +667,9 @@ FINANCIAL_ACCOUNTING_BACKENDS = {
             "API_HOST": "cashctrl.com",
             "API_TOKEN": f"{cbc.CASHCTRL_API_TOKEN}",
             "TENANT": f"{cbc.CASHCTRL_TENANT}",
+            "CUSTOM_FIELD_MAPPINGS": {
+                "createdByCohiva": f"{cbc.CASHCTRL_CUSTOM_FIELD_CREATED_BY_COHIVA}",
+            },
         },
     },
     "dummy": {
