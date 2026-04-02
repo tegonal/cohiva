@@ -1,0 +1,9 @@
+.filebrowser .navigator-list .column-name a,
+.filebrowser .navigator-table .column-name a {
+  color: var(--color-primary-600) !important;
+  font-weight: 700;
+}
+
+:root {
+  --default-button-bg: var(--color-primary-600);
+}

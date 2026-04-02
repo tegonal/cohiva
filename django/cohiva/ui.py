@@ -47,9 +47,10 @@ class Navigation:
 
 
 class NavGroup:
-    def __init__(self, name, depth=0, icon=None, tabs=False):
+    def __init__(self, name, depth=0, icon=None, tabs=False, target=None):
         self._name = name
         self._icon = icon
+        self._target = target
         self._items = []
         self._tabs = tabs
         if depth > 1:
@@ -88,6 +89,8 @@ class NavGroup:
                 ret["title"] = self._name
             if self._icon:
                 ret["icon"] = self._icon
+            if self._target:
+                ret["target"] = self._target
             return ret
         ret = {
             "title": self._name,
@@ -98,6 +101,8 @@ class NavGroup:
         }
         if self._icon:
             ret["icon"] = self._icon
+        if self._target:
+            ret["target"] = self._target
         return ret
 
     def generate_unfold_tabs(self, request):
@@ -123,6 +128,7 @@ class MenuItem:
         self._app_label = obj.get("app", None)
         self._title = obj.get("name", None)
         self._icon = obj.get("icon", None)
+        self._target = obj.get("target", None)
         self._permission = obj.get("permission", None)
         self._cls = None
 
@@ -198,6 +204,8 @@ class MenuItem:
         }
         if self._icon:
             ret["icon"] = self._icon  # Supported icon set: https://fonts.google.com/icons
+        if self._target:
+            ret["target"] = self._target
         return ret
 
     def get_tab_model(self):
