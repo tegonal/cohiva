@@ -17,7 +17,6 @@ import locale
 from pathlib import Path
 from urllib.parse import quote
 
-from django.conf.urls.static import static
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 
@@ -1374,7 +1373,7 @@ UNFOLD = {
     #        "redirect_after": lambda request: reverse_lazy("admin:APP_MODEL_changelist"),
     #    },
     "STYLES": [
-      "/static/css/cohiva_style.css",
+        "/static/css/cohiva_style.css",
     ],
     #    "SCRIPTS": [
     #        lambda request: static("js/script.js"),
