@@ -734,6 +734,23 @@ class Building(GenoBase):
     egid = models.PositiveIntegerField("EGID", null=True, blank=True)
     active = models.BooleanField("Aktiv", default=True)
 
+    @property
+    def full_name(self):
+        ret = self.name
+        if self.street_name and self.house_number:
+            address = "%s %s" % (self.street_name, self.house_number)
+        else:
+            address = self.street_name
+        if address and address != self.name:
+            ret += ", %s" % address
+        if self.city_zipcode and self.city_name:
+            ret += ", %s %s" % (self.city_zipcode, self.city_name)
+        elif self.city_name:
+            ret += ", %s" % self.city_name
+        if self.country and self.country != get_default_country_code():
+            ret += ", %s" % self.get_country_display()
+        return ret
+
     class Meta:
         ordering = ["name"]
         verbose_name = "Liegenschaft"

@@ -15,8 +15,8 @@ NK_SECTIONS = [
 ]
 
 
-def get_section_by_id(id):
+def get_section_by_id(section_id: str):
     for section in NK_SECTIONS:
-        if section.id == id:
+        if section.id == section_id:
             return section
     return None

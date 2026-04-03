@@ -1,8 +1,8 @@
+import datetime
 import json
 import os
 import shutil
 from collections import OrderedDict
-from datetime import datetime, timedelta
 
 from django.db.models import Q
 
@@ -38,10 +38,11 @@ class NkReportGenerator(ReportGenerator):
         self.dry_run = dry_run
         self.report = report
 
-        self.dates = self.init_dates()
+        self.dates: list[dict[str, datetime.date]] = self.init_dates()
 
         self.costs = []
         self.rental_units = []
+        self.building = None
         self.contracts = []
 
         self.object_messung = {}
@@ -183,15 +184,16 @@ class NkReportGenerator(ReportGenerator):
         # if self.config["Ausgabe:Plots"]:
         #    generate_plots()
 
-        # self.assign_costs_to_contracts()
-        # self.export_contract_output()
+        self.assign_rental_unit_months_to_contracts()
+        self.export_contract_output()
+
         self.create_bills()
         self.finalize_output()
 
     def create_bills(self):
         total_building_costs = self.get_cost_sum()
         for contract in self.contracts:
-            bill = NkBill(contract, self.period_end.date(), self.dry_run)
+            bill = NkBill(contract, self.period_end, self.output_dir, self.dry_run)
             bill.set_templates(
                 self.config["Vorlage:Abrechnung"],
                 self.config["Vorlage:EmpfehlungAkonto"],
@@ -233,7 +235,7 @@ class NkReportGenerator(ReportGenerator):
             "num_months_passed": self.num_months_passed,
         }
 
-    def get_cost_sum(self, section=None, ru=None, value_type=NkCostValueType.COST):
+    def get_cost_sum(self, section=None, ru=None, value_type=NkCostValueType.COST) -> float:
         if section and ru:
             raise ValueError("section and ru cannot be specified at the same time")
         ret = 0
@@ -262,10 +264,18 @@ class NkReportGenerator(ReportGenerator):
         self._init_virtual_rental_units()
         units = RentalUnit.objects.filter(active=True).order_by("name")
         if self.config["Liegenschaften"]:
-            building_ids = [
-                int(x) for x in json.loads(self.config["Liegenschaften"].replace("'", '"'))
-            ]
+            value = json.loads(self.config["Liegenschaften"].replace("'", '"'))
+            if isinstance(value, list):
+                building_ids = [int(x) for x in value]
+            else:
+                building_ids = [int(value)]
             units = units.filter(building__in=building_ids)
+            buildings = units.order_by("building").values_list("building", flat=True).distinct()
+            if buildings.count() != 1:
+                raise RuntimeError(
+                    "Die Nebenkostenabrechung benötigt derzeit genau eine Liegenschaft."
+                )
+        building = units.first().building
         for unit in units:
             try:
                 self.rental_units.append(NkRentalUnit.from_rental_unit(unit, self))
@@ -274,7 +284,7 @@ class NkReportGenerator(ReportGenerator):
                     f'WARNUNG: Ignoriere Objekt "{unit.name}" wegen fehlenden Daten: {e}'
                 )
                 self.add_warning(f"Ignoriere Objekt wegen fehlenden Daten: {e}", unit.name)
-        self._update_virtual_rental_units()
+        self._update_virtual_rental_units(building)
 
     def _init_virtual_rental_units(self):
         self.rental_units.extend(
@@ -297,7 +307,7 @@ class NkReportGenerator(ReportGenerator):
             ]
         )
 
-    def _update_virtual_rental_units(self):
+    def _update_virtual_rental_units(self, building):
         total_nk_pauschal = 0
         total_strom_pauschal = 0
         for ru in self.rental_units:
@@ -305,6 +315,8 @@ class NkReportGenerator(ReportGenerator):
                 total_nk_pauschal += ru.nk_pauschal
             if not ru.is_virtual and ru.strom_pauschal:
                 total_strom_pauschal += ru.strom_pauschal
+            if not ru.building:
+                ru.building = building
         # Add NK/Strom pauschal to corresponding virtual rental unit
         self.get_rental_unit_by_id(-2).nk_pauschal = total_nk_pauschal
         self.get_rental_unit_by_id(-3).strom_pauschal = total_strom_pauschal
@@ -342,9 +354,9 @@ class NkReportGenerator(ReportGenerator):
                 )
                 self.add_warning(f"Ignoriere Vertrag wegen fehlenden Daten: {e}", contract)
         # Also add rental units to contracts (for easier access when creating bills)
-        for ru in self.rental_units:
-            for contract_id in ru.get_contracts_ids():
-                self.get_contract_by_id(contract_id).add_rental_unit(ru)
+        # for ru in self.rental_units:
+        #    for contract_id in ru.get_contract_ids():
+        #        self.get_contract_by_id(contract_id).add_rental_unit(ru)
         self._load_virtual_contracts()
 
     def _load_virtual_contracts(self):
@@ -363,19 +375,16 @@ class NkReportGenerator(ReportGenerator):
             if ru.is_virtual:
                 continue
             for idx, date in enumerate(self.dates):
-                active_contract = self._get_active_contract(date["start"])
+                active_contract = self._get_active_contract(ru, date["start"])
                 if not active_contract:
                     ## Assign to a virtual contract
                     active_contract = self._get_virtual_contract(ru)
-                if not active_contract.period_start:
-                    active_contract.period_start = date["start"]
-                if not active_contract.period_end or date["end"] > active_contract.period_end:
-                    active_contract.period_end = date["end"]
-                active_contract.assign_month(idx, ru)
+                ru.assign_month_to_contract(idx, active_contract, date)
 
-    def _get_active_contract(self, date: datetime):
+    def _get_active_contract(self, rental_unit: NkRentalUnit, date: datetime.date):
         active_contract = None
-        for contract in self.contracts:
+        for contract_id in rental_unit.get_contract_ids():
+            contract = self.get_contract_by_id(contract_id)
             if not contract.is_virtual and contract.is_active_on(date):
                 if active_contract:
                     raise ValueError(
@@ -407,9 +416,26 @@ class NkReportGenerator(ReportGenerator):
             cost.split_costs()
 
     def export_object_output(self):
+        """Export calculated data with splits among rental units (before assigning costs to contracts)"""
         exporter = ExportCSV(self)
         exporter.export()
         self.log.append("Output is in %s" % exporter.filename)
+
+    def export_contract_output(self):
+        """Do logging and export data related to contracts (after assigning costs to contracts)"""
+        for contract in self.contracts:
+            if (
+                contract.akonto_paid or contract.akonto_nominal
+            ) and contract.akonto_paid != contract.akonto_nominal:
+                msg = (
+                    f"Vertrag {contract}: Effektiv in Rechnung gestelltes NK-Akonto stimmt "
+                    "nicht mit der nominellen Akontosumme der Mietobjekte überein: "
+                    f"{contract.akonto_paid} vs. {contract.akonto_nominal}."
+                )
+                self.log.append(
+                    msg + " Die Akonto beträge der Mietobjekte werden ensprechend skaliert."
+                )
+                self.add_warning(msg, contract)
 
     def set_costs_defaults(self):
         defaults = {
@@ -544,8 +570,8 @@ class NkReportGenerator(ReportGenerator):
                 month -= 12
             else:
                 year = self.start_year
-            start_date = datetime(year, month, 1)
-            if start_date < datetime.now():
+            start_date = datetime.datetime(year, month, 1)
+            if start_date < datetime.datetime.now():
                 self.num_months_passed += 1
 
             next_month = month + 1
@@ -554,9 +580,11 @@ class NkReportGenerator(ReportGenerator):
                 next_month -= 12
             else:
                 next_month_year = year
-            end_date = datetime(next_month_year, next_month, 1) + timedelta(days=-1)
+            end_date = datetime.datetime(next_month_year, next_month, 1) + datetime.timedelta(
+                days=-1
+            )
 
-            dates.append({"start": start_date, "end": end_date})
+            dates.append({"start": start_date.date(), "end": end_date.date()})
         return dates
 
     @property
@@ -586,11 +614,11 @@ class NkReportGenerator(ReportGenerator):
             self.period_end.strftime("%d.%m.%Y"),
         )
 
-    def get_contract_by_id(self, contract_id):
+    def get_contract_by_id(self, contract_id: int | str):
         for contract in self.contracts:
-            if contract.id == contract_id:
+            if contract.id == int(contract_id):
                 return contract
-        raise ValueError(f"Rental unit with id {contract_id} not found")
+        raise ValueError(f"Contract with id {contract_id} not found")
 
     def get_rental_unit_by_id(self, ru_id):
         for unit in self.rental_units:

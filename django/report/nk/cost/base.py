@@ -2,11 +2,10 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from report.nk.contract import NkContract
-from report.nk.rental_unit import NkRentalUnit
-
 if TYPE_CHECKING:
+    from report.nk.contract import NkContract
     from report.nk.generator import NkReportGenerator
+    from report.nk.rental_unit import NkRentalUnit
 
 
 class NkCostValueType(Enum):
@@ -204,8 +203,8 @@ class NkCost:
     def get_assigned_amount(
         self,
         value_type: NkCostValueType,
-        contract: NkContract,
-        rental_unit: NkRentalUnit | None = None,
+        contract: "NkContract",
+        rental_unit: "NkRentalUnit | None" = None,
     ):
         ret = 0
         rental_units = [rental_unit] if rental_unit else contract.rental_units
@@ -213,8 +212,8 @@ class NkCost:
             for idx, amount in enumerate(
                 self.rental_unit_values[ru.id][value_type].monthly_amounts
             ):
-                assigned_ru = contract.assigned_rental_unit_per_month.get(idx, None)
-                if assigned_ru == ru:
+                assigned_contract = ru.get_assigned_contract_for_month(idx)
+                if assigned_contract == contract:
                     ret += amount
         return ret
 

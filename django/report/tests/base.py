@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import geno.tests.data as geno_testdata
 from geno.tests.base import BaseTestCase
 from report.models import Report, ReportInputData, ReportInputField, ReportType
@@ -95,3 +97,45 @@ class NkReportTestCase(ReportTestCase):
         field = ReportInputData.objects.get(name=inpt, report=self.report)
         field.value = data
         field.save()
+
+    # Add string(s) to array in return_value to simulate an error
+    @patch("report.nk.bill.create_qrbill", return_value=([], -1, None))
+    @patch("report.nk.bill.render_qrbill")
+    @patch(
+        "report.nk.bill.NkBill._create_rental_unit_files",
+        return_value={"odt_file": "dummy.odt", "graph_files": []},
+    )
+    @patch("report.nk.bill.NkBill._create_final_pdf")
+    @patch("report.nk.generator.NkReportGenerator.add_output_to_report")
+    def generate_with_mock_output(
+        self,
+        report,
+        mock_add_output_to_report,
+        mock_create_final_pdf,
+        mock_create_rental_unit_files,
+        mock_render_qrbill,
+        mock_create_qrbill,
+    ):
+        report.generate()
+        # print("DEBUG: create_qrbill.call_count: ", mock_create_qrbill.call_count)
+        # print("DEBUG: create_qrbill.call_args: ", mock_create_qrbill.call_args)
+        # print("DEBUG: render_qrbill.call_count: ", mock_render_qrbill.call_count)
+        # print("DEBUG: render_qrbill.call_args: ", mock_render_qrbill.call_args)
+        # print(
+        #     "DEBUG: create_rental_unit_files.call_count: ",
+        #     mock_create_rental_unit_files.call_count,
+        # )
+        # print(
+        #     "DEBUG: create_rental_unit_files.call_args: ", mock_create_rental_unit_files.call_args
+        # )
+        # print("DEBUG: create_final_pdf.call_count: ", mock_create_final_pdf.call_count)
+        # print("DEBUG: create_final_pdf.call_args: ", mock_create_final_pdf.call_args)
+        # print("DEBUG: add_output_to_report.call_count: ", mock_add_output_to_report.call_count)
+        # print("DEBUG: add_output_to_report.call_args: ", mock_add_output_to_report.call_args)
+        return {
+            "create_qrbill": mock_create_qrbill,
+            "render_qrbill": mock_render_qrbill,
+            "create_rental_unit_files": mock_create_rental_unit_files,
+            "create_final_pdf": mock_create_final_pdf,
+            "add_output_to_report": mock_add_output_to_report,
+        }

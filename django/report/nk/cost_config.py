@@ -12,16 +12,39 @@ class CostConfig:
 def get_costs_from_config():
     ## TODO: Implement this with configuration from DB
     costs = [
-        {"name": "Hauswartung_ServiceHeizungLüftung"},
-        {"name": "Betriebskosten_Gemeinschaft"},
+        {
+            "name": "Hauswartung_ServiceHeizungLüftung",
+            "billing_group": "Hauswartung, Service Heizung/Lüftung",
+            "class": NkTotalCost,
+        },
         {
             "name": "Reinigung",
             "section_weights": "reinigung",
+            "class": NkTotalCost,
+        },
+        {
+            "name": "Umgebung_Siedlung",
+            "billing_group": "Siedlung/Umgebungspflege",
+            "class": NkTotalCost,
+        },
+        {
+            "name": "Betriebskosten_Gemeinschaft",
+            "billing_group": "Betriebskosten Gemeinschaftsanlagen",
+            "class": NkTotalCost,
         },
         {
             "name": "Winterdienst",
+            "class": NkTotalCost,
         },
-        {"name": "Umgebung_Siedlung"},
+        {
+            "name": "Lift",
+            "class": NkTotalCost,
+        },
+        {
+            "name": "Kehrichtgebuehren",
+            "billing_group": "Kehrichtgebühren",
+            "class": NkTotalCost,
+        },
         {
             "name": "Wasser_Abwasser_Grundkosten",
             "category": "waerme_wasser_grund",
@@ -32,11 +55,6 @@ def get_costs_from_config():
             "category": "waerme_wasser_verbrauch",
             "amount_factor": 0.7,
             "object_weights": "messung_wasser",
-        },
-        {"name": "Kehrichtgebuehren"},
-        {
-            "name": "Lift",
-            "class": NkTotalCost,
         },
         {
             "name": "Fernwaerme_Fussboden_Grundkosten",
@@ -96,7 +114,10 @@ def get_costs_from_config():
             "section_weights": None,
             "object_weights": None,
         },
-        {"name": "Serviceabo Energiemessung"},
+        {
+            "name": "Serviceabo Energiemessung",
+            # "class": NkTotalCost, Currently included with Strom total, add it later
+        },
         {
             "name": "Internet/WLAN",
             "category": "internet",
