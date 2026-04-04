@@ -165,10 +165,14 @@ class NkCost:
         return self.report.num_months * [1.0]
 
     def get_section_weights(self):
-        """Default with equal weights for all sections."""
+        """Return weights per section, using the configured section_weights profile if available."""
+        weight_profile = self.report.section_weights.get(self.section_weights) if self.section_weights else None
         weights = {}
         for section in self.report.sections:
-            weights[section.id] = 1.0
+            if weight_profile is not None:
+                weights[section.id] = weight_profile.get(section.id.capitalize(), 1.0)
+            else:
+                weights[section.id] = 1.0
         return weights
 
     def get_rental_unit_weights(self, ru_id):
