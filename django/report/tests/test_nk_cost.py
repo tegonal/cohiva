@@ -2,7 +2,7 @@ from django.db.models import Sum
 
 import report.tests.data as testdata
 from geno.models import RentalUnit
-from report.nk.cost import NkCost, NkCostValueType, NkTotalCost
+from report.nk.cost import NkCost, NkCostPerRentalUnit, NkCostValueType, NkTotalCost
 from report.nk.generator import NkReportGenerator
 
 from .base import NkReportTestCase
@@ -147,4 +147,86 @@ class NKReportCostTest(NkReportTestCase):
             reinigung_cost.section_values["wohnen"][NkCostValueType.COST].amount,
             expected_reinigung_wohnen,
             places=2,
+        )
+
+    def test_cost_per_rental_unit(self):
+        """
+        Test NkCostPerRentalUnit covers all three calculation paths:
+
+        1. Fixed fee by rental unit name (G001 → 100 CHF/month)
+        2. fee_per_unit + min_occupancy × fee_per_person
+           - 001a (min_occupancy=3): 5 + 3×4 = 17 CHF/month
+           - 001b (min_occupancy=1): 5 + 1×4 =  9 CHF/month
+        3. Zero — no min_occupancy, no fixed fee (G002, L001, L002 → 0 CHF/month)
+
+        configure_test_report_minimal() already sets:
+          Internet:Tarif:ProWohnung = 5.0
+          Internet:Tarif:ProPerson  = 4.0
+          Internet:Tarif:Fix        = "" (empty)
+        We update Fix to add a fixed fee for G001.
+        """
+        self.configure_test_report_minimal()
+        self.update_field("Internet:Tarif:Fix", '{"G001": 100}')
+
+        report = NkReportGenerator(self.report, True, output_root="/tmp/")
+        report.load_rental_units()
+
+        cost = NkCostPerRentalUnit(
+            report,
+            {
+                "name": "Internet/WLAN",
+                "fee_per_unit_key": "Internet:Tarif:ProWohnung",
+                "fee_per_person_key": "Internet:Tarif:ProPerson",
+                "fixed_fees_key": "Internet:Tarif:Fix",
+            },
+        )
+        cost.load_input_data()
+        cost.split_costs()
+
+        num_months = report.num_months
+        ru_001a = self.rentalunits[0]  # Wohnung, min_occupancy=3
+        ru_001b = self.rentalunits[1]  # Wohnung, min_occupancy=1
+        ru_G001 = self.rentalunits[2]  # Gewerbe, fixed fee = 100 CHF/month
+        ru_G002 = self.rentalunits[3]  # Gewerbe, no min_occupancy → 0
+
+        # Path 2: fee_per_unit + min_occupancy × fee_per_person
+        self.assertAlmostEqual(
+            cost.rental_unit_values[ru_001a.id][NkCostValueType.COST].amount,
+            (5.0 + 3 * 4.0) * num_months,  # 17 CHF/month × 12
+        )
+        self.assertAlmostEqual(
+            cost.rental_unit_values[ru_001b.id][NkCostValueType.COST].amount,
+            (5.0 + 1 * 4.0) * num_months,  # 9 CHF/month × 12
+        )
+
+        # Path 1: fixed fee by name
+        self.assertAlmostEqual(
+            cost.rental_unit_values[ru_G001.id][NkCostValueType.COST].amount,
+            100.0 * num_months,  # 100 CHF/month × 12
+        )
+
+        # Path 3: zero (no min_occupancy, no fixed fee)
+        self.assertAlmostEqual(
+            cost.rental_unit_values[ru_G002.id][NkCostValueType.COST].amount,
+            0.0,
+        )
+
+        # Section totals aggregate correctly
+        self.assertAlmostEqual(
+            cost.section_values["wohnen"][NkCostValueType.COST].amount,
+            (17.0 + 9.0) * num_months,  # 001a + 001b
+        )
+        self.assertAlmostEqual(
+            cost.section_values["gewerbe"][NkCostValueType.COST].amount,
+            100.0 * num_months,  # G001 only (G002 = 0)
+        )
+        self.assertAlmostEqual(
+            cost.section_values["lager"][NkCostValueType.COST].amount,
+            0.0,
+        )
+
+        # Grand total
+        self.assertAlmostEqual(
+            cost.total_values[NkCostValueType.COST].amount,
+            (17.0 + 9.0 + 100.0) * num_months,
         )
