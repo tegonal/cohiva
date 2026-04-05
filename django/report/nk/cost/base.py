@@ -232,4 +232,8 @@ class NkCost:
     def get_building_amount(self, value_type: NkCostValueType):
         return self.total_values[value_type].amount
 
+    def get_extra_context(self, ru: "NkRentalUnit", contract: "NkContract") -> dict:
+        """Return extra context variables for ODT template rendering. Override in subclasses."""
+        return {}
+
     # def update_context(self, context, ru, contract):

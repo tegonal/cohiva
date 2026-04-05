@@ -101,6 +101,8 @@ class NkBill:
             )
             if cost_context:
                 context["costs"].append(cost_context)
+        for cost in costs:
+            context.update(cost.get_extra_context(ru, self.contract))
         return context
 
     def _create_rental_unit_files(self, context, ru):
