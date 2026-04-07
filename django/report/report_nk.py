@@ -34,6 +34,11 @@ from geno.utils import JSONDecoderDatetime, JSONEncoderDatetime
 from report.generator import ReportGenerator
 from report.models import ReportOutput
 
+"""THIS FILE CONTAINS LEGACY CODE THAT WILL BE REMOVED IN THE FUTURE.
+It should only be used to test backwards compatibility. The new implementation
+is in report/nk/
+"""
+
 pio.kaleido.scope.mathjax = None
 
 
