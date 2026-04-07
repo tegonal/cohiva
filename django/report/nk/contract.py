@@ -122,7 +122,7 @@ class NkContract:
     def update_context(self, context, costs: list[NkCost]):
         total_bill_amount = self.get_total_costs(costs)
         if self.akonto_paid:
-            total_bill_amount = -self.akonto_paid
+            total_bill_amount -= self.akonto_paid
         if self.address:
             context.update(self.address.get_context())
         context.update(

@@ -86,19 +86,25 @@ class NKReportCostTest(NkReportTestCase):
         report.load_rental_units()
 
         # Cost 1: default section weights — all sections weighted equally
-        default_cost = NkTotalCost(report, {
-            "name": "Wasser_Abwasser",
-            "object_weights": "area",
-        })
+        default_cost = NkTotalCost(
+            report,
+            {
+                "name": "Wasser_Abwasser",
+                "object_weights": "area",
+            },
+        )
         default_cost.load_input_data()
         default_cost.split_costs()
 
         # Cost 2: "reinigung" section weights — Wohnen=0.7, Gewerbe=1.0, Lager=1.0, Allgemein=0.0
-        reinigung_cost = NkTotalCost(report, {
-            "name": "Reinigung",
-            "object_weights": "area",
-            "section_weights": "reinigung",
-        })
+        reinigung_cost = NkTotalCost(
+            report,
+            {
+                "name": "Reinigung",
+                "object_weights": "area",
+                "section_weights": "reinigung",
+            },
+        )
         reinigung_cost.load_input_data()
         reinigung_cost.split_costs()
 

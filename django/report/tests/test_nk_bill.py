@@ -1,8 +1,10 @@
 import datetime
 
+from dateutil.relativedelta import relativedelta
+
 import report.tests.data as testdata
 from finance.accounting import Account, AccountKey
-from geno.models import Invoice, InvoiceCategory
+from geno.models import BankAccount, Invoice, InvoiceCategory
 from geno.utils import nformat
 from report.nk.generator import NkReportGenerator
 
@@ -55,8 +57,92 @@ class NKBillTest(NkReportTestCase):
             date=date,
         )
 
+    def test_contract_bill_context(self):
+        """Test context variables used for the QR-Bill invoice (1st page of the billing document)"""
+        self.configure_test_report_minimal()
+        rg = NkReportGenerator(self.report, True, output_root="/tmp/")
+
+        ## Create akonto payments for the first two contracts, with an extra payment for the second contract
+        for contract in self.contracts[0:2]:
+            self.create_akonto_invoices(contract, rg.dates)
+        self.create_special_akonto_invoice(self.contracts[1], rg.dates[2]["end"], 50000)
+
+        ## Make the third contract end inside the billing period
+        self.contracts[2].billing_date_end = datetime.date(2023, 11, 30)
+        self.contracts[2].bankaccount = BankAccount.objects.create(iban="CH1234567890123456789")
+        self.contracts[2].save()
+        self.create_special_akonto_invoice(self.contracts[2], rg.dates[2]["end"], 50000)
+
+        mocks = self.generate_with_mock_output(rg)
+        self.assertEqual(mocks["create_qrbill"].call_count, len(rg.contracts))
+
+        ## First contract
+        total_unit = 20120.48  # Temporary: not all costs included yet
+        akonto = 12 * 100
+        bill_total = total_unit - akonto
+        (ref_number, address, context, output_filename) = (
+            mocks["create_qrbill"].call_args_list[0].args
+        )
+        self.assertEqual(context["betreff"], "Nebenkostenabrechnung 01.07.2023 – 30.06.2024")
+        self.assertEqual(context["building"], "Musterweg 1, 3000 Bern")
+        self.assertEqual(context["contract_info"], self.contracts[0].get_contract_label())
+        self.assertEqual(context["invoice_nr"], 9999999999)
+        self.assertEqual(context["invoice_date"], datetime.date.today().strftime("%d.%m.%Y"))
+        self.assertEqual(
+            context["invoice_duedate"],
+            (datetime.date.today() + relativedelta(months=2)).strftime("%d.%m.%Y"),
+        )
+        self.assertEqual(context["s_generic_total"], nformat(bill_total))
+        self.assertNotIn("extra_text", context)
+
+        self.assertEqual(context["sect_rent"], False)
+        self.assertEqual(context["sect_generic"], True)
+
+        self.assertEqual(context["generic_info"][0]["date"], "30.06.2024")
+        self.assertEqual(context["generic_info"][0]["text"], "Nebenkosten Wohnung 001a")
+        self.assertEqual(context["generic_info"][0]["total"], nformat(total_unit))
+        self.assertEqual(context["generic_info"][1]["date"], "30.06.2024")
+        self.assertEqual(context["generic_info"][1]["text"], "Abzüglich Akontozahlungen")
+        self.assertEqual(context["generic_info"][1]["total"], nformat(-akonto))
+
+        # Second contract with a negative invoice total
+        akonto2 = 12 * 20 + 50000
+        bill_total2 = total_unit / 100 * 20 - akonto2
+        (ref_number, address, context, output_filename) = (
+            mocks["create_qrbill"].call_args_list[1].args
+        )
+        self.assertEqual(
+            # Area of ru1 is 100m2 and ru2 20m2
+            context["s_generic_total"],
+            nformat(bill_total2),
+        )
+        self.assertEqual(
+            context["extra_text"],
+            "Wir bitten Sie, uns die Kontoangaben für die Rückerstattung "
+            f"des Guthabens von CHF {nformat(-1 * bill_total2)} in den nächsten 30 Tagen "
+            "mitzuteilen (am liebsten per Email an info@cohiva.ch). Vielen Dank!",
+        )
+
+        # Third contract with a negative invoice total and bank account
+        akonto3 = 50000
+        total_unit3 = 19699.95  # Temporary: not all costs included yet
+        bill_total3 = total_unit3 - akonto3
+        (ref_number, address, context, output_filename) = (
+            mocks["create_qrbill"].call_args_list[2].args
+        )
+        self.assertEqual(
+            context["s_generic_total"],
+            nformat(bill_total3),
+        )
+        self.assertEqual(
+            context["extra_text"],
+            "Ohne anderslautenden Gegenbericht in den nächsten 30 Tagen, "
+            f"werden wir das Guthaben von CHF {nformat(-1 * bill_total3)} auf das bei uns "
+            "registrierte Konto CH1234567890123456789 überweisen.",
+        )
+
     def test_rental_unit_bill_context(self):
-        """Test context variables used in nk_template_qrbill.odt_"""
+        """Test context variables used in nk_template_qrbill.odt (2nd and following pages of the billing document)"""
         self.configure_test_report_minimal()
         rg = NkReportGenerator(self.report, True, output_root="/tmp/")
 
@@ -65,12 +151,11 @@ class NKBillTest(NkReportTestCase):
             self.create_akonto_invoices(contract, rg.dates)
         self.create_special_akonto_invoice(self.contracts[1], rg.dates[2]["end"], 1000)
 
-        ## Make third contract end inside billing period
+        ## Make the third contract end inside the billing period
         self.contracts[2].billing_date_end = datetime.date(2023, 11, 30)
         self.contracts[2].save()
 
         mocks = self.generate_with_mock_output(rg)
-        self.assertEqual(mocks["create_qrbill"].call_count, len(rg.contracts))
         self.assertEqual(mocks["create_final_pdf"].call_count, len(rg.contracts))
         self.assertEqual(mocks["add_output_to_report"].call_count, 1)
 
@@ -78,7 +163,7 @@ class NKBillTest(NkReportTestCase):
         # total_building = 221054.62
         total_building = 92700.41  # Temporary: not all costs included yet
         # total_unit = 54810.38
-        total_unit = 22609.86  # Temporary: not all costs included yet
+        total_unit = 20120.48  # Temporary: not all costs included yet
         akonto = 12 * 100
         (context, ru) = mocks["create_rental_unit_files"].call_args_list[0].args
         self.assertEqual(context["rental_unit"], "Wohnung 001a")
@@ -103,23 +188,20 @@ class NKBillTest(NkReportTestCase):
             nformat(total_unit / 100 * 20),
         )
 
-        # Check the third contract with a different billing period
+        # Check the third contract with a different billing period (only 5 months)
+        total_unit3 = 19699.95  # Temporary: not all costs included yet
         (context, ru) = mocks["create_rental_unit_files"].call_args_list[2].args
         self.assertEqual(context["rental_unit"], "Gewerbe G001")
         self.assertEqual(context["billing_period"], "01.07.2023 – 30.06.2024")
         self.assertEqual(context["contract_period"], "01.07.2023 – 30.11.2023")
-        self.assertEqual(
-            # Area of ru1 is 100m2 and ru3 200m2, but only 5 months
-            context["s_chf"],
-            nformat(total_unit / 100 * 200 / 12 * 5),
-        )
+        self.assertEqual(context["s_chf"], nformat(total_unit3))
         self.assertEqual(context["akonto_chf"], "0.00")  # Akonto paid
 
-        ## TODO: Test a rental unit with paid akonto / contract period
-
-        # TODO: Test different paid and contact period for akonto
-
-        ## TODO: Test different billing period
+        # TODO:
+        #  - Test a rental unit with paid akonto / contract period
+        #  - Test different paid and contact period for akonto
+        #  - Test different billing period
+        #  - Test contract with multiple rental units
 
     def _extended_rental_unit_context_check(self, context):
         expected_costs = {
@@ -223,13 +305,7 @@ class NKBillTest(NkReportTestCase):
                     self.assertEqual(context["costs"][context_i][key], expected_costs[key][i])
                 except AssertionError:
                     print(f"Assertion failed at {context_i=}/{i=} for '{key}':")
-                    if name not in ("Reinigung",):
-                        raise
-                    else:
-                        print(
-                            "Ignoring assertion error for Reinigung for now "
-                            "(TODO: implement section weights)"
-                        )
+                    raise
             context_i += 1
         # Make sure that there are not more costs than we have checked.
         self.assertEqual(context_i, len(context["costs"]))
