@@ -7,7 +7,7 @@
 #
 aiohappyeyeballs==2.6.1
     # via aiohttp
-aiohttp==3.13.3
+aiohttp==3.13.4
     # via vdirsyncer
 aiosignal==1.4.0
     # via aiohttp
@@ -293,17 +293,17 @@ propcache==0.3.2
     # via
     #   aiohttp
     #   yarl
-pycparser==2.22
-    # via cffi
 pycountry==24.6.1
     # via -r requirements.in
+pycparser==2.22
+    # via cffi
 pylint==3.3.8
     # via -r requirements.in
 pyopenssl==24.2.1
     # via pysaml2
 pyparsing==3.2.5
     # via matplotlib
-pypdf==6.9.1
+pypdf==6.9.2
     # via -r requirements.in
 pysaml2==7.5.2
     # via djangosaml2idp
@@ -342,7 +342,7 @@ reportlab==4.4.4
     # via
     #   easy-thumbnails
     #   svglib
-requests==2.32.4
+requests==2.33.1
     # via
     #   caldav
     #   django-oauth-toolkit
