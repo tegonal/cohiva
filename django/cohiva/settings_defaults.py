@@ -18,6 +18,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from django.contrib import admin
+from django.templatetags.static import static
 from django.utils.translation import gettext_lazy as _
 
 import cohiva.base_config as cbc
@@ -1373,7 +1374,7 @@ UNFOLD = {
     #        "redirect_after": lambda request: reverse_lazy("admin:APP_MODEL_changelist"),
     #    },
     "STYLES": [
-        "/static/css/cohiva_style.css",
+        lambda request: static("css/cohiva_style.css"),
     ],
     #    "SCRIPTS": [
     #        lambda request: static("js/script.js"),

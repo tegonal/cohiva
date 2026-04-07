@@ -4,6 +4,18 @@
   font-weight: 700;
 }
 
+/* Imitate unfold styling for legacy Django admin form fields (e.g. for Filer) */
+.vTextField, .vLargeTextField, input#id_file {
+  padding-inline: calc(var(--spacing)*3);
+  padding-block: calc(var(--spacing)*2);
+  width: 100%;
+  max-width: var(--container-2xl);
+  border-style: var(--tw-border-style);
+  border-color: var(--color-base-200);
+  border-width: 1px;
+  border-radius: 6px;
+}
+
 :root {
   --default-button-bg: var(--color-primary-600);
 }
