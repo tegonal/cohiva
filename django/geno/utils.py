@@ -212,8 +212,13 @@ def decode_from_iso8859(file):
         yield line.decode("iso8859")
 
 
-def nformat(number, precision=2):
-    return format(number, ",.%df" % precision).replace(",", "'")
+def nformat(number, precision=2, round_to=False, thousands_separator="'"):
+    if round_to:
+        number = round_to * round(number / round_to)
+    if thousands_separator:
+        return format(number, ",.%df" % precision).replace(",", thousands_separator)
+    else:
+        return format(number, ".%df" % precision)
 
 
 def sanitize_filename(filename):
