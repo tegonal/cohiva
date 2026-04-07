@@ -242,6 +242,14 @@ def process_import_job(import_job_id: int, importer_class=None) -> dict:
             from .importer_tenant_property_it_wgn import ImporterTenantPropertyITWGN
 
             importer_class = ImporterTenantPropertyITWGN
+        elif import_job.import_type == "member_address_shares_vfn":
+            from .importer_member_address_shares_vfn import ImporterMemberAddressSharesVFN
+
+            importer_class = ImporterMemberAddressSharesVFN
+        elif import_job.import_type == "tenant_property_vfn":
+            from .importer_tenant_property_vfn import ImporterTenantPropertyVFN
+
+            importer_class = ImporterTenantPropertyVFN
         else:
             # Default fallback
             importer_class = ExcelImporter
