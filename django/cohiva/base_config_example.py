@@ -36,6 +36,8 @@ ADMINS = (("Hans Muster", "admin@example.tld"),)
 
 CASHCTRL_API_TOKEN = ""
 CASHCTRL_TENANT = ""
+## Adapt if on your CASHCTRL instance the field has another name/numbering (i.e. customField4)
+CASHCTRL_CUSTOM_FIELD_CREATED_BY_COHIVA = "customField1"
 
 FEATURES = [
     "api",
