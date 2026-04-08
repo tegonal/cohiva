@@ -219,7 +219,7 @@ json-with-comments==1.2.10
     # via -r requirements.in
 json5==0.12.1
     # via djlint
-jwcrypto==1.5.6
+jwcrypto==1.5.7
     # via django-oauth-toolkit
 kaleido==0.2.1
     # via -r requirements.in
