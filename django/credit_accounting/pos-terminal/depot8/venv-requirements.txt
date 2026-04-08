@@ -1,5 +1,5 @@
 certifi==2025.11.12
-charset-normalizer==3.4.4
+charset-normalizer==3.4.5
 FreeSimpleGUI==5.2.0.post1
 idna==3.11
 requests==2.33.1
