@@ -101,7 +101,7 @@ dill==0.4.0
     # via pylint
 dj-rest-auth==7.0.1
     # via -r requirements.in
-django==4.2.29
+django==5.2.12
     # via
     #   -r requirements.in
     #   dj-rest-auth
@@ -147,7 +147,7 @@ django-permissionedforms==0.1
     # via wagtail
 django-polymorphic==3.1.0
     # via django-filer
-django-select2-forms==3.0.0
+django-select2-forms==3.1.0
     # via -r requirements.in
 django-sortedm2m==4.0.0
     # via django-select2-forms
@@ -432,7 +432,9 @@ webencodings==0.5.1
 whitenoise==6.6.0
     # via -r requirements.in
 willow==1.11.0
-    # via wagtail
+    # via
+    #   wagtail
+    #   willow
 x-wr-timezone==2.0.1
     # via recurring-ical-events
 xmlschema==2.5.1

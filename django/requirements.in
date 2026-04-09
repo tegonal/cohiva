@@ -19,7 +19,7 @@
 ## TODO: Change this list based on features/enabled apps in setup process (along with settings e.g. INSTALLED_APPS list)
 
 ## Django and core dependencies
-Django >= 4.2, < 5.0
+Django >= 5.2, < 6.0
 mysqlclient
 
 ## Misc Django admin/UI enhancements and tools
