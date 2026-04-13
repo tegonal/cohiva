@@ -12,17 +12,23 @@ from .base import NkReportTestCase
 
 
 class NKBillTest(NkReportTestCase):
-    # def setUpClass(cls):
-    #    super().setUpClass()
-    # def setUp(self):
-    #    super().setUp()
+    ## Reference costs
+    unit1_simple = 20120.48
+    unit1_internet = 204
+    unit1_total = unit1_simple + unit1_internet
 
-    # @classmethod
-    # def tearDownClass(cls):
-    #    super().tearDownClass()
+    # Area of ru1 is 100m2 and ru2 20m2
+    unit2_simple = unit1_simple / 100 * 20
+    unit2_internet = 108
+    unit2_total = unit2_simple + unit2_internet
 
-    # def tearDown(self):
-    #    super().tearDown()
+    unit3_simple = 19699.95
+    unit3_total = unit3_simple
+
+    building_simple = 92700.41
+    building_internet = 312
+    building_total = building_simple + building_internet
+    # total_building = 221054.62
 
     @classmethod
     def setUpTestData(cls):
@@ -77,9 +83,9 @@ class NKBillTest(NkReportTestCase):
         self.assertEqual(mocks["create_qrbill"].call_count, len(rg.contracts))
 
         ## First contract
-        total_unit = 20120.48  # Temporary: not all costs included yet
+
         akonto = 12 * 100
-        bill_total = total_unit - akonto
+        bill_total = self.unit1_total - akonto
         (ref_number, address, context, output_filename) = (
             mocks["create_qrbill"].call_args_list[0].args
         )
@@ -100,14 +106,14 @@ class NKBillTest(NkReportTestCase):
 
         self.assertEqual(context["generic_info"][0]["date"], "30.06.2024")
         self.assertEqual(context["generic_info"][0]["text"], "Nebenkosten Wohnung 001a")
-        self.assertEqual(context["generic_info"][0]["total"], nformat(total_unit))
+        self.assertEqual(context["generic_info"][0]["total"], nformat(self.unit1_total))
         self.assertEqual(context["generic_info"][1]["date"], "30.06.2024")
         self.assertEqual(context["generic_info"][1]["text"], "Abzüglich Akontozahlungen")
         self.assertEqual(context["generic_info"][1]["total"], nformat(-akonto))
 
         # Second contract with a negative invoice total
         akonto2 = 12 * 20 + 50000
-        bill_total2 = total_unit / 100 * 20 - akonto2
+        bill_total2 = self.unit2_total - akonto2
         (ref_number, address, context, output_filename) = (
             mocks["create_qrbill"].call_args_list[1].args
         )
@@ -125,8 +131,7 @@ class NKBillTest(NkReportTestCase):
 
         # Third contract with a negative invoice total and bank account
         akonto3 = 50000
-        total_unit3 = 19699.95  # Temporary: not all costs included yet
-        bill_total3 = total_unit3 - akonto3
+        bill_total3 = self.unit3_total - akonto3
         (ref_number, address, context, output_filename) = (
             mocks["create_qrbill"].call_args_list[2].args
         )
@@ -160,22 +165,18 @@ class NKBillTest(NkReportTestCase):
         self.assertEqual(mocks["add_output_to_report"].call_count, 1)
 
         # Check the context for the first contract (extended check)
-        # total_building = 221054.62
-        total_building = 92700.41  # Temporary: not all costs included yet
-        # total_unit = 54810.38
-        total_unit = 20120.48  # Temporary: not all costs included yet
         akonto = 12 * 100
         (context, ru) = mocks["create_rental_unit_files"].call_args_list[0].args
         self.assertEqual(context["rental_unit"], "Wohnung 001a")
         self.assertEqual(context["building"], "Musterweg 1, 3000 Bern")
         self.assertEqual(context["billing_period"], "01.07.2023 – 30.06.2024")
         self.assertEqual(context["contract_period"], "01.07.2023 – 30.06.2024")
-        self.assertEqual(context["s_chft"], nformat(total_building))
+        self.assertEqual(context["s_chft"], nformat(self.building_total))
         self._extended_rental_unit_context_check(context)
-        self.assertEqual(context["s_chf"], nformat(total_unit))
+        self.assertEqual(context["s_chf"], nformat(self.unit1_total))
         self.assertEqual(context["akonto_chf"], nformat(akonto))  # Akonto paid
         self.assertEqual(
-            context["diff_chf"], nformat(total_unit - akonto)
+            context["diff_chf"], nformat(self.unit1_total - akonto)
         )  # Remaining amount to pay
 
         # Check the second contract with extra akonto payment
@@ -183,18 +184,16 @@ class NKBillTest(NkReportTestCase):
         self.assertEqual(context["rental_unit"], "Wohnung 001b")
         self.assertEqual(context["akonto_chf"], nformat(12 * 20 + 1000))  # Akonto paid
         self.assertEqual(
-            # Area of ru1 is 100m2 and ru2 20m2
             context["s_chf"],
-            nformat(total_unit / 100 * 20),
+            nformat(self.unit2_total),
         )
 
         # Check the third contract with a different billing period (only 5 months)
-        total_unit3 = 19699.95  # Temporary: not all costs included yet
         (context, ru) = mocks["create_rental_unit_files"].call_args_list[2].args
         self.assertEqual(context["rental_unit"], "Gewerbe G001")
         self.assertEqual(context["billing_period"], "01.07.2023 – 30.06.2024")
         self.assertEqual(context["contract_period"], "01.07.2023 – 30.11.2023")
-        self.assertEqual(context["s_chf"], nformat(total_unit3))
+        self.assertEqual(context["s_chf"], nformat(self.unit3_total))
         self.assertEqual(context["akonto_chf"], "0.00")  # Akonto paid
 
         # TODO:
@@ -295,6 +294,7 @@ class NKBillTest(NkReportTestCase):
                 "Betriebskosten Gemeinschaftsanlagen",
                 "Lift",
                 "Kehrichtgebühren",
+                "Internet/WLAN",
             ):
                 print(f"Skipping {context_i=}/{i=} {name} for now")
                 continue
