@@ -126,14 +126,20 @@ class NkCost:
             if (
                 values[kind].monthly_amounts[month]
                 and abs(values[kind].monthly_amounts[month] - amount) > 0.01
+                and kind != NkCostValueType.USAGE
             ):
                 print(
-                    "WARNING: overwriting existing monthly amount: "
+                    "WARNING: overwriting existing monthly amount for "
+                    f"{self.name} {kind}/{month}: "
                     f"{values[kind].monthly_amounts[month]} => {amount}"
                 )
             values[kind].monthly_amounts[month] = amount
         total_amount = sum(values[kind].monthly_amounts)
-        if values[kind].amount and abs(values[kind].amount - total_amount) > 0.01:
+        if (
+            values[kind].amount
+            and abs(values[kind].amount - total_amount) > 0.01
+            and kind != NkCostValueType.USAGE
+        ):
             print(f"WARNING: overwriting existing amount: {values[kind].amount} => {total_amount}")
         values[kind].amount = total_amount
 
@@ -165,10 +171,16 @@ class NkCost:
         return self.report.num_months * [1.0]
 
     def get_section_weights(self):
-        """Default with equal weights for all sections."""
+        """Return weights per section, using the configured section_weights profile if available."""
+        weight_profile = (
+            self.report.section_weights.get(self.section_weights) if self.section_weights else None
+        )
         weights = {}
         for section in self.report.sections:
-            weights[section.id] = 1.0
+            if weight_profile is not None:
+                weights[section.id] = weight_profile.get(section.id.capitalize())
+            else:
+                weights[section.id] = 1.0
         return weights
 
     def get_rental_unit_weights(self, ru_id):

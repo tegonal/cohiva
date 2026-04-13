@@ -135,7 +135,7 @@ class NkReportGenerator(ReportGenerator):
         self.categories["verwaltung"] = {"i": 6, "label": "Verwaltungsaufwand"}
 
         self.limit_bills_to_contract_ids = list(
-            map(str, self.config.get("Ausgabe:LimitiereVertragsIDs"))
+            map(int, self.config.get("Ausgabe:LimitiereVertragsIDs"))
         )
 
         ## Logging
@@ -193,6 +193,12 @@ class NkReportGenerator(ReportGenerator):
     def create_bills(self):
         total_building_costs = self.get_cost_sum()
         for contract in self.contracts:
+            if (
+                self.limit_bills_to_contract_ids
+                and contract.id not in self.limit_bills_to_contract_ids
+            ):
+                self.log.append(f"Überspringe Vertrag mit ID {contract.id} gemäss Konfiguration.")
+                continue
             bill = NkBill(contract, self.period_end, self.output_dir, self.dry_run)
             bill.set_templates(
                 self.config["Vorlage:Abrechnung"],
@@ -425,8 +431,10 @@ class NkReportGenerator(ReportGenerator):
         """Do logging and export data related to contracts (after assigning costs to contracts)"""
         for contract in self.contracts:
             if (
-                contract.akonto_paid or contract.akonto_nominal
-            ) and contract.akonto_paid != contract.akonto_nominal:
+                (contract.akonto_paid or contract.akonto_nominal)
+                and contract.akonto_paid != contract.akonto_nominal
+                and not contract.is_virtual
+            ):
                 msg = (
                     f"Vertrag {contract}: Effektiv in Rechnung gestelltes NK-Akonto stimmt "
                     "nicht mit der nominellen Akontosumme der Mietobjekte überein: "

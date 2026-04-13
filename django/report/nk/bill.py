@@ -61,6 +61,8 @@ class NkBill:
             )
             self.rental_unit_files.append(self._create_rental_unit_files(ru_context, ru))
             contract_context["bill_lines"].append(self._get_bill_line(ru_context))
+            if "building" not in contract_context and ru_context["building"]:
+                contract_context["building"] = ru_context["building"]
         if context["total_akonto"]:
             context["bill_lines"].append(
                 {
