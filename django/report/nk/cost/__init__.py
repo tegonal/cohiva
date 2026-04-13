@@ -1,10 +1,10 @@
 from .base import NkCost, NkCostValueType
-from .general import NkCostPerRentalUnit, NkMonthlyCost, NkTotalCost, NkTotalEnergyCost
+from .general import NkMonthlyCost, NkPerRentalUnitCost, NkTotalCost, NkTotalEnergyCost
 
 __all__ = [
     "NkCost",
     "NkCostValueType",
-    "NkCostPerRentalUnit",
+    "NkPerRentalUnitCost",
     "NkTotalCost",
     "NkMonthlyCost",
     "NkTotalEnergyCost",

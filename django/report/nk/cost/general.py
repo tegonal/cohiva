@@ -42,10 +42,28 @@ class NkTotalCost(NkCost):
         return self.rental_unit_values[ru_id][NkCostValueType.USAGE].monthly_amounts
 
 
-class NkCostPerRentalUnit(NkCost):
+class NkMonthlyCost(NkCost):
+    """Monthly costs that are distributed with a simple key."""
+
+    cost_type_id = "simple_monthly"
+
+
+class NkTotalEnergyCost(NkCost):
+    """Energy costs that are distributed with a simple key."""
+
+    cost_type_id = "energy"
+
+    def __init__(self, report: "NkReportGenerator", cost_config: dict):
+        super().__init__(report, cost_config)
+        self.base_cost_factor = 0.3  # default 30/70% split
+        self.base_cost_object_weights = None
+        self.usage_cost_object_weights = None
+        self.add_value_type(NkCostValueType.USAGE, "Verbrauch", "kWh")
+
+
+class NkPerRentalUnitCost(NkCost):
     """Costs calculated individually per rental unit based on per-unit and per-person fees.
 
-    Mirrors the logic from the old report_nk.internetrechnung():
     - If the rental unit has a fixed fee (looked up by name), use that.
     - Otherwise, if the unit has a min_occupancy, the cost is:
         fee_per_unit + min_occupancy * fee_per_person
@@ -64,11 +82,16 @@ class NkCostPerRentalUnit(NkCost):
         self.fee_per_unit_key = cost_config.get("fee_per_unit_key")
         self.fee_per_person_key = cost_config.get("fee_per_person_key")
         self.fixed_fees_key = cost_config.get("fixed_fees_key")
+        self.fixed_fees = {}
 
     def load_input_data(self):
         super().load_input_data()
-        fee_per_unit = self.report.config.get(self.fee_per_unit_key, 0) if self.fee_per_unit_key else 0
-        fee_per_person = self.report.config.get(self.fee_per_person_key, 0) if self.fee_per_person_key else 0
+        fee_per_unit = (
+            self.report.config.get(self.fee_per_unit_key, 0) if self.fee_per_unit_key else 0
+        )
+        fee_per_person = (
+            self.report.config.get(self.fee_per_person_key, 0) if self.fee_per_person_key else 0
+        )
         fixed_fees = self.report.config.get(self.fixed_fees_key, {}) if self.fixed_fees_key else {}
 
         monthly_weights = self.get_monthly_weights()
@@ -89,10 +112,15 @@ class NkCostPerRentalUnit(NkCost):
 
     def split_costs(self):
         """Aggregate pre-calculated per-rental-unit costs up to sections and total."""
+        self._calculate_weights()
         for ru in self.report.rental_units:
             for month in range(self.report.num_months):
-                amount = self.rental_unit_values[ru.id][NkCostValueType.COST].monthly_amounts[month]
-                self.section_values[ru.section.id][NkCostValueType.COST].monthly_amounts[month] += amount
+                amount = self.rental_unit_values[ru.id][NkCostValueType.COST].monthly_amounts[
+                    month
+                ]
+                self.section_values[ru.section.id][NkCostValueType.COST].monthly_amounts[
+                    month
+                ] += amount
                 self.total_values[NkCostValueType.COST].monthly_amounts[month] += amount
 
         for section in self.report.sections:
@@ -102,22 +130,3 @@ class NkCostPerRentalUnit(NkCost):
         self.total_values[NkCostValueType.COST].amount = sum(
             self.total_values[NkCostValueType.COST].monthly_amounts
         )
-
-
-class NkMonthlyCost(NkCost):
-    """Monthly costs that are distributed with a simple key."""
-
-    cost_type_id = "simple_monthly"
-
-
-class NkTotalEnergyCost(NkCost):
-    """Energy costs that are distributed with a simple key."""
-
-    cost_type_id = "energy"
-
-    def __init__(self, report: "NkReportGenerator", cost_config: dict):
-        super().__init__(report, cost_config)
-        self.base_cost_factor = 0.3  # default 30/70% split
-        self.base_cost_object_weights = None
-        self.usage_cost_object_weights = None
-        self.add_value_type(NkCostValueType.USAGE, "Verbrauch", "kWh")

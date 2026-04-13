@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from report.nk.cost import NkCost, NkTotalCost
+from report.nk.cost import NkCost, NkPerRentalUnitCost, NkTotalCost
 
 
 @dataclass
@@ -119,12 +119,12 @@ def get_costs_from_config():
             # "class": NkTotalCost, Currently included with Strom total, add it later
         },
         {
+            "class": NkPerRentalUnitCost,
             "name": "Internet/WLAN",
             "category": "internet",
-            "time_period": "monthly",
-            "amount_from_objects": "chf_internet",
-            "section_weights": None,
-            "object_weights": None,
+            "fee_per_unit_key": "Internet:Tarif:ProWohnung",
+            "fee_per_person_key": "Internet:Tarif:ProPerson",
+            "fixed_fees_key": "Internet:Tarif:Fix",
         },
         ## Anteile an "Allgemein" (special object 0000)
         {

@@ -11,18 +11,6 @@ from .base import NkReportTestCase
 
 
 class NKReportGeneratorTest(NkReportTestCase):
-    # def setUpClass(cls):
-    #    super().setUpClass()
-    # def setUp(self):
-    #    super().setUp()
-
-    # @classmethod
-    # def tearDownClass(cls):
-    #    super().tearDownClass()
-
-    # def tearDown(self):
-    #    super().tearDown()
-
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
@@ -61,13 +49,22 @@ class NKReportGeneratorTest(NkReportTestCase):
         report.load_contracts()
         report.load_costs()
         self.assertEqual(report.get_warnings(), [])
-        self.assertEqual(len(report.costs), 7)
-        self.assertEqual(report.costs[0].name, "Hauswartung_ServiceHeizungLüftung")
-        self.assertEqual(report.costs[0].billing_group, "Hauswartung, Service Heizung/Lüftung")
-        self.assertEqual(report.costs[0].cost_type_id, "simple_total")
-        self.assertEqual(report.costs[5].name, "Lift")
-        self.assertEqual(report.costs[5].billing_group, "Lift")
-        self.assertEqual(report.costs[5].cost_type_id, "simple_total")
+        self.assertEqual(len(report.costs), 8)
+        check_count = 0
+        for cost in report.costs:
+            check_count += 1
+            if cost.name == "Hauswartung_ServiceHeizungLüftung":
+                self.assertEqual(cost.billing_group, "Hauswartung, Service Heizung/Lüftung")
+                self.assertEqual(cost.cost_type_id, "simple_total")
+            elif cost.name == "Internet/WLAN":
+                self.assertEqual(cost.cost_type_id, "per_rental_unit")
+            elif cost.name == "Lift":
+                self.assertEqual(cost.cost_type_id, "simple_total")
+                self.assertEqual(cost.billing_group, "Lift")
+            else:
+                # print(f" - Not checked: {cost.name}")
+                check_count -= 1
+        self.assertEqual(check_count, 3)
 
     def test_assign_rental_units_to_contracts(self):
         self.configure_test_report_minimal()

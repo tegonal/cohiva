@@ -2,7 +2,7 @@ from django.db.models import Sum
 
 import report.tests.data as testdata
 from geno.models import RentalUnit
-from report.nk.cost import NkCost, NkCostPerRentalUnit, NkCostValueType, NkTotalCost
+from report.nk.cost import NkCost, NkCostValueType, NkPerRentalUnitCost, NkTotalCost
 from report.nk.generator import NkReportGenerator
 
 from .base import NkReportTestCase
@@ -149,7 +149,7 @@ class NKReportCostTest(NkReportTestCase):
             places=2,
         )
 
-    def test_cost_per_rental_unit(self):
+    def test_per_rental_unit_cost(self):
         """
         Test NkCostPerRentalUnit covers all three calculation paths:
 
@@ -171,7 +171,7 @@ class NKReportCostTest(NkReportTestCase):
         report = NkReportGenerator(self.report, True, output_root="/tmp/")
         report.load_rental_units()
 
-        cost = NkCostPerRentalUnit(
+        cost = NkPerRentalUnitCost(
             report,
             {
                 "name": "Internet/WLAN",
