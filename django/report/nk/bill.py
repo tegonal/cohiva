@@ -286,12 +286,8 @@ class NkBill:
             render=True,
             dry_run=self.dry_run,
         )
-        info = "%s CHF %s Nr. %s/%s, %s" % (
-            self.contract.address,
-            total_amount,
-            context["invoice_nr"],
-            context["invoice_date"],
-            context["betreff"],
+        info = (
+            f"Vertrag-ID {self.contract.id} (Rechnung Nr. {self.invoice_id}, CHF {total_amount})"
         )
         if ret:
             logger.error("Fehler beim Erzeugen der Rechnung für %s: %s" % (info, ret))
@@ -344,8 +340,8 @@ class NkBill:
                 autosave=False,
             )
             logger.info(
-                "%sAdded transaction: Verrechnung Akontozahlung CHF %s for contract %s (id=%s)."
-                % (self.dry_run_tag, total_akonto, self.contract.geno_contract, self.contract.id)
+                "%sAdded transaction: Verrechnung Akontozahlung CHF %s for contract id %s)."
+                % (self.dry_run_tag, total_akonto, self.contract.id)
             )
 
         if not total_amount:
@@ -369,21 +365,19 @@ class NkBill:
                 )
             except Exception as e:
                 logger.error(
-                    "Could not create invoice for contract %s (id=%s): %s"
-                    % (self.contract.geno_contract, self.contract.id, e)
+                    "Could not create invoice for contract id %s: %s" % (self.contract.id, e)
                 )
                 raise RuntimeError(
                     f"Konnte Rechnung-Objekt für Vertrag ID {self.contract.id} nicht erzeugen."
                 )
             logger.info(
-                "%sAdded invoice %s for contract %s (id=%s): CHF %s / %s"
+                "%sAdded invoice %s for contract id %s: CHF %s / invoice id %s"
                 % (
                     self.dry_run_tag,
                     invoice_category,
-                    self.contract.geno_contract,
                     self.contract.id,
                     total_amount,
-                    invoice,
+                    invoice.id,
                 )
             )
             if not self.dry_run:
@@ -400,8 +394,8 @@ class NkBill:
                 autosave=not self.dry_run,
             )
             logger.info(
-                "%sAdded transaction: %s CHF %s for virtual contract (id=%s)."
-                % (self.dry_run_tag, description, total_amount, self.contract.id)
+                "%sAdded transaction: %s CHF %s for virtual contract '%s')."
+                % (self.dry_run_tag, description, total_amount, self.virtual_contract_account.name)
             )
 
     @staticmethod
