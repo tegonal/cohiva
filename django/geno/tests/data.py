@@ -555,7 +555,16 @@ def create_registrationevents(cls):
 
 def create_buildings(cls, count=2):
     cls.buildings = []
-    for i in range(count):
+    cls.buildings.append(
+        Building.objects.create(
+            name="Musterweg 1",
+            street_name="Musterweg",
+            house_number="1",
+            city_zipcode="3000",
+            city_name="Bern",
+        )
+    )
+    for i in range(2, count):
         cls.buildings.append(Building.objects.create(name=f"Musterweg {i + 1}"))
 
 
