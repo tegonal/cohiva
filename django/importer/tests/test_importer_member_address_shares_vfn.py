@@ -18,15 +18,32 @@ from importer.models import ImportJob
 User = get_user_model()
 
 HEADERS = [
-    "ID", "Anrede", "Titel", "Vorname", "Nachname", "Firma", "Kontaktperson",
-    "Strasse", "PLZ", "Ort", "Land", "Telefon", "Mobile", "Email",
-    "Eintrittsdatum", "Genossenschaftsanteile Anzahl", "Genossenschaftsanteile Wert",
-    "Genossenschaftsanteile Status", "Genossenschaftsanteile Datum", "IBAN", "Kontoinhaber", "Bank",
+    "ID",
+    "Anrede",
+    "Titel",
+    "Vorname",
+    "Nachname",
+    "Firma",
+    "Kontaktperson",
+    "Strasse",
+    "PLZ",
+    "Ort",
+    "Land",
+    "Telefon",
+    "Mobile",
+    "Email",
+    "Eintrittsdatum",
+    "Genossenschaftsanteile Anzahl",
+    "Genossenschaftsanteile Wert",
+    "Genossenschaftsanteile Status",
+    "Genossenschaftsanteile Datum",
+    "IBAN",
+    "Kontoinhaber",
+    "Bank",
 ]
 
 
 class ImporterMemberAddressSharesVFNTest(TestCase):
-
     def setUp(self):
         self.user = User.objects.create_user(
             username="testuser", email="test@example.com", password="testpass123"
@@ -70,10 +87,12 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
             Land="CH",
             Email="hans.muster@example.com",
             Eintrittsdatum="2020-05-01",
-            **{"Genossenschaftsanteile Anzahl": 3,
-               "Genossenschaftsanteile Wert": 1000,
-               "Genossenschaftsanteile Status": "bezahlt",
-               "Genossenschaftsanteile Datum": "2020-05-15"},
+            **{
+                "Genossenschaftsanteile Anzahl": 3,
+                "Genossenschaftsanteile Wert": 1000,
+                "Genossenschaftsanteile Status": "bezahlt",
+                "Genossenschaftsanteile Datum": "2020-05-15",
+            },
         )
         excel_file = self.create_test_excel([row])
         import_job = ImportJob.objects.create(
@@ -172,9 +191,11 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
             Nachname="Neumann",
             Email="lena@example.com",
             Eintrittsdatum="2022-06-01",
-            **{"Genossenschaftsanteile Anzahl": 1,
-               "Genossenschaftsanteile Wert": 500,
-               "Genossenschaftsanteile Datum": "2022-06-01"},
+            **{
+                "Genossenschaftsanteile Anzahl": 1,
+                "Genossenschaftsanteile Wert": 500,
+                "Genossenschaftsanteile Datum": "2022-06-01",
+            },
         )
         excel_file = self.create_test_excel([row])
         import_job = ImportJob.objects.create(file=excel_file)
@@ -250,10 +271,12 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
             Nachname="Share",
             Email="pending@example.com",
             Eintrittsdatum="2023-01-01",
-            **{"Genossenschaftsanteile Anzahl": 2,
-               "Genossenschaftsanteile Wert": 500,
-               "Genossenschaftsanteile Status": "offen",
-               "Genossenschaftsanteile Datum": "2023-01-01"},
+            **{
+                "Genossenschaftsanteile Anzahl": 2,
+                "Genossenschaftsanteile Wert": 500,
+                "Genossenschaftsanteile Status": "offen",
+                "Genossenschaftsanteile Datum": "2023-01-01",
+            },
         )
         excel_file = self.create_test_excel([row])
         import_job = ImportJob.objects.create(file=excel_file)
@@ -265,5 +288,6 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
     def test_import_type_registered_in_model(self):
         """The import type 'member_address_shares_vfn' is a valid ImportJob choice."""
         from importer.models import ImportJob
+
         valid_types = [c[0] for c in ImportJob.IMPORT_TYPE_CHOICES]
         self.assertIn("member_address_shares_vfn", valid_types)

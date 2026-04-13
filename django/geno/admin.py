@@ -174,6 +174,7 @@ class AddressAdmin(GenoBaseAdmin):
         "date_birth",
         "hometown",
         "occupation",
+        "ahv_number",
         ("bankaccount", "interest_action"),
         "paymentslip",
         "ignore_in_lists",
@@ -638,7 +639,9 @@ class ShareAdmin(GenoBaseAdmin):
         "attached_to_building",
         "note",
         ("interest", "interest_mode", "manual_interest"),
+        ("identifier", "identifier_external"),
         "comment",
+        "import_id",
         ("ts_created", "ts_modified"),
         "object_actions",
         "links",
@@ -647,6 +650,7 @@ class ShareAdmin(GenoBaseAdmin):
     readonly_fields = [
         "value_total",
         "interest",
+        "import_id",
         "ts_created",
         "ts_modified",
         "object_actions",
@@ -690,6 +694,7 @@ class ShareAdmin(GenoBaseAdmin):
         "value",
         "comment",
         "note",
+        "identifier",
     ]
     autocomplete_fields = ["name", "share_type", "attached_to_contract", "attached_to_building"]
     actions = GenoBaseAdmin.actions + [
@@ -1003,6 +1008,7 @@ class RentalUnitAdmin(GenoBaseAdmin):
         ("area", "area_balcony", "area_add"),
         ("height", "volume"),
         ("rent_netto", "nk", "nk_flat", "nk_electricity"),
+        "payment_period",
         ("share", "depot"),
         ("internal_nr", "ewid"),
         "note",
@@ -1017,7 +1023,14 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "links",
         "backlinks",
     ]
-    readonly_fields = ["ts_created", "ts_modified", "links", "backlinks", "rent_total"]
+    readonly_fields = [
+        "import_id",
+        "ts_created",
+        "ts_modified",
+        "links",
+        "backlinks",
+        "rent_total",
+    ]
     list_display = [
         "name",
         "label",
@@ -1220,7 +1233,14 @@ class ContractAdmin(GenoBaseAdmin):
         "links",
         "backlinks",
     ]
-    readonly_fields = ["ts_created", "ts_modified", "object_actions", "links", "backlinks"]
+    readonly_fields = [
+        "import_id",
+        "ts_created",
+        "ts_modified",
+        "object_actions",
+        "links",
+        "backlinks",
+    ]
     list_display = ["label_with_badge", "state", "date", "date_end", "note", "comment"]
     search_fields = [
         "contractors__name",

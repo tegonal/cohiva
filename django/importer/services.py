@@ -27,7 +27,6 @@ class ExcelImporter:
         """
         self.import_job = import_job
         self.workbook = None
-        self.worksheet = None
 
     def process(self) -> dict:
         """
@@ -43,11 +42,24 @@ class ExcelImporter:
             # Load the Excel file
             self._load_workbook()
 
-            # Extract data from the worksheet
-            data = self._extract_data()
-
-            # Process each row
-            results = self._process_rows(data)
+            results = {
+                "total_rows": 0,
+                "success_count": 0,
+                "error_count": 0,
+                "errors": [],
+            }
+            for worksheet_name in self.workbook.sheetnames:
+                # Extract data from the worksheet
+                data = self._extract_data(self.workbook[worksheet_name])
+                # Process each row
+                if len(self.workbook.sheetnames) == 1:
+                    sheet_results = self._process_rows(data, None)
+                else:
+                    sheet_results = self._process_rows(data, worksheet_name)
+                results["total_rows"] += sheet_results["total_rows"]
+                results["success_count"] += sheet_results["success_count"]
+                results["error_count"] += sheet_results["error_count"]
+                results["errors"].extend(sheet_results["errors"])
 
             # Update job status
             self.import_job.status = "completed"
@@ -70,16 +82,16 @@ class ExcelImporter:
             raise
 
     def _load_workbook(self):
-        """Load the Excel workbook and select the first worksheet."""
+        """Load the Excel workbook."""
         try:
             self.workbook = openpyxl.load_workbook(
                 self.import_job.file.path, read_only=True, data_only=True
             )
-            self.worksheet = self.workbook.active
         except Exception as e:
             raise ValidationError(f"Failed to load Excel file: {str(e)}")
 
-    def _extract_data(self) -> list[dict]:
+    @staticmethod
+    def _extract_data(worksheet) -> list[dict]:
         """
         Extract data from the worksheet.
 
@@ -87,7 +99,7 @@ class ExcelImporter:
             List of dictionaries, each representing a row
         """
         data = []
-        rows = list(self.worksheet.iter_rows(values_only=True))
+        rows = list(worksheet.iter_rows(values_only=True))
 
         if not rows:
             raise ValidationError("The Excel file is empty")
@@ -109,7 +121,7 @@ class ExcelImporter:
 
         return data
 
-    def _process_rows(self, data: list[dict]) -> dict:
+    def _process_rows(self, data: list[dict], sheet_name: str | None = None) -> dict:
         """
         Process extracted rows.
 
@@ -134,14 +146,15 @@ class ExcelImporter:
                     # Process the row (customize this based on your needs)
                     if not self.import_job.override_existing:
                         # check for existing records
-                        self._has_existing(row_data)
+                        self._has_existing(row_data, sheet_name)
 
-                    self._process_single_row(row_data)
+                    self._process_single_row(row_data, sheet_name)
 
                     # Import executed and record success
                     ImportRecord.objects.create(
                         job=self.import_job,
                         row_number=row_number,
+                        sheet_name=sheet_name,
                         data=serialized_row_data,
                         success=True,
                     )
@@ -155,19 +168,25 @@ class ExcelImporter:
                 ImportRecord.objects.create(
                     job=self.import_job,
                     row_number=row_number,
+                    sheet_name=sheet_name,
                     data=serialized_row_data,
                     error_message=str(e),
                     success=False,
                 )
                 results["error_count"] += 1
                 results["errors"].append(
-                    {"row": row_number, "error": str(e), "data": serialized_row_data}
+                    {
+                        "row": row_number,
+                        "sheet": sheet_name,
+                        "error": str(e),
+                        "data": serialized_row_data,
+                    }
                 )
 
         return results
 
-    @classmethod
-    def _serialize(cls, row_data: dict) -> dict:
+    @staticmethod
+    def _serialize(row_data: dict) -> dict:
         """Serialize row dictionary values for logging."""
         serialized = {}
         for key, value in row_data.items():
@@ -178,7 +197,7 @@ class ExcelImporter:
                 serialized[key] = value
         return serialized
 
-    def _has_existing(self, row_data: dict):
+    def _has_existing(self, row_data: dict, sheet_name: str | None = None):
         """
         Check if a record already exists based on the row data.
 
@@ -191,7 +210,7 @@ class ExcelImporter:
         """
         # Default implementation: no existence check
 
-    def _process_single_row(self, row_data: dict):
+    def _process_single_row(self, row_data: dict, sheet_name: str | None = None):
         """
         Process a single row of data.
 

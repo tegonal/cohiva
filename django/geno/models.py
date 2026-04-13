@@ -22,6 +22,7 @@ from django.utils.html import format_html, format_html_join, mark_safe
 from filer.fields.file import FilerFileField
 
 import geno.settings as geno_settings
+from cohiva.fields import AHVNumberField
 from cohiva.utils.countries import (
     get_country_choices,
     get_default_country_code,
@@ -257,6 +258,7 @@ class Address(GenoBase):
     date_birth = models.DateField("Geburtsdatum", null=True, blank=True)
     hometown = models.CharField("Heimatort", max_length=50, blank=True)
     occupation = models.CharField("Beruf/Ausbildung", max_length=150, blank=True)
+    ahv_number = AHVNumberField("AHV-Nummer", blank=True)
     bankaccount = models.ForeignKey(
         BankAccount,
         verbose_name="Kontoverbindung/IBAN",
@@ -791,6 +793,11 @@ class Member(GenoBase):
         else:
             return "[Unbenannt]"
 
+    def active(self):
+        if self.date_leave:
+            return self.date_leave >= datetime.date.today()
+        return True
+
     def get_absolute_url(self):
         return "/admin/geno/member/%i/" % self.id
 
@@ -943,7 +950,19 @@ class Share(GenoBase):
         on_delete=models.SET_NULL,
         related_name="building_attached_shares",
     )
+    identifier = models.CharField(
+        "Beteiligungskennung", help_text="Z.B. Anteilschein-Nr.", max_length=100, blank=True
+    )
+    identifier_external = models.CharField(
+        "Beteiligungskennung (extern)",
+        help_text="Z.B. Anteilschein-Nr. in Buchhaltung (falls abweichend)",
+        max_length=100,
+        blank=True,
+    )
     note = models.CharField("Zusatzinfo", max_length=200, blank=True)
+    import_id = models.CharField(
+        "Import-ID", max_length=255, unique=True, null=True, default=None, blank=True
+    )
 
     ## Reverse relation to Documents
     documents = GenericRelation("Document", related_query_name="shares")
@@ -1293,6 +1312,11 @@ class RentalUnit(GenoBase):
     )
     min_occupancy = models.DecimalField(
         "Mindestbelegung", max_digits=5, decimal_places=1, null=True, blank=True
+    )
+    payment_period = models.IntegerField(
+        "Zahlungsperiode (Monate)",
+        default=1,
+        help_text="1 = Monatliche Zahlung, 3 = Vierteljährliche Zahlung, 12 = Jährliche Zahlung etc.",
     )
     nk = models.DecimalField(
         "Nebenkosten Akonto (Fr.)",

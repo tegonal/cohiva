@@ -16,14 +16,26 @@ from importer.models import ImportJob
 User = get_user_model()
 
 HEADERS = [
-    "Liegenschaft ID", "Liegenschaft Name", "Strasse", "PLZ", "Ort", "EGID",
-    "Einheit ID", "Einheit Nummer", "Einheit Bezeichnung", "Typ",
-    "Etage", "Zimmer", "Fläche", "NK Akonto", "Nettomiete", "EWID",
+    "Liegenschaft ID",
+    "Liegenschaft Name",
+    "Strasse",
+    "PLZ",
+    "Ort",
+    "EGID",
+    "Einheit ID",
+    "Einheit Nummer",
+    "Einheit Bezeichnung",
+    "Typ",
+    "Etage",
+    "Zimmer",
+    "Fläche",
+    "NK Akonto",
+    "Nettomiete",
+    "EWID",
 ]
 
 
 class ImporterTenantPropertyVFNTest(TestCase):
-
     def setUp(self):
         self.user = User.objects.create_user(
             username="testuser2", email="test2@example.com", password="testpass123"
@@ -76,9 +88,7 @@ class ImporterTenantPropertyVFNTest(TestCase):
             }
         )
         excel_file = self.create_test_excel([row])
-        import_job = ImportJob.objects.create(
-            file=excel_file, import_type="tenant_property_vfn"
-        )
+        import_job = ImportJob.objects.create(file=excel_file, import_type="tenant_property_vfn")
         results = ImporterTenantPropertyVFN(import_job).process()
 
         self.assertEqual(results["success_count"], 1)
@@ -105,16 +115,36 @@ class ImporterTenantPropertyVFNTest(TestCase):
     def test_multiple_units_same_building(self):
         """Multiple rows sharing a building name reuse the same Building object."""
         rows = [
-            self.make_row(**{"Liegenschaft ID": "10", "Liegenschaft Name": "Testhaus",
-                             "Strasse": "Testweg 5", "PLZ": "8000", "Ort": "Zürich",
-                             "Einheit ID": "301", "Einheit Nummer": "201",
-                             "Einheit Bezeichnung": "EG links", "Typ": "Wohnung",
-                             "Fläche": "70", "Nettomiete": "1100"}),
-            self.make_row(**{"Liegenschaft ID": "10", "Liegenschaft Name": "Testhaus",
-                             "Strasse": "Testweg 5", "PLZ": "8000", "Ort": "Zürich",
-                             "Einheit ID": "302", "Einheit Nummer": "202",
-                             "Einheit Bezeichnung": "EG rechts", "Typ": "Wohnung",
-                             "Fläche": "65", "Nettomiete": "1050"}),
+            self.make_row(
+                **{
+                    "Liegenschaft ID": "10",
+                    "Liegenschaft Name": "Testhaus",
+                    "Strasse": "Testweg 5",
+                    "PLZ": "8000",
+                    "Ort": "Zürich",
+                    "Einheit ID": "301",
+                    "Einheit Nummer": "201",
+                    "Einheit Bezeichnung": "EG links",
+                    "Typ": "Wohnung",
+                    "Fläche": "70",
+                    "Nettomiete": "1100",
+                }
+            ),
+            self.make_row(
+                **{
+                    "Liegenschaft ID": "10",
+                    "Liegenschaft Name": "Testhaus",
+                    "Strasse": "Testweg 5",
+                    "PLZ": "8000",
+                    "Ort": "Zürich",
+                    "Einheit ID": "302",
+                    "Einheit Nummer": "202",
+                    "Einheit Bezeichnung": "EG rechts",
+                    "Typ": "Wohnung",
+                    "Fläche": "65",
+                    "Nettomiete": "1050",
+                }
+            ),
         ]
         excel_file = self.create_test_excel(rows)
         import_job = ImportJob.objects.create(file=excel_file)
@@ -127,14 +157,42 @@ class ImporterTenantPropertyVFNTest(TestCase):
     def test_rental_type_mapping(self):
         """Rental type aliases are resolved correctly."""
         rows = [
-            self.make_row(**{"Liegenschaft ID": "20", "Liegenschaft Name": "Alias Test",
-                             "Einheit ID": "401", "Einheit Nummer": "H01", "Typ": "Hobbyraum"}),
-            self.make_row(**{"Liegenschaft ID": "20", "Liegenschaft Name": "Alias Test",
-                             "Einheit ID": "402", "Einheit Nummer": "P01", "Typ": "Abstellplatz"}),
-            self.make_row(**{"Liegenschaft ID": "20", "Liegenschaft Name": "Alias Test",
-                             "Einheit ID": "403", "Einheit Nummer": "Z01", "Typ": "Zimmer"}),
-            self.make_row(**{"Liegenschaft ID": "20", "Liegenschaft Name": "Alias Test",
-                             "Einheit ID": "404", "Einheit Nummer": "U01", "Typ": "UnbekanntTyp"}),
+            self.make_row(
+                **{
+                    "Liegenschaft ID": "20",
+                    "Liegenschaft Name": "Alias Test",
+                    "Einheit ID": "401",
+                    "Einheit Nummer": "H01",
+                    "Typ": "Hobbyraum",
+                }
+            ),
+            self.make_row(
+                **{
+                    "Liegenschaft ID": "20",
+                    "Liegenschaft Name": "Alias Test",
+                    "Einheit ID": "402",
+                    "Einheit Nummer": "P01",
+                    "Typ": "Abstellplatz",
+                }
+            ),
+            self.make_row(
+                **{
+                    "Liegenschaft ID": "20",
+                    "Liegenschaft Name": "Alias Test",
+                    "Einheit ID": "403",
+                    "Einheit Nummer": "Z01",
+                    "Typ": "Zimmer",
+                }
+            ),
+            self.make_row(
+                **{
+                    "Liegenschaft ID": "20",
+                    "Liegenschaft Name": "Alias Test",
+                    "Einheit ID": "404",
+                    "Einheit Nummer": "U01",
+                    "Typ": "UnbekanntTyp",
+                }
+            ),
         ]
         excel_file = self.create_test_excel(rows)
         import_job = ImportJob.objects.create(file=excel_file)
@@ -147,10 +205,15 @@ class ImporterTenantPropertyVFNTest(TestCase):
 
     def test_prevent_duplicate_without_override(self):
         """Re-importing same Einheit ID without override raises an error."""
-        row = self.make_row(**{
-            "Liegenschaft ID": "30", "Liegenschaft Name": "DupBuilding",
-            "Einheit ID": "501", "Einheit Nummer": "A01", "Typ": "Wohnung",
-        })
+        row = self.make_row(
+            **{
+                "Liegenschaft ID": "30",
+                "Liegenschaft Name": "DupBuilding",
+                "Einheit ID": "501",
+                "Einheit Nummer": "A01",
+                "Typ": "Wohnung",
+            }
+        )
         excel_file1 = self.create_test_excel([row])
         job1 = ImportJob.objects.create(file=excel_file1)
         ImporterTenantPropertyVFN(job1).process()
@@ -164,20 +227,32 @@ class ImporterTenantPropertyVFNTest(TestCase):
 
     def test_override_existing_updates_unit(self):
         """With override_existing=True, existing rental unit is updated."""
-        row = self.make_row(**{
-            "Liegenschaft ID": "40", "Liegenschaft Name": "UpdateBuilding",
-            "Einheit ID": "601", "Einheit Nummer": "B01", "Typ": "Wohnung",
-            "Fläche": "60", "Nettomiete": "900",
-        })
+        row = self.make_row(
+            **{
+                "Liegenschaft ID": "40",
+                "Liegenschaft Name": "UpdateBuilding",
+                "Einheit ID": "601",
+                "Einheit Nummer": "B01",
+                "Typ": "Wohnung",
+                "Fläche": "60",
+                "Nettomiete": "900",
+            }
+        )
         excel_file1 = self.create_test_excel([row])
         job1 = ImportJob.objects.create(file=excel_file1)
         ImporterTenantPropertyVFN(job1).process()
 
-        row_updated = self.make_row(**{
-            "Liegenschaft ID": "40", "Liegenschaft Name": "UpdateBuilding",
-            "Einheit ID": "601", "Einheit Nummer": "B01", "Typ": "Wohnung",
-            "Fläche": "75", "Nettomiete": "1100",
-        })
+        row_updated = self.make_row(
+            **{
+                "Liegenschaft ID": "40",
+                "Liegenschaft Name": "UpdateBuilding",
+                "Einheit ID": "601",
+                "Einheit Nummer": "B01",
+                "Typ": "Wohnung",
+                "Fläche": "75",
+                "Nettomiete": "1100",
+            }
+        )
         excel_file2 = self.create_test_excel([row_updated])
         job2 = ImportJob.objects.create(file=excel_file2, override_existing=True)
         results = ImporterTenantPropertyVFN(job2).process()
