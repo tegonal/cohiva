@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from geno.utils import nformat
 
-from .base import NkCost, NkCostValueType
+from .base import NkCost, NkCostValueType, NkMeasurementDataMixin
 
 if TYPE_CHECKING:
     from report.nk.contract import NkContract
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from report.nk.rental_unit import NkRentalUnit
 
 
-class NkCostZEVStromallmend(NkCost):
+class NkCostZEVStromallmend(NkMeasurementDataMixin, NkCost):
     """ZEV electricity costs calculated individually per rental unit.
 
     Mirrors the logic from the old report_nk.stromrechnung():
@@ -44,34 +44,39 @@ class NkCostZEVStromallmend(NkCost):
 
     cost_type_id = "zev_stromallmend"
 
-    def __init__(self, report: "NkReportGenerator", cost_config: dict):
-        super().__init__(report, cost_config)
+    def __init__(self, report_generator: "NkReportGenerator", cost_config: dict):
+        super().__init__(report_generator, cost_config)
         self.add_value_type(NkCostValueType.USAGE, "Verbrauch", "kWh")
         # Per-unit intermediate data: ru_id -> dict
         self._strom_data: dict[int, dict] = {}
         # Building-level totals (populated in load_input_data)
         self._building_totals: dict = {}
 
+        config = self.generator.config
+        self.tarif_eigenstrom = config.get(cost_config.get("tarif_eigenstrom_key"), 0)
+        self.tarif_einspeiseverguetung = config.get(
+            cost_config.get("tarif_einspeiseverguetung_key"), 12 * [0]
+        )
+        self.tarif_hkn = config.get(cost_config.get("tarif_hkn_key"), 0)
+        self.tarif_korrektur = config.get(
+            cost_config.get("tarif_korrektur_key"), {"mittel": 0, "nacht": 0}
+        )
+        self.korrekturen = config.get(cost_config.get("korrekturen_key"), {})
+
     def load_input_data(self):
         super().load_input_data()
 
-        config = self.report.config
-        tarif_eigenstrom = config.get("Strom:Tarif:Eigenstrom", 0)
-        tarif_einspeiseverguetung = config.get("Strom:Tarif:Einspeisevergütung", 12 * [0])
-        tarif_hkn = config.get("Strom:Tarif:HKN", 0)
-        tarif_korrektur = config.get("Strom:Tarif:Korrekturen", {"mittel": 0, "nacht": 0})
-
-        num_months = self.report.num_months
+        num_months = self.generator.num_months
 
         # Building-level: einspeisefaktor per month
-        kwh_egon = self.report.data_amount.get("Strom_kwh_egon", num_months * [0])
-        kwh_ruecklieferung = self.report.data_amount.get(
-            "Strom_kwh_ruecklieferung", num_months * [0]
+        kwh_bezug_zev = self.measurements["building"].get("strom_bezug_zev", num_months * [0])
+        kwh_ruecklieferung_ew = self.measurements["building"].get(
+            "strom_ruecklieferung_ew", num_months * [0]
         )
         einspeisefaktor = []
         for m in range(num_months):
-            if kwh_egon[m]:
-                einspeisefaktor.append(kwh_ruecklieferung[m] / kwh_egon[m])
+            if kwh_bezug_zev[m]:
+                einspeisefaktor.append(kwh_ruecklieferung_ew[m] / kwh_bezug_zev[m])
             else:
                 einspeisefaktor.append(0)
 
@@ -82,16 +87,12 @@ class NkCostZEVStromallmend(NkCost):
             "snh": {"kwh": num_months * [0.0], "chf": num_months * [0.0]},  # netz hoch
             "snt": {"kwh": num_months * [0.0], "chf": num_months * [0.0]},  # netz nieder
             "shk": {"kwh": num_months * [0.0], "chf": num_months * [0.0]},  # HKN einkauf
-            "sk": {"kwh": num_months * [0.0], "chf": num_months * [0.0]},   # korrektur
+            "sk": {"kwh": num_months * [0.0], "chf": num_months * [0.0]},  # korrektur
             "total": {"kwh": num_months * [0.0], "chf": num_months * [0.0]},
         }
 
-        for ru in self.report.rental_units:
-            if ru.is_virtual:
-                self._strom_data[ru.id] = self._zero_strom_data(num_months)
-                continue
-
-            ru_messung = self.report.object_messung.get(ru.name, {})
+        for ru in self.generator.rental_units:
+            ru_messung = self.measurements["rental_units"].get(ru.name, {})
             if "strom_solar" not in ru_messung:
                 self._strom_data[ru.id] = self._zero_strom_data(num_months)
                 continue
@@ -105,10 +106,9 @@ class NkCostZEVStromallmend(NkCost):
             # Korrekturen from config
             kwh_korrektur = num_months * [0.0]
             chf_korrektur = num_months * [0.0]
-            korrektur_config = config.get("Strom:Korrekturen", {})
-            if ru.name in korrektur_config:
-                for korr in korrektur_config[ru.name]:
-                    tarif = tarif_korrektur.get(korr.get("tarif", "mittel"), 0)
+            if ru.name in self.korrekturen:
+                for korr in self.korrekturen[ru.name]:
+                    tarif = self.tarif_korrektur.get(korr.get("tarif", "mittel"), 0)
                     for m in range(num_months):
                         kwh_korrektur[m] += korr["kwh"][m]
                         chf_korrektur[m] += korr["kwh"][m] * tarif
@@ -124,6 +124,8 @@ class NkCostZEVStromallmend(NkCost):
             d["chf_solar_hkn"] = []
             d["chf_netz_hoch"] = list(messung_chf_hoch)
             d["chf_netz_nieder"] = list(messung_chf_nieder)
+            d["kwh_netz_hoch"] = list(messung_ew_hoch)
+            d["kwh_netz_nieder"] = list(messung_ew_nieder)
             d["kwh_korrektur"] = kwh_korrektur
             d["chf_korrektur"] = chf_korrektur
             d["chf_total"] = []
@@ -132,21 +134,16 @@ class NkCostZEVStromallmend(NkCost):
                 kwh_netz = messung_ew_hoch[m] + messung_ew_nieder[m]
                 kwh_speicher = einspeisefaktor[m] * kwh_netz
                 kwh_einkauf = kwh_netz - kwh_speicher
-                kwh_tot = (
-                    messung_solar[m]
-                    + kwh_speicher
-                    + kwh_einkauf
-                    + kwh_korrektur[m]
-                )
+                kwh_tot = messung_solar[m] + kwh_speicher + kwh_einkauf + kwh_korrektur[m]
 
-                chf_eigen = messung_solar[m] * tarif_eigenstrom
+                chf_eigen = messung_solar[m] * self.tarif_eigenstrom
                 tarif_einsp = (
-                    tarif_einspeiseverguetung[m]
-                    if m < len(tarif_einspeiseverguetung)
+                    self.tarif_einspeiseverguetung[m]
+                    if m < len(self.tarif_einspeiseverguetung)
                     else 0
                 )
-                chf_speicher = kwh_speicher * (tarif_eigenstrom - tarif_einsp)
-                chf_hkn = kwh_einkauf * tarif_hkn
+                chf_speicher = kwh_speicher * (self.tarif_eigenstrom - tarif_einsp)
+                chf_hkn = kwh_einkauf * self.tarif_hkn
                 chf_tot = (
                     chf_eigen
                     + chf_speicher
@@ -190,41 +187,32 @@ class NkCostZEVStromallmend(NkCost):
             }
             for k, v in totals.items()
         }
-        self._building_totals_monthly = totals
 
         # Set COST and USAGE totals for the base cost aggregation
-        self.total_values[NkCostValueType.COST].amount = self._building_totals["total"]["chf"]
+        # self.total_values[NkCostValueType.COST].amount = self._building_totals["total"]["chf"]
         self.total_values[NkCostValueType.USAGE].amount = self._building_totals["total"]["kwh"]
-        for ru in self.report.rental_units:
+        for ru in self.generator.rental_units:
             d = self._strom_data[ru.id]
-            self.rental_unit_values[ru.id][NkCostValueType.COST].amount = sum(d["chf_total"])
+            # self.rental_unit_values[ru.id][NkCostValueType.COST].amount = sum(d["chf_total"])
             self.rental_unit_values[ru.id][NkCostValueType.USAGE].amount = sum(d["kwh_total"])
-            monthly_amounts = d["chf_total"]
-            self.rental_unit_values[ru.id][NkCostValueType.COST].monthly_amounts = monthly_amounts
+            self.rental_unit_values[ru.id][NkCostValueType.COST].monthly_amounts = d["chf_total"]
+
+        self.normalize_monthly_amounts()
 
     def split_costs(self):
-        """Aggregate pre-calculated per-rental-unit costs up to sections and total."""
-        for ru in self.report.rental_units:
-            for month in range(self.report.num_months):
-                amount = self.rental_unit_values[ru.id][NkCostValueType.COST].monthly_amounts[month]
-                self.section_values[ru.section.id][NkCostValueType.COST].monthly_amounts[month] += amount
-                self.total_values[NkCostValueType.COST].monthly_amounts[month] += amount
-
-        for section in self.report.sections:
-            self.section_values[section.id][NkCostValueType.COST].amount = sum(
-                self.section_values[section.id][NkCostValueType.COST].monthly_amounts
-            )
-        self.total_values[NkCostValueType.COST].amount = sum(
-            self.total_values[NkCostValueType.COST].monthly_amounts
-        )
+        self._calculate_weights()
+        self._aggregate_monthly_amounts()
 
     def get_extra_context(self, ru: "NkRentalUnit", contract: "NkContract") -> dict:
         """Return Stromkosten detail variables for the ODT bill template."""
-        d = self._strom_data.get(ru.id, self._zero_strom_data(self.report.num_months))
+        d = self._strom_data.get(ru.id, self._zero_strom_data(self.generator.num_months))
         bt = self._building_totals
 
         def fmt(val):
             return nformat(val)
+
+        def fmt_kwh(val):
+            return nformat(val, 0)
 
         def rate(chf, kwh):
             return nformat(chf / kwh if kwh else 0, 4)
@@ -233,44 +221,44 @@ class NkCostZEVStromallmend(NkCost):
         ctx = {
             # Eigenverbrauch Solar direkt (from roof)
             "ssd_chft": fmt(bt["ssd"]["chf"]),
-            "ssdt": bt["ssd"]["kwh"],
+            "ssdt": fmt_kwh(bt["ssd"]["kwh"]),
             "ssd_eh": rate(bt["ssd"]["chf"], bt["ssd"]["kwh"]),
-            "ssd": sum(d["kwh_solar"]),
+            "ssd": fmt_kwh(sum(d["kwh_solar"])),
             "ssd_chf": fmt(sum(d["chf_solar_eigen"])),
             # Eigenverbrauch Solar via Speicher/Stromallmend
             "sss_chft": fmt(bt["sss"]["chf"]),
-            "ssst": bt["sss"]["kwh"],
+            "ssst": fmt_kwh(bt["sss"]["kwh"]),
             "sss_eh": rate(bt["sss"]["chf"], bt["sss"]["kwh"]),
-            "sss": sum(d["kwh_solar_speicher"]),
+            "sss": fmt_kwh(sum(d["kwh_solar_speicher"])),
             "sss_chf": fmt(sum(d["chf_solar_speicher"])),
             # Netzstrombezug Hochtarif
             "snh_chft": fmt(bt["snh"]["chf"]),
-            "snht": bt["snh"]["kwh"],
+            "snht": fmt_kwh(bt["snh"]["kwh"]),
             "snh_eh": rate(bt["snh"]["chf"], bt["snh"]["kwh"]),
-            "snh": sum(d["kwh_netzstrom"]),
+            "snh": fmt_kwh(sum(d["kwh_netz_hoch"])),
             "snh_chf": fmt(sum(d["chf_netz_hoch"])),
             # Netzstrombezug Niedertarif
             "snt_chft": fmt(bt["snt"]["chf"]),
-            "sntt": bt["snt"]["kwh"],
+            "sntt": fmt_kwh(bt["snt"]["kwh"]),
             "snt_eh": rate(bt["snt"]["chf"], bt["snt"]["kwh"]),
-            "snt": sum(d["kwh_netzstrom"]),  # combined with Hoch for total netz
+            "snt": fmt_kwh(sum(d["kwh_netz_nieder"])),
             "snt_chf": fmt(sum(d["chf_netz_nieder"])),
             # Herkunftsnachweise (HKN)
             "shk_chft": fmt(bt["shk"]["chf"]),
-            "shkt": bt["shk"]["kwh"],
+            "shkt": fmt_kwh(bt["shk"]["kwh"]),
             "shk_eh": rate(bt["shk"]["chf"], bt["shk"]["kwh"]),
-            "shk": sum(d["kwh_solar_einkauf"]),
+            "shk": fmt_kwh(sum(d["kwh_solar_einkauf"])),
             "shk_chf": fmt(sum(d["chf_solar_hkn"])),
             # Korrektur
             "sk_chft": fmt(bt["sk"]["chf"]),
-            "skt": bt["sk"]["kwh"],
+            "skt": fmt_kwh(bt["sk"]["kwh"]),
             "sk_eh": rate(bt["sk"]["chf"], bt["sk"]["kwh"]),
-            "sk": sum(d["kwh_korrektur"]),
+            "sk": fmt_kwh(sum(d["kwh_korrektur"])),
             "sk_chf": fmt(sum(d["chf_korrektur"])),
             # Strom subtotal (sum of above, no separate Allgemeinstrom/fees in this class)
             "st_chft": fmt(bt["total"]["chf"]),
-            "stt": bt["total"]["kwh"],
-            "st": sum(d["kwh_total"]),
+            "stt": fmt_kwh(bt["total"]["kwh"]),
+            "st": fmt_kwh(sum(d["kwh_total"])),
             "st_chf": fmt(sum(d["chf_total"])),
             # Anteil Allgemeinstrom (not computed by this class – leave empty)
             "sa_chft": "",
@@ -304,6 +292,8 @@ class NkCostZEVStromallmend(NkCost):
             "chf_solar_hkn": list(zeros),
             "chf_netz_hoch": list(zeros),
             "chf_netz_nieder": list(zeros),
+            "kwh_netz_hoch": list(zeros),
+            "kwh_netz_nieder": list(zeros),
             "kwh_korrektur": list(zeros),
             "chf_korrektur": list(zeros),
             "chf_total": list(zeros),

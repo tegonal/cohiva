@@ -32,8 +32,8 @@ class NkCost:
     is_meta = False
     is_special = False
 
-    def __init__(self, report: "NkReportGenerator", cost_config: dict):
-        self.report = report
+    def __init__(self, report_generator: "NkReportGenerator", cost_config: dict):
+        self.generator = report_generator
         self.name = cost_config.get("name")
         self.billing_group = cost_config.get("billing_group", self.name)
         self.total_values = {}
@@ -44,11 +44,11 @@ class NkCost:
 
     def add_value_type(self, kind: NkCostValueType, name: str, unit: str):
         self._add_value_type_to_dict(self.total_values, kind, name, unit)
-        for ru in self.report.rental_units:
+        for ru in self.generator.rental_units:
             if ru.id not in self.rental_unit_values:
                 self.rental_unit_values[ru.id] = {}
             self._add_value_type_to_dict(self.rental_unit_values[ru.id], kind, name, unit)
-        for section in self.report.sections:
+        for section in self.generator.sections:
             if section.id not in self.section_values:
                 self.section_values[section.id] = {}
             self._add_value_type_to_dict(self.section_values[section.id], kind, name, unit)
@@ -58,18 +58,17 @@ class NkCost:
     ):
         if kind in container:
             raise ValueError(f"Es existiert bereits ein Wert vom gleichen Typ wie {name}")
-        container[kind] = self.value_cls(name, unit, 0, self.report.num_months * [0])
+        container[kind] = self.value_cls(name, unit, 0, self.generator.num_months * [0])
 
     def load_input_data(self):
         pass
-        # raise NotImplementedError("load_input_data() must be implemented by subclasses")
 
     def normalize_monthly_amounts(self):
         """Set monthly values from annual value, or vice versa, depending on which is available."""
         self._normalize_monthly_amounts_for_dict(self.total_values)
-        for ru in self.report.rental_units:
+        for ru in self.generator.rental_units:
             self._normalize_monthly_amounts_for_dict(self.rental_unit_values[ru.id])
-        for section in self.report.sections:
+        for section in self.generator.sections:
             self._normalize_monthly_amounts_for_dict(self.section_values[section.id])
 
     def _normalize_monthly_amounts_for_dict(self, container: dict, value_required=False):
@@ -77,10 +76,10 @@ class NkCost:
             # pprint(value)
             total = None
             if value.monthly_amounts:
-                if len(value.monthly_amounts) != self.report.num_months:
+                if len(value.monthly_amounts) != self.generator.num_months:
                     raise ValueError(
                         f"Inkonsistente Anzahl der Monatswerte {len(value.monthly_amounts)} "
-                        f"und Anzahl der Monate {self.report.num_months} für {value.name}/{_kind}"
+                        f"und Anzahl der Monate {self.generator.num_months} für {value.name}/{_kind}"
                     )
                 total = sum(value.monthly_amounts)
             if value.amount:
@@ -94,8 +93,8 @@ class NkCost:
                 else:
                     # Set monthly values from annual value
                     value.monthly_amounts = [
-                        value.amount / self.report.num_months
-                    ] * self.report.num_months
+                        value.amount / self.generator.num_months
+                    ] * self.generator.num_months
             elif total:
                 # Set annual value from monthly values
                 value.amount = total
@@ -115,13 +114,16 @@ class NkCost:
                 else 0
             )
             self._calculate_amounts(self.total_values, kind, amount_per_weight)
-            for ru in self.report.rental_units:
+            for ru in self.generator.rental_units:
                 self._calculate_amounts(self.rental_unit_values[ru.id], kind, amount_per_weight)
-            for section in self.report.sections:
+            for section in self.generator.sections:
                 self._calculate_amounts(self.section_values[section.id], kind, amount_per_weight)
 
+    def update(self):
+        pass
+
     def _calculate_amounts(self, values, kind: NkCostValueType, amount_per_weight):
-        for month in range(self.report.num_months):
+        for month in range(self.generator.num_months):
             amount = amount_per_weight * values[NkCostValueType.WEIGHT].monthly_amounts[month]
             if (
                 values[kind].monthly_amounts[month]
@@ -148,11 +150,11 @@ class NkCost:
         monthly_weights = self.get_monthly_weights()
         section_weights = self.get_section_weights()
         total = self.total_values[NkCostValueType.WEIGHT]
-        for ru in self.report.rental_units:
+        for ru in self.generator.rental_units:
             ru_weights = self.get_rental_unit_weights(ru.id)
             values = self.rental_unit_values[ru.id][NkCostValueType.WEIGHT]
             section = self.section_values[ru.section.id][NkCostValueType.WEIGHT]
-            for month in range(self.report.num_months):
+            for month in range(self.generator.num_months):
                 weight = (
                     monthly_weights[month] * section_weights[ru.section.id] * ru_weights[month]
                 )
@@ -160,23 +162,39 @@ class NkCost:
                 section.monthly_amounts[month] += weight
                 total.monthly_amounts[month] += weight
             values.amount = sum(values.monthly_amounts)
-        for section in self.report.sections:
+        for section in self.generator.sections:
             self.section_values[section.id][NkCostValueType.WEIGHT].amount = sum(
                 self.section_values[section.id][NkCostValueType.WEIGHT].monthly_amounts
             )
         total.amount = sum(total.monthly_amounts)
 
+    def _aggregate_monthly_amounts(self, value_type: NkCostValueType = NkCostValueType.COST):
+        """Aggregate pre-calculated monthly per-rental-unit costs up to sections and total."""
+        for ru in self.generator.rental_units:
+            for month in range(self.generator.num_months):
+                amount = self.rental_unit_values[ru.id][value_type].monthly_amounts[month]
+                self.section_values[ru.section.id][value_type].monthly_amounts[month] += amount
+                self.total_values[value_type].monthly_amounts[month] += amount
+
+        for section in self.generator.sections:
+            self.section_values[section.id][value_type].amount = sum(
+                self.section_values[section.id][value_type].monthly_amounts
+            )
+        self.total_values[value_type].amount = sum(self.total_values[value_type].monthly_amounts)
+
     def get_monthly_weights(self):
         """Default with equal weights for all months."""
-        return self.report.num_months * [1.0]
+        return self.generator.num_months * [1.0]
 
     def get_section_weights(self):
         """Return weights per section, using the configured section_weights profile if available."""
         weight_profile = (
-            self.report.section_weights.get(self.section_weights) if self.section_weights else None
+            self.generator.section_weights.get(self.section_weights)
+            if self.section_weights
+            else None
         )
         weights = {}
-        for section in self.report.sections:
+        for section in self.generator.sections:
             if weight_profile is not None:
                 weights[section.id] = weight_profile.get(section.id.capitalize())
             else:
@@ -185,11 +203,11 @@ class NkCost:
 
     def get_rental_unit_weights(self, ru_id):
         """Default with equal weights for all rental units."""
-        ru = self.report.get_rental_unit_by_id(ru_id)
+        ru = self.generator.get_rental_unit_by_id(ru_id)
         if ru.is_virtual:
-            return self.report.num_months * [0.0]
+            return self.generator.num_months * [0.0]
         else:
-            return self.report.num_months * [1.0]
+            return self.generator.num_months * [1.0]
 
     def get_export_cost_row(self, include_percent=False):
         row = self._get_export_row(NkCostValueType.COST, include_percent)
@@ -206,9 +224,9 @@ class NkCost:
             row.append("")  # No total
         else:
             row.append(self.total_values[kind].amount)
-        for section in self.report.sections:
+        for section in self.generator.sections:
             row.append(self.section_values[section.id][kind].amount)
-        for ru in self.report.rental_units:
+        for ru in self.generator.rental_units:
             row.append(self.rental_unit_values[ru.id][kind].amount)
         return row
 
@@ -237,3 +255,24 @@ class NkCost:
         return {}
 
     # def update_context(self, context, ru, contract):
+
+
+class NkMeasurementDataMixin:
+    """Mixin for NkCosts that require measurement data."""
+
+    def __init__(self, report_generator: "NkReportGenerator", cost_config: dict):
+        super().__init__(report_generator, cost_config)
+        self.measurements = {}
+        measurements_configs = cost_config.get("measurement_data")
+        if measurements_configs:
+            for key, config in measurements_configs.items():
+                self.measurements[key] = config["class"](report_generator, config)
+
+    def load_input_data(self):
+        if self.measurements:
+            for m in self.measurements.values():
+                m.load()
+                for warning in m.warnings:
+                    print(warning)
+                    self.generator.add_warning(warning[0], warning[1])
+        super().load_input_data()

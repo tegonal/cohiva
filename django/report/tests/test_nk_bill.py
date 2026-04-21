@@ -13,21 +13,29 @@ from .base import NkReportTestCase
 
 class NKBillTest(NkReportTestCase):
     ## Reference costs
+    # Wohnung 001a
     unit1_simple = 20120.48
     unit1_internet = 204
-    unit1_total = unit1_simple + unit1_internet
+    unit1_strom = 1322.55
+    unit1_total = unit1_simple + unit1_internet + unit1_strom
 
+    # Wohnung 001b
     # Area of ru1 is 100m2 and ru2 20m2
     unit2_simple = unit1_simple / 100 * 20
     unit2_internet = 108
-    unit2_total = unit2_simple + unit2_internet
+    unit2_strom = 264.51
+    unit2_total = unit2_simple + unit2_internet + unit2_strom
 
+    # Gewerbe G001
     unit3_simple = 19699.95
-    unit3_total = unit3_simple
+    unit3_strom = 2645.10
+    unit3_internet = 0
+    unit3_total = unit3_simple + unit3_internet + unit3_strom
 
     building_simple = 92700.41
     building_internet = 312
-    building_total = building_simple + building_internet
+    building_strom = 5422.44
+    building_total = building_simple + building_internet + building_strom
     # total_building = 221054.62
 
     @classmethod
@@ -171,6 +179,10 @@ class NKBillTest(NkReportTestCase):
         self.assertEqual(context["building"], "Musterweg 1, 3000 Bern")
         self.assertEqual(context["billing_period"], "01.07.2023 – 30.06.2024")
         self.assertEqual(context["contract_period"], "01.07.2023 – 30.06.2024")
+        # ZEV
+        self.assertEqual(context["ssdt"], "1'640")
+        self.assertEqual(context["ssd_chft"], "238.29")
+        # Total
         self.assertEqual(context["s_chft"], nformat(self.building_total))
         self._extended_rental_unit_context_check(context)
         self.assertEqual(context["s_chf"], nformat(self.unit1_total))
@@ -295,6 +307,7 @@ class NKBillTest(NkReportTestCase):
                 "Lift",
                 "Kehrichtgebühren",
                 "Internet/WLAN",
+                "Stromkosten",
             ):
                 print(f"Skipping {context_i=}/{i=} {name} for now")
                 continue
