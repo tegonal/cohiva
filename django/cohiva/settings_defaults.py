@@ -18,6 +18,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from django.contrib import admin
+from django.templatetags.static import static
 from django.utils.translation import gettext_lazy as _
 
 import cohiva.base_config as cbc
@@ -1252,7 +1253,7 @@ COHIVA_ADMIN_NAVIGATION = [
                     {"type": "model", "value": "geno.ContentTemplateOption"},
                 ],
             },
-            {"type": "model", "value": "filer.Folder", "icon": "folder_open"},
+            {"type": "model", "value": "filer.Folder", "icon": "folder_open", "target": "filer"},
             {
                 "type": "subgroup",
                 "name": _("Erweitert"),
@@ -1372,9 +1373,9 @@ UNFOLD = {
     #        "image": lambda request: static("sample/login-bg.jpg"),
     #        "redirect_after": lambda request: reverse_lazy("admin:APP_MODEL_changelist"),
     #    },
-    #    "STYLES": [
-    #        lambda request: static("css/style.css"),
-    #    ],
+    "STYLES": [
+        lambda request: static("css/cohiva_style.css"),
+    ],
     #    "SCRIPTS": [
     #        lambda request: static("js/script.js"),
     #    ],

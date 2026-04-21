@@ -19,3 +19,7 @@
     margin-top: 10px;
 }
 
+:root {
+  --default-button-bg: black;
+  --test: var(--color-primary-600);
+}
