@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 import zipfile
 from collections import OrderedDict
+from decimal import Decimal
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
@@ -4162,12 +4163,12 @@ class ResidentUnitListView(CohivaAdminViewMixin, TemplateView):
             ("n_adults", "Erwachsene"),
             ("n_children", "Anzahl Kinder"),
             ("ru_rent_netto", "Nettomiete"),
-            ("ru_rent_total", "Bruttomiete"),
             ("contract_rent_reduction", "Mietzinsreduktion auf Nettomiete"),
             ("contract_rent_reservation", "Mietzinsvorbehalt auf Nettomiete"),
             ("ru_nk", "NK akonto"),
             ("ru_nk_flat", "NK pauschal"),
             ("ru_nk_electricity", "NK Strom"),
+            ("ru_rent_total", "Bruttomiete"),
             ("name", "Name Mieter:in 1"),
             ("first_name", "Vorname Mieter:in 1"),
             ("email", "Email Mieter:in 1"),
@@ -4265,6 +4266,13 @@ class ResidentUnitListView(CohivaAdminViewMixin, TemplateView):
                     obj.contract_rent_reduction = contract.rent_reduction
                 if contract.rent_reservation:
                     obj.contract_rent_reservation = contract.rent_reservation
+
+                # Calculate current Bruttomiete based on the contract
+                obj.ru_rent_total = (
+                    obj.ru_rent_total
+                    - (contract.rent_reduction if contract.rent_reduction else Decimal(0.0))
+                    - (contract.rent_reservation if contract.rent_reservation else Decimal(0.0))
+                )
 
                 for child in contracts.first().children.all():
                     children.append(
