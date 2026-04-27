@@ -1,3 +1,4 @@
+import json
 from unittest.mock import patch
 
 import geno.tests.data as geno_testdata
@@ -23,7 +24,7 @@ class ReportTestCase(BaseTestCase):
 
 
 class NkReportTestCase(ReportTestCase):
-    def configure_test_report_minimal(self):
+    def configure_test_report_minimal(self, legacy=False):
         self.rtype = ReportType.objects.create(name="Nebenkostenabrechnung")
         self.report = Report.objects.create(name="Test", report_type=self.rtype)
 
@@ -76,6 +77,30 @@ class NkReportTestCase(ReportTestCase):
         self.add_field("Strom:Tarif:Eigenstrom", 0.1453)
         # self.add_field("Strom:Korrekturen", "", "json")
         # self.add_field("Strom:Korrekturen", "{ "0000": [ {"desc": "Allgemeinstrom: Abzug für Betrieb Tiefkühlallmend", "tarif": "mittel", "kwh": [-63.50,-59.33,-65.36,-64.17,-57.15,-61.50,-57.69,-51.51,-55.73,-53.89,-61.53,-58.55]}, {"desc": "Allgemeinstrom: Abzug für Aussenlift", "tarif": "mittel", "kwh": [-40,-40,-40,-40,-40,-40,-40,-40,-40,-40,-40,-40]} ], "011": [ {"desc": "Strom von Whg. 011 für Aussenbeleuchtung Zufahrt", "tarif": "nacht", "kwh": [-57.57,-51.92,-58.88,-73.76,-937.21,-771.08,-33.91,-26.82,-686.17,-607.14,0,0]} ] }", "json")
+        if not legacy:
+            korrekturen = {
+                # OLD Name: "0000": [
+                "allg": [
+                    {
+                        "desc": "Allgemeinstrom: Abzug separat verrechneter Strom",
+                        "tarif": "mittel",
+                        "kwh": 12 * [-2],
+                    },
+                    {
+                        "desc": "Umbuchung: Allgemein verwendeter Strom von 001b",
+                        "tarif": "mittel",
+                        "kwh": 12 * [1],
+                    },
+                ],
+                "001b": [
+                    {
+                        "desc": "Umbuchung: Allgemein verwendeter Strom von 001b",
+                        "tarif": "mittel",
+                        "kwh": 12 * [-1],
+                    }
+                ],
+            }
+            self.add_field("Strom:Korrekturen", json.dumps(korrekturen), "json")
 
     def add_field(self, name, data, field_type=None):
         if not field_type:

@@ -6,7 +6,7 @@ from django.db.models import Q, Sum
 from cohiva.utils.countries import normalize_country_code
 from finance.accounting import Account, AccountKey
 from geno.models import Address, Contract, Invoice, InvoiceCategory
-from report.nk.cost import NkCost, NkCostValueType
+from report.nk.cost import NkCost
 from report.nk.rental_unit import NkRentalUnit
 
 
@@ -178,7 +178,7 @@ class NkContract:
     def get_total_costs(self, costs: list[NkCost], rental_unit: NkRentalUnit | None = None):
         ret = 0
         for cost in costs:
-            ret += cost.get_assigned_amount(NkCostValueType.COST, self, rental_unit)
+            ret += cost.get_assigned_cost(self, rental_unit)
         return ret
 
     def get_paid_akonto(self, ru: NkRentalUnit) -> float:

@@ -1,8 +1,12 @@
+import json
+
 import report.tests.data as testdata
 from geno.utils import nformat
+from report.models import ReportInputData, ReportInputField
 from report.nk.cost import NkCostValueType, NkCostZEVStromallmend
 from report.nk.generator import NkReportGenerator
 from report.nk.measurement_data import NkMeasurementDataBase
+from report.nk.rental_unit import NkVirtualRentalUnitId
 
 from .base import NkReportTestCase
 
@@ -82,6 +86,7 @@ class NKCostZEVStromallmendTest(NkReportTestCase):
     tarif_nieder = 0.28  # 0.28 CHF/kWh
     tarif_eigenstrom = 0.1453
     tarif_hkn = 0.07
+    tarif_korrektur = 0.28
     tarif_einspeiseverguetung = [
         0.176,
         0.176,
@@ -105,21 +110,22 @@ class NKCostZEVStromallmendTest(NkReportTestCase):
     def _setup_report_with_strom_data(self):
         """Configure a minimal report and populate measurement data for ZEV strom."""
         self.configure_test_report_minimal()
-        report = NkReportGenerator(self.report, True, output_root="/tmp/")
-        report.load_rental_units()
-        return report
+        report_generator = NkReportGenerator(self.report, True, output_root="/tmp/")
+        report_generator.load_rental_units()
+        report_generator.load_contracts()
+        return report_generator
 
     def test_zev_cost_calculation(self):
         """Test NkCostZEVStromallmend per-unit cost calculation."""
-        report = self._setup_report_with_strom_data()
-        num_months = report.num_months
+        rg = self._setup_report_with_strom_data()
+        num_months = rg.num_months
 
-        cost = NkCostZEVStromallmend(report, self.zev_cost_config)
+        cost = NkCostZEVStromallmend(rg, self.zev_cost_config)
         cost.load_input_data()
         cost.split_costs()
 
         # Recalculate expected values for 001a
-        ru_001a = self.rentalunits[0]
+        ru_001a = rg.get_rental_unit_by_name("001a")
         expected_chf_001a, expected_kwh_001a = self._calc_expected(50.0, 30.0, 20.0, num_months)
         self.assertAlmostEqual(
             cost.rental_unit_values[ru_001a.id][NkCostValueType.COST].amount,
@@ -133,8 +139,8 @@ class NKCostZEVStromallmendTest(NkReportTestCase):
         )
 
         # Recalculate expected values for 001b
-        ru_001b = self.rentalunits[1]
-        expected_chf_001b, expected_kwh_001b = self._calc_expected(10.0, 6.0, 4.0, num_months)
+        ru_001b = rg.get_rental_unit_by_name("001b")
+        expected_chf_001b, expected_kwh_001b = self._calc_expected(10.0, 6.0, 4.0, num_months, -1)
         self.assertAlmostEqual(
             cost.rental_unit_values[ru_001b.id][NkCostValueType.COST].amount,
             expected_chf_001b,
@@ -147,10 +153,11 @@ class NKCostZEVStromallmendTest(NkReportTestCase):
         )
 
         # Virtual rental units (Allgemeinstrom and Pauschal)
-        ru_allg_id = -1
-        expected_chf_allg, expected_kwh_allg = self._calc_expected(100, 70, 90, num_months)
+        expected_chf_allg, expected_kwh_allg = self._calc_expected(
+            100, 70, 90, num_months, correction=-2 + 1
+        )
         self.assertAlmostEqual(
-            cost.rental_unit_values[ru_allg_id][NkCostValueType.COST].amount,
+            cost.rental_unit_values[NkVirtualRentalUnitId.COMMON][NkCostValueType.COST].amount,
             expected_chf_allg,
             places=4,
         )
@@ -163,7 +170,7 @@ class NKCostZEVStromallmendTest(NkReportTestCase):
         )
 
         # Units without measurement data → 0
-        ru_g001 = self.rentalunits[2]
+        ru_g001 = rg.get_rental_unit_by_name("G001")
         self.assertAlmostEqual(
             cost.rental_unit_values[ru_g001.id][NkCostValueType.COST].amount,
             0.0,
@@ -180,7 +187,7 @@ class NKCostZEVStromallmendTest(NkReportTestCase):
             expected_kwh_001a + expected_kwh_001b + expected_kwh_allg + expected_kwh_pauschal,
         )
 
-    def _calc_expected(self, solar, hoch, nieder, num_months):
+    def _calc_expected(self, solar, hoch, nieder, num_months, correction=0.0):
         """Calculate expected cost and usage values for a single unit.
 
         For 001a per month:
@@ -199,6 +206,7 @@ class NKCostZEVStromallmendTest(NkReportTestCase):
             kwh_netz = hoch + nieder
             kwh_speicher = 0.3 * kwh_netz
             kwh_einkauf = kwh_netz - kwh_speicher
+            chf_korrektur = correction * self.tarif_korrektur
             chf_eigen = solar * self.tarif_eigenstrom
             chf_speicher = kwh_speicher * (
                 self.tarif_eigenstrom - self.tarif_einspeiseverguetung[m]
@@ -210,23 +218,25 @@ class NKCostZEVStromallmendTest(NkReportTestCase):
                 + chf_hkn
                 + hoch * self.tarif_hoch
                 + nieder * self.tarif_nieder
+                + chf_korrektur
             )
             expected_chf += chf_total_month
-            expected_kwh += solar + hoch + nieder
+            expected_kwh += solar + hoch + nieder + correction
         return expected_chf, expected_kwh
 
     def test_zev_extra_context(self):
         """Test that get_extra_context() returns the correct Stromkosten variables."""
-        report = self._setup_report_with_strom_data()
+        rg = self._setup_report_with_strom_data()
 
-        cost = NkCostZEVStromallmend(report, self.zev_cost_config)
+        cost = NkCostZEVStromallmend(rg, self.zev_cost_config)
         cost.load_input_data()
         cost.split_costs()
+        rg.assign_rental_unit_months_to_contracts()
 
-        ru_001a = self.rentalunits[0]
-        ctx = cost.get_extra_context(ru_001a, self.contracts[0])
+        ru_001a = rg.get_rental_unit_by_name("001a")
+        ctx = cost.get_extra_context(ru_001a, rg.get_contract_by_id(self.contracts[0].id))
 
-        num_months = report.num_months
+        num_months = rg.num_months
         # ssd: Eigenverbrauch Solar direkt
         expected_ssd_kwh = 50.0 * num_months  # 50 kWh/month
         expected_ssd_chf = expected_ssd_kwh * 0.1453
@@ -258,8 +268,8 @@ class NKCostZEVStromallmendTest(NkReportTestCase):
         self.assertIsInstance(ctx["stot_chft"], str)
 
         # Units without data get zeros in context
-        ru_g001 = self.rentalunits[2]
-        ctx_g001 = cost.get_extra_context(ru_g001, self.contracts[2])
+        ru_g001 = rg.get_rental_unit_by_name("G001")
+        ctx_g001 = cost.get_extra_context(ru_g001, rg.get_contract_by_id(self.contracts[2].id))
         self.assertEqual(ctx_g001["ssd"], "0")
         self.assertEqual(ctx_g001["sss"], "0")
         self.assertEqual(ctx_g001["st_chf"], "0.00")
@@ -267,20 +277,66 @@ class NKCostZEVStromallmendTest(NkReportTestCase):
     def test_zev_no_measurement_data(self):
         """When no measurement data is present, all costs are zero."""
         self.configure_test_report_minimal()
-        report = NkReportGenerator(self.report, True, output_root="/tmp/")
-        report.load_rental_units()
+        rg = NkReportGenerator(self.report, True, output_root="/tmp/")
+        rg.load_rental_units()
 
-        cost = NkCostZEVStromallmend(report, self.zev_cost_config)
+        cost = NkCostZEVStromallmend(rg, self.zev_cost_config)
         # Remove measurement data
         cost.measurements = {
-            "building": NkMeasurementDataBase(report, {}),
-            "rental_units": NkMeasurementDataBase(report, {}),
+            "building": NkMeasurementDataBase(rg, {}),
+            "rental_units": NkMeasurementDataBase(rg, {}),
         }
         cost.load_input_data()
         cost.split_costs()
 
         self.assertAlmostEqual(cost.total_values[NkCostValueType.COST].amount, 0.0)
-        for ru in report.rental_units:
+        for ru in rg.rental_units:
             self.assertAlmostEqual(
                 cost.rental_unit_values[ru.id][NkCostValueType.COST].amount, 0.0
             )
+
+    def test_zev_invalid_correction_rental_unit(self):
+        self.configure_test_report_minimal()
+        inputdata = ReportInputData.objects.get(
+            name=ReportInputField.objects.get(name="Strom:Korrekturen"), report=self.report
+        )
+        inputdata.value = json.dumps(
+            {
+                "_INVALID_RU_": [
+                    {
+                        "desc": "Test",
+                        "tarif": "mittel",
+                        "kwh": 12 * [-1],
+                    }
+                ]
+            }
+        )
+        inputdata.save()
+        rg = NkReportGenerator(self.report, True, output_root="/tmp/")
+        rg.load_rental_units()
+
+        with self.assertRaises(ValueError):
+            NkCostZEVStromallmend(rg, self.zev_cost_config)
+
+    def test_zev_invalid_correction_tarif(self):
+        self.configure_test_report_minimal()
+        inputdata = ReportInputData.objects.get(
+            name=ReportInputField.objects.get(name="Strom:Korrekturen"), report=self.report
+        )
+        inputdata.value = json.dumps(
+            {
+                "allg": [
+                    {
+                        "desc": "Test",
+                        "tarif": "_INVALID_TARIF_",
+                        "kwh": 12 * [-1],
+                    }
+                ]
+            }
+        )
+        inputdata.save()
+        rg = NkReportGenerator(self.report, True, output_root="/tmp/")
+        rg.load_rental_units()
+
+        with self.assertRaises(ValueError):
+            NkCostZEVStromallmend(rg, self.zev_cost_config)

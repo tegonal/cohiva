@@ -48,9 +48,7 @@ class ExportCSV:
             # writer.writerow(self.footers["nominal_diff_percent"])
             writer.writerow([])
             self.write_object_extra_info(writer)
-            writer.writerow([])
-            self.write_zev_extra_info(writer)
-            writer.writerow([])
+            self.write_cost_extra_info(writer)
 
             ## Add weights
             writer.writerow([])
@@ -257,46 +255,17 @@ class ExportCSV:
             writer.writerow(row)
 
     ## TODO: Refactor / simplify
-    def write_zev_extra_info(self, writer):
-        ## Stromrechnung
-        for key in (
-            "messung_strom_solar",
-            "kwh_solar_speicher",
-            "kwh_solar_einkauf",
-            "kwh_netzstrom",
-            "kwh_korrektur",
-            "kwh_total",
-            "chf_solar_eigen",
-            "chf_solar_einspeise",
-            "chf_solar_hkn",
-            "messung_chf_netz_hoch",
-            "messung_chf_netz_nieder",
-            "chf_korrektur",
-            "chf_total",
-        ):
-            obj_data = []
-            total = 0
-            for ru in self.nk.rental_units:
-                if hasattr(ru, key):
-                    total += sum(getattr(ru, key))
-                    obj_data.append(sum(getattr(ru, key)))
-                else:
-                    obj_data.append("")
-                if self.include_percent:
-                    obj_data.append("")
+    def write_cost_extra_info(self, writer):
+        for cost in self.nk.costs:
+            lines = cost.get_export_extra_info(self.include_percent, self.format_amount)
+            if lines:
+                writer.writerow([])
+                writer.writerow([f"{cost.name} Zusatzinfos:"])
+                writer.writerows(lines)
+                writer.writerow([])
 
-            row = []
-            row.append(key)
-            row.append(total)
-            for _s in self.nk.sections:
-                row.append("")
-                if self.include_percent:
-                    row.append("")
-            row += obj_data
-            writer.writerow(row)
-
-    @classmethod
-    def format_amount(cls, amount):
+    @staticmethod
+    def format_amount(amount):
         if amount == "":
             return amount
         return nformat(amount, round_to=0.05)

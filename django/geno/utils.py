@@ -221,6 +221,12 @@ def nformat(number, precision=2, round_to=False, thousands_separator="'"):
         return format(number, ".%df" % precision)
 
 
+def unformat(number: str | float, thousands_separator="'"):
+    if isinstance(number, str):
+        number = number.replace(thousands_separator, "").replace("%", "")
+    return float(number)
+
+
 def sanitize_filename(filename):
     normalized_filename = filename.replace("+", "-").replace("/", "-")
     return re.sub(r"[^\w\-_\.]+", "", normalized_filename)

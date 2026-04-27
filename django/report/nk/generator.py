@@ -15,7 +15,7 @@ from report.nk.contract import NkContract
 from report.nk.cost.base import NkCostValueType
 from report.nk.cost_config import get_costs_from_config
 from report.nk.export_csv import ExportCSV
-from report.nk.rental_unit import NkRentalUnit
+from report.nk.rental_unit import NkRentalUnit, NkVirtualRentalUnitId
 from report.nk.section import NK_SECTIONS, get_section_by_id
 
 
@@ -296,15 +296,21 @@ class NkReportGenerator(ReportGenerator):
             [
                 # "Virtual" rental unit to collect "Allgemeinkosten"
                 NkRentalUnit(
-                    id=-1, name="allg", is_virtual=True, section=get_section_by_id("allgemein")
+                    id=NkVirtualRentalUnitId.COMMON,
+                    name="allg",
+                    is_virtual=True,
+                    section=get_section_by_id("allgemein"),
                 ),
                 # "Virtual" rental unit to collect "Pauschale NK"
                 NkRentalUnit(
-                    id=-2, name="pauschal", is_virtual=True, section=get_section_by_id("lager")
+                    id=NkVirtualRentalUnitId.NK_FLAT,
+                    name="pauschal",
+                    is_virtual=True,
+                    section=get_section_by_id("lager"),
                 ),
                 # "Virtual" rental unit to collect "Pauschale Strom"
                 NkRentalUnit(
-                    id=-3,
+                    id=NkVirtualRentalUnitId.ELECTRICITY_FLAT,
                     name="strom_pauschal",
                     is_virtual=True,
                     section=get_section_by_id("lager"),
