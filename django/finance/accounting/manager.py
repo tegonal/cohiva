@@ -3,7 +3,7 @@ import logging
 
 from django.conf import settings
 
-from cohiva.utils.strings import remove_secrets_from_uri
+from cohiva.utils.strings import sanitize_log_message
 from finance.accounting import CashctrlBook, DummyBook, GnucashBook
 
 logger = logging.getLogger("finance_accounting")
@@ -120,7 +120,7 @@ class AccountingManager:
                 self.backend_obj = self.backend_class(self.backend_label, self.db_id)
                 return self.backend_obj
             except Exception as e:
-                error_msg = remove_secrets_from_uri(str(e))
+                error_msg = sanitize_log_message(str(e))
                 logger.error(
                     f"Couldn't initialize accounting backend {self.backend_class}: {error_msg}"
                 )

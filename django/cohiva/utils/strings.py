@@ -7,7 +7,11 @@ def pluralize(count, singular, plural):
     return f"{count} {plural}"
 
 
-def remove_secrets_from_uri(text: str):
+def sanitize_log_message(text: str):
+    return _sanitize_uris(text)
+
+
+def _sanitize_uris(text: str):
     pattern = (
         r"\b(?P<protocol>[a-zA-Z][a-zA-Z0-9+.-]*)://"
         r"(?P<username>[^:@/\s]+):(?P<password>[^@/\s]+)@"
