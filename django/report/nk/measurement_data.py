@@ -266,7 +266,7 @@ class NkMeasurementDataEgon(NkMeasurementDataZippedMonthly):
                 return "strom_pauschal"
             return match.group(1)
         raise ValueError(
-            _("Invalid rental unit name '{name}' in measurement data me in den Messdaten.").format(
+            _("Invalid rental unit name '{name}' in the measurement data.").format(
                 name=rental_unit_name
             )
         )
