@@ -15,7 +15,7 @@ from report.nk.contract import NkContract
 from report.nk.cost.base import NkCostValueType
 from report.nk.cost_config import get_costs_from_config
 from report.nk.export_csv import ExportCSV
-from report.nk.rental_unit import NkRentalUnit
+from report.nk.rental_unit import NkRentalUnit, NkVirtualRentalUnitId
 from report.nk.section import NK_SECTIONS, get_section_by_id
 
 
@@ -57,7 +57,6 @@ class NkReportGenerator(ReportGenerator):
         ]
         self.totals = {}
 
-        self.data_amount = {}
         self.previous_data = {}
 
         self.strom_total = {
@@ -176,7 +175,7 @@ class NkReportGenerator(ReportGenerator):
         self.load_contracts()
         self.load_costs()
         self.split_costs_by_objects()
-        # self.add_admin_fee()
+        self.update_costs()
 
         if self.output_object_data:
             self.export_object_output()
@@ -297,15 +296,21 @@ class NkReportGenerator(ReportGenerator):
             [
                 # "Virtual" rental unit to collect "Allgemeinkosten"
                 NkRentalUnit(
-                    id=-1, name="allg", is_virtual=True, section=get_section_by_id("allgemein")
+                    id=NkVirtualRentalUnitId.COMMON,
+                    name="allg",
+                    is_virtual=True,
+                    section=get_section_by_id("allgemein"),
                 ),
                 # "Virtual" rental unit to collect "Pauschale NK"
                 NkRentalUnit(
-                    id=-2, name="pauschal", is_virtual=True, section=get_section_by_id("lager")
+                    id=NkVirtualRentalUnitId.NK_FLAT,
+                    name="pauschal",
+                    is_virtual=True,
+                    section=get_section_by_id("lager"),
                 ),
                 # "Virtual" rental unit to collect "Pauschale Strom"
                 NkRentalUnit(
-                    id=-3,
+                    id=NkVirtualRentalUnitId.ELECTRICITY_FLAT,
                     name="strom_pauschal",
                     is_virtual=True,
                     section=get_section_by_id("lager"),
@@ -409,13 +414,18 @@ class NkReportGenerator(ReportGenerator):
         return self.get_contract_by_id(contract_id)
 
     def load_costs(self):
-        ## Create cost objects from report config
+        """Create cost objects from report config and load input data"""
         for cost_config in get_costs_from_config():
             cost_obj = cost_config.cost_class(self, cost_config.config)
             self.costs.append(cost_obj)
-        ## Load cost data from report input data
+        # pprint(self.costs)
         for cost in self.costs:
             cost.load_input_data()
+
+    def update_costs(self):
+        """Update costs AFTER calculation/splitting (e.g., to add the admin fee)"""
+        for cost in self.costs:
+            cost.update()
 
     def split_costs_by_objects(self):
         for cost in self.costs:

@@ -10,6 +10,12 @@ if TYPE_CHECKING:
 from report.nk.section import NkSection, get_section_by_id
 
 
+class NkVirtualRentalUnitId:
+    COMMON: int = -1  # Common costs (e.g., Allgemeinstrom)
+    NK_FLAT: int = -2  # "Pauschale NK"
+    ELECTRICITY_FLAT: int = -3  # "Pauschale Strom"
+
+
 @dataclass
 class NkRentalUnit:
     id: int

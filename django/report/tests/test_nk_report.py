@@ -97,12 +97,12 @@ class NKReportTest(NkReportTestCase):
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
-        testdata.create_nk_data(cls)
+        testdata.create_nk_data(cls, legacy=True)
 
     @patch("requests.post", wraps=redirect_post_request)
     @patch("requests.get", wraps=redirect_get_request)
     def test_report_minimal_dryrun(self, mock_get, mock_post):
-        self.configure_test_report_minimal()
+        self.configure_test_report_minimal(legacy=True)
 
         log = main(self.report, dry_run=True)
         # print(log)
@@ -175,7 +175,7 @@ class NKReportTest(NkReportTestCase):
     @patch("requests.post", wraps=redirect_post_request)
     @patch("requests.get", wraps=redirect_get_request)
     def test_report_minimal_fulloutput_dryrun(self, mock_get, mock_post):
-        self.configure_test_report_minimal()
+        self.configure_test_report_minimal(legacy=True)
 
         self.update_field("Ausgabe:QR-Rechnungen", True)
         self.update_field("Ausgabe:Plots", True)
@@ -234,7 +234,7 @@ class NKReportTest(NkReportTestCase):
     @patch("requests.post", wraps=redirect_post_request)
     @patch("requests.get", wraps=redirect_get_request)
     def test_report_minimal_fulloutput(self, mock_get, mock_post):
-        self.configure_test_report_minimal()
+        self.configure_test_report_minimal(legacy=True)
 
         self.update_field("Ausgabe:QR-Rechnungen", True)
         log = main(self.report, dry_run=False)

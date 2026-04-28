@@ -11,8 +11,8 @@ class NkTotalCost(NkCost):
 
     cost_type_id = "simple_total"
 
-    def __init__(self, report: "NkReportGenerator", cost_config: dict):
-        super().__init__(report, cost_config)
+    def __init__(self, report_generator: "NkReportGenerator", cost_config: dict):
+        super().__init__(report_generator, cost_config)
         self.rental_unit_usage = cost_config.get("object_weights", "area")
         ## TODO: Get name and unit also from config?
         if self.rental_unit_usage == "area":
@@ -24,14 +24,14 @@ class NkTotalCost(NkCost):
 
     def load_input_data(self):
         super().load_input_data()
-        self.total_values[NkCostValueType.COST].amount = self.report.config.get(
+        self.total_values[NkCostValueType.COST].amount = self.generator.config.get(
             f"Kosten:{self.name}"
         )
         self.load_rental_unit_usage()
         self.normalize_monthly_amounts()
 
     def load_rental_unit_usage(self):
-        for ru in self.report.rental_units:
+        for ru in self.generator.rental_units:
             weight = getattr(ru, self.rental_unit_usage)
             self.rental_unit_values[ru.id][NkCostValueType.USAGE].amount = weight
             self.section_values[ru.section.id][NkCostValueType.USAGE].amount += weight
@@ -53,8 +53,8 @@ class NkTotalEnergyCost(NkCost):
 
     cost_type_id = "energy"
 
-    def __init__(self, report: "NkReportGenerator", cost_config: dict):
-        super().__init__(report, cost_config)
+    def __init__(self, report_generator: "NkReportGenerator", cost_config: dict):
+        super().__init__(report_generator, cost_config)
         self.base_cost_factor = 0.3  # default 30/70% split
         self.base_cost_object_weights = None
         self.usage_cost_object_weights = None
@@ -77,8 +77,8 @@ class NkPerRentalUnitCost(NkCost):
 
     cost_type_id = "per_rental_unit"
 
-    def __init__(self, report: "NkReportGenerator", cost_config: dict):
-        super().__init__(report, cost_config)
+    def __init__(self, report_generator: "NkReportGenerator", cost_config: dict):
+        super().__init__(report_generator, cost_config)
         self.fee_per_unit_key = cost_config.get("fee_per_unit_key")
         self.fee_per_person_key = cost_config.get("fee_per_person_key")
         self.fixed_fees_key = cost_config.get("fixed_fees_key")
@@ -87,16 +87,18 @@ class NkPerRentalUnitCost(NkCost):
     def load_input_data(self):
         super().load_input_data()
         fee_per_unit = (
-            self.report.config.get(self.fee_per_unit_key, 0) if self.fee_per_unit_key else 0
+            self.generator.config.get(self.fee_per_unit_key, 0) if self.fee_per_unit_key else 0
         )
         fee_per_person = (
-            self.report.config.get(self.fee_per_person_key, 0) if self.fee_per_person_key else 0
+            self.generator.config.get(self.fee_per_person_key, 0) if self.fee_per_person_key else 0
         )
-        fixed_fees = self.report.config.get(self.fixed_fees_key, {}) if self.fixed_fees_key else {}
+        fixed_fees = (
+            self.generator.config.get(self.fixed_fees_key, {}) if self.fixed_fees_key else {}
+        )
 
         monthly_weights = self.get_monthly_weights()
 
-        for ru in self.report.rental_units:
+        for ru in self.generator.rental_units:
             if ru.is_virtual:
                 chf_per_month = 0
             elif ru.name in fixed_fees:
@@ -111,22 +113,5 @@ class NkPerRentalUnitCost(NkCost):
             self.rental_unit_values[ru.id][NkCostValueType.COST].amount = sum(monthly_amounts)
 
     def split_costs(self):
-        """Aggregate pre-calculated per-rental-unit costs up to sections and total."""
         self._calculate_weights()
-        for ru in self.report.rental_units:
-            for month in range(self.report.num_months):
-                amount = self.rental_unit_values[ru.id][NkCostValueType.COST].monthly_amounts[
-                    month
-                ]
-                self.section_values[ru.section.id][NkCostValueType.COST].monthly_amounts[
-                    month
-                ] += amount
-                self.total_values[NkCostValueType.COST].monthly_amounts[month] += amount
-
-        for section in self.report.sections:
-            self.section_values[section.id][NkCostValueType.COST].amount = sum(
-                self.section_values[section.id][NkCostValueType.COST].monthly_amounts
-            )
-        self.total_values[NkCostValueType.COST].amount = sum(
-            self.total_values[NkCostValueType.COST].monthly_amounts
-        )
+        self._aggregate_monthly_amounts()

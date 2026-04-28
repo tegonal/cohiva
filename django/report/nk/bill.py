@@ -101,6 +101,8 @@ class NkBill:
             )
             if cost_context:
                 context["costs"].append(cost_context)
+        for cost in costs:
+            context.update(cost.get_extra_context(ru, self.contract))
         return context
 
     def _create_rental_unit_files(self, context, ru):
@@ -143,14 +145,12 @@ class NkBill:
         return billing_groups
 
     def _get_billing_group_context(
-        self, name, group, rental_unit, total_building_cost, total_ru_cost
+        self, name, group: list[NkCost], rental_unit, total_building_cost, total_ru_cost
     ):
         object_cost = 0
         building_cost = 0
         for cost in group:
-            object_cost += cost.get_assigned_amount(
-                NkCostValueType.COST, self.contract, rental_unit
-            )
+            object_cost += cost.get_assigned_cost(self.contract, rental_unit)
             building_cost += cost.get_building_amount(NkCostValueType.COST)
         if object_cost == 0 and building_cost == 0:
             return None
