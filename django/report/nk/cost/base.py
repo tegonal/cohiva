@@ -9,14 +9,18 @@ if TYPE_CHECKING:
 
 
 class NkCostValueType(Enum):
+    ## Default costs / base costs, when costs are split into base costs and usage costs
     COST = 1  # The costs that are billed
     USAGE = 2  # The usage that is billed (consumed energy, rental unit area, etc.)
     WEIGHT = 3  # The (internal) weight for the distribution of the costs
-    COMMON_COST = (
-        4  # s Cost from common usage (e.g., Allgemeinstrom) that is split between all rental units
-    )
-    COMMON_USAGE = 5
-    COMMON_WEIGHT = 6
+    ## Usage costs, when costs are split into base costs and usage costs
+    USAGE_COST = 4  # Usage costs
+    USAGE_USAGE = 5  # Measured usage
+    USAGE_WEIGHT = 6
+    ## Costs from common usage (e.g., Allgemeinstrom), that is split between all rental units
+    COMMON_COST = 7
+    COMMON_USAGE = 8
+    COMMON_WEIGHT = 9
 
 
 @dataclass
@@ -110,9 +114,8 @@ class NkCost:
 
     def split_costs(self):
         self._calculate_weights()
-        for kind in self.total_values:
-            if kind in (NkCostValueType.COST, NkCostValueType.USAGE):
-                self._split_cost(kind, NkCostValueType.WEIGHT)
+        for kind in (NkCostValueType.COST, NkCostValueType.USAGE):
+            self._split_cost(kind, NkCostValueType.WEIGHT)
 
     def update(self):
         pass

@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 
 from report.nk.cost import NkCost, NkCostZEVStromallmend, NkPerRentalUnitCost, NkTotalCost
+from report.nk.cost.vewa import NkCostVEWA, NkCostVEWACategories
 from report.nk.measurement_data import (
+    NkMeasurementDataAnnual,
     NkMeasurementDataEgon,
     NkMeasurementDataMonthly,
 )
@@ -48,6 +50,29 @@ def get_costs_from_config():
             "name": "Kehrichtgebuehren",
             "billing_group": "Kehrichtgebühren",
             "class": NkTotalCost,
+        },
+        {
+            "class": NkCostVEWA,
+            "name": "Wasser_Abwasser",
+            "billing_group": "Wasserkosten",
+            "vewa_category": NkCostVEWACategories.WATER_GENERAL,
+            "base_cost_factor_key": "Wasserkosten:Grundkostenanteil",
+            "measurement_data": {
+                "building": {
+                    "class": NkMeasurementDataAnnual,
+                    "value_key": "Messdaten:Wasserverbrauch",
+                },
+                "rental_units": {
+                    "class": NkMeasurementDataEgon,
+                    "file_key": "Messdaten:Mieteinheiten",
+                    "file_prefix": "egon_Waerme",
+                    "headers": {
+                        "rental_unit": "Gebäudeeinheit",
+                        "time_period": "Mieter Abrechnungsperiode",
+                        "verbrauch": "Warmwasser Verbrauch (Kubikmeter)",
+                    },
+                },
+            },
         },
         {
             "name": "Wasser_Abwasser_Grundkosten",

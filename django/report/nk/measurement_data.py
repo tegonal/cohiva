@@ -20,8 +20,28 @@ class NkMeasurementDataBase:
     def load(self):
         pass
 
-    def get(self, key, default=None):
+    def get(self, key="verbrauch", default=None):
         return self.data.get(key, default)
+
+
+class NkMeasurementDataMonthly(NkMeasurementDataBase):
+    """The default time resolution is monthly data."""
+
+    def __init__(self, report_generator: "NkReportGenerator", measurements_config):
+        super().__init__(report_generator, measurements_config)
+        self.num_months = report_generator.num_months
+        self.dates = report_generator.dates
+
+
+class NkMeasurementDataAnnual(NkMeasurementDataBase):
+    """Simple annual measurement data for the whole building (one number equally distributed over the months)."""
+
+    def __init__(self, report_generator: "NkReportGenerator", measurements_config):
+        super().__init__(report_generator, measurements_config)
+        self.annual_value = report_generator.config.get(measurements_config.get("value_key"))
+
+    def load(self):
+        self.data["verbrauch"] = self.annual_value
 
 
 class NkMeasurementDataCSVFile(NkMeasurementDataBase):
@@ -116,11 +136,7 @@ class NkMeasurementDataZippedMonthly(NkMeasurementDataCSVFile):
         raise NotImplementedError
 
 
-class NkMeasurementDataMonthly(NkMeasurementDataCSVFile):
-    def __init__(self, report_generator: "NkReportGenerator", measurements_config):
-        super().__init__(report_generator, measurements_config)
-        self.dates = report_generator.dates
-
+class NkMeasurementDataMonthlyCSVFile(NkMeasurementDataMonthly, NkMeasurementDataCSVFile):
     def load(self):
         with open(self.file) as csvfile:
             data = self._read_csv_data(csvfile)

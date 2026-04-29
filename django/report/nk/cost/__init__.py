@@ -1,5 +1,6 @@
 from .base import NkCost, NkCostValueType
 from .general import NkMonthlyCost, NkPerRentalUnitCost, NkTotalCost, NkTotalEnergyCost
+from .vewa import NkCostVEWA
 from .zev import NkCostZEVStromallmend
 
 __all__ = [
@@ -10,4 +11,5 @@ __all__ = [
     "NkMonthlyCost",
     "NkTotalEnergyCost",
     "NkCostZEVStromallmend",
+    "NkCostVEWA",
 ]

@@ -24,11 +24,15 @@ class NkTotalCost(NkCost):
 
     def load_input_data(self):
         super().load_input_data()
-        self.total_values[NkCostValueType.COST].amount = self.generator.config.get(
-            f"Kosten:{self.name}"
-        )
+        self.load_building_totals()
         self.load_rental_unit_usage()
         self.normalize_monthly_amounts()
+
+    def load_building_totals(self):
+        self.total_values[NkCostValueType.COST].amount = self.get_total_costs()
+
+    def get_total_costs(self):
+        return self.generator.config.get(f"Kosten:{self.name}")
 
     def load_rental_unit_usage(self):
         for ru in self.generator.rental_units:

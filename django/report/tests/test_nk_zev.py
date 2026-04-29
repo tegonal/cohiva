@@ -161,10 +161,11 @@ class NKCostZEVStromallmendTest(NkReportTestCase):
             expected_chf_allg,
             places=4,
         )
-        ru_pauschal_id = -3
         expected_chf_pauschal, expected_kwh_pauschal = self._calc_expected(1, 2, 3, num_months)
         self.assertAlmostEqual(
-            cost.rental_unit_values[ru_pauschal_id][NkCostValueType.COST].amount,
+            cost.rental_unit_values[NkVirtualRentalUnitId.ELECTRICITY_FLAT][
+                NkCostValueType.COST
+            ].amount,
             expected_chf_pauschal,
             places=4,
         )
