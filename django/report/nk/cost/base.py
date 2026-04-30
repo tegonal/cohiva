@@ -45,9 +45,9 @@ class NkCost:
         self.generator = report_generator
         self.name = cost_config.get("name")
         self.billing_group = cost_config.get("billing_group", self.name)
-        self.total_values = {}
-        self.section_values = {}
-        self.rental_unit_values = {}
+        self.total_values: dict[NkCostValueType, NkCostValue] = {}
+        self.section_values: dict[int, dict[NkCostValueType, NkCostValue]] = {}
+        self.rental_unit_values: dict[int, dict[NkCostValueType, NkCostValue]] = {}
         self.section_weights = cost_config.get("section_weights", "default")
         self.add_value_type(NkCostValueType.COST, "Kosten", "CHF")
 
@@ -307,11 +307,14 @@ class NkCost:
     def get_building_amount(self, value_type: NkCostValueType):
         return self.total_values[value_type].amount
 
-    def get_extra_context(self, ru: "NkRentalUnit", contract: "NkContract") -> dict:
+    def _get_context(self, ru: "NkRentalUnit", contract: "NkContract") -> dict:
         """Return extra context variables for ODT template rendering. Override in subclasses."""
         return {}
 
-    # def update_context(self, context, ru, contract):
+    def update_context(
+        self, ru: "NkRentalUnit", contract: "NkContract", context: dict, aggregated_values: dict
+    ) -> None:
+        context.update(self._get_context(ru, contract))
 
 
 class NkMeasurementDataMixin:

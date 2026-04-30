@@ -43,6 +43,7 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
         config = self.generator.config
         self.base_cost_factor = float(config.get(cost_config.get("base_cost_factor_key"), 0.3))
         self.vewa_category = cost_config.get("vewa_category")
+        self.exclude_zero_usage_units = cost_config.get("exclude_zero_usage_units", False)
         self._validate_config()
 
     def load_building_totals(self):
@@ -97,6 +98,14 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
         ru_messung = self.measurements["rental_units"].get(ru.name, {})
         return ru_messung.get("verbrauch", self.generator.num_months * [0.0])
 
+    def get_rental_unit_weights(self, ru_id):
+        if self.exclude_zero_usage_units and self._has_zero_usage(ru_id):
+            return 0
+        return super().get_rental_unit_weights(ru_id)
+
+    def _has_zero_usage(self, ru_id):
+        return self.measurements["rental_units"].get(ru_id, {}).get("verbrauch", 0) == 0
+
     def split_costs(self):
         # Base costs are handled by the super class
         super().split_costs()
@@ -113,90 +122,191 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
             NkCostValueType.USAGE_WEIGHT, "get_rental_unit_usage_weights"
         )
 
-    def get_extra_context(self, ru: "NkRentalUnit", contract: "NkContract") -> dict:
+    def update_context(
+        self, ru: "NkRentalUnit", contract: "NkContract", context: dict, aggregated_values: dict
+    ) -> None:
+        context_key, context_prefix = self.get_context_key()
+        if context_key not in context:
+            context[context_key] = []
+        cost_context = self._get_context(ru, contract)
+        context[context_key].append(cost_context)
+        self._update_aggregated_context(ru, contract, aggregated_values, context)
+
+        # Support for legacy templates: add context variables with fixed prefix for old templates,
+        # which support only one cost per prefix.
+        for key, value in cost_context.items():
+            context[f"{context_prefix}_{key}"] = value
+
+    def get_context_key(self):
+        """Return the context key and prefix (for legecy templates) for the ODT bill template."""
+        if self.vewa_category == NkCostVEWACategories.HEAT_WATER:
+            context_key = "vewa_warmwasser"
+            legacy_prefix = "ww"
+        elif self.vewa_category == NkCostVEWACategories.HEAT_HEATING:
+            if self.name == "Fernwaerme_Fussboden":
+                legacy_prefix = "hf"
+            elif self.name == "Fernwaerme_Radiatoren":
+                legacy_prefix = "hr"
+            elif self.name == "Fernwaerme_Lueftung":
+                legacy_prefix = "hl"
+            else:
+                legacy_prefix = "h"
+            context_key = "vewa_heizung"
+        elif self.vewa_category == NkCostVEWACategories.WATER_GENERAL:
+            legacy_prefix = "wa"
+            context_key = "vewa_wasser"
+        else:
+            raise ValueError(
+                _("Invalid VEWA category: {category}").format(category=self.vewa_category)
+            )
+        return context_key, legacy_prefix
+
+    def _get_context(self, ru: "NkRentalUnit", contract: "NkContract") -> dict:
         """Return Stromkosten detail variables for the ODT bill template."""
-
-        ru_data = self._strom_data.get(ru.id, self._zero_strom_data(self.generator.num_months))
-        d = self.get_assigned_amounts(ru_data, contract, ru)
-        bt = self._building_totals
-
-        # Common costs (Allgemeinstrom)
-        common_cost = self._get_assigned_amount(NkCostValueType.COMMON_COST, contract, ru)
-        common_weight = self._get_assigned_amount(NkCostValueType.COMMON_WEIGHT, contract, ru)
-        common_total_cost = self.total_values[NkCostValueType.COMMON_COST].amount
-        common_total_weight = self.total_values[NkCostValueType.COMMON_WEIGHT].amount
 
         def fmt(val):
             return nformat(val)
 
-        def fmt_kwh(val):
-            return nformat(val, 0)
+        def fmt_use(val):
+            return nformat(val, 1)
 
-        def rate(chf, kwh):
-            return nformat(chf / kwh if kwh else 0, 4)
+        def rate(chf, use):
+            return nformat(chf / use if use else 0, 2)
 
-        # Building totals (formatted)
+        # Building totals
+        bt = {
+            "base": {
+                "chf": self.total_values[NkCostValueType.COST].amount,
+                "use": self.total_values[NkCostValueType.USAGE].amount,
+            },
+            "usage": {
+                "chf": self.total_values[NkCostValueType.USAGE_COST].amount,
+                "use": self.total_values[NkCostValueType.USAGE_USAGE].amount,
+            },
+            "common": {
+                "chf": self.total_values[NkCostValueType.COMMON_COST].amount,
+                "use": self.total_values[NkCostValueType.COMMON_USAGE].amount,
+            },
+        }
+        # Assigned costs
+        d = {
+            "base": {
+                "chf": self._get_assigned_amount(NkCostValueType.COST, contract, ru),
+                "use": self._get_assigned_amount(NkCostValueType.USAGE, contract, ru),
+            },
+            "usage": {
+                "chf": self._get_assigned_amount(NkCostValueType.USAGE_COST, contract, ru),
+                "use": self._get_assigned_amount(NkCostValueType.USAGE_USAGE, contract, ru),
+            },
+            "common": {
+                "chf": self._get_assigned_amount(NkCostValueType.COMMON_COST, contract, ru),
+                "use": self._get_assigned_amount(NkCostValueType.COMMON_USAGE, contract, ru),
+            },
+        }
         ctx = {
-            # Eigenverbrauch Solar direkt (from roof)
-            "ssd_chft": fmt(bt["ssd"]["chf"]),
-            "ssdt": fmt_kwh(bt["ssd"]["kwh"]),
-            "ssd_eh": rate(bt["ssd"]["chf"], bt["ssd"]["kwh"]),
-            "ssd": fmt_kwh(d["kwh_solar"]),
-            "ssd_chf": fmt(d["chf_solar_eigen"]),
-            # Eigenverbrauch Solar via Speicher/Stromallmend
-            "sss_chft": fmt(bt["sss"]["chf"]),
-            "ssst": fmt_kwh(bt["sss"]["kwh"]),
-            "sss_eh": rate(bt["sss"]["chf"], bt["sss"]["kwh"]),
-            "sss": fmt_kwh(d["kwh_solar_speicher"]),
-            "sss_chf": fmt(d["chf_solar_speicher"]),
-            # Netzstrombezug Hochtarif
-            "snh_chft": fmt(bt["snh"]["chf"]),
-            "snht": fmt_kwh(bt["snh"]["kwh"]),
-            "snh_eh": rate(bt["snh"]["chf"], bt["snh"]["kwh"]),
-            "snh": fmt_kwh(d["kwh_netz_hoch"]),
-            "snh_chf": fmt(d["chf_netz_hoch"]),
-            # Netzstrombezug Niedertarif
-            "snt_chft": fmt(bt["snt"]["chf"]),
-            "sntt": fmt_kwh(bt["snt"]["kwh"]),
-            "snt_eh": rate(bt["snt"]["chf"], bt["snt"]["kwh"]),
-            "snt": fmt_kwh(d["kwh_netz_nieder"]),
-            "snt_chf": fmt(d["chf_netz_nieder"]),
-            # Herkunftsnachweise (HKN)
-            "shk_chft": fmt(bt["shk"]["chf"]),
-            "shkt": fmt_kwh(bt["shk"]["kwh"]),
-            "shk_eh": rate(bt["shk"]["chf"], bt["shk"]["kwh"]),
-            "shk": fmt_kwh(d["kwh_solar_einkauf"]),
-            "shk_chf": fmt(d["chf_solar_hkn"]),
-            # Korrektur
-            "sk_chft": fmt(bt["sk"]["chf"]),
-            "skt": fmt_kwh(bt["sk"]["kwh"]),
-            "sk_eh": rate(bt["sk"]["chf"], bt["sk"]["kwh"]),
-            "sk": fmt_kwh(d["kwh_korrektur"]),
-            "sk_chf": fmt(d["chf_korrektur"]),
-            # Strom subtotal ( of above, no separate Allgemeinstrom/fees in this class)
-            "st_chft": fmt(bt["total"]["chf"]),
-            "stt": fmt_kwh(bt["total"]["kwh"]),
-            "st": fmt_kwh(d["kwh_total"]),
-            "st_chf": fmt(d["chf_total"]),
-            # Anteil Allgemeinstrom (not computed by this class – leave empty)
-            "sa_chft": fmt(common_total_cost),
-            "sat": nformat(common_total_weight, 0),
-            "sa_eh": nformat(
-                common_total_cost / common_total_weight if common_total_weight else 0, 2
+            # Base costs
+            "g_chft": fmt(bt["base"]["chf"]),
+            "gt": fmt_use(bt["base"]["use"]),
+            "g_eh": rate(bt["base"]["chf"], bt["base"]["use"]),
+            "g": fmt_use(d["base"]["use"]),
+            "g_chf": fmt(d["base"]["chf"]),
+            # Usage costs
+            "v_chft": fmt(bt["usage"]["chf"]),
+            "vt": fmt_use(bt["usage"]["use"]),
+            "v_eh": rate(bt["usage"]["chf"], bt["usage"]["use"]),
+            "v": fmt_use(d["usage"]["use"]),
+            "v_chf": fmt(d["usage"]["chf"]),
+            # Base + Usage costs
+            "_chft": fmt(bt["base"]["chf"] + bt["usage"]["chf"]),
+            "t": fmt_use(bt["base"]["use"] + bt["usage"]["use"]),
+            "_eh": rate(
+                bt["base"]["chf"] + bt["usage"]["chf"], bt["base"]["use"] + bt["usage"]["use"]
             ),
-            "sa": nformat(common_weight, 1),
-            "sa_chf": fmt(common_cost),
-            # Stromnebenkosten/Messung (not computed by this class – leave empty)
-            "snk_chft": "",
-            "snkt": "",
-            "snk_eh": "",
-            "snk": "",
-            "snk_chf": "",
-            # Grand total, building totals already include common costs
-            "stot_chft": fmt(bt["total"]["chf"]),
-            "stot_chf": fmt(d["chf_total"] + common_cost),
+            "": fmt_use(d["base"]["use"] + d["usage"]["use"]),
+            "_chf": fmt(d["base"]["chf"] + d["usage"]["chf"]),
+            # Common costs
+            "a_chft": fmt(bt["common"]["chf"]),
+            "at": fmt_use(bt["common"]["use"]),
+            "a_eh": rate(bt["common"]["chf"], bt["common"]["use"]),
+            "a": fmt_use(d["common"]["use"]),
+            "a_chf": fmt(d["common"]["chf"]),
         }
         return ctx
+
+    def _update_aggregated_context(
+        self, ru: "NkRentalUnit", contract: "NkContract", context: dict, aggregated_values: dict
+    ) -> None:
+        if self.vewa_category == NkCostVEWACategories.HEAT_WATER:
+            self._update_context_totals(
+                ["wwbt_chft", "sw_chft"],
+                ["wwbt_chf", "wwt_chf", "sw_chf"],
+                ["sw_chft", "wwt_chf", "sw_chf"],
+                ru,
+                contract,
+                context,
+                aggregated_values,
+            )
+        elif self.vewa_category == NkCostVEWACategories.HEAT_HEATING:
+            self._update_context_totals(
+                ["ht_chft", "sw_chft"],
+                ["ht_chf", "sw_chf"],
+                ["sw_chft", "sw_chf"],
+                ru,
+                contract,
+                context,
+                aggregated_values,
+            )
+        elif self.vewa_category == NkCostVEWACategories.WATER_GENERAL:
+            self._update_context_totals(
+                ["wat_chft", "swa_chft"],
+                ["wat_chf", "swa_chf"],
+                ["swa_chft", "swa_chf"],
+                ru,
+                contract,
+                context,
+                aggregated_values,
+            )
+        else:
+            raise ValueError(
+                _("Invalid VEWA category: {category}").format(category=self.vewa_category)
+            )
+
+    def _update_context_totals(
+        self,
+        building_keys: list[str],
+        unit_keys: list[str],
+        include_common_keys: list[str],
+        ru: "NkRentalUnit",
+        contract: "NkContract",
+        context: dict,
+        aggregated_values: dict,
+    ) -> None:
+        for key in building_keys + unit_keys:
+            if key not in aggregated_values:
+                aggregated_values[key] = 0
+        building = (
+            self.total_values[NkCostValueType.COST].amount
+            + self.total_values[NkCostValueType.USAGE_COST].amount
+        )
+        unit = self._get_assigned_amount(
+            NkCostValueType.COST, contract, ru
+        ) + self._get_assigned_amount(NkCostValueType.USAGE_COST, contract, ru)
+        common_building = self.total_values[NkCostValueType.COMMON_COST].amount
+        common_unit = self._get_assigned_amount(NkCostValueType.COMMON_COST, contract, ru)
+        # Building totals
+        for key in building_keys:
+            aggregated_values[key] += building
+            if key in include_common_keys:
+                # Building totals including the common usage
+                aggregated_values[key] += common_building
+        # Unit totals
+        for key in unit_keys:
+            aggregated_values[key] += unit
+            if key in include_common_keys:
+                # Unit totals including the common usage
+                aggregated_values[key] += common_unit
+        for key in building_keys + unit_keys:
+            context[key] = nformat(aggregated_values.get(key, 0))
 
     def get_export_extra_info(
         self, include_percent: bool = False, formatter: Callable = lambda x: x

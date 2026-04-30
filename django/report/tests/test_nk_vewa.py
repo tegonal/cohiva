@@ -81,7 +81,10 @@ class NKCostVEWATest(NkReportTestCase):
         return report_generator
 
     def test_vewa_cost_calculation_annual(self):
-        """Test NkCostVEWA per-unit cost calculation with annual usage data."""
+        """
+        Test NkCostVEWA per-unit cost calculation with annual usage data
+        and base cost split among all units, also if they have no usage data.
+        """
         rg = self._setup_report()
         num_months = rg.num_months
 
@@ -117,15 +120,6 @@ class NKCostVEWATest(NkReportTestCase):
         )
         self.assertAlmostEqual(
             cost.rental_unit_values[ru_001a.id][NkCostValueType.USAGE].amount, ru_001a.area
-        )
-        print(
-            f"001a usage costs: {cost.rental_unit_values[ru_001a.id][NkCostValueType.USAGE_COST].monthly_amounts}"
-        )
-        print(
-            f"001a usage: {cost.rental_unit_values[ru_001a.id][NkCostValueType.USAGE_USAGE].monthly_amounts}"
-        )
-        print(
-            f"001a usage weights: {cost.rental_unit_values[ru_001a.id][NkCostValueType.USAGE_WEIGHT].monthly_amounts}"
         )
         self.assertAlmostEqual(
             cost.rental_unit_values[ru_001a.id][NkCostValueType.USAGE_COST].amount,
@@ -190,21 +184,30 @@ class NKCostVEWATest(NkReportTestCase):
             delta=0.0001 * expected_usage_allg,
         )
 
-        # Units without measurement data → 0
+        # Units without measurement data → only base costs
         ru_g001 = rg.get_rental_unit_by_name("G001")
+        expected_base_cost_g001 = self.total_cost * self.base_factor * ru_g001.area / total_area
         self.assertAlmostEqual(
             cost.rental_unit_values[ru_g001.id][NkCostValueType.COST].amount,
-            0.0,
+            expected_base_cost_g001,
         )
         self.assertAlmostEqual(
             cost.rental_unit_values[ru_g001.id][NkCostValueType.USAGE_COST].amount,
             0.0,
         )
 
+        expected_base_cost_others = (
+            self.total_cost * self.base_factor * (50 + 10 + 30) / total_area
+        )
+
         # Grand total = sum of all units
         self.assertAlmostEqual(
             cost.total_values[NkCostValueType.COST].amount,
-            expected_base_cost_001a + expected_base_cost_001b + expected_base_cost_allg,
+            expected_base_cost_001a
+            + expected_base_cost_001b
+            + expected_base_cost_allg
+            + expected_base_cost_g001
+            + expected_base_cost_others,
             places=4,
         )
         self.assertAlmostEqual(
@@ -213,19 +216,31 @@ class NKCostVEWATest(NkReportTestCase):
             places=4,
         )
         self.assertAlmostEqual(
-            cost.total_values[NkCostValueType.USAGE].amount,
+            cost.total_values[NkCostValueType.USAGE_USAGE].amount,
             expected_usage_001a + expected_usage_001b + expected_usage_allg,
         )
         self.assertAlmostEqual(
             cost.total_values[NkCostValueType.COST].amount
-            + cost.total_values[NkCostValueType.USAGE_COST],
+            + cost.total_values[NkCostValueType.USAGE_COST].amount,
             self.total_cost,
             places=4,
         )
         self.assertAlmostEqual(
-            cost.total_values[NkCostValueType.USAGE].amount,
+            cost.total_values[NkCostValueType.USAGE_USAGE].amount,
             self.total_usage,
         )
+
+    def test_vewa_cost_calculation_monthly(self):
+        """
+        Test NkCostVEWA per-unit cost calculation with annual usage data
+        and base cost ONLY split among all units THAT HAVE usage data.
+        """
+        rg = self._setup_report()
+        # num_months = rg.num_months
+
+        cost = NkCostVEWA(rg, self.vewa_cost_config_annual)
+        cost.load_input_data()
+        cost.split_costs()
 
     # def test_zev_extra_context(self):
     #     """Test that get_extra_context() returns the correct Stromkosten variables."""
