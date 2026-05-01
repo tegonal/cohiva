@@ -103,7 +103,6 @@ class NkBill:
                 context["costs"].append(cost_context)
         aggregated_values = {}
         for cost in costs:
-            # context.update(cost.get_extra_context(ru, self.contract))
             cost.update_context(ru, self.contract, context, aggregated_values)
         return context
 

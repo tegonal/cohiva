@@ -225,8 +225,8 @@ class NKCostZEVStromallmendTest(NkReportTestCase):
             expected_kwh += solar + hoch + nieder + correction
         return expected_chf, expected_kwh
 
-    def test_zev_extra_context(self):
-        """Test that get_extra_context() returns the correct Stromkosten variables."""
+    def test_zev_context(self):
+        """Test that _get_context() returns the correct Stromkosten variables."""
         rg = self._setup_report_with_strom_data()
 
         cost = NkCostZEVStromallmend(rg, self.zev_cost_config)
@@ -235,7 +235,7 @@ class NKCostZEVStromallmendTest(NkReportTestCase):
         rg.assign_rental_unit_months_to_contracts()
 
         ru_001a = rg.get_rental_unit_by_name("001a")
-        ctx = cost.get_extra_context(ru_001a, rg.get_contract_by_id(self.contracts[0].id))
+        ctx = cost._get_context(ru_001a, rg.get_contract_by_id(self.contracts[0].id))
 
         num_months = rg.num_months
         # ssd: Eigenverbrauch Solar direkt
@@ -270,7 +270,7 @@ class NKCostZEVStromallmendTest(NkReportTestCase):
 
         # Units without data get zeros in context
         ru_g001 = rg.get_rental_unit_by_name("G001")
-        ctx_g001 = cost.get_extra_context(ru_g001, rg.get_contract_by_id(self.contracts[2].id))
+        ctx_g001 = cost._get_context(ru_g001, rg.get_contract_by_id(self.contracts[2].id))
         self.assertEqual(ctx_g001["ssd"], "0")
         self.assertEqual(ctx_g001["sss"], "0")
         self.assertEqual(ctx_g001["st_chf"], "0.00")

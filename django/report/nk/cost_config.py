@@ -1,13 +1,19 @@
 from dataclasses import dataclass
 from enum import Enum
 
-from report.nk.cost import NkCost, NkCostZEVStromallmend, NkPerRentalUnitCost, NkTotalCost
-from report.nk.cost.vewa import NkCostVEWA, NkCostVEWACategories
+from report.nk.cost import (
+    NkCost,
+    NkCostVEWA,
+    NkCostZEVStromallmend,
+    NkPerRentalUnitCost,
+    NkTotalCost,
+)
+from report.nk.cost.vewa import NkCostVEWACategories
 from report.nk.measurement_data import (
     NkMeasurementDataAnnual,
     NkMeasurementDataBase,
     NkMeasurementDataEgon,
-    NkMeasurementDataMonthly,
+    NkMeasurementDataMonthlyCSVFile,
 )
 
 
@@ -33,7 +39,7 @@ class CostConfigField:
 class CostConfigMeasurementSourceField:
     key: str
     supported_sources: list[type[NkMeasurementDataBase]]
-    required_keys: list[str]
+    keys: list[str]
 
 
 @dataclass
@@ -85,13 +91,13 @@ class NkZEVStromallmendCostConfig(CostConfig):
                 subfields=[
                     CostConfigMeasurementSourceField(
                         "building",
-                        supported_sources=[NkMeasurementDataMonthly],
-                        required_keys=["strom_bezug_zev", "strom_ruecklieferung_ew"],
+                        supported_sources=[NkMeasurementDataMonthlyCSVFile],
+                        keys=["strom_bezug_zev", "strom_ruecklieferung_ew"],
                     ),
                     CostConfigMeasurementSourceField(
                         "rental_units",
                         supported_sources=[NkMeasurementDataEgon],
-                        required_keys=[
+                        keys=[
                             "strom_ew_nieder",
                             "strom_ew_hoch",
                             "strom_solar",
@@ -105,7 +111,7 @@ class NkZEVStromallmendCostConfig(CostConfig):
         # Example generated measurement sources config:
         #
         # "building": {
-        #    "class": NkMeasurementDataMonthly,
+        #    "class": NkMeasurementDataMonthlyCSVFile,
         #    "file_key": "Messdaten:Liegenschaft",
         #    "headers": {
         #        "month": "Monat",
@@ -143,12 +149,12 @@ class NkVEWACostConfig(NkTotalCostConfig):
                     CostConfigMeasurementSourceField(
                         "building",
                         supported_sources=[NkMeasurementDataAnnual],
-                        required_keys=["verbrauch"],
+                        keys=["usage", "costs"],
                     ),
                     CostConfigMeasurementSourceField(
                         "rental_units",
                         supported_sources=[NkMeasurementDataEgon],
-                        required_keys=["verbrauch"],
+                        keys=["usage"],
                     ),
                 ],
             ),
@@ -173,7 +179,7 @@ class NkVEWACostConfig(NkTotalCostConfig):
         #         "headers": {
         #             "rental_unit": "Gebäudeeinheit",
         #             "time_period": "Mieter Abrechnungsperiode",
-        #             "verbrauch": "Warmwasser Verbrauch (Kubikmeter)",
+        #             "usage": "Warmwasser Verbrauch (Kubikmeter)",
         #         },
         #     },
         # },
@@ -220,7 +226,7 @@ class NkMeasurementDataMonthlyConfig(MeasurementSourceConfig):
         # Example generated measurement sources config:
         #
         # "building": {
-        #    "class": NkMeasurementDataMonthly,
+        #    "class": NkMeasurementDataMonthlyCSVFile,
         #    "file_key": "Messdaten:Liegenschaft",
         #    "headers": {
         #        "month": "Monat",
@@ -253,7 +259,7 @@ class NkMeasurementDataEgonConfig(MeasurementSourceConfig):
         #         "headers": {
         #             "rental_unit": "Gebäudeeinheit",
         #             "time_period": "Mieter Abrechnungsperiode",
-        #             "verbrauch": "Warmwasser Verbrauch (Kubikmeter)",
+        #             "usage": "Warmwasser Verbrauch (Kubikmeter)",
         #         },
         #     },
         # },
@@ -301,7 +307,7 @@ def get_costs_from_config():
             "billing_group": "Wasserkosten",
             "vewa_category": NkCostVEWACategories.WATER_GENERAL,
             "base_cost_factor_key": "Wasserkosten:Grundkostenanteil",
-            "exclude_zero_usage_units": True,
+            "exclude_zero_usage_units": False,
             "measurement_data": {
                 "building": {
                     "class": NkMeasurementDataAnnual,
@@ -314,21 +320,10 @@ def get_costs_from_config():
                     "headers": {
                         "rental_unit": "Gebäudeeinheit",
                         "time_period": "Mieter Abrechnungsperiode",
-                        "verbrauch": "Warmwasser Verbrauch (Kubikmeter)",
+                        "usage": "Warmwasser Verbrauch (Kubikmeter)",
                     },
                 },
             },
-        },
-        {
-            "name": "Wasser_Abwasser_Grundkosten",
-            "category": "waerme_wasser_grund",
-            "amount_factor": 0.3,
-        },
-        {
-            "name": "Wasser_Abwasser_Verbrauch",
-            "category": "waerme_wasser_verbrauch",
-            "amount_factor": 0.7,
-            "object_weights": "messung_wasser",
         },
         {
             "name": "Fernwaerme_Fussboden_Grundkosten",
@@ -365,6 +360,34 @@ def get_costs_from_config():
             "object_weights": "volume",  #'area',
         },
         {
+            "class": NkCostVEWA,
+            "name": "Fernwaerme_Warmwasser",
+            "billing_group": "Wärmekosten",
+            "vewa_category": NkCostVEWACategories.HEAT_WATER,
+            "base_cost_factor_key": "Warmwasser:Grundkostenanteil",
+            "exclude_zero_usage_units": True,
+            "measurement_data": {
+                "building": {
+                    "class": NkMeasurementDataMonthlyCSVFile,
+                    "file_key": "Messdaten:Liegenschaft",
+                    "headers": {
+                        "month": "Monat",
+                        "costs": "Fernwaerme_Warmwasser",
+                    },
+                },
+                "rental_units": {
+                    "class": NkMeasurementDataEgon,
+                    "file_key": "Messdaten:Mieteinheiten",
+                    "file_prefix": "egon_Waerme",
+                    "headers": {
+                        "rental_unit": "Gebäudeeinheit",
+                        "time_period": "Mieter Abrechnungsperiode",
+                        "usage": "Warmwasser Verbrauch (Kubikmeter)",
+                    },
+                },
+            },
+        },
+        {
             "name": "Fernwaerme_Warmwasser_Grundkosten",
             "category": "waerme_wasser_grund",
             "time_period": "monthly",
@@ -398,7 +421,7 @@ def get_costs_from_config():
             "korrekturen_key": "Strom:Korrekturen",
             "measurement_data": {
                 "building": {
-                    "class": NkMeasurementDataMonthly,
+                    "class": NkMeasurementDataMonthlyCSVFile,
                     "file_key": "Messdaten:Liegenschaft",
                     "headers": {
                         "month": "Monat",

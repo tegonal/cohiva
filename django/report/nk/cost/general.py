@@ -36,14 +36,17 @@ class NkTotalCost(NkCost):
 
     def load_rental_unit_usage(self):
         for ru in self.generator.rental_units:
-            weight = getattr(ru, self.rental_unit_usage)
+            weight = sum(self.get_rental_unit_weights(ru))
             self.rental_unit_values[ru.id][NkCostValueType.USAGE].amount = weight
             self.section_values[ru.section.id][NkCostValueType.USAGE].amount += weight
             self.total_values[NkCostValueType.USAGE].amount += weight
 
-    def get_rental_unit_weights(self, ru_id):
+    def get_rental_unit_weights(self, ru):
         """Use the usage as weight."""
-        return self.rental_unit_values[ru_id][NkCostValueType.USAGE].monthly_amounts
+        return [
+            getattr(ru, self.rental_unit_usage) / self.generator.num_months
+        ] * self.generator.num_months
+        # return self.rental_unit_values[ru.id][NkCostValueType.USAGE].monthly_amounts
 
 
 class NkMonthlyCost(NkCost):
