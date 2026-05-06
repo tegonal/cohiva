@@ -13,7 +13,7 @@ from geno.billing import add_invoice, create_qrbill, get_reference_nr, render_qr
 from geno.models import InvoiceCategory
 from geno.utils import fill_template_pod, nformat, odt2pdf
 from report.nk.contract import NkContract
-from report.nk.cost import NkCost, NkCostValueType
+from report.nk.cost import NkCost
 from report.nk.graph import NkGraph
 from report.nk.rental_unit import NkRentalUnit
 
@@ -101,8 +101,9 @@ class NkBill:
             )
             if cost_context:
                 context["costs"].append(cost_context)
+        aggregated_values = {}
         for cost in costs:
-            context.update(cost.get_extra_context(ru, self.contract))
+            cost.update_context(ru, self.contract, context, aggregated_values)
         return context
 
     def _create_rental_unit_files(self, context, ru):
@@ -151,7 +152,7 @@ class NkBill:
         building_cost = 0
         for cost in group:
             object_cost += cost.get_assigned_cost(self.contract, rental_unit)
-            building_cost += cost.get_building_amount(NkCostValueType.COST)
+            building_cost += cost.get_building_cost()
         if object_cost == 0 and building_cost == 0:
             return None
         if building_cost:

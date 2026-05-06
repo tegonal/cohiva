@@ -212,7 +212,9 @@ def decode_from_iso8859(file):
         yield line.decode("iso8859")
 
 
-def nformat(number, precision=2, round_to=False, thousands_separator="'"):
+def nformat(
+    number: float, precision: int = 2, round_to: bool = False, thousands_separator: str = "'"
+) -> str:
     if round_to:
         number = round_to * round(number / round_to)
     if thousands_separator:
@@ -221,7 +223,7 @@ def nformat(number, precision=2, round_to=False, thousands_separator="'"):
         return format(number, ".%df" % precision)
 
 
-def unformat(number: str | float, thousands_separator="'"):
+def unformat(number: str | float, thousands_separator: str = "'") -> float:
     if isinstance(number, str):
         number = number.replace(thousands_separator, "").replace("%", "")
     return float(number)

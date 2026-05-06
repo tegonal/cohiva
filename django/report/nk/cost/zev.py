@@ -216,7 +216,7 @@ class NkCostZEVStromallmend(NkCommonCostMixin, NkMeasurementDataMixin, NkCost):
         self._split_common_costs()
         self._aggregate_monthly_amounts()
 
-    def get_extra_context(self, ru: "NkRentalUnit", contract: "NkContract") -> dict:
+    def _get_context(self, ru: "NkRentalUnit", contract: "NkContract") -> dict:
         """Return Stromkosten detail variables for the ODT bill template."""
 
         ru_data = self._strom_data.get(ru.id, self._zero_strom_data(self.generator.num_months))
@@ -238,7 +238,6 @@ class NkCostZEVStromallmend(NkCommonCostMixin, NkMeasurementDataMixin, NkCost):
         def rate(chf, kwh):
             return nformat(chf / kwh if kwh else 0, 4)
 
-        # Building totals (formatted)
         ctx = {
             # Eigenverbrauch Solar direkt (from roof)
             "ssd_chft": fmt(bt["ssd"]["chf"]),

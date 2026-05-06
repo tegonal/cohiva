@@ -24,22 +24,31 @@ class NkTotalCost(NkCost):
 
     def load_input_data(self):
         super().load_input_data()
-        self.total_values[NkCostValueType.COST].amount = self.generator.config.get(
-            f"Kosten:{self.name}"
-        )
+        self.load_building_totals()
         self.load_rental_unit_usage()
         self.normalize_monthly_amounts()
 
+    def load_building_totals(self):
+        self.total_values[NkCostValueType.COST].amount = self.get_total_costs()
+
+    def get_total_costs(self):
+        return self.generator.config.get(f"Kosten:{self.name}")
+
     def load_rental_unit_usage(self):
+        # We use the weights as usage
+        self._calculate_weights()
         for ru in self.generator.rental_units:
-            weight = getattr(ru, self.rental_unit_usage)
+            weight = self.rental_unit_values[ru.id][NkCostValueType.WEIGHT].amount
             self.rental_unit_values[ru.id][NkCostValueType.USAGE].amount = weight
             self.section_values[ru.section.id][NkCostValueType.USAGE].amount += weight
             self.total_values[NkCostValueType.USAGE].amount += weight
 
-    def get_rental_unit_weights(self, ru_id):
+    def get_rental_unit_weights(self, ru):
         """Use the usage as weight."""
-        return self.rental_unit_values[ru_id][NkCostValueType.USAGE].monthly_amounts
+        return [
+            getattr(ru, self.rental_unit_usage) / self.generator.num_months
+        ] * self.generator.num_months
+        # return self.rental_unit_values[ru.id][NkCostValueType.USAGE].monthly_amounts
 
 
 class NkMonthlyCost(NkCost):
