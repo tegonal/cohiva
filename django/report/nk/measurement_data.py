@@ -41,7 +41,7 @@ class NkMeasurementDataAnnual(NkMeasurementDataBase):
         self.annual_value = report_generator.config.get(measurements_config.get("value_key"))
 
     def load(self):
-        self.data["verbrauch"] = self.annual_value
+        self.data["usage"] = self.annual_value
 
 
 class NkMeasurementDataCSVFile(NkMeasurementDataBase):

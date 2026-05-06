@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     from report.nk.contract import NkContract
     from report.nk.generator import NkReportGenerator
     from report.nk.rental_unit import NkRentalUnit
+    from report.nk.section import NkSection
 
 
 class NkCostValueType(Enum):
@@ -50,6 +51,7 @@ class NkCost:
         self.rental_unit_values: dict[int, dict[NkCostValueType, NkCostValue]] = {}
         self.section_weights = cost_config.get("section_weights", "default")
         self.add_value_type(NkCostValueType.COST, "Kosten", "CHF")
+        self.add_value_type(NkCostValueType.WEIGHT, "Gewichtung", "")
         self.warnings = []
 
     def add_value_type(self, kind: NkCostValueType, name: str, unit: str):
@@ -95,7 +97,7 @@ class NkCost:
             if value.amount:
                 if total:
                     # Annual and monthly values are given, check consistency
-                    if total != value.amount:
+                    if abs(total - value.amount) > 0.00001:
                         raise ValueError(
                             f"Inkonsistente Angaben für Totalbetrag {value.amount} und "
                             f"Summe der Monatswerte {total} für {value.name}/{_kind}"
@@ -177,9 +179,9 @@ class NkCost:
     def _calculate_weights_for_type(
         self, value_type: NkCostValueType, rental_unit_weights_function_name: str
     ):
-        self.add_value_type(value_type, "Gewichtung", "")
+        self._zero_values(value_type)
         monthly_weights = self.get_monthly_weights()
-        section_weights = self.get_section_weights()
+        section_weights = self.get_section_weights(value_type)
         total = self.total_values[value_type]
         rental_unit_weights_function = getattr(self, rental_unit_weights_function_name)
         if not callable(rental_unit_weights_function):
@@ -202,6 +204,20 @@ class NkCost:
             )
         total.amount = sum(total.monthly_amounts)
 
+    def _zero_values(self, value_type: NkCostValueType):
+        for ru in self.generator.rental_units:
+            self.rental_unit_values[ru.id][value_type].amount = 0
+            self.rental_unit_values[ru.id][value_type].monthly_amounts = (
+                self.generator.num_months * [0]
+            )
+        for section in self.generator.sections:
+            self.section_values[section.id][value_type].amount = 0
+            self.section_values[section.id][value_type].monthly_amounts = (
+                self.generator.num_months * [0]
+            )
+        self.total_values[value_type].amount = 0
+        self.total_values[value_type].monthly_amounts = self.generator.num_months * [0]
+
     def _aggregate_monthly_amounts(self, value_type: NkCostValueType = NkCostValueType.COST):
         """Aggregate pre-calculated monthly per-rental-unit costs up to sections and total."""
         for ru in self.generator.rental_units:
@@ -220,13 +236,10 @@ class NkCost:
         """Default with equal weights for all months."""
         return self.generator.num_months * [1.0]
 
-    def get_section_weights(self):
+    def get_section_weights(self, value_type: NkCostValueType) -> dict[int, float]:
         """Return weights per section, using the configured section_weights profile if available."""
-        weight_profile = (
-            self.generator.section_weights.get(self.section_weights)
-            if self.section_weights
-            else None
-        )
+
+        weight_profile = self._get_weight_profile(value_type)
         weights = {}
         for section in self.generator.sections:
             if weight_profile is not None:
@@ -234,6 +247,11 @@ class NkCost:
             else:
                 weights[section.id] = 1.0
         return weights
+
+    def _get_weight_profile(self, value_type: NkCostValueType):
+        if self.section_weights:
+            return self.generator.section_weights.get(self.section_weights)
+        return None
 
     def get_rental_unit_weights(self, ru):
         """Default with equal weights for all rental units."""
@@ -308,8 +326,23 @@ class NkCost:
                 ret += amount
         return ret
 
-    def get_building_amount(self, value_type: NkCostValueType):
+    def get_building_cost(self):
+        return self._get_building_amount(NkCostValueType.COST)
+
+    def _get_building_amount(self, value_type: NkCostValueType):
         return self.total_values[value_type].amount
+
+    def get_section_cost(self, section):
+        return self._get_section_amount(section, NkCostValueType.COST)
+
+    def _get_section_amount(self, section: "NkSection", value_type: NkCostValueType):
+        return self.section_values[section.id][value_type].amount
+
+    def get_rental_unit_cost(self, rental_unit):
+        return self._get_rental_unit_amount(rental_unit, NkCostValueType.COST)
+
+    def _get_rental_unit_amount(self, rental_unit: "NkRentalUnit", value_type: NkCostValueType):
+        return self.rental_unit_values[rental_unit.id][value_type].amount
 
     def _get_context(self, ru: "NkRentalUnit", contract: "NkContract") -> dict:
         """Return extra context variables for ODT template rendering. Override in subclasses."""
@@ -351,7 +384,11 @@ class NkCommonCostMixin:
 
     def __init__(self, report_generator: "NkReportGenerator", cost_config: dict):
         super().__init__(report_generator, cost_config)
+        self.common_cost_section_weights = cost_config.get(
+            "common_cost_section_weights", "default"
+        )
         self.add_value_type(NkCostValueType.COMMON_COST, "Allgemeinkosten", "CHF")
+        self.add_value_type(NkCostValueType.COMMON_WEIGHT, "Gewichtung", "")
 
     def get_assigned_cost(self, contract: "NkContract", rental_unit: "NkRentalUnit | None" = None):
         ret = super().get_assigned_cost(contract, rental_unit)
@@ -374,6 +411,7 @@ class NkCommonCostMixin:
                 self.total_values[NkCostValueType.COMMON_USAGE].monthly_amounts = usage
             else:
                 self.total_values[NkCostValueType.COMMON_USAGE].amount = usage
+        self.normalize_monthly_amounts()
 
     def _split_common_costs(self):
         self._calculate_common_weights()
@@ -384,3 +422,15 @@ class NkCommonCostMixin:
         self._calculate_weights_for_type(
             NkCostValueType.COMMON_WEIGHT, "get_rental_unit_common_weights"
         )
+
+    def _get_weight_profile(self, value_type: NkCostValueType):
+        if value_type in (
+            NkCostValueType.COMMON_COST,
+            NkCostValueType.COMMON_USAGE,
+            NkCostValueType.COMMON_WEIGHT,
+        ):
+            if self.common_cost_section_weights:
+                return self.generator.section_weights.get(self.common_cost_section_weights)
+            else:
+                return None
+        return super()._get_weight_profile(value_type)

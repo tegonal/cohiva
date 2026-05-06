@@ -55,17 +55,31 @@ def create_measurement_data(cls, legacy=False):
         "Strom": {
             "Gebäudeeinheit": "object",
             "Mieter Abrechnungsperiode": "time_period",
-            "Strombezug Niedertarif(kWh)": lambda ru: ru.area * 2,
-            "Strombezug Hochtarif EW (kWh)": lambda ru: ru.area * 6,
-            "Solarstrom (kWh)": lambda ru: ru.area * 4,
-            "Strombezug Niedertarif(CHF)": lambda ru: ru.area * 2 * 0.28,
-            "Strombezug EW (CHF)": lambda ru: ru.area * 6 * 0.30,
+            "Strombezug Niedertarif(kWh)": lambda ru: ru.area * 2
+            if legacy or ru.rental_type != "Lager"
+            else 0,
+            "Strombezug Hochtarif EW (kWh)": lambda ru: ru.area * 6
+            if legacy or ru.rental_type != "Lager"
+            else 0,
+            "Solarstrom (kWh)": lambda ru: ru.area * 4
+            if legacy or ru.rental_type != "Lager"
+            else 0,
+            "Strombezug Niedertarif(CHF)": lambda ru: ru.area * 2 * 0.28
+            if legacy or ru.rental_type != "Lager"
+            else 0,
+            "Strombezug EW (CHF)": lambda ru: ru.area * 6 * 0.30
+            if legacy or ru.rental_type != "Lager"
+            else 0,
         },
         "Waerme": {
             "Gebäudeeinheit": "object",
             "Mieter Abrechnungsperiode": "time_period",
-            "Warmwasser Verbrauch (Kubikmeter)": lambda ru: ru.area * 0.4,
-            "Wärmeverbrauch (kWh)": lambda ru: ru.area * 7,
+            "Warmwasser Verbrauch (Kubikmeter)": lambda ru: ru.area * 0.4
+            if legacy or ru.rental_type != "Lager"
+            else 0,
+            "Wärmeverbrauch (kWh)": lambda ru: ru.area * 7
+            if legacy or ru.rental_type == "Wohnung"
+            else 0,
         },
     }
     months = [
@@ -100,6 +114,7 @@ def create_measurement_data(cls, legacy=False):
 def create_monthly_measurement_data(cls, month, fields, legacy=False):
     class Allgemein:
         area = 1000
+        rental_type = "Allgemein"
 
     lines = []
     ## Header

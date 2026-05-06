@@ -12,7 +12,6 @@ from report.generator import ReportGenerator
 from report.models import ReportOutput
 from report.nk.bill import NkBill
 from report.nk.contract import NkContract
-from report.nk.cost.base import NkCostValueType
 from report.nk.cost_config import get_costs_from_config
 from report.nk.export_csv import ExportCSV
 from report.nk.rental_unit import NkRentalUnit, NkVirtualRentalUnitId
@@ -240,17 +239,17 @@ class NkReportGenerator(ReportGenerator):
             "num_months_passed": self.num_months_passed,
         }
 
-    def get_cost_sum(self, section=None, ru=None, value_type=NkCostValueType.COST) -> float:
+    def get_cost_sum(self, section=None, ru=None) -> float:
         if section and ru:
             raise ValueError("section and ru cannot be specified at the same time")
         ret = 0
         for cost in self.costs:
             if ru:
-                ret += cost.rental_unit_values[ru.id][value_type].amount
+                ret += cost.get_rental_unit_cost(ru)
             elif section:
-                ret += cost.section_values[section.id][value_type].amount
+                ret += cost.get_section_cost(section)
             else:
-                ret += cost.total_values[value_type].amount
+                ret += cost.get_building_cost()
         return ret
 
     def finalize_output(self):

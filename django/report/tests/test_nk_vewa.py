@@ -1,4 +1,5 @@
 import report.tests.data as testdata
+from geno.utils import nformat
 from report.nk.cost import NkCostValueType, NkCostVEWA
 from report.nk.cost.vewa import NkCostVEWACategories
 from report.nk.generator import NkReportGenerator
@@ -170,7 +171,7 @@ class NKCostVEWATest(NkReportTestCase):
             expected_base_cost_001b,
             delta=0.0001 * expected_base_cost_001b,
         )
-        self.assertEqual(
+        self.assertAlmostEqual(
             cost.rental_unit_values[ru_001b.id][NkCostValueType.USAGE].amount, ru_001b.area
         )
         self.assertAlmostEqual(
@@ -445,73 +446,86 @@ class NKCostVEWATest(NkReportTestCase):
                 delta=0.0001 * expected_usage_001a[i],
             )
 
-    # def test_zev_extra_context(self):
-    #     """Test that get_extra_context() returns the correct Stromkosten variables."""
-    #     rg = self._setup_report_with_strom_data()
-    #
-    #     cost = NkCostVEWA(rg, self.zev_cost_config)
-    #     cost.load_input_data()
-    #     cost.split_costs()
-    #     rg.assign_rental_unit_months_to_contracts()
-    #
-    #     ru_001a = rg.get_rental_unit_by_name("001a")
-    #     ctx = cost.get_extra_context(ru_001a, rg.get_contract_by_id(self.contracts[0].id))
-    #
-    #     num_months = rg.num_months
-    #     # ssd: Eigenverbrauch Solar direkt
-    #     expected_ssd_kwh = 50.0 * num_months  # 50 kWh/month
-    #     expected_ssd_chf = expected_ssd_kwh * 0.1453
-    #     self.assertEqual(ctx["ssd"], nformat(expected_ssd_kwh, 0))
-    #     self.assertEqual(ctx["ssd_chf"], f"{expected_ssd_chf:,.2f}".replace(",", "'"))
-    #
-    #     # snh/snt: Netzstrom hoch/tief
-    #     expected_snh_kwh = 30.0 * num_months  # 30 kWh/month
-    #     expected_snh_chf = expected_snh_kwh * self.tarif_hoch
-    #     expected_snt_kwh = 20.0 * num_months  # 20 kWh/month
-    #     expected_snt_chf = expected_snt_kwh * self.tarif_nieder
-    #     self.assertEqual(ctx["snh"], nformat(expected_snh_kwh, 0))
-    #     self.assertEqual(ctx["snt"], nformat(expected_snt_kwh, 0))
-    #     self.assertEqual(ctx["snh_chf"], nformat(expected_snh_chf))
-    #     self.assertEqual(ctx["snt_chf"], nformat(expected_snt_chf))
-    #
-    #     # sss: Eigenverbrauch Solar via Speicher
-    #     # kwh_netz = 50/month, kwh_speicher = 0.3 * 50 = 15/month
-    #     expected_sss_kwh = 15.0 * num_months
-    #     self.assertEqual(ctx["sss"], nformat(expected_sss_kwh, 0))
-    #
-    #     # Building totals
-    #     expected_ssdt = num_months * (50 + 10 + 100 + 1)
-    #     expected_snht = num_months * (30 + 6 + 70 + 2)
-    #     self.assertEqual(ctx["ssdt"], nformat(expected_ssdt, 0))
-    #     self.assertEqual(ctx["ssd_chft"], nformat(expected_ssdt * self.tarif_eigenstrom))
-    #     self.assertEqual(ctx["snht"], nformat(expected_snht, 0))
-    #     self.assertEqual(ctx["snh_chft"], nformat(expected_snht * self.tarif_hoch))
-    #     self.assertIsInstance(ctx["stot_chft"], str)
-    #
-    #     # Units without data get zeros in context
-    #     ru_g001 = rg.get_rental_unit_by_name("G001")
-    #     ctx_g001 = cost.get_extra_context(ru_g001, rg.get_contract_by_id(self.contracts[2].id))
-    #     self.assertEqual(ctx_g001["ssd"], "0")
-    #     self.assertEqual(ctx_g001["sss"], "0")
-    #     self.assertEqual(ctx_g001["st_chf"], "0.00")
-    #
-    # def test_zev_no_measurement_data(self):
-    #     """When no measurement data is present, all costs are zero."""
-    #     self.configure_test_report_minimal()
-    #     rg = NkReportGenerator(self.report, True, output_root="/tmp/")
-    #     rg.load_rental_units()
-    #
-    #     cost = NkCostVEWA(rg, self.zev_cost_config)
-    #     # Remove measurement data
-    #     cost.measurements = {
-    #         "building": NkMeasurementDataBase(rg, {}),
-    #         "rental_units": NkMeasurementDataBase(rg, {}),
-    #     }
-    #     cost.load_input_data()
-    #     cost.split_costs()
-    #
-    #     self.assertAlmostEqual(cost.total_values[NkCostValueType.COST].amount, 0.0)
-    #     for ru in rg.rental_units:
-    #         self.assertAlmostEqual(
-    #             cost.rental_unit_values[ru.id][NkCostValueType.COST].amount, 0.0
-    #         )
+    def test_vewa_context(self):
+        """Test that _get_context() returns the correct VEWA variables."""
+        rg = self._setup_report()
+
+        cost = NkCostVEWA(rg, self.vewa_cost_config_annual)
+        cost.load_input_data()
+        cost.split_costs()
+        rg.assign_rental_unit_months_to_contracts()
+
+        ru_001a = rg.get_rental_unit_by_name("001a")
+        ctx = cost._get_context(ru_001a, rg.get_contract_by_id(self.contracts[0].id))
+        prefix = ""
+        self.assertIn(prefix + "g", ctx)
+        self.assertIn(prefix + "v", ctx)
+        self.assertIn(prefix + "", ctx)
+        self.assertIn(prefix + "a", ctx)
+        self.assertIn(prefix + "g_chf", ctx)
+        self.assertIn(prefix + "v_chf", ctx)
+        self.assertIn(prefix + "_chf", ctx)
+        self.assertIn(prefix + "a_chf", ctx)
+        # Building
+        self.assertIn(prefix + "gt", ctx)
+        self.assertIn(prefix + "vt", ctx)
+        self.assertIn(prefix + "t", ctx)
+        self.assertIn(prefix + "at", ctx)
+        self.assertIn(prefix + "g_chft", ctx)
+        self.assertIn(prefix + "v_chft", ctx)
+        self.assertIn(prefix + "_chft", ctx)
+        self.assertIn(prefix + "a_chft", ctx)
+        self.assertIn(prefix + "g_eh", ctx)
+        self.assertIn(prefix + "v_eh", ctx)
+        self.assertIn(prefix + "_eh", ctx)
+        self.assertIn(prefix + "a_eh", ctx)
+
+        # Check some values (not exhaustive)
+        self.assertEqual(
+            ctx["v"],
+            nformat(
+                cost.rental_unit_values[ru_001a.id][NkCostValueType.USAGE_USAGE].amount,
+                precision=0,
+            ),
+        )
+
+    def test_vewa_update_context_wa(self):
+        """Test that _get_context() returns the correct VEWA variables."""
+        rg = self._setup_report()
+
+        cost = NkCostVEWA(rg, self.vewa_cost_config_annual)
+        cost.load_input_data()
+        cost.split_costs()
+        rg.assign_rental_unit_months_to_contracts()
+
+        ru_001a = rg.get_rental_unit_by_name("001a")
+        ctx = {}
+        agg = {}
+        cost.update_context(ru_001a, rg.get_contract_by_id(self.contracts[0].id), ctx, agg)
+        legacy_prefix = "wa"
+        vewa_key = "vewa_wasser"
+        self.assertIn(vewa_key, ctx)
+        # Check some of the standard context variables
+        self.assertIn("g", ctx[vewa_key][0])
+        self.assertIn("v_chft", ctx[vewa_key][0])
+        self.assertIn("", ctx[vewa_key][0])
+        self.assertIn("at", ctx[vewa_key][0])
+        # Check some of the standard context variables (legacy)
+        self.assertIn(legacy_prefix + "g", ctx)
+        self.assertIn(legacy_prefix + "v_chft", ctx)
+        self.assertIn(legacy_prefix + "", ctx)
+        self.assertIn(legacy_prefix + "at", ctx)
+        # Check sums are present
+        self.assertIn(legacy_prefix + "t_chft", ctx)
+        self.assertIn(legacy_prefix + "t_chf", ctx)
+        self.assertIn("s" + legacy_prefix + "_chft", ctx)
+        self.assertIn("s" + legacy_prefix + "_chf", ctx)
+
+        # Check some values (not exhaustive)
+        self.assertEqual(
+            ctx[legacy_prefix + "v"],
+            nformat(
+                cost.rental_unit_values[ru_001a.id][NkCostValueType.USAGE_USAGE].amount,
+                precision=0,
+            ),
+        )

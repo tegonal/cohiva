@@ -1,4 +1,3 @@
-from collections.abc import Callable
 from enum import Enum
 from operator import add
 from typing import TYPE_CHECKING
@@ -6,6 +5,7 @@ from typing import TYPE_CHECKING
 from django.utils.translation import gettext_lazy as _
 
 from geno.utils import nformat
+from report.nk.rental_unit import NkVirtualRentalUnitId
 
 from . import NkTotalCost
 from .base import NkCommonCostMixin, NkCostValueType, NkMeasurementDataMixin
@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from report.nk.contract import NkContract
     from report.nk.generator import NkReportGenerator
     from report.nk.rental_unit import NkRentalUnit
+    from report.nk.section import NkSection
 
 
 class NkCostVEWACategories(Enum):
@@ -51,12 +52,15 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
         if total_costs is None:
             raise ValueError(_("No total costs found for {cost_name}").format(cost_name=self.name))
         ## Split base costs and usage costs
+        if "rental_units" not in self.measurements:
+            # No rental unit measurements, can't calculate usage costs -> only use base costs
+            self.base_cost_factor = 1.0
         if isinstance(total_costs, list):
             self.total_values[NkCostValueType.COST].monthly_amounts = [
                 x * self.base_cost_factor for x in total_costs
             ]
             self.total_values[NkCostValueType.USAGE_COST].monthly_amounts = [
-                x * (1 - self.base_cost_factor) for x in total_costs
+                x * (1.0 - self.base_cost_factor) for x in total_costs
             ]
         else:
             self.total_values[NkCostValueType.COST].amount = total_costs * self.base_cost_factor
@@ -75,12 +79,6 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
             building_total = self.get_monthly_values_by_building_usage(building_total)
         self.total_values[NkCostValueType.USAGE_USAGE].monthly_amounts = building_total
 
-        # Set common costs from virtual rental unit "allg" (Allgemeinstrom)
-        # self.set_common_costs(
-        #    self._strom_data[NkVirtualRentalUnitId.COMMON]["chf_total"],
-        #    self._strom_data[NkVirtualRentalUnitId.COMMON]["kwh_total"],
-        # )
-
     def get_total_costs(self):
         # Try to get the costs from the building measurements
         total_costs = self.measurements["building"].get("costs")
@@ -91,6 +89,8 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
     def _get_missing_building_usage(self):
         """Try to get the building usage from the rental unit measurements."""
         building_usage = self.generator.num_months * [0]
+        if "rental_units" not in self.measurements:
+            return building_usage
         for ru in self.generator.rental_units:
             usage = self.measurements["rental_units"].get(ru.name, {}).get("usage")
             if usage:
@@ -111,8 +111,8 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
         return monthly_values
 
     def get_rental_unit_usage_weights(self, ru):
-        """Use rental unit measurements as weights to disribute the building totals."""
-        ru_messung = self.measurements["rental_units"].get(ru.name, {})
+        """Use rental unit measurements as weights to distribute the building totals."""
+        ru_messung = self.measurements.get("rental_units", {}).get(ru.name, {})
         return ru_messung.get("usage", self.generator.num_months * [0.0])
 
     def get_rental_unit_weights(self, ru):
@@ -127,15 +127,74 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
     def split_costs(self):
         # Base costs are handled by the super class
         super().split_costs()
-        # Split usage costs
+        # Usage costs
         self._calculate_usage_weights()
         for kind in (NkCostValueType.USAGE_COST, NkCostValueType.USAGE_USAGE):
             self._split_cost(kind, NkCostValueType.USAGE_WEIGHT)
-        # self._calculate_weights()
-        # self._split_common_costs()
-        # self._aggregate_monthly_amounts()
+        # Common costs
+        self._calculate_and_split_common_costs()
+        # self._print_debug_info()
+
+    def _print_debug_info(self):
+        groups = [
+            {
+                "name": "Base",
+                "types": [NkCostValueType.COST, NkCostValueType.USAGE, NkCostValueType.WEIGHT],
+            },
+            {
+                "name": "Usage",
+                "types": [
+                    NkCostValueType.USAGE_COST,
+                    NkCostValueType.USAGE_USAGE,
+                    NkCostValueType.USAGE_WEIGHT,
+                ],
+            },
+            {
+                "name": "Common",
+                "types": [
+                    NkCostValueType.COMMON_COST,
+                    NkCostValueType.COMMON_USAGE,
+                    NkCostValueType.COMMON_WEIGHT,
+                ],
+            },
+        ]
+        for group in groups:
+            print("")
+            print(f"*** {group['name']} for {self.name}")
+            values = [
+                nformat(self.total_values[value_type].amount) for value_type in group["types"]
+            ]
+            print(f"Total: {' | '.join(values)}")
+            for ru in self.generator.rental_units:
+                ru_values = [
+                    nformat(self.rental_unit_values[ru.id][value_type].amount)
+                    for value_type in group["types"]
+                ]
+                print(f"{ru.name}: {' | '.join(ru_values)}")
+
+    def _calculate_and_split_common_costs(self):
+        # Set common costs from virtual rental unit "allg" (Allgemeinstrom)
+        #   - costs = base costs + usage costs
+        #   - usage = common weight (usually m2)
+        self._calculate_common_weights()
+        self.set_common_costs(
+            list(
+                map(
+                    add,
+                    self.rental_unit_values[NkVirtualRentalUnitId.COMMON][
+                        NkCostValueType.COST
+                    ].monthly_amounts,
+                    self.rental_unit_values[NkVirtualRentalUnitId.COMMON][
+                        NkCostValueType.USAGE_COST
+                    ].monthly_amounts,
+                )
+            ),
+            self.total_values[NkCostValueType.COMMON_WEIGHT].monthly_amounts,
+        )
+        self._split_common_costs()
 
     def _calculate_usage_weights(self):
+        self.add_value_type(NkCostValueType.USAGE_WEIGHT, "Gewichtung", "")
         self._calculate_weights_for_type(
             NkCostValueType.USAGE_WEIGHT, "get_rental_unit_usage_weights"
         )
@@ -148,12 +207,12 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
             context[context_key] = []
         cost_context = self._get_context(ru, contract)
         context[context_key].append(cost_context)
-        self._update_aggregated_context(ru, contract, aggregated_values, context)
+        self._update_aggregated_context(ru, contract, context, aggregated_values)
 
         # Support for legacy templates: add context variables with fixed prefix for old templates,
         # which support only one cost per prefix.
         for key, value in cost_context.items():
-            context[f"{context_prefix}_{key}"] = value
+            context[f"{context_prefix}{key}"] = value
 
     def get_context_key(self):
         """Return the context key and prefix (for legecy templates) for the ODT bill template."""
@@ -186,7 +245,7 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
             return nformat(val)
 
         def fmt_use(val):
-            return nformat(val, 1)
+            return nformat(val, 0)
 
         def rate(chf, use):
             return nformat(chf / use if use else 0, 2)
@@ -258,7 +317,7 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
             self._update_context_totals(
                 ["wwbt_chft", "sw_chft"],
                 ["wwbt_chf", "wwt_chf", "sw_chf"],
-                ["sw_chft", "wwt_chf", "sw_chf"],
+                ["wwt_chf", "sw_chf"],
                 ru,
                 contract,
                 context,
@@ -268,7 +327,7 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
             self._update_context_totals(
                 ["ht_chft", "sw_chft"],
                 ["ht_chf", "sw_chf"],
-                ["sw_chft", "sw_chf"],
+                ["sw_chf"],
                 ru,
                 contract,
                 context,
@@ -278,7 +337,7 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
             self._update_context_totals(
                 ["wat_chft", "swa_chft"],
                 ["wat_chf", "swa_chf"],
-                ["swa_chft", "swa_chf"],
+                ["swa_chf"],
                 ru,
                 contract,
                 context,
@@ -326,49 +385,21 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
         for key in building_keys + unit_keys:
             context[key] = nformat(aggregated_values.get(key, 0))
 
-    def get_export_extra_info(
-        self, include_percent: bool = False, formatter: Callable = lambda x: x
-    ) -> list:
-        lines = []
-        for key in (
-            "kwh_solar",  # "messung_strom_solar",
-            "kwh_solar_speicher",
-            "kwh_solar_einkauf",
-            "kwh_netzstrom",
-            "kwh_netz_hoch",
-            "kwh_netz_nieder",
-            "kwh_korrektur",
-            "kwh_total",
-            "chf_solar_eigen",
-            "chf_solar_speicher",  # "chf_solar_einspeise",
-            "chf_solar_hkn",
-            "chf_netz_hoch",  # "messung_chf_netz_hoch",
-            "chf_netz_nieder",  # "messung_chf_netz_nieder",
-            "chf_korrektur",
-            "chf_total",
-        ):
-            obj_data = []
-            total = 0
-            for ru in self.generator.rental_units:
-                d = self._strom_data.get(ru.id, self._zero_strom_data(self.generator.num_months))
-                value = d.get(key)
-                if value:
-                    annual_value = sum(value)
-                    total += annual_value
-                    obj_data.append(formatter(annual_value))
-                else:
-                    obj_data.append("")
-                if include_percent:
-                    obj_data.append("")
+    def get_building_cost(self):
+        ret = super().get_building_cost()
+        return ret + self._get_building_amount(NkCostValueType.USAGE_COST)
 
-            row = [key, formatter(total)]
-            for _s in self.generator.sections:
-                row.append("")
-                if include_percent:
-                    row.append("")
-            row += obj_data
-            lines.append(row)
-        return lines
+    def get_section_cost(self, section: "NkSection"):
+        ret = super().get_section_cost(section)
+        return ret + self._get_section_amount(section, NkCostValueType.USAGE_COST)
+
+    def get_rental_unit_cost(self, rental_unit: "NkRentalUnit"):
+        ret = super().get_rental_unit_cost(rental_unit)
+        return ret + self._get_rental_unit_amount(rental_unit, NkCostValueType.USAGE_COST)
+
+    def get_assigned_cost(self, contract: "NkContract", rental_unit: "NkRentalUnit | None" = None):
+        ret = super().get_assigned_cost(contract, rental_unit)
+        return ret + self._get_assigned_amount(NkCostValueType.USAGE_COST, contract, rental_unit)
 
     @staticmethod
     def _zero_data(num_months: int) -> dict:

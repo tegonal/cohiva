@@ -143,6 +143,9 @@ class NkVEWACostConfig(NkTotalCostConfig):
             CostConfigField("base_cost_factor_key", CostConfigFieldTypes.INPUT_KEY),
             CostConfigField("exclude_zero_usage_units", CostConfigFieldTypes.BOOL, required=False),
             CostConfigField(
+                "common_cost_section_weights", CostConfigFieldTypes.STRING, required=False
+            ),  # TODO: Where to get the value from? Should this be an input_key?
+            CostConfigField(
                 "measurement_data",
                 CostConfigFieldTypes.MEASUREMENT_SOURCES,
                 subfields=[
@@ -302,30 +305,6 @@ def get_costs_from_config():
             "class": NkTotalCost,
         },
         {
-            "class": NkCostVEWA,
-            "name": "Wasser_Abwasser",
-            "billing_group": "Wasserkosten",
-            "vewa_category": NkCostVEWACategories.WATER_GENERAL,
-            "base_cost_factor_key": "Wasserkosten:Grundkostenanteil",
-            "exclude_zero_usage_units": False,
-            "measurement_data": {
-                "building": {
-                    "class": NkMeasurementDataAnnual,
-                    "value_key": "Messdaten:Wasserverbrauch",
-                },
-                "rental_units": {
-                    "class": NkMeasurementDataEgon,
-                    "file_key": "Messdaten:Mieteinheiten",
-                    "file_prefix": "egon_Waerme",
-                    "headers": {
-                        "rental_unit": "Gebäudeeinheit",
-                        "time_period": "Mieter Abrechnungsperiode",
-                        "usage": "Warmwasser Verbrauch (Kubikmeter)",
-                    },
-                },
-            },
-        },
-        {
             "name": "Fernwaerme_Fussboden_Grundkosten",
             "category": "waerme_wasser_grund",
             "time_period": "monthly",
@@ -364,8 +343,9 @@ def get_costs_from_config():
             "name": "Fernwaerme_Warmwasser",
             "billing_group": "Wärmekosten",
             "vewa_category": NkCostVEWACategories.HEAT_WATER,
-            "base_cost_factor_key": "Warmwasser:Grundkostenanteil",
+            "base_cost_factor_key": "VEWA:GrundkostenanteilWarmwasser",
             "exclude_zero_usage_units": True,
+            "common_cost_section_weights": "wasser_allgemein",
             "measurement_data": {
                 "building": {
                     "class": NkMeasurementDataMonthlyCSVFile,
@@ -388,26 +368,94 @@ def get_costs_from_config():
             },
         },
         {
-            "name": "Fernwaerme_Warmwasser_Grundkosten",
-            "category": "waerme_wasser_grund",
-            "time_period": "monthly",
-            "amount_data": "Fernwaerme_Warmwasser",  ## Will be imported
-            "amount_factor": 0.3,  ## 30% Grundkosten gemäss Modell Verbrauchsabh. NK-Abrechnung
-            "object_weights": "area_warmwasser",
+            "class": NkCostVEWA,
+            "name": "Fernwaerme_Fussboden",
+            "billing_group": "Wärmekosten",
+            "vewa_category": NkCostVEWACategories.HEAT_HEATING,
+            "section_weights": "nur_wohnen",
+            "object_weights": "volume",  #'area',
+            "base_cost_factor_key": "VEWA:GrundkostenanteilHeizung",
+            "exclude_zero_usage_units": False,
+            "measurement_data": {
+                "building": {
+                    "class": NkMeasurementDataMonthlyCSVFile,
+                    "file_key": "Messdaten:Liegenschaft",
+                    "headers": {
+                        "month": "Monat",
+                        "costs": "Fernwaerme_Fussboden",
+                    },
+                },
+                "rental_units": {
+                    "class": NkMeasurementDataEgon,
+                    "file_key": "Messdaten:Mieteinheiten",
+                    "file_prefix": "egon_Waerme",
+                    "headers": {
+                        "rental_unit": "Gebäudeeinheit",
+                        "time_period": "Mieter Abrechnungsperiode",
+                        "usage": "Wärmeverbrauch (kWh)",
+                    },
+                },
+            },
         },
         {
-            "name": "Fernwaerme_Warmwasser_Verbrauch",
-            "category": "waerme_wasser_verbrauch",
-            "time_period": "monthly",
-            "amount_data": "Fernwaerme_Warmwasser",  ## Will be imported
-            "amount_factor": 0.7,  ## 70% Verbrauchsabhängige Kosten gemäss Modell Verbrauchsabh. NK-Abrechnung
-            "object_weights": "messung_warmwasser",
-            "data_file_prefix": "egon_Waerme",
-            "data_headers": {
-                "rental_unit": "Gebäudeeinheit",
-                "time_period": "Mieter Abrechnungsperiode",
-                "warmwasser": "Warmwasser Verbrauch (Kubikmeter)",
-                "heizung": "Wärmeverbrauch (kWh)",
+            "class": NkCostVEWA,
+            "name": "Fernwaerme_Radiatoren",
+            "billing_group": "Wärmekosten",
+            "vewa_category": NkCostVEWACategories.HEAT_HEATING,
+            "section_weights": "radiatoren",
+            "object_weights": "volume",
+            "measurement_data": {
+                "building": {
+                    "class": NkMeasurementDataMonthlyCSVFile,
+                    "file_key": "Messdaten:Liegenschaft",
+                    "headers": {
+                        "month": "Monat",
+                        "costs": "Fernwaerme_Radiatoren",
+                    },
+                },
+            },
+        },
+        {
+            "class": NkCostVEWA,
+            "name": "Fernwaerme_Lueftung",
+            "billing_group": "Wärmekosten",
+            "vewa_category": NkCostVEWACategories.HEAT_HEATING,
+            "section_weights": "lueftung",
+            "object_weights": "volume",
+            "measurement_data": {
+                "building": {
+                    "class": NkMeasurementDataMonthlyCSVFile,
+                    "file_key": "Messdaten:Liegenschaft",
+                    "headers": {
+                        "month": "Monat",
+                        "costs": "Fernwaerme_Lueftung",
+                    },
+                },
+            },
+        },
+        {
+            "class": NkCostVEWA,
+            "name": "Wasser_Abwasser",
+            "billing_group": "Wasserkosten",
+            "vewa_category": NkCostVEWACategories.WATER_GENERAL,
+            "base_cost_factor_key": "Wasserkosten:Grundkostenanteil",
+            "exclude_zero_usage_units": False,
+            "common_cost_section_weights": "wasser_allgemein",
+            "measurement_data": {
+                "building": {
+                    "class": NkMeasurementDataAnnual,
+                    "value_key": "Messdaten:Wasserverbrauch",
+                },
+                "rental_units": {
+                    "class": NkMeasurementDataEgon,
+                    "file_key": "Messdaten:Mieteinheiten",
+                    "file_prefix": "egon_Waerme",
+                    "headers": {
+                        "rental_unit": "Gebäudeeinheit",
+                        "time_period": "Mieter Abrechnungsperiode",
+                        "usage": "Warmwasser Verbrauch (Kubikmeter)",
+                    },
+                },
             },
         },
         {
