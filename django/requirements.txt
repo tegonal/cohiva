@@ -101,7 +101,7 @@ dill==0.4.0
     # via pylint
 dj-rest-auth==7.0.1
     # via -r requirements.in
-django==4.2.29
+django==4.2.30
     # via
     #   -r requirements.in
     #   dj-rest-auth
@@ -229,7 +229,7 @@ kombu==5.5.4
     # via celery
 laces==0.1.2
     # via wagtail
-lxml==5.4.0
+lxml==6.1.0
     # via
     #   caldav
     #   svglib
@@ -274,7 +274,7 @@ persistent==6.1.1
     #   zodb
 piecash==1.2.1
     # via -r requirements.in
-pillow==12.1.1
+pillow==12.2.0
     # via
     #   easy-thumbnails
     #   matplotlib
@@ -303,7 +303,7 @@ pyopenssl==24.2.1
     # via pysaml2
 pyparsing==3.2.5
     # via matplotlib
-pypdf==6.9.2
+pypdf==6.10.2
     # via -r requirements.in
 pysaml2==7.5.2
     # via djangosaml2idp
@@ -375,7 +375,9 @@ sqlalchemy-utils==0.41.2
 sqlparse==0.5.4
     # via django
 svglib==1.5.1
-    # via easy-thumbnails
+    # via
+    #   django-filer
+    #   easy-thumbnails
 svgwrite==1.4.3
     # via qrbill
 telepath==0.3.1
