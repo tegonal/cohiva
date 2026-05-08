@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from report.nk.cost import (
+    NkAdminFeeCost,
     NkCost,
     NkCostVEWA,
     NkCostZEVStromallmend,
@@ -168,7 +169,7 @@ class NkVEWACostConfig(NkTotalCostConfig):
         # "name": "Wasser_Abwasser",
         # "billing_group": "Wasserkosten",
         # "vewa_category": NkCostVEWACategories.WATER_GENERAL,
-        # "base_cost_factor_key": "Wasserkosten:Grundkostenanteil",
+        # "base_cost_factor_key": "VEWA:Grundkostenanteil",
         # "exclude_zero_usage_units": True,
         # "measurement_data": {
         #     "building": {
@@ -270,6 +271,7 @@ class NkMeasurementDataEgonConfig(MeasurementSourceConfig):
 
 def get_costs_from_config():
     ## TODO: Implement this with configuration from DB
+    ## Cost config for tests
     costs = [
         {
             "name": "Hauswartung_ServiceHeizungLüftung",
@@ -305,45 +307,11 @@ def get_costs_from_config():
             "class": NkTotalCost,
         },
         {
-            "name": "Fernwaerme_Fussboden_Grundkosten",
-            "category": "waerme_wasser_grund",
-            "time_period": "monthly",
-            "amount_data": "Fernwaerme_Fussboden",  ## Will be imported
-            "amount_factor": 0.3,  ## 30% Grundkosten gemäss Modell Verbrauchsabh. NK-Abrechnung
-            "section_weights": "nur_wohnen",
-            "object_weights": "volume",  #'area',
-        },
-        {
-            "name": "Fernwaerme_Fussboden_Verbrauch",
-            "category": "waerme_wasser_verbrauch",
-            "time_period": "monthly",
-            "amount_data": "Fernwaerme_Fussboden",  ## Will be imported
-            "amount_factor": 0.7,
-            "section_weights": "nur_wohnen",
-            "object_weights": "messung_heizung",
-        },
-        {
-            "name": "Fernwaerme_Radiatoren",
-            "category": "waerme_wasser_grund",
-            "time_period": "monthly",
-            "amount_data": "Fernwaerme_Radiatoren",  ## Will be imported
-            "section_weights": "radiatoren",
-            "object_weights": "volume",
-        },
-        {
-            "name": "Fernwaerme_Lueftung",
-            "category": "waerme_wasser_grund",
-            "time_period": "monthly",
-            "amount_data": "Fernwaerme_Lueftung",  ## Will be imported
-            "section_weights": "lueftung",  #'default',
-            "object_weights": "volume",  #'area',
-        },
-        {
-            "class": NkCostVEWA,
             "name": "Fernwaerme_Warmwasser",
             "billing_group": "Wärmekosten",
+            "class": NkCostVEWA,
             "vewa_category": NkCostVEWACategories.HEAT_WATER,
-            "base_cost_factor_key": "VEWA:GrundkostenanteilWarmwasser",
+            "base_cost_factor_key": "VEWA:Grundkostenanteil",
             "exclude_zero_usage_units": True,
             "common_cost_section_weights": "wasser_allgemein",
             "measurement_data": {
@@ -368,13 +336,13 @@ def get_costs_from_config():
             },
         },
         {
-            "class": NkCostVEWA,
             "name": "Fernwaerme_Fussboden",
             "billing_group": "Wärmekosten",
+            "class": NkCostVEWA,
             "vewa_category": NkCostVEWACategories.HEAT_HEATING,
             "section_weights": "nur_wohnen",
             "object_weights": "volume",  #'area',
-            "base_cost_factor_key": "VEWA:GrundkostenanteilHeizung",
+            "base_cost_factor_key": "VEWA:Grundkostenanteil",
             "exclude_zero_usage_units": False,
             "measurement_data": {
                 "building": {
@@ -398,9 +366,9 @@ def get_costs_from_config():
             },
         },
         {
-            "class": NkCostVEWA,
             "name": "Fernwaerme_Radiatoren",
             "billing_group": "Wärmekosten",
+            "class": NkCostVEWA,
             "vewa_category": NkCostVEWACategories.HEAT_HEATING,
             "section_weights": "radiatoren",
             "object_weights": "volume",
@@ -416,9 +384,9 @@ def get_costs_from_config():
             },
         },
         {
-            "class": NkCostVEWA,
             "name": "Fernwaerme_Lueftung",
             "billing_group": "Wärmekosten",
+            "class": NkCostVEWA,
             "vewa_category": NkCostVEWACategories.HEAT_HEATING,
             "section_weights": "lueftung",
             "object_weights": "volume",
@@ -434,11 +402,11 @@ def get_costs_from_config():
             },
         },
         {
-            "class": NkCostVEWA,
             "name": "Wasser_Abwasser",
             "billing_group": "Wasserkosten",
+            "class": NkCostVEWA,
             "vewa_category": NkCostVEWACategories.WATER_GENERAL,
-            "base_cost_factor_key": "Wasserkosten:Grundkostenanteil",
+            "base_cost_factor_key": "VEWA:Grundkostenanteil",
             "exclude_zero_usage_units": False,
             "common_cost_section_weights": "wasser_allgemein",
             "measurement_data": {
@@ -459,9 +427,9 @@ def get_costs_from_config():
             },
         },
         {
-            "class": NkCostZEVStromallmend,
             "name": "Strom_Total",
             "billing_group": "Stromkosten",
+            "class": NkCostZEVStromallmend,
             "tarif_eigenstrom_key": "Strom:Tarif:Eigenstrom",
             "tarif_einspeiseverguetung_key": "Strom:Tarif:Einspeisevergütung",
             "tarif_hkn_key": "Strom:Tarif:HKN",
@@ -498,33 +466,16 @@ def get_costs_from_config():
             # "class": NkTotalCost, Currently included with Strom total, add it later
         },
         {
-            "class": NkPerRentalUnitCost,
             "name": "Internet/WLAN",
-            # "category": "internet",
+            "class": NkPerRentalUnitCost,
             "fee_per_unit_key": "Internet:Tarif:ProWohnung",
             "fee_per_person_key": "Internet:Tarif:ProPerson",
             "fixed_fees_key": "Internet:Tarif:Fix",
         },
-        ## Anteile an "Allgemein" (special object 0000)
         {
-            "name": "Anteil_Allgemein_Warmwasser_Verbrauch",
-            "category": "waerme_wasser_grund",
-            "time_period": "monthly",
-            "amount_meta": "Fernwaerme_Warmwasser_Verbrauch",  ## Will be imported
-            "section_weights": "wasser_allgemein",
-        },
-        {
-            "name": "Anteil_Allgemein_Wasser_Abwasser_Verbrauch",
-            "category": "waerme_wasser_grund",
-            "time_period": "monthly",
-            "amount_meta": "Wasser_Abwasser_Verbrauch",  ## Will be imported
-            "section_weights": "wasser_allgemein",
-        },
-        {
-            "name": "Anteil_Allgemein_Strom",
-            "category": "strom_allgemein",
-            "time_period": "monthly",
-            "amount_meta": "Strom_Total",  ## Will be imported
+            "name": "Verwaltungsaufwand",
+            "class": NkAdminFeeCost,
+            "fee_percentage_key": "Verwaltungsaufwand:Faktor",
         },
     ]
     for cost in costs:

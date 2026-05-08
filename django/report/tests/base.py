@@ -55,7 +55,7 @@ class NkReportTestCase(ReportTestCase):
         self.add_field("Verwaltungsaufwand:Faktor", 2.0)
 
         self.add_field("Messdaten:Wasserverbrauch", 8088.0)
-        self.add_field("Wasserkosten:Grundkostenanteil", 0.3)
+        self.add_field("VEWA:Grundkostenanteil", 0.3)
         self.add_field(
             "Messdaten:Liegenschaft", f"filer:{self.filer_measurements_building.id}", "file"
         )

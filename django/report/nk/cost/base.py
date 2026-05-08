@@ -85,7 +85,6 @@ class NkCost:
 
     def _normalize_monthly_amounts_for_dict(self, container: dict, value_required=False):
         for _kind, value in container.items():
-            # pprint(value)
             total = None
             if value.monthly_amounts:
                 if len(value.monthly_amounts) != self.generator.num_months:
@@ -338,7 +337,7 @@ class NkCost:
     def _get_section_amount(self, section: "NkSection", value_type: NkCostValueType):
         return self.section_values[section.id][value_type].amount
 
-    def get_rental_unit_cost(self, rental_unit):
+    def get_rental_unit_cost(self, rental_unit, include_common=False):
         return self._get_rental_unit_amount(rental_unit, NkCostValueType.COST)
 
     def _get_rental_unit_amount(self, rental_unit: "NkRentalUnit", value_type: NkCostValueType):
@@ -358,7 +357,7 @@ class NkCost:
         self.warnings.append(msg)
 
 
-class NkMeasurementDataMixin:
+class NkMeasurementDataMixin(NkCost):
     """Mixin for NkCosts that require measurement data."""
 
     def __init__(self, report_generator: "NkReportGenerator", cost_config: dict):
@@ -379,7 +378,7 @@ class NkMeasurementDataMixin:
         super().load_input_data()
 
 
-class NkCommonCostMixin:
+class NkCommonCostMixin(NkCost):
     """Mixin for NkCosts that have a common usage part (e.g., Allgemeinstrom), which is distributed among all rental units."""
 
     def __init__(self, report_generator: "NkReportGenerator", cost_config: dict):
@@ -389,6 +388,12 @@ class NkCommonCostMixin:
         )
         self.add_value_type(NkCostValueType.COMMON_COST, "Allgemeinkosten", "CHF")
         self.add_value_type(NkCostValueType.COMMON_WEIGHT, "Gewichtung", "")
+
+    def get_rental_unit_cost(self, rental_unit, include_common=False):
+        ret = super().get_rental_unit_cost(rental_unit, include_common)
+        if include_common:
+            ret += self._get_rental_unit_amount(rental_unit, NkCostValueType.COMMON_COST)
+        return ret
 
     def get_assigned_cost(self, contract: "NkContract", rental_unit: "NkRentalUnit | None" = None):
         ret = super().get_assigned_cost(contract, rental_unit)

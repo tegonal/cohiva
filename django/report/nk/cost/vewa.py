@@ -393,8 +393,8 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
         ret = super().get_section_cost(section)
         return ret + self._get_section_amount(section, NkCostValueType.USAGE_COST)
 
-    def get_rental_unit_cost(self, rental_unit: "NkRentalUnit"):
-        ret = super().get_rental_unit_cost(rental_unit)
+    def get_rental_unit_cost(self, rental_unit: "NkRentalUnit", include_common=False):
+        ret = super().get_rental_unit_cost(rental_unit, include_common)
         return ret + self._get_rental_unit_amount(rental_unit, NkCostValueType.USAGE_COST)
 
     def get_assigned_cost(self, contract: "NkContract", rental_unit: "NkRentalUnit | None" = None):
