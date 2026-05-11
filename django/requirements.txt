@@ -281,7 +281,7 @@ pillow==12.2.0
     #   pillow-heif
     #   reportlab
     #   wagtail
-pillow-heif==0.22.0
+pillow-heif==1.3.0
     # via willow
 platformdirs==4.3.8
     # via pylint
