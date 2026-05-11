@@ -351,6 +351,7 @@ def check_system_dependencies():
             "libmariadb-dev",  # or libmysqlclient-dev
             "libfreetype-dev",
             "libjpeg-dev",
+            "libheif-dev",
             "libffi-dev",
             "xmlsec1",
         ]
@@ -429,7 +430,7 @@ def check_system_dependencies():
             print("Install required packages with:")
             print("  sudo dnf install gcc gcc-c++ python3-devel")
             print("  sudo dnf install mariadb-connector-c-devel freetype-devel")
-            print("  sudo dnf install libjpeg-devel libffi-devel xmlsec1")
+            print("  sudo dnf install libjpeg-devel libheif-devel libffi-devel xmlsec1")
             print()
 
         elif has_pacman:
