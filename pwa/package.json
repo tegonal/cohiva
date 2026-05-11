@@ -44,7 +44,7 @@
     "pinia": "^3.0.4",
     "quasar": "^2.18.5",
     "tippy.js": "^6.3.7",
-    "vue": "^3.5.22",
+    "vue": "^3.5.34",
     "vue-i18n": "^11.2.8",
     "vue-router": "^4.6.4"
   },
@@ -65,7 +65,7 @@
     "eslint-plugin-perfectionist": "^4.15.1",
     "eslint-plugin-vue": "^10.6.2",
     "globals": "^15.15.0",
-    "postcss": "^8.5.6",
+    "postcss": "^8.5.14",
     "prettier": "^3.6.2",
     "register-service-worker": "^1.7.2",
     "tsx": "^4.21.0",
