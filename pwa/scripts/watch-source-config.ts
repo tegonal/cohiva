@@ -11,7 +11,7 @@
  */
 
 import chokidar from 'chokidar'
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -137,7 +137,7 @@ async function regenerateConfig(): Promise<void> {
     // Generate config in pwa-tenant-config-generator
     const relativeConfigDir = path.relative(GENERATOR_ROOT, sourceConfigDir)
     try {
-      execSync(`yarn generate --config-dir ${relativeConfigDir}`, {
+      execFileSync('yarn', ['generate', '--config-dir', relativeConfigDir], {
         cwd: GENERATOR_ROOT,
         stdio: 'inherit',
       })
