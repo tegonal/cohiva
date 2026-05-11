@@ -3,4 +3,4 @@ charset-normalizer==3.4.4
 FreeSimpleGUI==5.2.0.post1
 idna==3.11
 requests==2.33.1
-urllib3==2.6.3
+urllib3==2.7.0
