@@ -97,8 +97,25 @@ class BookTransaction:
             amount_str = f"{amount:.2f}"
             split_items_o.append({"accountId": cct_account, credit_type: amount_str})
 
+        cost_center_numbers = [
+            split.account.cost_center
+            for split in transaction.splits
+            if split.account.building_based_cost_center
+        ]
+
+        if len(cost_center_numbers) > 1:
+            raise ValueError(
+                f"Transaction invalid: accounts have multiple different cost centers: {cost_center_numbers}"
+            )
+        cost_center_id = None
+        if cost_center_numbers:
+            # Get the zeroth cost center ID
+            cost_center_id = self.get_cct_cost_center(next(iter(cost_center_numbers)))
+
         payload = self._get_common_transaction_payload(transaction)
         payload["items"] = json.dumps(split_items_o)
+        if cost_center_id:
+            payload["allocations"] = [{"share": 1, "toCostCenterId": cost_center_id}]
         return self._create_transaction_api_call(
             payload, f"create collective transaction: len: {len(transaction.splits)}"
         )
@@ -145,6 +162,7 @@ class BookTransaction:
         payload["creditId"] = cct_account_credit
         payload["debitId"] = cct_account_debit
         if cost_center_id:
+            # TODO: list to json
             payload["allocations"] = [{"share": 1, "toCostCenterId": cost_center_id}]
         return self._create_transaction_api_call(
             payload, f"create:{cct_account_debit}:{cct_account_credit}:{amount_str}"
@@ -267,7 +285,7 @@ class BookTransaction:
             # Try to extract account id or code
             if isinstance(candidate, list) and len(candidate) == 1:
                 cost_center_id = candidate[0].get("id")
-                self._account_cache[cost_center_number] = cost_center_id
+                self._cost_center_cache[cost_center_number] = cost_center_id
                 return cost_center_id
 
         self._cost_center_cache[cost_center_number] = None
