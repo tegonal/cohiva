@@ -102,6 +102,7 @@ class BookTransaction:
             for split in transaction.splits
             if split.account.building_based_cost_center
         ]
+        cost_center_numbers = list(set(cost_center_numbers))
 
         if len(cost_center_numbers) > 1:
             raise ValueError(
