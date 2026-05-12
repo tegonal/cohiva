@@ -35,6 +35,7 @@ class BookTransaction:
         self._inserted_transaction_ids = []
         self._deleted_transaction_ids = []
         self._account_cache = {}
+        self._cost_center_cache = {}
         self._last_rest_call = None
 
     def _throttle_calls(self):
@@ -56,6 +57,7 @@ class BookTransaction:
         self._delete(self._inserted_transaction_ids)
         self._inserted_transaction_ids.clear()
         self._account_cache = {}
+        self._cost_center_cache = {}
 
         # deleted transactions can be ignored as they were not yet saved to CashCtrl
         self._deleted_transaction_ids.clear()
@@ -123,12 +125,27 @@ class BookTransaction:
             cct_account_debit = self.get_cct_account(account_credit)
             cct_account_credit = self.get_cct_account(account_debit)
 
+        cost_center_number = None
+        if account_debit.building_based_cost_center and account_credit.building_based_cost_center:
+            if account_debit.cost_center != account_credit.cost_center:
+                raise ValueError("Transaction invalid: debit and credit accounts have different cost centers")
+            else:
+                cost_center_number = account_debit.cost_center
+        elif account_debit.building_based_cost_center:
+            cost_center_number = account_debit.cost_center
+        elif account_credit.building_based_cost_center:
+            cost_center_number = account_credit.cost_center
+
+        cost_center_id = self.get_cct_cost_center(cost_center_number) if cost_center_number else None
+
         amount_str = f"{amount:.2f}" if isinstance(amount, float) else str(amount)
 
         payload = self._get_common_transaction_payload(transaction)
         payload["amount"] = amount_str
         payload["creditId"] = cct_account_credit
         payload["debitId"] = cct_account_debit
+        if cost_center_id:
+            payload["allocations"] = [{"share": 1, "toCostCenterId": cost_center_id}]
         return self._create_transaction_api_call(
             payload, f"create:{cct_account_debit}:{cct_account_credit}:{amount_str}"
         )
@@ -217,9 +234,44 @@ class BookTransaction:
                 self._account_cache[account_nbr] = acct.get("id")
                 return acct.get("id")
 
-        # TODO Throw exception if account not found
         self._account_cache[account_nbr] = None
         raise KeyError(f"Account with number {account_nbr} not found in CashCtrl.")
+
+    def get_cct_cost_center(self, cost_center_number):
+        if cost_center_number is None:
+            raise ValueError("account number must not be None")
+        elif isinstance(cost_center_number, str):
+            cost_center_number = cost_center_number
+        elif isinstance(cost_center_number, int):
+            cost_center_number = str(cost_center_number)
+
+        # Check cache first
+        if cost_center_number in self._cost_center_cache:
+            if self._cost_center_cache[cost_center_number] is None:
+                raise KeyError(f"Cost center with number {cost_center_number} not found in CashCtrl.")
+            return self._cost_center_cache[cost_center_number]
+
+        # Build filter as the CashCtrl REST API expects and URL-encode it
+        filter_json = json.dumps([{"comparison": "eq", "field": "number", "value": cost_center_number}])
+        rest = "account/costcenter/list.json?filter=" + urllib.parse.quote_plus(filter_json)
+        logger.info(f"Fetching CashCtrl cost center for number {cost_center_number} via {rest}")
+
+        response = self._construct_request_get(rest)
+        response.raise_for_status()
+        self._raise_for_error(response, f"cost center look up: {cost_center_number}")
+        data = response.json()
+
+        # Expecting a list with a single account; return an identifier used by CashCtrl
+        if isinstance(data, dict):
+            candidate = data.get("data")
+            # Try to extract account id or code
+            if isinstance(candidate, list) and len(candidate) == 1:
+                cost_center_id = candidate[0].get("id")
+                self._account_cache[cost_center_number] = cost_center_id
+                return cost_center_id
+
+        self._cost_center_cache[cost_center_number] = None
+        raise KeyError(f"Cost center with number {cost_center_number} not found in CashCtrl.")
 
     def get_cct_transaction(self, transaction_id):
         # Call _get_api_url + journal/read.json?id=[transaction_id] and fetch the transaction

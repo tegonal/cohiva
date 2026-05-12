@@ -103,3 +103,7 @@ class Account:
         if not self._code and not self.building_based:
             return self.prefix
         return self._code
+
+    @property
+    def cost_center(self):
+        return self._cost_center
