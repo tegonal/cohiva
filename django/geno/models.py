@@ -1654,6 +1654,11 @@ class InvoiceCategory(GenoBase):
         default=False,
         help_text="Liegenschafts-Postfix (bspw. 81) wird genutzt um Kontonummer zu bilden. Es resultiert bspw. 300081",
     )
+    building_based_cost_center = models.BooleanField(
+        "Kostenstelle hinzufügen",
+        default=False,
+        help_text="Fügt Buchungen eine Kostenstelle hinzu, basierend auf dem Liegenschafts-Postfix.",
+    )
     receivables_account = models.CharField(
         "Kontonummer Forderungen", max_length=50, default="1102"
     )
