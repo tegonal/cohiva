@@ -5,7 +5,7 @@ import logging
 import re
 from decimal import Decimal, InvalidOperation
 
-from geno.models import BankAccount
+from geno.models import BankAccount, ShareType
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +15,22 @@ def get_field_by_prefix(row_data: dict, prefix: str):
         if key.startswith(prefix):
             return value
     return None
+
+
+def get_or_create_share_type(
+    name: str,
+    description: str = "Genossenschaftsanteil",
+    standard_interest: Decimal = Decimal("0.00"),
+) -> ShareType:
+    """Get or create the default share type."""
+    share_type, _ = ShareType.objects.get_or_create(
+        name=name,
+        defaults={
+            "description": description,
+            "standard_interest": standard_interest,
+        },
+    )
+    return share_type
 
 
 def get_or_create_bank_account(
@@ -203,6 +219,15 @@ def parse_decimal(value) -> Decimal | None:
     except (InvalidOperation, ValueError):
         logger.warning(f"Could not parse decimal: {value}")
     return None
+
+
+def parse_bool(value) -> bool | None:
+    if str(value).lower() in ("true", "1", "yes", "ja", "j", "y", "on"):
+        return True
+    elif str(value).lower() in ("false", "0", "no", "nein", "n", "off"):
+        return False
+    else:
+        return None
 
 
 def split_street(street: str) -> tuple:

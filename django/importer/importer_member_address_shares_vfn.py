@@ -8,13 +8,14 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from cohiva.utils.countries import get_default_country_code, normalize_country_code
-from geno.models import Address, Member, Share, ShareType
+from geno.models import Address, Member, Share
 
 from .services import ExcelImporter
 from .utils import (
     clean_phone_number,
     get_field_by_prefix,
     get_or_create_bank_account,
+    get_or_create_share_type,
     parse_date,
     parse_decimal,
     parse_int,
@@ -190,7 +191,7 @@ class ImporterMemberAddressSharesVFN(ExcelImporter):
 
     def _create_or_update_share(self, row_data: dict, address: Address):
         """Create or update a Share record linked to the address."""
-        share_type = self._get_or_create_share_type()
+        share_type = get_or_create_share_type(self.DEFAULT_SHARE_TYPE_NAME)
 
         person_id = row_data.get("Import-ID")
         import_id = f"vfn_{person_id}" if person_id else None
@@ -236,17 +237,6 @@ class ImporterMemberAddressSharesVFN(ExcelImporter):
             share.import_id = import_id
 
         share.save()
-
-    def _get_or_create_share_type(self) -> ShareType:
-        """Get or create the default share type."""
-        share_type, _ = ShareType.objects.get_or_create(
-            name=self.DEFAULT_SHARE_TYPE_NAME,
-            defaults={
-                "description": "Genossenschaftsanteil",
-                "standard_interest": Decimal("0.00"),
-            },
-        )
-        return share_type
 
     @staticmethod
     def _get_emails(row_data: dict) -> list[str]:

@@ -30,6 +30,7 @@ class ImportJob(GenoBase):
         ("tenant_property_it_wgn", _("Mieter und Liegenschaften (IT-WGN)")),
         ("member_address_shares_vfn", _("Mitglieder, Adressen und Anteile (VFN)")),
         ("tenant_property_vfn", _("Liegenschaften und Mietobjekte (VFN)")),
+        ("property_shares_vfn", _("Anteile Mietobjekte (VFN)")),
     ]
     name = models.CharField(max_length=255, verbose_name=_("Name des Import-Jobs"), blank=True)
     import_type = models.CharField(

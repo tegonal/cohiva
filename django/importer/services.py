@@ -269,6 +269,10 @@ def process_import_job(import_job_id: int, importer_class=None) -> dict:
             from .importer_tenant_property_vfn import ImporterTenantPropertyVFN
 
             importer_class = ImporterTenantPropertyVFN
+        elif import_job.import_type == "property_shares_vfn":
+            from .importer_property_shares_vfn import ImporterPropertySharesVFN
+
+            importer_class = ImporterPropertySharesVFN
         else:
             # Default fallback
             importer_class = ExcelImporter
