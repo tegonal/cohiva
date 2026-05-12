@@ -1,10 +1,9 @@
 import datetime
+import json
 from unittest.mock import ANY, Mock, call, patch
 
 from django.conf import settings
 from django.test import TestCase
-
-from geno.models import Building
 
 from finance.accounting import (
     Account,
@@ -13,6 +12,7 @@ from finance.accounting import (
     Split,
     Transaction,
 )
+from geno.models import Building
 
 
 class CashctrlBookTestCase(TestCase):
@@ -339,7 +339,7 @@ class CashctrlBookTestCase(TestCase):
             called_url = mock_post.call_args[0][0]
             self.assertIn(f"{self.cohiva_test_endpoint}journal/create.json", called_url)
             form_data_constructed = mock_post.call_args[1]
-            allocations = form_data_constructed["data"]["allocations"]
+            allocations = json.loads(form_data_constructed["data"]["allocations"])
             self.assertEqual(1, len(allocations))
             self.assertEqual(1, allocations[0]["share"])
             self.assertEqual(42, allocations[0]["toCostCenterId"])
@@ -597,7 +597,7 @@ class CashctrlBookTestCase(TestCase):
             )
 
             form_data_constructed = mock_post.call_args[1]
-            allocations = form_data_constructed["data"]["allocations"]
+            allocations = json.loads(form_data_constructed["data"]["allocations"])
             self.assertEqual(1, len(allocations))
             self.assertEqual(1, allocations[0]["share"])
             self.assertEqual(42, allocations[0]["toCostCenterId"])

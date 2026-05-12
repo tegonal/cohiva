@@ -116,7 +116,7 @@ class BookTransaction:
         payload = self._get_common_transaction_payload(transaction)
         payload["items"] = json.dumps(split_items_o)
         if cost_center_id:
-            payload["allocations"] = [{"share": 1, "toCostCenterId": cost_center_id}]
+            payload["allocations"] = json.dumps([{"share": 1, "toCostCenterId": cost_center_id}])
         return self._create_transaction_api_call(
             payload, f"create collective transaction: len: {len(transaction.splits)}"
         )
@@ -163,8 +163,7 @@ class BookTransaction:
         payload["creditId"] = cct_account_credit
         payload["debitId"] = cct_account_debit
         if cost_center_id:
-            # TODO: list to json
-            payload["allocations"] = [{"share": 1, "toCostCenterId": cost_center_id}]
+            payload["allocations"] = json.dumps([{"share": 1, "toCostCenterId": cost_center_id}])
         return self._create_transaction_api_call(
             payload, f"create:{cct_account_debit}:{cct_account_credit}:{amount_str}"
         )
