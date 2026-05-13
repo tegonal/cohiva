@@ -110,13 +110,13 @@ class BookTransaction:
             )
         cost_center_id = None
         if cost_center_numbers:
-            # Get the zeroth cost center ID
             cost_center_id = self.get_cct_cost_center(next(iter(cost_center_numbers)))
+            for item in split_items_o:
+                item["allocations"] = [{"share": 1, "toCostCenterId": cost_center_id}]
 
         payload = self._get_common_transaction_payload(transaction)
+
         payload["items"] = json.dumps(split_items_o)
-        if cost_center_id:
-            payload["allocations"] = json.dumps([{"share": 1, "toCostCenterId": cost_center_id}])
         return self._create_transaction_api_call(
             payload, f"create collective transaction: len: {len(transaction.splits)}"
         )
