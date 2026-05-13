@@ -652,6 +652,7 @@ def get_income_account(invoice_category, account_key, contract=None):
             name="Ertrag aus Rechnung",
             prefix=invoice_category.income_account,
             building_based=invoice_category.income_account_building_based,
+            building_based_cost_center=invoice_category.building_based_cost_center,
         )
     return setup_account(account, contract)
 
