@@ -47,20 +47,24 @@ def _match_CostConfigFieldTypes_with_REPORT_FIELDTYPE_CHOICES_values(ccft: CostC
             return "char"
         case CostConfigFieldTypes.BOOL:
             return "bool"
-        case CostConfigFieldTypes.FLOAT:
-            return "float"
-        case CostConfigFieldTypes.INT:
-            return "int"
-        case CostConfigFieldTypes.DATE:
-            return "date"
-        case CostConfigFieldTypes.LIST_12MONTHS_FLOAT:
-            return "list_12months_float"
-        case CostConfigFieldTypes.FILE:
-            return "file"
-        case CostConfigFieldTypes.JSON:
-            return "json"
-        case CostConfigFieldTypes.BUILDINGIDS:
-            return "buildingIds"
+        case CostConfigFieldTypes.MEASUREMENT_SOURCES:
+            return "char"
+        case CostConfigFieldTypes.VEWA_CATEGORY:
+            return "char"
+        # case CostConfigFieldTypes.FLOAT:
+        #     return "float"
+        # case CostConfigFieldTypes.INT:
+        #     return "int"
+        # case CostConfigFieldTypes.DATE:
+        #     return "date"
+        # case CostConfigFieldTypes.LIST_12MONTHS_FLOAT:
+        #     return "list_12months_float"
+        # case CostConfigFieldTypes.FILE:
+        #     return "file"
+        # case CostConfigFieldTypes.JSON:
+        #     return "json"
+        # case CostConfigFieldTypes.BUILDINGIDS:
+        #     return "buildingIds"
         case _:
             raise ValueError(f"Unbekannter CostConfigFieldTypes-Wert: {ccft}")
 
