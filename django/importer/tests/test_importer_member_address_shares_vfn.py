@@ -18,28 +18,49 @@ from importer.models import ImportJob
 User = get_user_model()
 
 HEADERS = [
-    "ID",
-    "Anrede",
-    "Titel",
-    "Vorname",
+    "ImportID",
+    # Address
+    "Organisation",
     "Nachname",
-    "Firma",
-    "Kontaktperson",
+    "Vorname",
+    "Anrede",
+    "Duzen",
+    "Adresszusatz",
     "Strasse",
+    "Hausnummer",
+    "Postfach",
+    "Postfach Nr.",
     "PLZ",
     "Ort",
     "Land",
     "Telefon",
-    "Mobile",
+    "2. Telefon",
+    "Telefon Geschäft",
     "Email",
-    "Eintrittsdatum",
-    "Genossenschaftsanteile Anzahl",
-    "Genossenschaftsanteile Wert",
-    "Genossenschaftsanteile Status",
-    "Genossenschaftsanteile Datum",
-    "IBAN",
-    "Kontoinhaber",
-    "Bank",
+    "2. Email",
+    "AHV-Nr.",
+    "Geburtsdatum",
+    "Heimatort",
+    "Kontoverbindung",
+    ## Member
+    "Eintritt [Mitglied]",
+    "Austritt [Mitglied]",
+    "Flag 1: Test A",
+    "Flag 2: Test B",
+    "Flag 3: Test C",
+    "Flag 4: Test D",
+    "Flag 5: Test E",
+    "Bemerkungen [Mitglied]",
+    ## Share
+    "Typ [Beteiligungen]",
+    "Status [Beteiligungen]",
+    "Datum Beginn [Beteiligungen]",
+    "Datum Ende [Beteiligungen]",
+    "Beteiligungs-ID",
+    "Beteiligungs-ID extern",
+    "Anzahl [Beteiligungen]",
+    "Betrag pro Stück [Beteiligungen]",
+    "Zusatzinfo [Beteiligungen]",
 ]
 
 
@@ -77,21 +98,28 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
     def test_import_simple_person_with_member_and_share(self):
         """Import a single person who is a member and has shares."""
         row = self.make_row(
-            ID="101",
+            ImportID="101",
             Anrede="Herr",
             Vorname="Hans",
             Nachname="Muster",
-            Strasse="Musterstrasse 1",
+            Strasse="Musterstrasse",
+            Hausnummer="1",
             PLZ="3011",
             Ort="Bern",
-            Land="CH",
+            Land="Schweiz",
             Email="hans.muster@example.com",
-            Eintrittsdatum="2020-05-01",
             **{
-                "Genossenschaftsanteile Anzahl": 3,
-                "Genossenschaftsanteile Wert": 1000,
-                "Genossenschaftsanteile Status": "bezahlt",
-                "Genossenschaftsanteile Datum": "2020-05-15",
+                "Eintritt [Mitglied]": "2020-05-01",
+                "Flag 1: Test A": "Ja",
+                "Flag 2: Test B": "Nein",
+                "Typ [Beteiligungen]": "Genossenschaftsanteilschein",
+                "Status [Beteiligungen]": "einbezahlt",
+                "Datum Beginn [Beteiligungen]": "2020-05-15",
+                "Beteiligungs-ID": "99",
+                "Beteiligungs-ID extern": "99ex",
+                "Anzahl [Beteiligungen]": "3",
+                "Betrag pro Stück [Beteiligungen]": "1000",
+                "Zusatzinfo [Beteiligungen]": "Test",
             },
         )
         excel_file = self.create_test_excel([row])
@@ -112,21 +140,26 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
         self.assertEqual(address.house_number, "1")
         self.assertEqual(address.city_zipcode, "3011")
         self.assertEqual(address.city_name, "Bern")
-        self.assertEqual(address.import_id, f"vfn_{import_job.id}_101")
+        self.assertEqual(address.import_id, "vfn_101")
 
         member = Member.objects.get(name=address)
         self.assertEqual(member.date_join, date(2020, 5, 1))
+        self.assertEqual(member.flag_01, True)
+        self.assertEqual(member.flag_02, False)
 
         share = Share.objects.get(name=address)
         self.assertEqual(share.quantity, 3)
         self.assertEqual(share.value, Decimal("1000"))
         self.assertEqual(share.state, "bezahlt")
         self.assertEqual(share.date, date(2020, 5, 15))
+        self.assertEqual(share.identifier, "99")
+        self.assertEqual(share.identifier_external, "99ex")
+        self.assertEqual(share.note, "Test")
 
     def test_import_person_no_membership(self):
         """Import a person without membership date — no Member should be created."""
         row = self.make_row(
-            ID="102",
+            ImportID="102",
             Anrede="Frau",
             Vorname="Anna",
             Nachname="Beispiel",
@@ -140,13 +173,77 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
         address = Address.objects.get(email="anna@example.com")
         self.assertFalse(Member.objects.filter(name=address).exists())
 
+    def test_import_simple_person_with_extra_data(self):
+        """Import a single person who is a member and has shares."""
+        row = self.make_row(
+            ImportID="101",
+            Anrede="Frau",
+            Vorname="Susi",
+            Nachname="Muster",
+            Adresszusatz="Whg.099",
+            Email="susi.muster@example.com",
+            **{
+                "Postfach": "Ja",
+                "Postfach Nr.": "301",
+                "Telefon": "111",
+                "2. Telefon": "222",
+                "Telefon Geschäft": "333",
+                "2. Email": "susi2@example.com",
+                "AHV-Nr.": "756.1234.5678.97",
+                "Geburtsdatum": "1950-01-01",
+                "Heimatort": "Hometown",
+                "Eintritt [Mitglied]": "2020-05-01",
+                "Austritt [Mitglied]": "2021-05-01",
+                "Bemerkungen [Mitglied]": "Test-Bemerkung",
+                "Status [Beteiligungen]": "zurückbezahlt",
+                "Datum Beginn [Beteiligungen]": "2020-05-15",
+                "Datum Ende [Beteiligungen]": "2021-05-15",
+                "Anzahl [Beteiligungen]": "1",
+                "Betrag pro Stück [Beteiligungen]": "100",
+            },
+        )
+        excel_file = self.create_test_excel([row])
+        import_job = ImportJob.objects.create(
+            file=excel_file, import_type="member_address_shares_vfn"
+        )
+        importer = ImporterMemberAddressSharesVFN(import_job)
+        results = importer.process()
+
+        self.assertEqual(results["success_count"], 1)
+        self.assertEqual(results["error_count"], 0)
+
+        address = Address.objects.get(email="susi.muster@example.com")
+        self.assertEqual(address.title, "Frau")
+        self.assertEqual(address.extra, "Whg.099")
+        self.assertTrue(address.po_box)
+        self.assertEqual(address.po_box_number, "301")
+        self.assertEqual(address.telephone, "111")
+        self.assertEqual(address.mobile, "222")
+        self.assertEqual(address.telephoneOffice, "333")
+        self.assertEqual(address.email2, "susi2@example.com")
+        self.assertEqual(address.ahv_number, "756.1234.5678.97")
+        self.assertEqual(address.date_birth, date(1950, 1, 1))
+        self.assertEqual(address.hometown, "Hometown")
+
+        member = Member.objects.get(name=address)
+        self.assertEqual(member.date_join, date(2020, 5, 1))
+        self.assertEqual(member.date_leave, date(2021, 5, 1))
+        self.assertEqual(member.notes, "Test-Bemerkung")
+
+        share = Share.objects.get(name=address)
+        self.assertEqual(share.quantity, 1)
+        self.assertEqual(share.value, Decimal("100"))
+        self.assertEqual(share.state, "bezahlt")
+        self.assertEqual(share.date, date(2020, 5, 15))
+        self.assertEqual(share.date_end, date(2021, 5, 15))
+
     def test_import_organization(self):
         """Import a Firma with contact person."""
         row = self.make_row(
-            ID="200",
+            ImportID="200",
             Anrede="Firma",
-            Firma="Musterfirma AG",
-            Kontaktperson="Meier",
+            Organisation="Musterfirma AG",
+            Nachname="Meier",
             Vorname="Beat",
             Email="info@musterfirma.ch",
             Eintrittsdatum="2019-01-01",
@@ -164,14 +261,12 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
     def test_import_with_bank_account(self):
         """Import person with IBAN creates a BankAccount."""
         row = self.make_row(
-            ID="103",
+            ImportID="103",
             Vorname="Karl",
             Nachname="Reich",
             Email="karl@example.com",
             Eintrittsdatum="2021-03-10",
-            IBAN="CH5604835012345678009",
-            Kontoinhaber="Karl Reich",
-            Bank="Raiffeisenbank",
+            Kontoverbindung="CH5604835012345678009",
         )
         excel_file = self.create_test_excel([row])
         import_job = ImportJob.objects.create(file=excel_file)
@@ -180,21 +275,20 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
         address = Address.objects.get(email="karl@example.com")
         self.assertIsNotNone(address.bankaccount)
         self.assertEqual(address.bankaccount.iban, "CH5604835012345678009")
-        self.assertEqual(address.bankaccount.financial_institution, "Raiffeisenbank")
 
     def test_share_type_created_automatically(self):
         """The default ShareType is created automatically if it does not exist."""
         ShareType.objects.all().delete()
         row = self.make_row(
-            ID="104",
+            ImportID="104",
             Vorname="Lena",
             Nachname="Neumann",
             Email="lena@example.com",
             Eintrittsdatum="2022-06-01",
             **{
-                "Genossenschaftsanteile Anzahl": 1,
-                "Genossenschaftsanteile Wert": 500,
-                "Genossenschaftsanteile Datum": "2022-06-01",
+                "Anzahl [Beteiligungen]": 1,
+                "Betrag pro Stück [Beteiligungen]": 500,
+                "Datum Beginn [Beteiligungen]": "2022-06-01",
             },
         )
         excel_file = self.create_test_excel([row])
@@ -208,7 +302,7 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
     def test_prevent_duplicate_without_override(self):
         """Second import of same ID raises error when override_existing=False."""
         row = self.make_row(
-            ID="105",
+            ImportID="105",
             Vorname="Test",
             Nachname="Doppelt",
             Email="doppelt@example.com",
@@ -228,7 +322,7 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
     def test_override_existing_updates_address(self):
         """With override_existing=True an existing address is updated."""
         row = self.make_row(
-            ID="106",
+            ImportID="106",
             Vorname="Original",
             Nachname="Person",
             Email="original@example.com",
@@ -239,7 +333,7 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
         ImporterMemberAddressSharesVFN(job1).process()
 
         row_updated = self.make_row(
-            ID="106",
+            ImportID="106",
             Vorname="Geändert",
             Nachname="Person",
             Email="original@example.com",
@@ -255,7 +349,7 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
 
     def test_missing_name_fails(self):
         """Row with no name fields at all fails validation."""
-        row = self.make_row(ID="999", Email="noname@example.com")
+        row = self.make_row(ImportID="999", Email="noname@example.com")
         excel_file = self.create_test_excel([row])
         import_job = ImportJob.objects.create(file=excel_file)
         results = ImporterMemberAddressSharesVFN(import_job).process()
@@ -266,16 +360,16 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
     def test_share_state_gefordert_default(self):
         """Shares without explicit 'bezahlt' state default to 'gefordert'."""
         row = self.make_row(
-            ID="107",
+            ImportID="107",
             Vorname="Pending",
             Nachname="Share",
             Email="pending@example.com",
             Eintrittsdatum="2023-01-01",
             **{
-                "Genossenschaftsanteile Anzahl": 2,
-                "Genossenschaftsanteile Wert": 500,
-                "Genossenschaftsanteile Status": "offen",
-                "Genossenschaftsanteile Datum": "2023-01-01",
+                "Anzahl [Beteiligungen]": 2,
+                "Betrag pro Stück [Beteiligungen]": 500,
+                "Datum Beginn [Beteiligungen]": "2022-06-01",
+                "Status [Beteiligungen]": "offen",
             },
         )
         excel_file = self.create_test_excel([row])

@@ -16,6 +16,7 @@ from .utils import (
     get_field_by_prefix,
     get_or_create_bank_account,
     get_or_create_share_type,
+    parse_bool,
     parse_date,
     parse_decimal,
     parse_int,
@@ -87,21 +88,20 @@ class ImporterMemberAddressSharesVFN(ExcelImporter):
         if sheet is not None:
             raise ValidationError(_("Sheets are not supported for this importer"))
 
-        is_organization = bool(row_data.get("Firma"))
-        address = self._create_or_update_address(row_data, is_organization)
+        address = self._create_or_update_address(row_data)
 
         if row_data.get("Eintritt [Mitglied]"):
             self._create_or_update_member(row_data, address)
 
-        if row_data.get("Genossenschaftsanteile Anzahl") or row_data.get(
-            "Genossenschaftsanteile Wert"
+        if row_data.get("Anzahl [Beteiligungen]") or row_data.get(
+            "Betrag pro Stück [Beteiligungen]"
         ):
             self._create_or_update_share(row_data, address)
 
         logger.info(f"Successfully processed {address}")
 
-    def _create_or_update_address(self, row_data: dict, is_organization: bool) -> Address:
-        person_id = row_data.get("Import-ID")
+    def _create_or_update_address(self, row_data: dict) -> Address:
+        person_id = row_data.get("ImportID")
         import_id = f"vfn_{person_id}" if person_id else None
 
         address = None
@@ -122,23 +122,21 @@ class ImporterMemberAddressSharesVFN(ExcelImporter):
         if not address:
             address = Address()
 
-        if is_organization:
-            address.organization = row_data.get("Organisation") or ""
-            address.name = row_data.get("Nachname") or ""
-            address.first_name = row_data.get("Vorname") or ""
-        else:
-            address.organization = ""
-            address.name = row_data.get("Nachname") or ""
-            address.first_name = row_data.get("Vorname") or ""
+        address.organization = row_data.get("Organisation") or ""
+        address.name = row_data.get("Nachname") or ""
+        address.first_name = row_data.get("Vorname") or ""
 
         title_raw = row_data.get("Anrede") or ""
-        address.title = self._map_title(title_raw, is_organization)
+        address.title = self._map_title(title_raw, bool(address.organization))
 
+        address.extra = row_data.get("Adresszusatz") or ""
         address.street_name = row_data.get("Strasse") or ""
         address.house_number = row_data.get("Hausnummer") or ""
+        address.po_box = parse_bool(row_data.get("Postfach")) or False
+        address.po_box_number = row_data.get("Postfach Nr.") or ""
 
-        plz = str(row_data.get("PLZ") or "").strip()
         # PLZ may come as integer from Excel (e.g. 3011)
+        plz = str(row_data.get("PLZ") or "").strip()
         address.city_zipcode = plz
         address.city_name = row_data.get("Ort") or ""
         address.country = (
@@ -155,16 +153,18 @@ class ImporterMemberAddressSharesVFN(ExcelImporter):
             if len(emails) > 1:
                 address.email2 = emails[1]
 
+        address.ahv_number = row_data.get("AHV-Nr.") or ""
+        address.date_birth = parse_date(row_data.get("Geburtsdatum"))
+        address.hometown = row_data.get("Heimatort") or ""
+
         if import_id:
             address.import_id = import_id
 
         address.save()
 
-        iban = str(row_data.get("IBAN") or "").strip().upper().replace(" ", "")
+        iban = str(row_data.get("Kontoverbindung") or "").strip().upper().replace(" ", "")
         if iban:
-            holder = str(row_data.get("Kontoinhaber") or "").strip()
-            institution = str(row_data.get("Bank") or "").strip()
-            bank_account = get_or_create_bank_account(iban, holder, institution)
+            bank_account = get_or_create_bank_account(iban)
             if bank_account:
                 address.bankaccount = bank_account
                 address.save()
@@ -184,8 +184,11 @@ class ImporterMemberAddressSharesVFN(ExcelImporter):
 
         member.date_join = date_join
         member.date_leave = parse_date(row_data.get("Austritt [Mitglied]"))
-        member.flag_01 = get_field_by_prefix(row_data, "Flag 1") == "Ja"
-        member.flag_02 = get_field_by_prefix(row_data, "Flag 2") == "Ja"
+        member.flag_01 = parse_bool(get_field_by_prefix(row_data, "Flag 1")) or False
+        member.flag_02 = parse_bool(get_field_by_prefix(row_data, "Flag 2")) or False
+        member.flag_03 = parse_bool(get_field_by_prefix(row_data, "Flag 3")) or False
+        member.flag_04 = parse_bool(get_field_by_prefix(row_data, "Flag 4")) or False
+        member.flag_05 = parse_bool(get_field_by_prefix(row_data, "Flag 5")) or False
         member.notes = row_data.get("Bemerkungen [Mitglied]") or ""
         member.save()
 
@@ -193,14 +196,14 @@ class ImporterMemberAddressSharesVFN(ExcelImporter):
         """Create or update a Share record linked to the address."""
         share_type = get_or_create_share_type(self.DEFAULT_SHARE_TYPE_NAME)
 
-        person_id = row_data.get("Import-ID")
+        person_id = row_data.get("ImportID")
         import_id = f"vfn_{person_id}" if person_id else None
 
         share = None
         if import_id:
             try:
                 share = Share.objects.get(import_id=import_id)
-            except share.DoesNotExist:
+            except Share.DoesNotExist:
                 pass
 
         if not share:
@@ -214,24 +217,24 @@ class ImporterMemberAddressSharesVFN(ExcelImporter):
         value = parse_decimal(value_raw)
         share.value = value if value is not None else Decimal("0.00")
 
-        state_raw = str(row_data.get("Genossenschaftsanteile Status") or "").strip().lower()
-        if state_raw in ("bezahlt", "paid", "einbezahlt", "zurückbezahlt"):
+        state_raw = str(row_data.get("Status [Beteiligungen]") or "").strip().lower()
+        if state_raw in ("bezahlt", "paid", "einbezahlt", "eingezahlt", "zurückbezahlt"):
             share.state = "bezahlt"
         else:
             share.state = "gefordert"
 
-        share_date = parse_date(row_data.get("G-ATS Datum Einzahlung [Beteiligungen]"))
+        share_date = parse_date(row_data.get("Datum Beginn [Beteiligungen]"))
         if share_date:
             share.date = share_date
         elif not share.pk:
             # Fallback: use today
             share.date = datetime.date.today()
 
-        share.date_end = parse_date(row_data.get("G-ATS Datum Rückzahlung [Beteiligungen]"))
+        share.date_end = parse_date(row_data.get("Datum Ende [Beteiligungen]"))
 
-        share.identifier = row_data.get("G-ATS-Nr. Via [Beteiligungen]") or ""
-        share.identifier_external = row_data.get("ATS-Nr. TIS [Beteiligungen]") or ""
-        share.notes = row_data.get("Zusatzinfo [Beteiligungen]") or ""
+        share.identifier = row_data.get("Beteiligungs-ID") or ""
+        share.identifier_external = row_data.get("Beteiligungs-ID extern") or ""
+        share.note = row_data.get("Zusatzinfo [Beteiligungen]") or ""
 
         if import_id:
             share.import_id = import_id
