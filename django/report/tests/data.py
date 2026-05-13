@@ -6,10 +6,10 @@ from geno.models import Address, Contract
 from geno.tests import data as geno_testdata
 
 
-def create_nk_data(cls):
+def create_nk_data(cls, legacy=False):
     geno_testdata.create_rentalunits(cls, 3)
     create_contracts(cls)
-    create_measurement_data(cls)
+    create_measurement_data(cls, legacy)
     create_templates(cls)
 
 
@@ -47,7 +47,7 @@ def create_templates(cls):
     cls.filer_template_akonto = cls.addFilerFile("report/tests/test_data/nk_template_akonto.odt")
 
 
-def create_measurement_data(cls):
+def create_measurement_data(cls, legacy=False):
     cls.filer_measurements_building = cls.addFilerFile("report/tests/test_data/nk_messdaten.csv")
 
     ## Rental unit data
@@ -55,17 +55,31 @@ def create_measurement_data(cls):
         "Strom": {
             "Gebäudeeinheit": "object",
             "Mieter Abrechnungsperiode": "time_period",
-            "Strombezug Niedertarif(kWh)": lambda ru: ru.area * 2,
-            "Strombezug Hochtarif EW (kWh)": lambda ru: ru.area * 6,
-            "Solarstrom (kWh)": lambda ru: ru.area * 4,
-            "Strombezug Niedertarif(CHF)": lambda ru: ru.area * 2 * 0.28,
-            "Strombezug EW (CHF)": lambda ru: ru.area * 6 * 0.30,
+            "Strombezug Niedertarif(kWh)": lambda ru: ru.area * 2
+            if legacy or ru.rental_type != "Lager"
+            else 0,
+            "Strombezug Hochtarif EW (kWh)": lambda ru: ru.area * 6
+            if legacy or ru.rental_type != "Lager"
+            else 0,
+            "Solarstrom (kWh)": lambda ru: ru.area * 4
+            if legacy or ru.rental_type != "Lager"
+            else 0,
+            "Strombezug Niedertarif(CHF)": lambda ru: ru.area * 2 * 0.28
+            if legacy or ru.rental_type != "Lager"
+            else 0,
+            "Strombezug EW (CHF)": lambda ru: ru.area * 6 * 0.30
+            if legacy or ru.rental_type != "Lager"
+            else 0,
         },
         "Waerme": {
             "Gebäudeeinheit": "object",
             "Mieter Abrechnungsperiode": "time_period",
-            "Warmwasser Verbrauch (Kubikmeter)": lambda ru: ru.area * 0.4,
-            "Wärmeverbrauch (kWh)": lambda ru: ru.area * 7,
+            "Warmwasser Verbrauch (Kubikmeter)": lambda ru: ru.area * 0.4
+            if legacy or ru.rental_type != "Lager"
+            else 0,
+            "Wärmeverbrauch (kWh)": lambda ru: ru.area * 7
+            if legacy or ru.rental_type == "Wohnung"
+            else 0,
         },
     }
     months = [
@@ -89,13 +103,19 @@ def create_measurement_data(cls):
                 filename = f"egon_{mtype}_{month['year']}-{month['month']}.csv"
                 archive.writestr(
                     filename,
-                    create_monthly_measurement_data(cls, month, fields[mtype]).encode("iso8859"),
+                    create_monthly_measurement_data(cls, month, fields[mtype], legacy).encode(
+                        "iso8859"
+                    ),
                 )
     file_like_object.seek(0)
     cls.filer_measurements_units = cls.addFilerFD(file_like_object, "measurement_units.zip")
 
 
-def create_monthly_measurement_data(cls, month, fields):
+def create_monthly_measurement_data(cls, month, fields, legacy=False):
+    class Allgemein:
+        area = 1000
+        rental_type = "Allgemein"
+
     lines = []
     ## Header
     cols = []
@@ -114,6 +134,20 @@ def create_monthly_measurement_data(cls, month, fields):
                 )
             else:
                 monthly_value = value(ru) / 12
+                cols.append(f'"{monthly_value}"')
+        lines.append(";".join(cols))
+    if not legacy:
+        ## Allgemeinstrom
+        cols = []
+        for value in fields.values():
+            if value == "object":
+                cols.append('"Allgemein"')
+            elif value == "time_period":
+                cols.append(
+                    f'"01.{month["month"]}.{month["year"]} - {month["days"]}.{month["month"]}.{month["year"]}"'
+                )
+            else:
+                monthly_value = value(Allgemein) / 12
                 cols.append(f'"{monthly_value}"')
         lines.append(";".join(cols))
     return "\n".join(lines)

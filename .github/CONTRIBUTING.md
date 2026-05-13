@@ -16,12 +16,14 @@ By participating, you are expected to uphold this code. Please report unacceptab
 ## How to Contribute
 - Star cohiva if you like it.
 
+- Read [this information](https://wiki.cohiva.ch/e/de/home/workflows/feebdack) on how to proceed in case of ideas and problems.
+
 - Need help using a feature?
   Open a [new discussion](https://github.com/tegonal/cohiva/discussions/new?category=q-a) 
   and write down your question there and we will get back to you.
   
 - Found a bug?  
-  [Open an issue](https://github.com/tegonal/cohiva/issues/new?template=bug_report.md).
+  [Open an issue](https://github.com/tegonal/cohiva/issues/new?template=bug_report.yaml).
   
 - Missing a feature?  
   Open a [new discussion](https://github.com/tegonal/cohiva/discussions/new?category=ideas)

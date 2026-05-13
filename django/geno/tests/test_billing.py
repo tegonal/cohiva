@@ -13,7 +13,6 @@ from geno.billing import (
     add_invoice_obj,
     build_structured_qrbill_address,
     create_qrbill,
-    get_reference_nr,
     transform_qrbill_country,
 )
 from geno.models import (

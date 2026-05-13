@@ -94,8 +94,8 @@ else
   TEST_OPTS=""
 fi
 
-## Select test to run (leave emtpy to run all tests)
-SELECTED_TESTS=""
+## Select test(s) to run (comment out to run all tests)
+#SELECTED_TESTS=""
 # Examples:
 #SELECTED_TESTS="cohiva.tests credit_accounting.tests finance.tests geno.tests importer.tests portal.tests report.tests reservation.tests"
 #SELECTED_TESTS="geno.tests.test_models.AddressTest finance.tests.test_accounting.TransactionTestCase.test_strings"

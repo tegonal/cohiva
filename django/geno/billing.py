@@ -26,6 +26,7 @@ from stdnum.ch import esr
 from svglib.svglib import svg2rlg
 
 import geno.settings as geno_settings
+from cohiva.utils.countries import normalize_country_code
 from cohiva.utils.pdf import PdfGenerator
 from cohiva.utils.strings import pluralize
 from cohiva.views.admin import CohivaAdminViewMixin, ResponseVariant
@@ -38,7 +39,6 @@ from finance.accounting import (
     Split,
     Transaction,
 )
-from cohiva.utils.countries import normalize_country_code
 
 from .models import (
     Address,

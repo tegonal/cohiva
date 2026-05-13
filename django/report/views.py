@@ -77,7 +77,7 @@ class ReportConfigView(ReportViewMixin, FormView):
     form_class = ReportConfigForm
     title = _("Report konfigurieren")
 
-    step_title = _("Kongiguration")
+    step_title = _("Konfiguration")
     form_action = reverse_lazy("report:report-config")
     back_url = reverse_lazy("report:report-config")  # No back button on step 1
     permission_required = "report.report_change"

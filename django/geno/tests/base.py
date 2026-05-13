@@ -22,6 +22,18 @@ from geno.models import Invoice
 class CohivaTestBase:
     UserModel = get_user_model()
     local_tz = zoneinfo.ZoneInfo(settings.TIME_ZONE)
+    # References to test data
+    addresses = None
+    members = None
+    children = None
+    shares = None
+    sharetypes = None
+    contenttemplates = None
+    buildings = None
+    rentalunits = None
+    contracts = None
+    registrationevents = None
+    registrationslots = None
 
     def assertInHTML(self, needle, haystack, dump_on_fail=True):
         try:

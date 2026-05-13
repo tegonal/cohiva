@@ -3,11 +3,12 @@
 This centralizes ISO alpha-2 codes and helps translate between
 legacy free-text values and normalized codes.
 """
+
+import gettext
+import locale
 from functools import lru_cache
 
 import pycountry
-import gettext
-import locale
 
 DEFAULT_COUNTRY_CODE = "CH"
 PRIORITY_CODES = ["CH", "DE", "AT", "FR", "IT"]
@@ -118,5 +119,3 @@ def normalize_country_code(value: str) -> str:
     except LookupError:
         return ""
     return match.alpha_2
-
-

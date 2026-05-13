@@ -1,0 +1,41 @@
+name: 🚀 Neue Anforderung / Feature Request
+description: Schlage eine neue Anforderung für COHIVA vor
+labels: []
+type: Feature
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke, dass du dir die Zeit nimmst, diese Anforderung zu melden und die folgenden Informationen zusammen zu tragen!
+  - type: input
+    id: component
+    attributes:
+      label: Betroffene Komponente(n)
+      description: Welche Komponente(n) von COHVIA betrifft diese Anforderung?
+      placeholder: "COHIVA ERP, Seafile (Deteiablage), App, Rocket Chat, ..."
+    validations:
+      required: false
+  - type: textarea
+    id: task
+    attributes:
+      label: Aufgabe
+      description: Welche Aufgabe wird mit der Anforderung erleichtert / abgedeckt?
+      placeholder: "Beschreibe in einigen Sätzen, welche Arbeiten du durch die Verfügbarkeit der neuen Funktionalität (besser) erledigen könntest."
+    validations:
+      required: false
+  - type: textarea
+    id: solution
+    attributes:
+      label: Lösungsvorschlag
+      description: Wie würdest du die Anforderung in COHIVA umsetzen?
+      placeholder: "Falls du eine Idee hast, beschreibe wie du dir die Anforderung in COVHIA umsetzt wünschst. Füge auch gerne Screenshots ein."
+    validations:
+      required: true
+  - type: textarea
+    id: users
+    attributes:
+      label: Nutzende
+      description: Welche User-Gruppe(n) würden die neue Funktion nutzen?
+      placeholder: "Nach deiner Einschätzung: Ist dies eine Anforderung, welche nur für deinen spezifischen Fall wichtig ist oder für alle Nutzenden spannend sein kann?"
+    validations:
+      required: false

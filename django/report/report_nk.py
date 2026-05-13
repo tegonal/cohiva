@@ -31,7 +31,13 @@ from django.conf import settings
 from cohiva.utils.pdf import PdfGenerator
 from geno.models import Invoice, InvoiceCategory, RentalUnit
 from geno.utils import JSONDecoderDatetime, JSONEncoderDatetime
+from report.generator import ReportGenerator
 from report.models import ReportOutput
+
+"""THIS FILE CONTAINS LEGACY CODE THAT WILL BE REMOVED IN THE FUTURE.
+It should only be used to test backwards compatibility. The new implementation
+is in report/nk/
+"""
 
 pio.kaleido.scope.mathjax = None
 
@@ -907,8 +913,16 @@ def import_from_api():
     ## Get RentalUnits
     response = RentalUnit.objects.filter(active=True).order_by("name")
     if nk.config["Liegenschaften"]:
-        building_ids = [int(x) for x in json.loads(nk.config["Liegenschaften"].replace("'", '"'))]
+        value = json.loads(nk.config["Liegenschaften"].replace("'", '"'))
+        if isinstance(value, list):
+            building_ids = [int(x) for x in value]
+        else:
+            building_ids = [int(value)]
         response = response.filter(building__in=building_ids)
+    buildings = response.order_by("building").values_list("building", flat=True).distinct()
+    if buildings.count() != 1:
+        raise RuntimeError("Die Nebenkostenabrechung benötigt derzeit genau eine Liegenschaft.")
+    nk.building_id = buildings.first()
 
     ru_section = {
         "Wohnung": "Wohnen",
@@ -2198,6 +2212,7 @@ def create_bills(regenerate_invoice_id=None):
         nk.log.append("Creating bill for contract %s" % contract_str)
         context = {
             "contract_id": c_id,
+            "building_id": nk.building_id,
             "Euer": contract_formal_str,
             "contract_info": contract_info,
             "contract_period": "%s – %s"
@@ -2889,34 +2904,6 @@ def create_energy_timeseries_graph(data, output_filename, context, extra_text=No
         raise RuntimeError(f"Could not write {output_filename}")
 
 
-## TODO: Make this a class-based report generator
-class ReportGenerator:
-    default_config = {}
-
-    def __init__(self, report, *args, **kwargs):
-        self.config = copy.deepcopy(self.default_config)
-        self.config.update(report.get_report_config())
-
-        self._warnings = {}
-
-    def add_warning(self, text, obj):
-        if text in self._warnings:
-            if obj not in self._warnings[text]:
-                self._warnings[text].append(obj)
-        else:
-            self._warnings[text] = [obj]
-
-    def get_warnings(self, space_lines_longer_than=250):
-        lines = []
-        for warning, objects in self._warnings.items():
-            line = f"{warning}: {', '.join(objects)}"
-            if space_lines_longer_than and len(line) > space_lines_longer_than:
-                lines.extend(["", line, ""])
-            else:
-                lines.append(line)
-        return lines
-
-
 class Nebenkosten:
     default_costs = [
         {"name": "Hauswartung_ServiceHeizungLüftung"},
@@ -3109,6 +3096,7 @@ class NebenkostenReportGenerator(ReportGenerator):
         ]
         self.object_indices = {}
 
+        self.building_id = None
         self.contracts = {}
         self.active_contracts = []
 
