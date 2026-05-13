@@ -53,7 +53,8 @@ class ReportAdmin(GenoBaseAdmin):
 
 class ReportInputFieldInline(TabularInline):  # oder admin.StackedInline
     model = ReportConfiguration.report_configuration.rel.related_model.report_item_configuration.rel.related_model
-    fields = ["name", "description", "field_type", "active"]
+    fields = ["field_type", "description", "value_default", "active"]
+    readonly_fields = ["name", "field_type"]
     can_delete = False
 
     def has_add_permission(self, request, obj):
