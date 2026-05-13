@@ -597,7 +597,8 @@ class CashctrlBookTestCase(TestCase):
             )
 
             form_data_constructed = mock_post.call_args[1]
-            allocations = json.loads(form_data_constructed["data"]["allocations"])
+            json_content = json.loads(form_data_constructed["data"]["items"])
+            allocations = next(iter(json_content))["allocations"]
             self.assertEqual(1, len(allocations))
             self.assertEqual(1, allocations[0]["share"])
             self.assertEqual(42, allocations[0]["toCostCenterId"])
