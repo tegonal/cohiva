@@ -76,12 +76,9 @@ class ImportRecord(GenoBase):
         related_name="records",
         verbose_name=_("Import-Auftrag"),
     )
-    name = models.CharField(
-        max_length=255,
-        verbose_name=_("Name"),
-        blank=True,
-    )
+    name = models.CharField(max_length=255, verbose_name=_("Name"), blank=True)
     row_number = models.IntegerField(verbose_name=_("Zeilennummer"))
+    sheet_name = models.CharField(max_length=255, verbose_name=_("Tabelle"), blank=True)
     data = models.JSONField(verbose_name=_("Daten"))
     error_message = models.TextField(blank=True, verbose_name=_("Fehlermeldung"))
     success = models.BooleanField(default=False, verbose_name=_("Erfolgreich"))

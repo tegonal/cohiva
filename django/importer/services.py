@@ -154,7 +154,7 @@ class ExcelImporter:
                     ImportRecord.objects.create(
                         job=self.import_job,
                         row_number=row_number,
-                        sheet_name=sheet_name,
+                        sheet_name=sheet_name or "",
                         data=serialized_row_data,
                         success=True,
                     )
@@ -168,7 +168,7 @@ class ExcelImporter:
                 ImportRecord.objects.create(
                     job=self.import_job,
                     row_number=row_number,
-                    sheet_name=sheet_name,
+                    sheet_name=sheet_name or "",
                     data=serialized_row_data,
                     error_message=str(e),
                     success=False,
