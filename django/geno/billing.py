@@ -669,11 +669,14 @@ def get_receivables_account(invoice_category, contract=None):
 
 
 def setup_account(account, contract):
-    if account.building_based and contract and contract.rental_units.exists():
+    if contract and contract.rental_units.exists():
         ## Use first rental unit's building accounting postfix
         ru = contract.rental_units.all().first()
         if ru.building:
-            account.set_code(building=ru.building)
+            if account.building_based:
+                account.set_code(building=ru.building)
+            if account.building_based_cost_center:
+                account.set_cost_center(building=ru.building)
         else:
             logger.error(
                 f"Could not find building for contract id {contract.pk}, "
