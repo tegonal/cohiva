@@ -205,7 +205,7 @@ kombu==5.5.4
     # via celery
 laces==0.1.2
     # via wagtail
-lxml==5.4.0
+lxml==6.1.0
     # via
     #   caldav
     #   svglib
