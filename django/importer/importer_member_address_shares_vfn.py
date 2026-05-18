@@ -49,12 +49,12 @@ class ImporterMemberAddressSharesVFN(ExcelImporter):
         Raises:
             ValidationError: If a record already exists
         """
-        person_id = row_data.get("Import-ID")
+        person_id = row_data.get("ImportID")
         import_id = f"vfn_{person_id}" if person_id else None
 
         if import_id and Address.objects.filter(import_id=import_id).exists():
             raise ValidationError(
-                _("Adresse mit Import-ID %(import_id)s existiert bereits."),
+                _("Adresse mit ImportID %(import_id)s existiert bereits."),
                 params={"import_id": import_id},
             )
 

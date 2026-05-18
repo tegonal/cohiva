@@ -959,7 +959,7 @@ class Share(GenoBase):
         max_length=100,
         blank=True,
     )
-    note = models.CharField("Zusatzinfo", max_length=200, blank=True)
+    note = models.TextField("Zusatzinfo", blank=True)
     import_id = models.CharField(
         "Import-ID", max_length=255, unique=True, null=True, default=None, blank=True
     )
@@ -1313,31 +1313,30 @@ class RentalUnit(GenoBase):
     min_occupancy = models.DecimalField(
         "Mindestbelegung", max_digits=5, decimal_places=1, null=True, blank=True
     )
-    payment_period = models.IntegerField(
-        "Zahlungsperiode (Monate)",
+    billing_period = models.IntegerField(
+        "Rechnungsperiode (Monate)",
         default=1,
         help_text="1 = Monatliche Zahlung, 3 = Vierteljährliche Zahlung, 12 = Jährliche Zahlung etc.",
     )
     nk = models.DecimalField(
-        "Nebenkosten Akonto (Fr.)",
+        "Nebenkosten Akonto (Fr./Periode)",
         max_digits=10,
         decimal_places=2,
         null=True,
         blank=True,
-        help_text="Wird bei unvermieteten Gewerberäumen auch auf der Website angezeigt.",
     )
     nk_flat = models.DecimalField(
-        "Nebenkosten Pauschal (Fr.)",
+        "Nebenkosten Pauschal (Fr./Periode)",
         max_digits=10,
         decimal_places=2,
         null=True,
         blank=True,
     )
     nk_electricity = models.DecimalField(
-        "Strompauschale (Fr.)", max_digits=10, decimal_places=2, null=True, blank=True
+        "Strompauschale (Fr./Periode)", max_digits=10, decimal_places=2, null=True, blank=True
     )
     rent_netto = models.DecimalField(
-        "Netto-Miete (Fr.)",
+        "Netto-Miete (Fr./Periode)",
         max_digits=10,
         decimal_places=2,
         null=True,
@@ -1350,7 +1349,7 @@ class RentalUnit(GenoBase):
         decimal_places=2,
         null=True,
         blank=True,
-        help_text="Diese Miete wird für Gewerberäume auf der Website angezeigt.",
+        help_text="Für öffentliche Publikation (Website etc.). Wird aktuell nicht mehr verwendet.",
     )
     depot = models.DecimalField(
         "Depot (Fr.)", max_digits=10, decimal_places=2, null=True, blank=True
@@ -1377,8 +1376,8 @@ class RentalUnit(GenoBase):
     )
 
     @property
-    @admin.display(description="Bruttomiete (Fr.)")
-    def rent_total(self):
+    @admin.display(description="Bruttomiete (Fr./Periode)")
+    def rent_total(self) -> Decimal:
         """
         Bruttomiete inkl. NK und Strom
         """
@@ -1388,6 +1387,41 @@ class RentalUnit(GenoBase):
             + (self.nk_flat if self.nk_flat else Decimal(0.0))
             + (self.nk_electricity if self.nk_electricity else Decimal(0.0))
         )
+
+    @property
+    @admin.display(description="Bruttomiete (Fr./Monat)")
+    def rent_total_per_month(self) -> Decimal:
+        if not self.rent_total:
+            return Decimal(0.0)
+        return round(self.rent_total / self.billing_period, 2)
+
+    @property
+    @admin.display(description="Netto-Miete (Fr./Monat)")
+    def rent_netto_per_month(self) -> Decimal:
+        if not self.rent_netto:
+            return Decimal(0.0)
+        return round(self.rent_netto / self.billing_period, 2)
+
+    @property
+    @admin.display(description="Nebenkosten Akonto (Fr./Monat)")
+    def nk_per_month(self) -> Decimal | None:
+        if not self.nk:
+            return Decimal(0.0)
+        return round(self.nk / self.billing_period, 2)
+
+    @property
+    @admin.display(description="Nebenkosten Pauschal (Fr./Monat)")
+    def nk_flat_per_month(self) -> Decimal:
+        if not self.nk_flat:
+            return Decimal(0.0)
+        return round(self.nk_flat / self.billing_period, 2)
+
+    @property
+    @admin.display(description="Strompauschale (Fr./Monat)")
+    def nk_electricity_per_month(self) -> Decimal:
+        if not self.nk_electricity:
+            return Decimal(0.0)
+        return round(self.nk_electricity / self.billing_period, 2)
 
     def str_short(self):
         if self.label:

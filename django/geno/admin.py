@@ -1007,8 +1007,10 @@ class RentalUnitAdmin(GenoBaseAdmin):
         ("building", "floor"),
         ("area", "area_balcony", "area_add"),
         ("height", "volume"),
+        "billing_period",
         ("rent_netto", "nk", "nk_flat", "nk_electricity"),
-        "payment_period",
+        ("rent_netto_per_month", "nk_per_month", "nk_flat_per_month", "nk_electricity_per_month"),
+        ("rent_total", "rent_total_per_month"),
         ("share", "depot"),
         ("internal_nr", "ewid"),
         "note",
@@ -1024,12 +1026,17 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "backlinks",
     ]
     readonly_fields = [
+        "rent_total",
+        "rent_total_per_month",
+        "rent_netto_per_month",
+        "nk_per_month",
+        "nk_flat_per_month",
+        "nk_electricity_per_month",
         "import_id",
         "ts_created",
         "ts_modified",
         "links",
         "backlinks",
-        "rent_total",
     ]
     list_display = [
         "name",
@@ -1065,6 +1072,7 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "building__name",
         "floor",
         "status",
+        "billing_period",
         ("active", BooleanFieldDefaultTrueListFilter),
     ]
     autocomplete_fields = ["building"]

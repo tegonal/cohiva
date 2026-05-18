@@ -1,13 +1,5 @@
 """
-Building and RentalUnit Excel Importer for VFN data.
-
-This module handles the import of building and rental unit data from the
-VFN Excel file: Liegenschaften Mietobjekte Cohiva.xlsx
-
-Expected columns (one row per rental unit):
-  Liegenschaft ID, Liegenschaft Name, Strasse, PLZ, Ort, EGID,
-  Einheit ID, Einheit Nummer, Einheit Bezeichnung, Typ,
-  Etage, Zimmer, Fläche, NK Akonto, Nettomiete, EWID
+Building, RentalUnit and Contract Excel Importer for VFN data.
 """
 
 import datetime
@@ -20,23 +12,36 @@ from cohiva.utils.countries import normalize_country_code
 from geno.models import RENTAL_UNIT_TYPES, Address, Building, Contract, RentalUnit
 
 from .services import ExcelImporter
-from .utils import parse_decimal, parse_int
+from .utils import parse_date, parse_decimal, parse_int
 
 logger = logging.getLogger(__name__)
 
 
 class ImporterTenantPropertyVFN(ExcelImporter):
     """
-    Specialized importer for Building and RentalUnit data from VFN files.
-
-    Handles Excel files (Liegenschaften Mietobjekte Cohiva.xlsx) with
-    building and rental unit information. Uses ID fields to link data.
+    Specialized importer for Building, RentalUnit, and Contract data from VFN files.
     """
 
     RENTAL_TYPE_ALIASES = {
+        "Jokerzimmer": "Zimmer",
+        "WG-Zimmer": "Zimmer",
+        "Einzelzimmer": "Zimmer",
+        "Mansarde": "Zimmer",
+        "Keller": "Kellerabteil",
+        "Saal": "Gewerbe",
+        "Gewerbefläche": "Gewerbe",
+        "Lagerraum": "Lager",
+        "Lagerfläche": "Lager",
         "Hobbyraum": "Hobby",
+        "Raum / Atelier": "Hobby",
+        "Atelier": "Hobby",
+        "Gemeinschaftsraum": "Gemeinschaft",
+        "Gemeinschaftsräume": "Gemeinschaft",
+        "Gemeinschaftsräume/Divers": "Gemeinschaft",
+        "Gemeinschaftsräume/Diverses": "Gemeinschaft",
+        "Einstellhallenplatz": "Parkplatz",
         "Abstellplatz": "Parkplatz",
-        "Zimmer": "Jokerzimmer",
+        "Stellplatz": "Parkplatz",
     }
 
     def _has_existing(self, row_data: dict, sheet: str | None = None) -> bool:
@@ -53,10 +58,6 @@ class ImporterTenantPropertyVFN(ExcelImporter):
         elif sheet == "Mietobjekte":
             building = self._get_building_from_row_data(row_data)
             return self._has_existing_rental_unit(row_data, building)
-        elif sheet == "Mieterspiegel":
-            # Ignore this sheet
-            # rental_unit = self._get_rental_unit_from_row_data(row_data)
-            return False
         return False
 
     @staticmethod
@@ -83,7 +84,7 @@ class ImporterTenantPropertyVFN(ExcelImporter):
                 params={"import_id": import_id},
             )
 
-        unit_name = str(row_data.get("Einheit Nummer") or "").strip()
+        unit_name = str(row_data.get("Nr.") or "").strip()
         if (
             unit_name
             and building
@@ -116,12 +117,6 @@ class ImporterTenantPropertyVFN(ExcelImporter):
                 logger.info(f"Successfully processed {rental_unit} and {contract} in {building}")
             else:
                 logger.info(f"Successfully processed {rental_unit} in {building}")
-        elif sheet == "Mieterspiegel":
-            ## Ignore this sheet
-            return
-            # rental_unit = self._get_rental_unit_from_row_data(row_data)
-            # self._update_tenants(row_data, rental_unit)
-            # logger.info(f"Successfully updated tenants of {rental_unit} in {building}")
         else:
             raise ValidationError(_("Unbekannte Tabelle: {sheet}"))
 
@@ -147,6 +142,7 @@ class ImporterTenantPropertyVFN(ExcelImporter):
         building.country = normalize_country_code(str(row_data.get("Land") or "CH").strip())
         building.value_insurance = parse_decimal(row_data.get("Gebäudeversicherungswert (Fr.)"))
         building.value_build = parse_decimal(row_data.get("Anlagekosten (Fr.)"))
+        building.egid = parse_int(row_data.get("EGID"))
         building.save()
         return building
 
@@ -179,23 +175,16 @@ class ImporterTenantPropertyVFN(ExcelImporter):
         rental_unit.height = str(row_data.get("Raumhöhe (m)") or "").strip()
         rental_unit.volume = parse_decimal(row_data.get("Volumen (m³)"))
 
-        rental_unit.payment_period = parse_int(row_data.get("Zahlungsperiodizität"))
-        rental_unit.nk = parse_decimal(row_data.get("Nebenkosten akonto (CHF/Mt.)"))
-        rental_unit.nk_flat = parse_decimal(row_data.get("Nebenkosten pauschal (CHF/Mt.)"))
-        rental_unit.nk_electricity = parse_decimal(row_data.get("Strompauschale (CHF/Mt.)"))
-
-        rental_unit.rent_netto = parse_decimal(row_data.get("Nettomiete (CHF/Mt.)"))
+        rental_unit.payment_period = parse_int(row_data.get("Zahlungsperiodizität (Monate)"))
+        rental_unit.nk = parse_decimal(row_data.get("Nebenkosten akonto (CHF/Periode)"))
+        rental_unit.nk_flat = parse_decimal(row_data.get("Nebenkosten pauschal (CHF/Periode)"))
+        rental_unit.nk_electricity = parse_decimal(row_data.get("Strompauschale (CHF/Periode)"))
+        rental_unit.rent_netto = parse_decimal(row_data.get("Nettomiete (CHF/Periode)"))
         rental_unit.depot = parse_decimal(row_data.get("Mietzinsdepot (CHF)"))
         rental_unit.share = parse_decimal(row_data.get("Anteilskapital (CHF)"))
 
         rental_unit.note = str(row_data.get("Zusatzinfo") or "").strip()
-
-        ewid_raw = row_data.get("EWID")
-        if ewid_raw:
-            try:
-                rental_unit.ewid = int(ewid_raw)
-            except (ValueError, TypeError):
-                logger.warning(f"Could not parse EWID: {ewid_raw}")
+        rental_unit.ewid = parse_int(row_data.get("EWID"))
 
         unit_id = row_data.get("Import-ID")
         if unit_id:
@@ -219,7 +208,7 @@ class ImporterTenantPropertyVFN(ExcelImporter):
     def _create_or_update_contract(row_data, rental_unit: RentalUnit):
         tenants = []
         for column in ["Import-ID 1 Mieter*in (Person)", "Import-ID 2 Mieter*in (Person)"]:
-            tenant_id = str(row_data.get(column)).strip()
+            tenant_id = str(row_data.get(column) or "").strip()
             if tenant_id:
                 tenant = Address.objects.filter(import_id=f"vfn_{tenant_id}").first()
                 if tenant:
@@ -235,13 +224,18 @@ class ImporterTenantPropertyVFN(ExcelImporter):
         if contract:
             logger.debug(f"Found existing contract by import_id: vfn_{unit_id}")
         else:
-            # TODO?: Update state and date later with data from Mieterspiegel sheet?
             contract = Contract(
                 import_id=f"vfn_{unit_id}", state="unterzeichnet", date=datetime.date.today()
             )
+        start_date = parse_date(row_data.get("Vertragsbeginn"))
+        if start_date:
+            contract.date = start_date
+        note = str(row_data.get("Bemerkungen Mietvertrag") or "").strip()
+        if note:
+            contract.note = note
+        contract.save()
         contract.contractors.set(tenants)
         contract.rental_units.set([rental_unit])
-        contract.save()
         return contract
 
     @staticmethod

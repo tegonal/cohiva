@@ -299,7 +299,7 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
         share = Share.objects.get(name__email="lena@example.com")
         self.assertEqual(share.quantity, 1)
 
-    def test_prevent_duplicate_without_override(self):
+    def test_prevent_duplicate_import_id_without_override(self):
         """Second import of same ID raises error when override_existing=False."""
         row = self.make_row(
             ImportID="105",
@@ -312,7 +312,41 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
         import_job1 = ImportJob.objects.create(file=excel_file1)
         ImporterMemberAddressSharesVFN(import_job1).process()
 
-        excel_file2 = self.create_test_excel([row])
+        row2 = self.make_row(
+            ImportID="105",
+            Vorname="Test2",
+            Nachname="Doppelt2",
+            Email="doppelt2@example.com",
+            Eintrittsdatum="2023-01-02",
+        )
+        excel_file2 = self.create_test_excel([row2])
+        import_job2 = ImportJob.objects.create(file=excel_file2, override_existing=False)
+        results = ImporterMemberAddressSharesVFN(import_job2).process()
+
+        self.assertEqual(results["error_count"], 1)
+        self.assertEqual(results["success_count"], 0)
+
+    def test_prevent_duplicate_email_without_override(self):
+        """Second import of same ID raises error when override_existing=False."""
+        row = self.make_row(
+            ImportID="105",
+            Vorname="Test",
+            Nachname="Doppelt",
+            Email="doppelt@example.com",
+            Eintrittsdatum="2023-01-01",
+        )
+        excel_file1 = self.create_test_excel([row])
+        import_job1 = ImportJob.objects.create(file=excel_file1)
+        ImporterMemberAddressSharesVFN(import_job1).process()
+
+        row2 = self.make_row(
+            ImportID="106",
+            Vorname="Test2",
+            Nachname="Doppelt2",
+            Email="doppelt@example.com",
+            Eintrittsdatum="2023-01-02",
+        )
+        excel_file2 = self.create_test_excel([row2])
         import_job2 = ImportJob.objects.create(file=excel_file2, override_existing=False)
         results = ImporterMemberAddressSharesVFN(import_job2).process()
 
