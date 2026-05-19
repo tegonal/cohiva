@@ -1,14 +1,20 @@
+import json
 from datetime import date
 
+import jsonc
 from django import forms
 from django.contrib import admin
-
-from geno.admin import GenoBaseAdmin
-
-from report.models import Report, ReportConfiguration, ReportInputData, ReportInputField, ReportOutput
 from unfold.admin import TabularInline
 
+from geno.admin import GenoBaseAdmin
 from report.forms import _make_report_input_field
+from report.models import (
+    Report,
+    ReportConfiguration,
+    ReportInputData,
+    ReportInputField,
+    ReportOutput,
+)
 
 
 class ReportInputAdminForm(forms.ModelForm):
@@ -57,6 +63,13 @@ class ReportInputAdminForm(forms.ModelForm):
         field_type = input_field.field_type
         if field_type == "bool":
             return str(raw_value).lower() in ["true", "1", "yes"]
+        if field_type == "date":
+            if isinstance(raw_value, date):
+                return raw_value
+            try:
+                return date.fromisoformat(str(raw_value))
+            except ValueError:
+                return ""
         if field_type == "int":
             try:
                 return int(raw_value)
@@ -72,6 +85,16 @@ class ReportInputAdminForm(forms.ModelForm):
                 return int(str(raw_value)[6:])
             except ValueError:
                 return ""
+        if field_type == "json":
+            if isinstance(raw_value, str):
+                try:
+                    return jsonc.loads(raw_value)
+                except Exception:
+                    return raw_value
+            try:
+                return json.loads(json.dumps(raw_value))
+            except (TypeError, ValueError):
+                return raw_value
         return raw_value
 
     def _serialize_value(self, value):
@@ -82,6 +105,11 @@ class ReportInputAdminForm(forms.ModelForm):
         field_type = input_field.field_type
         if value in (None, ""):
             return ""
+        if field_type == "json":
+            try:
+                return json.dumps(value)
+            except (TypeError, ValueError):
+                return str(value)
         if field_type == "file":
             return f"filer:{value.pk}" if hasattr(value, "pk") else ""
         if field_type == "bool":
@@ -97,10 +125,12 @@ class ReportInputAdminForm(forms.ModelForm):
             cleaned_data[field_name] = self._serialize_value(cleaned_data.get(field_name))
         return cleaned_data
 
+
 class ReportInputDataAdminForm(ReportInputAdminForm):
     class Meta:
         model = ReportInputData
         fields = "__all__"
+
 
 class ReportInputFieldForm(ReportInputAdminForm):
     value_field_name = "value_default"
@@ -112,6 +142,7 @@ class ReportInputFieldForm(ReportInputAdminForm):
     def _get_input_field(self):
         return self.instance
 
+
 class ReportInputDataInline(TabularInline):  # oder admin.StackedInline
     model = Report.report.rel.related_model.report_item.rel.related_model
     fields = ["field_type", "description", "value"]
@@ -121,13 +152,16 @@ class ReportInputDataInline(TabularInline):  # oder admin.StackedInline
 
     def has_add_permission(self, request, obj):
         return False
+
     extra = 0
+
 
 class ReportItemsInline(TabularInline):  # oder admin.StackedInline
     model = Report.report.rel.related_model
     fields = ["name", "item_category"]
     inlines = [ReportInputDataInline]
     extra = 0
+
 
 @admin.register(Report)
 class ReportAdmin(GenoBaseAdmin):
@@ -155,6 +189,7 @@ class ReportAdmin(GenoBaseAdmin):
     list_filter = ["report_configuration", "state", "ts_created", "ts_modified"]
     search_fields = ["name", "state_info", "task_id", "comment"]
 
+
 class ReportInputFieldInline(TabularInline):  # oder admin.StackedInline
     model = ReportConfiguration.report_configuration.rel.related_model.report_item_configuration.rel.related_model
     fields = ["field_type", "description", "value_default", "active"]
@@ -164,13 +199,16 @@ class ReportInputFieldInline(TabularInline):  # oder admin.StackedInline
 
     def has_add_permission(self, request, obj):
         return False
+
     extra = 0
+
 
 class ReportItemConfigurationsInline(TabularInline):  # oder admin.StackedInline
     model = ReportConfiguration.report_configuration.rel.related_model
     fields = ["name", "item_category"]
     inlines = [ReportInputFieldInline]
     extra = 0
+
 
 @admin.register(ReportConfiguration)
 class ReportConfigurationAdmin(GenoBaseAdmin):
@@ -182,10 +220,11 @@ class ReportConfigurationAdmin(GenoBaseAdmin):
         "buildings",
     ]
     inlines = [ReportItemConfigurationsInline]
-    readonly_fields = [ ]
+    readonly_fields = []
     list_display = ["name", "report_type"]
 
     prevent_add_permission = ["buildings"]
+
 
 @admin.register(ReportInputField)
 class ReportInputFieldAdmin(GenoBaseAdmin):
@@ -236,7 +275,7 @@ class ReportOutputAdmin(GenoBaseAdmin):
         "report",
         "output_type",
         "value",
-        "regeneration_json",''
+        "regeneration_json",
         "comment",
         ("ts_created", "ts_modified"),
         "links",

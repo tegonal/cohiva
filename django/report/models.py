@@ -8,10 +8,11 @@ from filer.models.filemodels import File as FilerFile
 
 from geno.models import GenoBase
 from geno.utils import send_error_mail
-
-from report.nk.cost_config import REPORT_ITEM_CATEGORY, NkTotalCostConfig
-from report.nk.cost_config import get_costs_from_config
-from report.nk.cost_config import CostConfigFieldTypes
+from report.nk.cost_config import (
+    REPORT_ITEM_CATEGORY,
+    CostConfigFieldTypes,
+    get_costs_from_config,
+)
 
 REPORT_STATE_CHOICES = (
     ("new", "Neu"),
@@ -21,9 +22,7 @@ REPORT_STATE_CHOICES = (
     ("invalid", "Ungültig"),
 )
 
-REPORT_TYPE_CHOICES = (
-    ("NK", "Nebenkostenabrechnung"),
-)
+REPORT_TYPE_CHOICES = (("NK", "Nebenkostenabrechnung"),)
 
 REPORT_FIELDTYPE_CHOICES = (
     ("char", "Text"),
@@ -35,7 +34,9 @@ REPORT_FIELDTYPE_CHOICES = (
     ("file", "Datei"),
     ("json", "JSON-Daten"),
     ("buildingIds", "Liegenschaften"),
+    ("enum_vewa_category", "VEWA Kategorie"),
 )
+
 
 def _match_CostConfigFieldTypes_with_REPORT_FIELDTYPE_CHOICES_values(ccft: CostConfigFieldTypes):
     match ccft:
@@ -47,26 +48,27 @@ def _match_CostConfigFieldTypes_with_REPORT_FIELDTYPE_CHOICES_values(ccft: CostC
             return "char"
         case CostConfigFieldTypes.BOOL:
             return "bool"
-        case CostConfigFieldTypes.MEASUREMENT_SOURCES: # to be refactored, set of fields
+        case CostConfigFieldTypes.MEASUREMENT_SOURCES:  # to be refactored, set of fields
             return "char"
-        case CostConfigFieldTypes.VEWA_CATEGORY: # eum dropdown
-            return "char"
-        # case CostConfigFieldTypes.FLOAT:
-        #     return "float"
-        # case CostConfigFieldTypes.INT:
-        #     return "int"
-        # case CostConfigFieldTypes.DATE:
-        #     return "date"
+        case CostConfigFieldTypes.VEWA_CATEGORY:  # eum dropdown
+            return "enum_vewa_category"
+        case CostConfigFieldTypes.FLOAT:
+            return "float"
+        case CostConfigFieldTypes.INT:
+            return "int"
+        case CostConfigFieldTypes.DATE:
+            return "date"
         # case CostConfigFieldTypes.LIST_12MONTHS_FLOAT: # don't implement for now, json type used
         #     return "list_12months_float"
-        # case CostConfigFieldTypes.FILE:
-        #     return "file"
-        # case CostConfigFieldTypes.JSON:
-        #     return "json"
+        case CostConfigFieldTypes.FILE:
+            return "file"
+        case CostConfigFieldTypes.JSON:
+            return "json"
         # case CostConfigFieldTypes.BUILDINGIDS: # unused since configured on report
         #     return "buildingIds"
         case _:
             raise ValueError(f"Unbekannter CostConfigFieldTypes-Wert: {ccft}")
+
 
 class ReportConfiguration(GenoBase):
     name = models.CharField("Name", max_length=80)
@@ -77,7 +79,9 @@ class ReportConfiguration(GenoBase):
         old_report_configuration_id = self.id
         new_report_configuration = super().save_as_copy()
         old_report_configuration = ReportConfiguration.objects.get(id=old_report_configuration_id)
-        for report_item_configuration in ReportItemConfiguration.objects.filter(report_configuration=old_report_configuration):
+        for report_item_configuration in ReportItemConfiguration.objects.filter(
+            report_configuration=old_report_configuration
+        ):
             new_report_item_configuration = report_item_configuration.save_as_copy()
             new_report_item_configuration.report_configuration = new_report_configuration
             new_report_item_configuration.save()
@@ -86,9 +90,15 @@ class ReportConfiguration(GenoBase):
         verbose_name = "Report-Konfiguration"
         verbose_name_plural = "Report-Konfigurationen"
 
+
 class Report(GenoBase):
     name = models.CharField("Name", max_length=80)
-    report_configuration = models.ForeignKey(ReportConfiguration, verbose_name="Report-Konfiguration", on_delete=models.CASCADE, default=1)
+    report_configuration = models.ForeignKey(
+        ReportConfiguration,
+        verbose_name="Report-Konfiguration",
+        on_delete=models.CASCADE,
+        default=1,
+    )
     task_id = models.UUIDField("Task-ID", editable=False, blank=True, null=True)
     state = models.CharField("Status", default="new", choices=REPORT_STATE_CHOICES, max_length=30)
     state_info = models.TextField("Statusinfo", blank=True)
@@ -99,13 +109,17 @@ class Report(GenoBase):
         if is_new and self.pk:
             # copy configuration from ReportConfiguration
             if self.report_configuration:
-                for report_item_configuration in ReportItemConfiguration.objects.filter(report_configuration=self.report_configuration):
+                for report_item_configuration in ReportItemConfiguration.objects.filter(
+                    report_configuration=self.report_configuration
+                ):
                     report_item = ReportItem.objects.create(
                         name=report_item_configuration.name,
                         item_category=report_item_configuration.item_category,
                         report_configuration=self,
                     )
-                    for report_input_field in ReportInputField.objects.filter(item_configuration=report_item_configuration):
+                    for report_input_field in ReportInputField.objects.filter(
+                        item_configuration=report_item_configuration
+                    ):
                         ReportInputData.objects.create(
                             name=report_input_field,
                             description=report_input_field.description,
@@ -154,20 +168,29 @@ class Report(GenoBase):
         verbose_name_plural = "Reports"
         unique_together = ["name", "report_configuration"]
 
+
 # REPORT_ITEM_CATEGORY = (
-    # ("NkTotalCost", "Gesamtkosten mit einfacher Verteilung (Fläche, Volumen, Faktor)"),
-    # ("NkMonthlyCost", "Monatliche Kosten mit einfacher Verteilung (Fläche, Volumen, Faktor)"),
-    # ("NkTotalEnergyCost", "Gesamtkosten mit einfacher Verteilung (Verbrauch)"),
-    # ("NkPerRentalUnitCost", "Kosten pro Mietobjekt mit Verteilung (pro Mieteinheit, Peson, Fixum)"),
-    # ("NkCostZEVStromallmend", "Stromallmend: ZEV-Kosten"),
-    # ("NkCostVEWA", "VEWA: Verbrauchsabhängige Energie- und Wasserkostenabrechnung"),
+# ("NkTotalCost", "Gesamtkosten mit einfacher Verteilung (Fläche, Volumen, Faktor)"),
+# ("NkMonthlyCost", "Monatliche Kosten mit einfacher Verteilung (Fläche, Volumen, Faktor)"),
+# ("NkTotalEnergyCost", "Gesamtkosten mit einfacher Verteilung (Verbrauch)"),
+# ("NkPerRentalUnitCost", "Kosten pro Mietobjekt mit Verteilung (pro Mieteinheit, Peson, Fixum)"),
+# ("NkCostZEVStromallmend", "Stromallmend: ZEV-Kosten"),
+# ("NkCostVEWA", "VEWA: Verbrauchsabhängige Energie- und Wasserkostenabrechnung"),
 # )
+
 
 class ReportItemConfiguration(GenoBase):
     name = models.CharField("Element-Bezeichnung", max_length=80)
-    item_category = models.CharField("Element-Kategorie", choices=REPORT_ITEM_CATEGORY, max_length=60)
-    report_configuration = models.ForeignKey(ReportConfiguration, verbose_name="Report-Konfiguration", related_name="report_configuration",
-                                           on_delete=models.CASCADE, default=1)
+    item_category = models.CharField(
+        "Element-Kategorie", choices=REPORT_ITEM_CATEGORY, max_length=60
+    )
+    report_configuration = models.ForeignKey(
+        ReportConfiguration,
+        verbose_name="Report-Konfiguration",
+        related_name="report_configuration",
+        on_delete=models.CASCADE,
+        default=1,
+    )
 
     def save(self, *args, **kwargs):
         is_new = self._state.adding
@@ -184,7 +207,9 @@ class ReportItemConfiguration(GenoBase):
 
     def ensure_base_input_fields(self, previous_item_category):
         if previous_item_category != self.item_category:
-            for existing_repot_input_field in ReportInputField.objects.filter(item_configuration=self.id):
+            for existing_repot_input_field in ReportInputField.objects.filter(
+                item_configuration=self.id
+            ):
                 existing_repot_input_field.delete()
         # create new ReportInputField based on config
 
@@ -196,23 +221,31 @@ class ReportItemConfiguration(GenoBase):
                     for field in configuration.get("config").get_fields():
                         default_val = ""
                         if field.key not in ("class", "name", "bezeichnung"):
-                            if hasattr(configuration, field.key) and configuration[field.key] is not None:
+                            if (
+                                hasattr(configuration, field.key)
+                                and configuration[field.key] is not None
+                            ):
                                 default_val = configuration[field.key]
                             ReportInputField.objects.create(
                                 name=field.key,
                                 description=field.key,
                                 item_configuration=self,
-                                field_type=_match_CostConfigFieldTypes_with_REPORT_FIELDTYPE_CHOICES_values(field.type),
+                                field_type=_match_CostConfigFieldTypes_with_REPORT_FIELDTYPE_CHOICES_values(
+                                    field.type
+                                ),
                                 active=True,
                                 value_default=default_val,
                             )
 
-
     def save_as_copy(self):
         old_report_item_configuration_id = self.id
         new_report_item_configuration = super().save_as_copy()
-        old_report_item_configuration = ReportItemConfiguration.objects.get(id=old_report_item_configuration_id)
-        for repot_input_field in ReportInputField.objects.filter(item_configuration=old_report_item_configuration):
+        old_report_item_configuration = ReportItemConfiguration.objects.get(
+            id=old_report_item_configuration_id
+        )
+        for repot_input_field in ReportInputField.objects.filter(
+            item_configuration=old_report_item_configuration
+        ):
             new_repot_input_field = repot_input_field.save_as_copy()
             new_repot_input_field.report_configuration = new_report_item_configuration
             new_repot_input_field.save()
@@ -223,11 +256,19 @@ class ReportItemConfiguration(GenoBase):
         unique_together = ["name", "item_category"]
         ordering = ["item_category", "name"]
 
+
 class ReportItem(GenoBase):
     name = models.CharField("Element-Bezeichnung", max_length=80)
-    item_category = models.CharField("Element-Kategorie", choices=REPORT_ITEM_CATEGORY, max_length=60)
-    report_configuration = models.ForeignKey(Report, verbose_name="Report-Konfiguration", related_name="report",
-                                           on_delete=models.CASCADE, default=1)
+    item_category = models.CharField(
+        "Element-Kategorie", choices=REPORT_ITEM_CATEGORY, max_length=60
+    )
+    report_configuration = models.ForeignKey(
+        Report,
+        verbose_name="Report-Konfiguration",
+        related_name="report",
+        on_delete=models.CASCADE,
+        default=1,
+    )
 
     class Meta:
         verbose_name = "Report-Element"
@@ -239,7 +280,13 @@ class ReportItem(GenoBase):
 class ReportInputField(GenoBase):
     name = models.CharField("Name", max_length=80)
     description = models.CharField("Beschreibung", max_length=200, blank=True)
-    item_configuration = models.ForeignKey(ReportItemConfiguration, verbose_name="Report-Element", related_name="report_item_configuration", on_delete=models.CASCADE, default=1)
+    item_configuration = models.ForeignKey(
+        ReportItemConfiguration,
+        verbose_name="Report-Element",
+        related_name="report_item_configuration",
+        on_delete=models.CASCADE,
+        default=1,
+    )
     field_type = models.CharField("Feldtyp", choices=REPORT_FIELDTYPE_CHOICES, max_length=60)
     active = models.BooleanField("Aktiv", default=True)
     value_default = models.CharField("Standardwert", blank=True, max_length=6000)
@@ -258,10 +305,16 @@ class ReportInputData(GenoBase):
     description = models.CharField("Beschreibung", max_length=200, blank=True)
     field_type = models.CharField("Feldtyp", choices=REPORT_FIELDTYPE_CHOICES, max_length=60)
     report = models.ForeignKey(Report, verbose_name="Report", on_delete=models.CASCADE)
-    item = models.ForeignKey(ReportItem, verbose_name="Report-Element",
-                                           related_name="report_item",
-                                           on_delete=models.CASCADE, default=1)
-    value = models.CharField("Wert", blank=True, max_length=6000)  ## store lists in value?  Should be able to copy list values from spreadsheet in UI!
+    item = models.ForeignKey(
+        ReportItem,
+        verbose_name="Report-Element",
+        related_name="report_item",
+        on_delete=models.CASCADE,
+        default=1,
+    )
+    value = models.CharField(
+        "Wert", blank=True, max_length=6000
+    )  ## store lists in value?  Should be able to copy list values from spreadsheet in UI!
     # index/date/key instead of storing lists in value?
 
     class Meta:

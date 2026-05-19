@@ -1,3 +1,5 @@
+import json
+
 import jsonc
 
 ## Filer widget
@@ -9,8 +11,9 @@ import jsonc
 # from django.contrib.admin.sites import site
 from django import forms
 from django.core.exceptions import ValidationError
-from django.db.models import Model
 
+# JSONField from django.db.models is not a form field; use forms.JSONField instead.
+# (No model-level JSONField import needed here.)
 # from filer.fields.file import AdminFileFormField, FilerFileField, AdminFileWidget
 from filer.models.filemodels import File as FilerFile
 
@@ -27,7 +30,6 @@ from unfold.widgets import (
 from geno.models import Building
 
 from .models import ReportInputField, ReportItem
-
 
 # class FilerFileWidget(AdminFileWidget):
 #
@@ -87,19 +89,44 @@ from .models import ReportInputField, ReportItem
 #        return {}
 
 
+class PrettyJSONEncoder(json.JSONEncoder):
+    def __init__(self, *args, indent, sort_keys, **kwargs):
+        super().__init__(*args, indent=4, sort_keys=True, **kwargs)
+
+
 class FilerModelChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
         return f"{obj.logical_path[-1]}/{obj}"
 
 
-class JSONField(forms.CharField):
-    def validate(self, value):
-        super().validate(value)
-        if value != "":
+class ReportJSONFormField(forms.JSONField):
+    widget = UnfoldAdminTextareaWidget
+
+    def to_python(self, value):
+        if value in self.empty_values:
+            return None
+        if isinstance(value, str):
             try:
-                jsonc.loads(value)
-            except jsonc.JSONDecodeError as e:
-                raise ValidationError(f"Ungültiger JSON-Code: {e}")
+                return jsonc.loads(value)
+            except Exception as ex:
+                raise ValidationError("Enter valid JSON.") from ex
+        return super().to_python(value)
+
+    def prepare_value(self, value):
+        if value in self.empty_values:
+            return ""
+
+        parsed = value
+        if isinstance(value, str):
+            try:
+                parsed = jsonc.loads(value)
+            except Exception:
+                return value
+
+        try:
+            return json.dumps(parsed, indent=2, sort_keys=True)
+        except (TypeError, ValueError):
+            return str(value)
 
 
 # Generic helper to construct Unfold-styled form fields for report inputs
@@ -129,10 +156,13 @@ def _make_report_input_field(field):
             required=False, label=name, help_text=desc, widget=UnfoldBooleanSwitchWidget()
         )
     if ft == "json":
-        f = JSONField(
-            required=False, label=name, help_text=desc, widget=UnfoldAdminTextareaWidget()
+        f = ReportJSONFormField(
+            required=False,
+            label=name,
+            help_text=desc,
+            widget=UnfoldAdminTextareaWidget(),
         )
-        f.widget.attrs.update({"style": "width: 750px;"})
+        f.widget.attrs.update({"style": "width: 750px; min-height: 280px;"})
         return f
     if ft == "file":
         f = FilerModelChoiceField(

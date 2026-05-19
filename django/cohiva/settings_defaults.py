@@ -1268,10 +1268,15 @@ COHIVA_ADMIN_NAVIGATION = [
             },
         ],
     },
-{
+    {
         "name": _("Einstellungen"),
         "items": [
-            {"name": _("Report-Konfiguration"), "type": "model", "value": "report.ReportConfiguration", "icon": "subtitles_gear"},
+            {
+                "name": _("Report-Konfiguration"),
+                "type": "model",
+                "value": "report.ReportConfiguration",
+                "icon": "subtitles_gear",
+            },
         ],
     },
     {

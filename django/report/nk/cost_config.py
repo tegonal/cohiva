@@ -1,6 +1,6 @@
+from collections.abc import Iterator
 from dataclasses import dataclass
 from enum import Enum
-from typing import Iterator
 
 from report.nk.cost import (
     NkCost,
@@ -25,7 +25,13 @@ class CostConfigFieldTypes(Enum):
     BOOL = 4
     INPUT_KEY = 5
     MEASUREMENT_SOURCES = 6
-    VEWA_CATEGORY = 7
+    DATE = 7
+    INT = 8
+    FLOAT = 9
+    FILE = 10
+    JSON = 11
+    VEWA_CATEGORY = 12
+
 
 @dataclass
 class CostConfigField:
@@ -62,7 +68,6 @@ class CostConfig:
 
 @dataclass
 class NkTotalCostConfig(CostConfig):
-
     @classmethod
     def get_fields(cls):
         return super().get_fields()
@@ -572,6 +577,7 @@ def get_costs_from_config() -> Iterator[CostConfig]:
         if "class" in cost:
             yield CostConfig(cost.get("class"), cost)
 
+
 def _build_report_item_categories() -> tuple[tuple[str, str], ...]:
     categories: dict[str, str] = {}
     for cost in get_costs_from_config():
@@ -580,5 +586,6 @@ def _build_report_item_categories() -> tuple[tuple[str, str], ...]:
         categories[cost.config.get("name", key)] = cost.config.get("bezeichnung", key)
     # order returned tuple by label
     return tuple(sorted(categories.items(), key=lambda item: (item[1], item[0])))
+
 
 REPORT_ITEM_CATEGORY = _build_report_item_categories()

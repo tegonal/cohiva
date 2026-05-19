@@ -3,6 +3,7 @@
 import django.db.models.deletion
 from django.db import migrations, models
 
+
 # Set the Reporttype to Nebenkosten on existing ReportInputField and Report objects
 def set_reporttype_nk_on_existing(apps, schema_editor):
     ReportInputField = apps.get_model("report", "ReportInputField")
@@ -14,76 +15,131 @@ def set_reporttype_nk_on_existing(apps, schema_editor):
         report.report_type = "NK"
         report.save(update_fields=["report_type"])
 
-class Migration(migrations.Migration):
 
+class Migration(migrations.Migration):
     dependencies = [
-        ('geno', '0020_alter_registrationevent_enable_telephone'),
-        ('report', '0002_alter_report_comment_alter_report_report_type_and_more'),
+        ("geno", "0020_alter_registrationevent_enable_telephone"),
+        ("report", "0002_alter_report_comment_alter_report_report_type_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='report',
-            name='report_type',
-            field=models.CharField(choices=[('NK', 'Nebenkostenabrechnung')], max_length=30, verbose_name='Reporttyp'),
+            model_name="report",
+            name="report_type",
+            field=models.CharField(
+                choices=[("NK", "Nebenkostenabrechnung")], max_length=30, verbose_name="Reporttyp"
+            ),
         ),
         migrations.AlterModelOptions(
-            name='reportinputfield',
-            options={'ordering': ['item_configuration', 'name'], 'verbose_name': 'Eingabefeld', 'verbose_name_plural': 'Eingabefelder'},
-        ),
-        migrations.CreateModel(
-            name='ReportConfiguration',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('comment', models.CharField(blank=True, max_length=500, verbose_name='Kommentar')),
-                ('ts_created', models.DateTimeField(auto_now_add=True, verbose_name='Erstellt')),
-                ('ts_modified', models.DateTimeField(auto_now=True, verbose_name='Geändert')),
-                ('name', models.CharField(max_length=80, verbose_name='Name')),
-                ('report_type', models.CharField(choices=[('NK', 'Nebenkostenabrechnung')], max_length=30, verbose_name='Reporttyp')),
-                ('buildings', models.ManyToManyField(blank=True, to='geno.building', verbose_name='Liegenschaften')),
-            ],
+            name="reportinputfield",
             options={
-                'verbose_name': 'Report-Konfiguration',
-                'verbose_name_plural': 'Report-Konfigurationen',
+                "ordering": ["item_configuration", "name"],
+                "verbose_name": "Eingabefeld",
+                "verbose_name_plural": "Eingabefelder",
             },
         ),
         migrations.CreateModel(
-            name='ReportItemConfiguration',
+            name="ReportConfiguration",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('comment', models.CharField(blank=True, max_length=500, verbose_name='Kommentar')),
-                ('ts_created', models.DateTimeField(auto_now_add=True, verbose_name='Erstellt')),
-                ('ts_modified', models.DateTimeField(auto_now=True, verbose_name='Geändert')),
-                ('name', models.CharField(max_length=80, verbose_name='Element-Bezeichnung')),
-                ('item_category', models.CharField(choices=[('SHORT', 'Name')], max_length=30, verbose_name='Element-Kategorie')),
-                ('report_configuration', models.ForeignKey(default=1, on_delete=django.db.models.deletion.CASCADE, related_name='report_items', to='report.reportconfiguration', verbose_name='Report-Konfiguration')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "comment",
+                    models.CharField(blank=True, max_length=500, verbose_name="Kommentar"),
+                ),
+                ("ts_created", models.DateTimeField(auto_now_add=True, verbose_name="Erstellt")),
+                ("ts_modified", models.DateTimeField(auto_now=True, verbose_name="Geändert")),
+                ("name", models.CharField(max_length=80, verbose_name="Name")),
+                (
+                    "report_type",
+                    models.CharField(
+                        choices=[("NK", "Nebenkostenabrechnung")],
+                        max_length=30,
+                        verbose_name="Reporttyp",
+                    ),
+                ),
+                (
+                    "buildings",
+                    models.ManyToManyField(
+                        blank=True, to="geno.building", verbose_name="Liegenschaften"
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Report-Element',
-                'verbose_name_plural': 'Report-Elemente',
-                'ordering': ['item_category', 'name'],
-                'unique_together': {('name', 'item_category')},
+                "verbose_name": "Report-Konfiguration",
+                "verbose_name_plural": "Report-Konfigurationen",
+            },
+        ),
+        migrations.CreateModel(
+            name="ReportItemConfiguration",
+            fields=[
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "comment",
+                    models.CharField(blank=True, max_length=500, verbose_name="Kommentar"),
+                ),
+                ("ts_created", models.DateTimeField(auto_now_add=True, verbose_name="Erstellt")),
+                ("ts_modified", models.DateTimeField(auto_now=True, verbose_name="Geändert")),
+                ("name", models.CharField(max_length=80, verbose_name="Element-Bezeichnung")),
+                (
+                    "item_category",
+                    models.CharField(
+                        choices=[("SHORT", "Name")],
+                        max_length=30,
+                        verbose_name="Element-Kategorie",
+                    ),
+                ),
+                (
+                    "report_configuration",
+                    models.ForeignKey(
+                        default=1,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="report_items",
+                        to="report.reportconfiguration",
+                        verbose_name="Report-Konfiguration",
+                    ),
+                ),
+            ],
+            options={
+                "verbose_name": "Report-Element",
+                "verbose_name_plural": "Report-Elemente",
+                "ordering": ["item_category", "name"],
+                "unique_together": {("name", "item_category")},
             },
         ),
         migrations.AlterUniqueTogether(
-            name='reportinputfield',
+            name="reportinputfield",
             unique_together=set(),
         ),
         migrations.AddField(
-            model_name='reportinputfield',
-            name='item_configuration',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.CASCADE, to='report.reportitemconfiguration', verbose_name='Report-Element'),
+            model_name="reportinputfield",
+            name="item_configuration",
+            field=models.ForeignKey(
+                default=1,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="report.reportitemconfiguration",
+                verbose_name="Report-Element",
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='reportinputfield',
-            unique_together={('name', 'item_configuration')},
+            name="reportinputfield",
+            unique_together={("name", "item_configuration")},
         ),
         migrations.RemoveField(
-            model_name='reportinputfield',
-            name='report_type',
+            model_name="reportinputfield",
+            name="report_type",
         ),
         migrations.DeleteModel(
-            name='ReportType',
+            name="ReportType",
         ),
         migrations.RunPython(set_reporttype_nk_on_existing),
     ]

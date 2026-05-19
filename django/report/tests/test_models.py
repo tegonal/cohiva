@@ -59,4 +59,3 @@ class ReportItemConfigurationBaseDataTest(TestCase):
         self.assertIn("Internet/WLAN:Tarif:ProPerson", field_names)
         self.assertIn("Internet/WLAN:Tarif:Fix", field_names)
         self.assertIn("Custom:Value", field_names)
-

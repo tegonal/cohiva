@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('report', '0003_alter_report_report_type_and_more'),
+        ("report", "0003_alter_report_report_type_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='reportinputfield',
-            name='value_default',
-            field=models.TextField(blank=True, verbose_name='Standardwert'),
+            model_name="reportinputfield",
+            name="value_default",
+            field=models.TextField(blank=True, verbose_name="Standardwert"),
         ),
     ]
