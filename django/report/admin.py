@@ -9,7 +9,8 @@ from report.models import ReportItemConfiguration
 
 class ReportInputDataInline(TabularInline):  # oder admin.StackedInline
     model = Report.report.rel.related_model.report_item.rel.related_model
-    fields = ["name", "value"]
+    fields = ["field_type", "description", "value"]
+    readonly_fields = ["field_type"]
     can_delete = False
 
     def has_add_permission(self, request, obj):
@@ -35,16 +36,13 @@ class ReportAdmin(GenoBaseAdmin):
         "task_id",
         ("ts_created", "ts_modified"),
         "links",
-        "backlinks",
     ]
     readonly_fields = [
         "task_id",
-        "report_configuration",
         "object_actions",
         "ts_created",
         "ts_modified",
         "links",
-        "backlinks",
     ]
     inlines = [ReportItemsInline]
     list_display = ["name", "report_configuration", "state", "task_id", "comment"]

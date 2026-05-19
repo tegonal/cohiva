@@ -9,7 +9,7 @@ from filer.models.filemodels import File as FilerFile
 from geno.models import GenoBase
 from geno.utils import send_error_mail
 
-from report.nk.cost_config import REPORT_ITEM_CATEGORY
+from report.nk.cost_config import REPORT_ITEM_CATEGORY, NkTotalCostConfig
 from report.nk.cost_config import get_costs_from_config
 from report.nk.cost_config import CostConfigFieldTypes
 
@@ -47,9 +47,9 @@ def _match_CostConfigFieldTypes_with_REPORT_FIELDTYPE_CHOICES_values(ccft: CostC
             return "char"
         case CostConfigFieldTypes.BOOL:
             return "bool"
-        case CostConfigFieldTypes.MEASUREMENT_SOURCES:
+        case CostConfigFieldTypes.MEASUREMENT_SOURCES: # to be refactored, set of fields
             return "char"
-        case CostConfigFieldTypes.VEWA_CATEGORY:
+        case CostConfigFieldTypes.VEWA_CATEGORY: # eum dropdown
             return "char"
         # case CostConfigFieldTypes.FLOAT:
         #     return "float"
@@ -57,13 +57,13 @@ def _match_CostConfigFieldTypes_with_REPORT_FIELDTYPE_CHOICES_values(ccft: CostC
         #     return "int"
         # case CostConfigFieldTypes.DATE:
         #     return "date"
-        # case CostConfigFieldTypes.LIST_12MONTHS_FLOAT:
+        # case CostConfigFieldTypes.LIST_12MONTHS_FLOAT: # don't implement for now, json type used
         #     return "list_12months_float"
         # case CostConfigFieldTypes.FILE:
         #     return "file"
         # case CostConfigFieldTypes.JSON:
         #     return "json"
-        # case CostConfigFieldTypes.BUILDINGIDS:
+        # case CostConfigFieldTypes.BUILDINGIDS: # unused since configured on report
         #     return "buildingIds"
         case _:
             raise ValueError(f"Unbekannter CostConfigFieldTypes-Wert: {ccft}")
@@ -92,6 +92,28 @@ class Report(GenoBase):
     task_id = models.UUIDField("Task-ID", editable=False, blank=True, null=True)
     state = models.CharField("Status", default="new", choices=REPORT_STATE_CHOICES, max_length=30)
     state_info = models.TextField("Statusinfo", blank=True)
+
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+        if is_new and self.pk:
+            # copy configuration from ReportConfiguration
+            if self.report_configuration:
+                for report_item_configuration in ReportItemConfiguration.objects.filter(report_configuration=self.report_configuration):
+                    report_item = ReportItem.objects.create(
+                        name=report_item_configuration.name,
+                        item_category=report_item_configuration.item_category,
+                        report_configuration=self,
+                    )
+                    for report_input_field in ReportInputField.objects.filter(item_configuration=report_item_configuration):
+                        ReportInputData.objects.create(
+                            name=report_input_field,
+                            description=report_input_field.description,
+                            field_type=report_input_field.field_type,
+                            report=self,
+                            item=report_item,
+                            value=report_input_field.value_default,
+                        )
 
     def get_report_config(self):
         data = {}
@@ -170,19 +192,20 @@ class ReportItemConfiguration(GenoBase):
             if cost.config and cost.config["name"] == self.item_category and cost.config["config"]:
                 configuration = cost.config
 
-                for field in configuration.get("config").get_fields():
-                    default_val = ""
-                    if field.key not in ("class", "name", "bezeichnung"):
-                        if hasattr(configuration, field.key) and configuration[field.key] is not None:
-                            default_val = configuration[field.key]
-                        ReportInputField.objects.create(
-                            name=field.key,
-                            description=field.key,
-                            item_configuration=self,
-                            field_type=_match_CostConfigFieldTypes_with_REPORT_FIELDTYPE_CHOICES_values(field.type),
-                            active=True,
-                            value_default=default_val,
-                        )
+                if configuration.get("config"):
+                    for field in configuration.get("config").get_fields():
+                        default_val = ""
+                        if field.key not in ("class", "name", "bezeichnung"):
+                            if hasattr(configuration, field.key) and configuration[field.key] is not None:
+                                default_val = configuration[field.key]
+                            ReportInputField.objects.create(
+                                name=field.key,
+                                description=field.key,
+                                item_configuration=self,
+                                field_type=_match_CostConfigFieldTypes_with_REPORT_FIELDTYPE_CHOICES_values(field.type),
+                                active=True,
+                                value_default=default_val,
+                            )
 
 
     def save_as_copy(self):
@@ -232,13 +255,13 @@ class ReportInputData(GenoBase):
     name = models.ForeignKey(
         ReportInputField, verbose_name="Eingabefeld", on_delete=models.CASCADE
     )
+    description = models.CharField("Beschreibung", max_length=200, blank=True)
+    field_type = models.CharField("Feldtyp", choices=REPORT_FIELDTYPE_CHOICES, max_length=60)
     report = models.ForeignKey(Report, verbose_name="Report", on_delete=models.CASCADE)
     item = models.ForeignKey(ReportItem, verbose_name="Report-Element",
                                            related_name="report_item",
                                            on_delete=models.CASCADE, default=1)
-    value = models.TextField(
-        "Wert"
-    )  ## store lists in value?  Should be able to copy list values from spreadsheet in UI!
+    value = models.CharField("Wert", blank=True, max_length=6000)  ## store lists in value?  Should be able to copy list values from spreadsheet in UI!
     # index/date/key instead of storing lists in value?
 
     class Meta:

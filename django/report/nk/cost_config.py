@@ -62,6 +62,8 @@ class CostConfig:
 
 @dataclass
 class NkTotalCostConfig(CostConfig):
+
+    @classmethod
     def get_fields(cls):
         return super().get_fields()
 
@@ -139,8 +141,9 @@ class NkZEVStromallmendCostConfig(CostConfig):
 
 @dataclass
 class NkVEWACostConfig(NkTotalCostConfig):
+    @classmethod
     def get_fields(cls):
-        return super().get_fields(cls) + [
+        return super().get_fields() + [
             CostConfigField("vewa_category", CostConfigFieldTypes.VEWA_CATEGORY),
             CostConfigField("base_cost_factor_key", CostConfigFieldTypes.INPUT_KEY),
             CostConfigField("exclude_zero_usage_units", CostConfigFieldTypes.BOOL, required=False),
