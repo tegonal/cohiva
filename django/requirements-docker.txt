@@ -187,7 +187,7 @@ icalendar==6.3.1
     #   caldav
     #   recurring-ical-events
     #   x-wr-timezone
-idna==3.10
+idna==3.15
     # via
     #   requests
     #   yarl
