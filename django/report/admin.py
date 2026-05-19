@@ -1,16 +1,122 @@
+from datetime import date
+
+from django import forms
 from django.contrib import admin
 
 from geno.admin import GenoBaseAdmin
 
 from report.models import Report, ReportConfiguration, ReportInputData, ReportInputField, ReportOutput
-from unfold.admin import TabularInline, StackedInline
+from unfold.admin import TabularInline
 
-from report.models import ReportItemConfiguration
+from report.forms import _make_report_input_field
+
+
+class ReportInputAdminForm(forms.ModelForm):
+    value_field_name = "value"
+
+    class Meta:
+        model = None
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        input_field = self._get_input_field()
+        if not input_field:
+            return
+
+        field_name = self.get_value_field_name()
+        self.fields[field_name] = _make_report_input_field(input_field)
+        self.fields[field_name].required = False
+        self.fields[field_name].initial = self._deserialize_value(input_field)
+
+    def get_value_field_name(self):
+        return self.value_field_name
+
+    def _get_input_field(self):
+        name_id = self._get_name_id()
+        if not name_id:
+            return None
+        try:
+            return ReportInputField.objects.get(pk=name_id)
+        except (ReportInputField.DoesNotExist, ValueError, TypeError):
+            return None
+
+    def _get_name_id(self):
+        if self.instance and self.instance.pk and getattr(self.instance, "name_id", None):
+            return self.instance.name_id
+        return self.data.get("name") or self.initial.get("name")
+
+    def _get_raw_value(self):
+        return getattr(self.instance, self.get_value_field_name(), "")
+
+    def _deserialize_value(self, input_field):
+        raw_value = self._get_raw_value()
+        if raw_value in (None, ""):
+            return ""
+
+        field_type = input_field.field_type
+        if field_type == "bool":
+            return str(raw_value).lower() in ["true", "1", "yes"]
+        if field_type == "int":
+            try:
+                return int(raw_value)
+            except (TypeError, ValueError):
+                return ""
+        if field_type == "float":
+            try:
+                return float(raw_value)
+            except (TypeError, ValueError):
+                return ""
+        if field_type == "file" and str(raw_value).startswith("filer:"):
+            try:
+                return int(str(raw_value)[6:])
+            except ValueError:
+                return ""
+        return raw_value
+
+    def _serialize_value(self, value):
+        input_field = self._get_input_field()
+        if not input_field:
+            return "" if value in (None, "") else str(value)
+
+        field_type = input_field.field_type
+        if value in (None, ""):
+            return ""
+        if field_type == "file":
+            return f"filer:{value.pk}" if hasattr(value, "pk") else ""
+        if field_type == "bool":
+            return "true" if value else "false"
+        if isinstance(value, date):
+            return value.isoformat()
+        return str(value)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        field_name = self.get_value_field_name()
+        if field_name in cleaned_data:
+            cleaned_data[field_name] = self._serialize_value(cleaned_data.get(field_name))
+        return cleaned_data
+
+class ReportInputDataAdminForm(ReportInputAdminForm):
+    class Meta:
+        model = ReportInputData
+        fields = "__all__"
+
+class ReportInputFieldForm(ReportInputAdminForm):
+    value_field_name = "value_default"
+
+    class Meta:
+        model = ReportInputField
+        fields = "__all__"
+
+    def _get_input_field(self):
+        return self.instance
 
 class ReportInputDataInline(TabularInline):  # oder admin.StackedInline
     model = Report.report.rel.related_model.report_item.rel.related_model
     fields = ["field_type", "description", "value"]
     readonly_fields = ["field_type"]
+    form = ReportInputDataAdminForm
     can_delete = False
 
     def has_add_permission(self, request, obj):
@@ -53,6 +159,7 @@ class ReportInputFieldInline(TabularInline):  # oder admin.StackedInline
     model = ReportConfiguration.report_configuration.rel.related_model.report_item_configuration.rel.related_model
     fields = ["field_type", "description", "value_default", "active"]
     readonly_fields = ["name", "field_type"]
+    form = ReportInputFieldForm
     can_delete = False
 
     def has_add_permission(self, request, obj):
@@ -103,6 +210,7 @@ class ReportInputFieldAdmin(GenoBaseAdmin):
 @admin.register(ReportInputData)
 class ReportInputDataAdmin(GenoBaseAdmin):
     model = ReportInputData
+    form = ReportInputDataAdminForm
     fields = [
         "name",
         "report",

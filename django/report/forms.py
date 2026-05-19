@@ -9,6 +9,7 @@ import jsonc
 # from django.contrib.admin.sites import site
 from django import forms
 from django.core.exceptions import ValidationError
+from django.db.models import Model
 
 # from filer.fields.file import AdminFileFormField, FilerFileField, AdminFileWidget
 from filer.models.filemodels import File as FilerFile
@@ -25,7 +26,8 @@ from unfold.widgets import (
 
 from geno.models import Building
 
-from .models import ReportInputField
+from .models import ReportInputField, ReportItem
+
 
 # class FilerFileWidget(AdminFileWidget):
 #
@@ -168,8 +170,9 @@ class ReportConfigForm(forms.Form):
         super().__init__(*args, **kwargs)
         if not self.report:
             return
-        for field in ReportInputField.objects.filter(report_type=self.report.report_type).filter(
-            active=True
-        ):
-            field_name = f"report_input_{field.id}"
-            self.fields[field_name] = _make_report_input_field(field)
+        for item in ReportItem.objects.filter(report_configuration=self.report):
+            for field in ReportInputField.objects.filter(item_configuration=item).filter(
+                active=True
+            ):
+                field_name = f"report_input_{field.id}"
+                self.fields[field_name] = _make_report_input_field(field)
