@@ -19,7 +19,7 @@ def update_active_members_and_shares(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("geno", "0021_address_country_iso_codes"),
+        ("geno", "0022_invoicecategory_building_based_cost_center"),
     ]
 
     operations = [
