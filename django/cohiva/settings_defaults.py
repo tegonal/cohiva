@@ -533,6 +533,12 @@ LOGGING = {
             "filename": cbc.INSTALL_DIR + "/django-test/log/finance_accounting.log",
             "formatter": "verbose",
         },
+        "importer": {
+            "level": "DEBUG",
+            "class": "logging.FileHandler",
+            "filename": cbc.INSTALL_DIR + "/django-test/log/importer.log",
+            "formatter": "verbose",
+        },
     },
     "loggers": {
         "django.request": {
@@ -568,6 +574,11 @@ LOGGING = {
         "finance_accounting": {
             "level": "DEBUG",
             "handlers": ["finance_accounting", "mail_admins_debug"],
+            "propagate": True,
+        },
+        "importer": {
+            "level": "DEBUG",
+            "handlers": ["importer"],
             "propagate": True,
         },
     },
@@ -1309,6 +1320,18 @@ COHIVA_ADMIN_NAVIGATION = [
                 ],
             },
             {"type": "model", "value": "geno.LookupTable", "icon": "table_chart"},
+            {
+                "type": "tabgroup",
+                "name": "Importer",
+                "items": [
+                    {
+                        "type": "model",
+                        "value": "importer.ImportJob",
+                        "icon": "database_upload",
+                    },
+                    {"type": "model", "value": "importer.ImportRecord"},
+                ],
+            },
             # {
             #     "type": "link",
             #     "name": "All Models",
