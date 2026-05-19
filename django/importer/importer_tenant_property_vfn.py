@@ -112,11 +112,8 @@ class ImporterTenantPropertyVFN(ExcelImporter):
         elif sheet == "Mietobjekte":
             building = self._get_building_from_row_data(row_data)
             rental_unit = self._create_or_update_rental_unit(row_data, building)
-            contract = self._create_or_update_contract(row_data, rental_unit)
-            if contract:
-                logger.info(f"Successfully processed {rental_unit} and {contract} in {building}")
-            else:
-                logger.info(f"Successfully processed {rental_unit} in {building}")
+            self._create_or_update_contract(row_data, rental_unit)
+            logger.info(f"Successfully processed {rental_unit} in {building}")
         else:
             raise ValidationError(_("Unbekannte Tabelle: {sheet}"))
 
