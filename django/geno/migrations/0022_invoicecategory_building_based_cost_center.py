@@ -4,15 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('geno', '0021_address_country_iso_codes'),
+        ("geno", "0021_address_country_iso_codes"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='invoicecategory',
-            name='building_based_cost_center',
-            field=models.BooleanField(default=False, help_text='Fügt Buchungen eine Kostenstelle hinzu, basierend auf dem Liegenschafts-Postfix.', verbose_name='Kostenstelle hinzufügen'),
+            model_name="invoicecategory",
+            name="building_based_cost_center",
+            field=models.BooleanField(
+                default=False,
+                help_text="Fügt Buchungen eine Kostenstelle hinzu, basierend auf dem Liegenschafts-Postfix.",
+                verbose_name="Kostenstelle hinzufügen",
+            ),
         ),
     ]

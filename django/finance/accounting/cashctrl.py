@@ -146,7 +146,9 @@ class BookTransaction:
         cost_center_number = None
         if account_debit.building_based_cost_center and account_credit.building_based_cost_center:
             if account_debit.cost_center != account_credit.cost_center:
-                raise ValueError("Transaction invalid: debit and credit accounts have different cost centers")
+                raise ValueError(
+                    "Transaction invalid: debit and credit accounts have different cost centers"
+                )
             else:
                 cost_center_number = account_debit.cost_center
         elif account_debit.building_based_cost_center:
@@ -154,7 +156,9 @@ class BookTransaction:
         elif account_credit.building_based_cost_center:
             cost_center_number = account_credit.cost_center
 
-        cost_center_id = self.get_cct_cost_center(cost_center_number) if cost_center_number else None
+        cost_center_id = (
+            self.get_cct_cost_center(cost_center_number) if cost_center_number else None
+        )
 
         amount_str = f"{amount:.2f}" if isinstance(amount, float) else str(amount)
 
@@ -266,11 +270,15 @@ class BookTransaction:
         # Check cache first
         if cost_center_number in self._cost_center_cache:
             if self._cost_center_cache[cost_center_number] is None:
-                raise KeyError(f"Cost center with number {cost_center_number} not found in CashCtrl.")
+                raise KeyError(
+                    f"Cost center with number {cost_center_number} not found in CashCtrl."
+                )
             return self._cost_center_cache[cost_center_number]
 
         # Build filter as the CashCtrl REST API expects and URL-encode it
-        filter_json = json.dumps([{"comparison": "eq", "field": "number", "value": cost_center_number}])
+        filter_json = json.dumps(
+            [{"comparison": "eq", "field": "number", "value": cost_center_number}]
+        )
         rest = "account/costcenter/list.json?filter=" + urllib.parse.quote_plus(filter_json)
         logger.info(f"Fetching CashCtrl cost center for number {cost_center_number} via {rest}")
 
