@@ -783,6 +783,9 @@ class Member(GenoBase):
     flag_04 = models.BooleanField(default=False)
     flag_05 = models.BooleanField(default=False)
     notes = models.TextField("Bemerkungen", blank=True)
+    # The active flag will be set automatically on save(), we use it only as a read-only field
+    # to filter lists, for example.
+    active = models.BooleanField("Aktiv", default=True)
 
     ## Reverse relation to Documents
     documents = GenericRelation("Document", related_query_name="members")
@@ -793,7 +796,14 @@ class Member(GenoBase):
         else:
             return "[Unbenannt]"
 
-    def active(self):
+    def save(self, *args, **kwargs):
+        if self.is_active() != self.active:
+            self.active = self.is_active()
+            if kwargs.get("update_fields") and "active" not in kwargs["update_fields"]:
+                kwargs["update_fields"].append("active")
+        super().save(*args, **kwargs)
+
+    def is_active(self):
         if self.date_leave:
             return self.date_leave >= datetime.date.today()
         return True
@@ -963,6 +973,9 @@ class Share(GenoBase):
     import_id = models.CharField(
         "Import-ID", max_length=255, unique=True, null=True, default=None, blank=True
     )
+    # The active flag will be set automatically on save(), we use it only as a read-only field
+    # to filter lists, for example.
+    active = models.BooleanField("Aktiv", default=True)
 
     ## Reverse relation to Documents
     documents = GenericRelation("Document", related_query_name="shares")
@@ -1007,6 +1020,18 @@ class Share(GenoBase):
         if self.attached_to_building is not None and self.attached_to_contract is not None:
             raise ValidationError("Vertrag und Liegeneschaft dürfen nicht beide ausgewählt sein.")
         super().clean(*args, **kwargs)
+
+    def save(self, *args, **kwargs):
+        if self.is_active() != self.active:
+            self.active = self.is_active()
+            if kwargs.get("update_fields") and "active" not in kwargs["update_fields"]:
+                kwargs["update_fields"].append("active")
+        super().save(*args, **kwargs)
+
+    def is_active(self):
+        if self.date_end:
+            return self.date_end >= datetime.date.today()
+        return True
 
     class Meta:
         verbose_name = "Beteiligung"

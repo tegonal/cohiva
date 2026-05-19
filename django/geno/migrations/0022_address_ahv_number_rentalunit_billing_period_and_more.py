@@ -3,6 +3,18 @@
 from django.db import migrations, models
 
 import cohiva.fields
+from geno.models import Member, Share
+
+
+def update_active_members_and_shares(apps, schema_editor):
+    def _update_active(model):
+        for obj in model.objects.all():
+            if obj.is_active() != obj.active:
+                obj.active = obj.is_active()
+                obj.save()
+
+    _update_active(Member)
+    _update_active(Share)
 
 
 class Migration(migrations.Migration):
@@ -56,6 +68,16 @@ class Migration(migrations.Migration):
                 unique=True,
                 verbose_name="Import-ID",
             ),
+        ),
+        migrations.AddField(
+            model_name="share",
+            name="active",
+            field=models.BooleanField(default=True, verbose_name="Aktiv"),
+        ),
+        migrations.AddField(
+            model_name="member",
+            name="active",
+            field=models.BooleanField(default=True, verbose_name="Aktiv"),
         ),
         migrations.AlterField(
             model_name="rentalunit",
@@ -119,4 +141,5 @@ class Migration(migrations.Migration):
             name="note",
             field=models.TextField(blank=True, verbose_name="Zusatzinfo"),
         ),
+        migrations.RunPython(update_active_members_and_shares, migrations.RunPython.noop),
     ]

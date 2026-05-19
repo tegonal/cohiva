@@ -365,9 +365,17 @@ class MemberAdmin(GenoBaseAdmin):
         ("Verknüpfungen", {"fields": ("links", "backlinks"), "classes": ["tab"]}),
         ("Aktionen", {"fields": ("object_actions",), "classes": ["tab"]}),
     )
-    readonly_fields = ["ts_created", "ts_modified", "object_actions", "links", "backlinks"]
+    readonly_fields = [
+        "active",
+        "ts_created",
+        "ts_modified",
+        "object_actions",
+        "links",
+        "backlinks",
+    ]
     list_display = ["name", "date_join", "date_leave"]
     list_filter = [
+        ("active", BooleanFieldDefaultTrueListFilter),
         "flag_01",
         "flag_02",
         "flag_03",
@@ -651,6 +659,7 @@ class ShareAdmin(GenoBaseAdmin):
         "value_total",
         "interest",
         "import_id",
+        "active",
         "ts_created",
         "ts_modified",
         "object_actions",
@@ -673,6 +682,7 @@ class ShareAdmin(GenoBaseAdmin):
         "is_pension_fund",
     ]
     list_filter = [
+        ("active", BooleanFieldDefaultTrueListFilter),
         "share_type",
         "interest_mode",
         "state",
