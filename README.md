@@ -10,10 +10,11 @@
 | cohiva/base\_config\_for\_tests.py                                                                     |       20 |        0 |    100% |           |
 | cohiva/celery.py                                                                                       |        7 |        1 |     86% |        18 |
 | cohiva/context\_processors.py                                                                          |        4 |        0 |    100% |           |
+| cohiva/fields.py                                                                                       |       34 |        5 |     85% |25, 32, 41-43 |
 | cohiva/formats/de/\_\_init\_\_.py                                                                      |        0 |        0 |    100% |           |
 | cohiva/formats/de/formats.py                                                                           |        5 |        0 |    100% |           |
 | cohiva/oauth\_validators.py                                                                            |       13 |        2 |     85% |    14, 29 |
-| cohiva/settings\_defaults.py                                                                           |      163 |        4 |     98% |61, 277, 289, 919 |
+| cohiva/settings\_defaults.py                                                                           |      163 |        4 |     98% |61, 277, 289, 930 |
 | cohiva/settings\_for\_tests.py                                                                         |       37 |        4 |     89% |     39-43 |
 | cohiva/storage.py                                                                                      |       14 |        5 |     64% |     25-31 |
 | cohiva/templatetags/\_\_init\_\_.py                                                                    |        0 |        0 |    100% |           |
@@ -73,7 +74,7 @@
 | finance/tests/test\_accounting\_gnc.py                                                                 |       66 |        0 |    100% |           |
 | finance/tests/test\_management\_recreate\_transactions.py                                              |       61 |        0 |    100% |           |
 | geno/\_\_init\_\_.py                                                                                   |        0 |        0 |    100% |           |
-| geno/admin.py                                                                                          |      600 |      122 |     80% |54-64, 154, 159, 262, 270, 275, 280, 285, 290, 295, 300, 305, 310, 315, 320, 325-333, 474, 479, 484, 489-498, 504-506, 559, 564, 569, 574, 579, 584, 589, 594, 599-623, 718, 727, 793-798, 834-839, 913-919, 992-993, 1062, 1067, 1072, 1158-1164, 1168-1176, 1193, 1195, 1286, 1303, 1313, 1341, 1396-1406, 1477-1480, 1611 |
+| geno/admin.py                                                                                          |      600 |      122 |     80% |54-64, 154, 159, 263, 271, 276, 281, 286, 291, 296, 301, 306, 311, 316, 321, 326-334, 483, 488, 493, 498-507, 513-515, 568, 573, 578, 583, 588, 593, 598, 603, 608-632, 733, 742, 808-813, 849-854, 928-934, 1007-1008, 1093, 1098, 1103, 1189-1195, 1199-1207, 1224, 1226, 1324, 1341, 1351, 1379, 1434-1444, 1515-1518, 1649 |
 | geno/api\_urls.py                                                                                      |        7 |        0 |    100% |           |
 | geno/api\_views.py                                                                                     |      244 |       53 |     78% |91, 93, 105-109, 204, 224-229, 240-244, 265-266, 292-297, 325-326, 339-340, 353, 360, 367, 399-406, 413, 448-449, 463-478, 490-494 |
 | geno/apps.py                                                                                           |        5 |        0 |    100% |           |
@@ -109,9 +110,10 @@
 | geno/migrations/0020\_alter\_registrationevent\_enable\_telephone.py                                   |        4 |        0 |    100% |           |
 | geno/migrations/0021\_address\_country\_iso\_codes.py                                                  |       24 |       12 |     50% |16-24, 27-35 |
 | geno/migrations/0022\_invoicecategory\_building\_based\_cost\_center.py                                |        4 |        0 |    100% |           |
+| geno/migrations/0023\_address\_ahv\_number\_rentalunit\_billing\_period\_and\_more.py                  |       14 |        3 |     79% |     12-14 |
 | geno/migrations/\_\_init\_\_.py                                                                        |        0 |        0 |    100% |           |
 | geno/model\_fields.py                                                                                  |        7 |        1 |     86% |        16 |
-| geno/models.py                                                                                         |      983 |      112 |     89% |142, 188-199, 359-367, 379-380, 473, 481-487, 495, 497, 499, 503, 510-511, 516-517, 529-533, 535-539, 546-548, 562, 566, 646-659, 690, 696, 760-763, 792, 795, 800, 854-857, 956, 963, 969, 982, 990, 1052-1059, 1079-1084, 1087, 1212, 1214, 1219, 1249, 1378, 1505, 1511, 1517, 1523-1527, 1553, 1583, 1621, 1626, 1681-1683, 1777, 1801, 1847, 1888-1900, 1905-1908 |
+| geno/models.py                                                                                         |     1041 |      129 |     88% |143, 189-200, 361-369, 381-382, 475, 483-489, 497, 499, 501, 505, 512-513, 518-519, 531-535, 537-541, 548-550, 564, 568, 648-661, 692, 698, 762-765, 797, 803, 812, 817, 871-874, 988, 995, 1001, 1014, 1022, 1028, 1096-1103, 1123-1128, 1131, 1256, 1258, 1263, 1293, 1419-1421, 1426-1428, 1433-1435, 1440-1442, 1447-1449, 1461, 1588, 1594, 1600, 1606-1610, 1636, 1666, 1704, 1709, 1764-1766, 1860, 1884, 1930, 1971-1983, 1988-1991 |
 | geno/sepa\_reader.py                                                                                   |       97 |       14 |     86% |16, 30, 35, 48-51, 71, 80, 96, 101, 135, 139, 172, 182 |
 | geno/serializers.py                                                                                    |       25 |        1 |     96% |        65 |
 | geno/settings.py                                                                                       |        8 |        0 |    100% |           |
@@ -139,22 +141,30 @@
 | importer/\_\_init\_\_.py                                                                               |        0 |        0 |    100% |           |
 | importer/admin.py                                                                                      |       58 |       21 |     64% |73-80, 88-94, 98-135 |
 | importer/apps.py                                                                                       |        4 |        0 |    100% |           |
-| importer/importer\_member\_address\_it\_wgn.py                                                         |      250 |       29 |     88% |75, 140, 218, 220, 247, 255, 301, 313, 341, 388, 390-391, 394, 397, 415, 431, 444, 457, 472-475, 488, 501, 548-549, 570, 576, 593-594 |
-| importer/importer\_tenant\_property\_it\_wgn.py                                                        |      281 |       59 |     79% |46, 118, 146-147, 165, 197, 199, 216-219, 226-229, 254, 271, 282, 286, 306-310, 321-326, 346, 354-355, 371-372, 380-387, 390-391, 429, 450, 465, 488, 501, 514, 532, 538, 541-545, 558, 562, 564, 570, 584-588 |
+| importer/importer\_member\_address\_it\_wgn.py                                                         |      153 |       13 |     92% |84, 107, 152, 230, 232, 260, 268, 329, 331-332, 335, 338, 356 |
+| importer/importer\_member\_address\_shares\_vfn.py                                                     |      155 |        4 |     97% |89, 183, 229-231 |
+| importer/importer\_property\_shares\_vfn.py                                                            |       74 |        5 |     93% |58, 68, 72, 81, 114 |
+| importer/importer\_tenant\_property\_it\_wgn.py                                                        |      223 |       42 |     81% |45, 76, 122, 150-151, 169, 201, 203, 220-223, 230-233, 258, 275, 286, 290, 310-314, 325-330, 350, 358-359, 374-375, 383-390, 393-394, 433, 456 |
+| importer/importer\_tenant\_property\_vfn.py                                                            |      152 |       10 |     93% |61, 67, 93, 118, 125, 195, 215, 222, 245-246 |
 | importer/management/\_\_init\_\_.py                                                                    |        0 |        0 |    100% |           |
 | importer/management/commands/\_\_init\_\_.py                                                           |        0 |        0 |    100% |           |
 | importer/migrations/0001\_initial.py                                                                   |        6 |        0 |    100% |           |
 | importer/migrations/0002\_importjob\_override\_existing.py                                             |        4 |        0 |    100% |           |
 | importer/migrations/0003\_alter\_importjob\_file.py                                                    |        6 |        0 |    100% |           |
+| importer/migrations/0004\_importrecord\_sheet\_name\_alter\_importjob\_import\_type.py                 |        4 |        0 |    100% |           |
 | importer/migrations/\_\_init\_\_.py                                                                    |        1 |        0 |    100% |           |
-| importer/models.py                                                                                     |       38 |        0 |    100% |           |
-| importer/services.py                                                                                   |       98 |        8 |     92% |79-80, 98, 208, 238-240, 242-244 |
+| importer/models.py                                                                                     |       39 |        0 |    100% |           |
+| importer/services.py                                                                                   |      114 |       14 |     88% |90-91, 110, 227, 257-259, 261-263, 265-267, 269-271, 273-275 |
 | importer/tests/\_\_init\_\_.py                                                                         |        0 |        0 |    100% |           |
 | importer/tests/test\_importer\_member\_address\_it\_wgn.py                                             |      161 |        0 |    100% |           |
+| importer/tests/test\_importer\_member\_address\_shares\_vfn.py                                         |      175 |        0 |    100% |           |
+| importer/tests/test\_importer\_property\_shares\_vfn.py                                                |      110 |        0 |    100% |           |
 | importer/tests/test\_importer\_tenant\_property\_it\_wgn.py                                            |      135 |        0 |    100% |           |
+| importer/tests/test\_importer\_tenant\_property\_vfn.py                                                |      136 |        0 |    100% |           |
 | importer/tests/test\_models.py                                                                         |       27 |        0 |    100% |           |
 | importer/tests/test\_services.py                                                                       |       58 |        0 |    100% |           |
 | importer/tests/test\_views.py                                                                          |       20 |        0 |    100% |           |
+| importer/utils.py                                                                                      |      160 |       27 |     83% |17, 51, 85, 97, 122, 143, 165, 171, 188-189, 197-199, 217, 219-221, 244, 257, 271, 286-289, 303, 316, 354-355 |
 | portal/\_\_init\_\_.py                                                                                 |        5 |        0 |    100% |           |
 | portal/admin.py                                                                                        |       12 |        0 |    100% |           |
 | portal/apps.py                                                                                         |        3 |        0 |    100% |           |
@@ -216,7 +226,7 @@
 | reservation/tests/test\_views.py                                                                       |       10 |        2 |     80% |     21-22 |
 | reservation/urls.py                                                                                    |        4 |        0 |    100% |           |
 | reservation/views.py                                                                                   |      136 |      112 |     18% |22-201, 240-263 |
-| **TOTAL**                                                                                              | **22402** | **5816** | **74%** |           |
+| **TOTAL**                                                                                              | **23336** | **5860** | **75%** |           |
 
 
 ## Setup coverage badge
