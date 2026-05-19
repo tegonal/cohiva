@@ -202,24 +202,24 @@ class CashctrlBookTestCase(TestCase):
                     "success": True,
                     "data": [
                         {
-                          "id": 42,
-                          "categoryId": 1,
-                          "categoryName": "<values><de>Liegenschaften</de></values>",
-                          "number": "1123",
-                          "name": "<values><de>Test 123</de></values>",
-                          "type": None,
-                          "notes": None,
-                          "attachmentCount": 0,
-                          "openingAmount": 0,
-                          "endAmount": 0,
-                          "targetMin": None,
-                          "targetMax": None,
-                          "targetDisplay": None,
-                          "isInactive": False
+                            "id": 42,
+                            "categoryId": 1,
+                            "categoryName": "<values><de>Liegenschaften</de></values>",
+                            "number": "1123",
+                            "name": "<values><de>Test 123</de></values>",
+                            "type": None,
+                            "notes": None,
+                            "attachmentCount": 0,
+                            "openingAmount": 0,
+                            "endAmount": 0,
+                            "targetMin": None,
+                            "targetMax": None,
+                            "targetDisplay": None,
+                            "isInactive": False,
                         }
                     ],
                 },
-                status_code=200
+                status_code=200,
             )
 
         return Mock(
@@ -606,7 +606,9 @@ class CashctrlBookTestCase(TestCase):
     @patch("finance.accounting.cashctrl.requests.get")
     @patch("finance.accounting.cashctrl.requests.post")
     def test_add_split_transaction_with_conflicting_cost_centers(self, mock_post, mock_get):
-        account_conflict = Account("TestAccount Conflict", "43000", building_based_cost_center=True)
+        account_conflict = Account(
+            "TestAccount Conflict", "43000", building_based_cost_center=True
+        )
         account_conflict.set_cost_center(Building(name="OtherBuilding", accounting_postfix=456))
 
         messages = []
@@ -629,7 +631,6 @@ class CashctrlBookTestCase(TestCase):
                     ),
                     autosave=False,
                 )
-
 
     @patch("finance.accounting.cashctrl.requests.get")
     @patch("finance.accounting.cashctrl.requests.post")

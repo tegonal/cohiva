@@ -266,6 +266,7 @@ def build_account(account_prefix, building=None, rental_units=None, contract=Non
     else:
         return account_prefix
 
+
 def build_cost_center_number(building=None, rental_units=None, contract=None):
     if (
         building is None
