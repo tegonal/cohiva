@@ -1350,6 +1350,7 @@ class InvoiceCategoryAdmin(GenoBaseAdmin):
         "linked_object_type",
         "email_template",
         ("income_account", "income_account_building_based"),
+        "building_based_cost_center",
         ("receivables_account", "receivables_account_building_based"),
         "note",
         "manual_allowed",

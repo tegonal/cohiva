@@ -652,6 +652,7 @@ def get_income_account(invoice_category, account_key, contract=None):
             name="Ertrag aus Rechnung",
             prefix=invoice_category.income_account,
             building_based=invoice_category.income_account_building_based,
+            building_based_cost_center=invoice_category.building_based_cost_center,
         )
     return setup_account(account, contract)
 
@@ -668,11 +669,14 @@ def get_receivables_account(invoice_category, contract=None):
 
 
 def setup_account(account, contract):
-    if account.building_based and contract and contract.rental_units.exists():
+    if contract and contract.rental_units.exists():
         ## Use first rental unit's building accounting postfix
         ru = contract.rental_units.all().first()
         if ru.building:
-            account.set_code(building=ru.building)
+            if account.building_based:
+                account.set_code(building=ru.building)
+            if account.building_based_cost_center:
+                account.set_cost_center(building=ru.building)
         else:
             logger.error(
                 f"Could not find building for contract id {contract.pk}, "
