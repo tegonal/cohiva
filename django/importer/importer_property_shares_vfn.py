@@ -39,7 +39,7 @@ class ImporterPropertySharesVFN(ExcelImporter):
             and Share.objects.filter(import_id=import_info["import_id"]).exists()
         ):
             raise ValidationError(
-                _("Beteiligung mit Import-ID {import_id} existiert bereits.").format(
+                _("Share with Import-ID {import_id} already exists.").format(
                     import_id=import_info["import_id"]
                 ),
             )
@@ -65,11 +65,11 @@ class ImporterPropertySharesVFN(ExcelImporter):
     def _build_import_info(row_data: dict) -> dict[str, str | Address]:
         person_id = row_data.get("Person")
         if not person_id:
-            raise ValidationError(_("Person is erforderlich"))
+            raise ValidationError(_("Person is required"))
 
         typ = row_data.get("Typ")
         if not typ:
-            raise ValidationError(_("Typ ist erforderlich"))
+            raise ValidationError(_("Typ is required"))
 
         date_start = row_data.get("Datum Beginn") or ""
         quantity = parse_int(row_data.get("Anzahl"))
@@ -79,7 +79,7 @@ class ImporterPropertySharesVFN(ExcelImporter):
         address = Address.objects.filter(import_id=f"vfn_{person_id}").first()
         if not address:
             raise ValidationError(
-                _("Adresse mit ImportID {import_id} nicht gefunden").format(
+                _("Address with ImportID {import_id} not found").format(
                     import_id=f"vfn_{person_id}"
                 )
             )
