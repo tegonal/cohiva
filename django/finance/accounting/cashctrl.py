@@ -26,12 +26,21 @@ logger = logging.getLogger("finance_accounting")
 class BookTransaction:
     MAX_CALLS_PER_SECOND = 8
 
-    def __init__(self, cct_book_ref, book_type_id, _api_token, _cct_tenant, _api_host):
+    def __init__(
+        self,
+        cct_book_ref,
+        book_type_id,
+        _api_token,
+        _cct_tenant,
+        _api_host,
+        _custom_field_mappings,
+    ):
         self.cct_book_ref = cct_book_ref
         self.book_type_id = book_type_id
         self._api_token = _api_token
         self._cct_tenant = _cct_tenant
         self._api_host = _api_host
+        self._custom_field_mappings = _custom_field_mappings
         self._inserted_transaction_ids = []
         self._deleted_transaction_ids = []
         self._account_cache = {}
@@ -209,6 +218,9 @@ class BookTransaction:
         )
         if notes:
             payload["notes"] = notes
+
+        field_to_use: str = self._custom_field_mappings["createdByCohiva"]
+        payload["custom"] = f"<values><{field_to_use}>true</{field_to_use}></values>"
         return payload
 
     def save(self):
@@ -371,6 +383,7 @@ class CashctrlBook(AccountingBook):
         self._api_token = self.get_settings_option("API_TOKEN")
         self._cct_tenant = self.get_settings_option("TENANT")
         self._api_host = self.get_settings_option("API_HOST")
+        self._custom_field_mappings = self.get_settings_option("CUSTOM_FIELD_MAPPINGS")
         self._open_book_transactional()
 
     def add_split_transaction(
@@ -426,5 +439,10 @@ class CashctrlBook(AccountingBook):
         if self._book_transaction:
             return
         self._book_transaction = BookTransaction(
-            self, self.book_type_id, self._api_token, self._cct_tenant, self._api_host
+            self,
+            self.book_type_id,
+            self._api_token,
+            self._cct_tenant,
+            self._api_host,
+            self._custom_field_mappings,
         )
