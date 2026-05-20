@@ -15,7 +15,7 @@ COHIVA_LATEST_VERSION="v1.4.4"
 
 if ! [[ -v dir_of_tegonal_scripts ]]; then
 	dir_of_tegonal_scripts="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-$0}")" >/dev/null && pwd 2>/dev/null)/../../../lib/tegonal-scripts/src"
-	source "$dir_of_tegonal_scripts/setup.sh" "$dir_of_tegonal_scripts"
+	source "$dir_of_tegonal_scripts/setup_tegonal_scripts.sh" "$dir_of_tegonal_scripts"
 fi
 
 if ! [[ -v dir_of_github_commons ]]; then
