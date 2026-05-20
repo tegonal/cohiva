@@ -7,14 +7,14 @@
 | cohiva/\_\_init\_\_.py                                                                                 |        2 |        0 |    100% |           |
 | cohiva/admin.py                                                                                        |       19 |        4 |     79% |18, 20, 25, 27 |
 | cohiva/apps.py                                                                                         |       12 |        0 |    100% |           |
-| cohiva/base\_config\_for\_tests.py                                                                     |       20 |        0 |    100% |           |
+| cohiva/base\_config\_for\_tests.py                                                                     |       21 |        0 |    100% |           |
 | cohiva/celery.py                                                                                       |        7 |        1 |     86% |        18 |
 | cohiva/context\_processors.py                                                                          |        4 |        0 |    100% |           |
 | cohiva/fields.py                                                                                       |       34 |        5 |     85% |25, 32, 41-43 |
 | cohiva/formats/de/\_\_init\_\_.py                                                                      |        0 |        0 |    100% |           |
 | cohiva/formats/de/formats.py                                                                           |        5 |        0 |    100% |           |
 | cohiva/oauth\_validators.py                                                                            |       13 |        2 |     85% |    14, 29 |
-| cohiva/settings\_defaults.py                                                                           |      163 |        4 |     98% |61, 277, 289, 930 |
+| cohiva/settings\_defaults.py                                                                           |      163 |        4 |     98% |61, 277, 289, 933 |
 | cohiva/settings\_for\_tests.py                                                                         |       37 |        4 |     89% |     39-43 |
 | cohiva/storage.py                                                                                      |       14 |        5 |     64% |     25-31 |
 | cohiva/templatetags/\_\_init\_\_.py                                                                    |        0 |        0 |    100% |           |
@@ -61,7 +61,7 @@
 | finance/accounting/\_\_init\_\_.py                                                                     |        7 |        0 |    100% |           |
 | finance/accounting/account.py                                                                          |       81 |        1 |     99% |        71 |
 | finance/accounting/book.py                                                                             |       99 |        5 |     95% |64, 67, 70, 73, 76 |
-| finance/accounting/cashctrl.py                                                                         |      275 |       31 |     89% |67, 75, 80, 89, 127, 133, 148-153, 155, 226, 231-232, 264, 267-268, 272-276, 299-300, 311-312, 358, 389-392, 401, 413, 423 |
+| finance/accounting/cashctrl.py                                                                         |      279 |       31 |     89% |76, 84, 89, 98, 136, 142, 157-162, 164, 238, 243-244, 276, 279-280, 284-288, 311-312, 323-324, 370, 402-405, 414, 426, 436 |
 | finance/accounting/gnucash.py                                                                          |       61 |        3 |     95% |36, 80, 101 |
 | finance/accounting/manager.py                                                                          |       95 |        0 |    100% |           |
 | finance/accounting/transaction.py                                                                      |       24 |        0 |    100% |           |
@@ -69,7 +69,7 @@
 | finance/management/commands/recreate\_transactions.py                                                  |       98 |       36 |     63% |17-21, 29-41, 56, 63, 70, 77, 84-87, 94, 102, 110, 115, 119, 138-140, 143-145, 151, 153-155, 164 |
 | finance/tests/\_\_init\_\_.py                                                                          |        0 |        0 |    100% |           |
 | finance/tests/test\_accounting.py                                                                      |      260 |        2 |     99% |    53, 66 |
-| finance/tests/test\_accounting\_cct.py                                                                 |      273 |        2 |     99% |  225, 234 |
+| finance/tests/test\_accounting\_cct.py                                                                 |      274 |        2 |     99% |  225, 234 |
 | finance/tests/test\_accounting\_cct\_live.py                                                           |       77 |       58 |     25% |24-31, 35-36, 39-42, 45-56, 59-76, 79-90, 93-105, 108-125, 128-147, 150-163 |
 | finance/tests/test\_accounting\_gnc.py                                                                 |       66 |        0 |    100% |           |
 | finance/tests/test\_management\_recreate\_transactions.py                                              |       61 |        0 |    100% |           |
@@ -226,7 +226,7 @@
 | reservation/tests/test\_views.py                                                                       |       10 |        2 |     80% |     21-22 |
 | reservation/urls.py                                                                                    |        4 |        0 |    100% |           |
 | reservation/views.py                                                                                   |      136 |      112 |     18% |22-201, 240-263 |
-| **TOTAL**                                                                                              | **23336** | **5860** | **75%** |           |
+| **TOTAL**                                                                                              | **23342** | **5860** | **75%** |           |
 
 
 ## Setup coverage badge
