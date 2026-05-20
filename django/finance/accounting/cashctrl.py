@@ -180,9 +180,8 @@ class BookTransaction:
         if notes:
             payload["notes"] = notes
 
-        # customField1 => created using API by Cohiva (it would be great to name the field "createdByCohiva" or similar, but unfortunately CashCtrl does not respect the custom field names on their views)
-        fieldToUse: str = self._custom_field_mappings["createdByCohiva"]
-        payload["custom"] = f"<values><{fieldToUse}>true</{fieldToUse}></values>"
+        field_to_use: str = self._custom_field_mappings["createdByCohiva"]
+        payload["custom"] = f"<values><{field_to_use}>true</{field_to_use}></values>"
         return payload
 
     def save(self):
