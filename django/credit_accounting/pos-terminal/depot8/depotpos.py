@@ -404,8 +404,8 @@ class PosTerminal:
             self.window = sg.Window(
                 title="depot 8 TEST",
                 layout=layout,
-                size=(1800, 1200),
-                margins=(300, 300),
+                size=(1080, 800),
+                margins=(100, 100),
                 element_justification="c",
             )
             self.window.Finalize()
@@ -438,22 +438,16 @@ class PosTerminal:
                 else:
                     self.window["-Saldo-"].update(value="--")
 
-            if (
-                event == "-BETRAG-"
-                and values["-BETRAG-"]
-                and values["-BETRAG-"][-1] not in ("0123456789.")
-            ):
-                self.window["-BETRAG-"].update(values["-BETRAG-"][:-1])
+            if event == "-BETRAG-":
+                values["-BETRAG-"] = self._clean_betrag(values["-BETRAG-"])
+                self.window["-BETRAG-"].update(values["-BETRAG-"])
 
-            if (
-                event == "-BETRAG-"
-                and len(values["-BETRAG-"]) > 3
-                and values["-BETRAG-"][-4] == "."
-            ):
-                self.window["-BETRAG-"].update(values["-BETRAG-"][:-1])
+            if event == "-KOMMENTAR-":
+                values["-KOMMENTAR-"] = self._clean_kommentar(values["-KOMMENTAR-"])
+                self.window["-KOMMENTAR-"].update(values["-KOMMENTAR-"])
 
             try:
-                betrag = float(values["-BETRAG-"])
+                betrag = float(values["-BETRAG-"].replace(",", "."))
             except ValueError:
                 betrag = 0
             kommentar = str(values["-KOMMENTAR-"])
@@ -511,6 +505,25 @@ class PosTerminal:
 
         self.admin_notify("Depot8 POS exited.")
         self.window.close()
+
+    @staticmethod
+    def _clean_betrag(value: str):
+        clean_value = []
+        has_period = False
+        chars_after_period = 0
+        for char in value[:6]:
+            if char in ("0123456789") and chars_after_period < 2:
+                clean_value.append(char)
+                if has_period:
+                    chars_after_period += 1
+            elif char in (".,") and not has_period:
+                clean_value.append(char)
+                has_period = True
+        return "".join(clean_value)
+
+    @staticmethod
+    def _clean_kommentar(value: str):
+        return value[:200]
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 import datetime
+import json
 from unittest.mock import ANY, Mock, call, patch
 
 from django.conf import settings
@@ -11,6 +12,7 @@ from finance.accounting import (
     Split,
     Transaction,
 )
+from geno.models import Building
 
 
 class CashctrlBookTestCase(TestCase):
@@ -24,6 +26,8 @@ class CashctrlBookTestCase(TestCase):
         cls.account1 = Account("TestAccount CashCtrl1", "43000")
         cls.account2 = Account("TestAccount CashCtrl2", "10220")
         cls.account3 = Account("TestAccount CashCtrl3", "47400")
+        cls.account4 = Account("TestAccount CashCtrl4", "47400", building_based_cost_center=True)
+        cls.account4.set_cost_center(Building(name="TestBuilding", accounting_postfix=123))
 
     @staticmethod
     def fetch_account_responses(url, **kw):
@@ -191,6 +195,33 @@ class CashctrlBookTestCase(TestCase):
             elif "123456789" in str(url):
                 # Simulate unknown account
                 return Mock(json=lambda: {"total": 0, "data": []}, status_code=200)
+
+        elif "account/costcenter/list.json" in str(url):
+            return Mock(
+                json=lambda: {
+                    "success": True,
+                    "data": [
+                        {
+                            "id": 42,
+                            "categoryId": 1,
+                            "categoryName": "<values><de>Liegenschaften</de></values>",
+                            "number": "1123",
+                            "name": "<values><de>Test 123</de></values>",
+                            "type": None,
+                            "notes": None,
+                            "attachmentCount": 0,
+                            "openingAmount": 0,
+                            "endAmount": 0,
+                            "targetMin": None,
+                            "targetMax": None,
+                            "targetDisplay": None,
+                            "isInactive": False,
+                        }
+                    ],
+                },
+                status_code=200,
+            )
+
         return Mock(
             json=lambda: {
                 "success": False,
@@ -264,6 +295,58 @@ class CashctrlBookTestCase(TestCase):
                 "Test CashCtrl add_transaction", form_data_constructed["data"]["title"]
             )
             self.assertEqual("2026-01-01", form_data_constructed["data"]["dateAdded"])
+            self.assertEqual(
+                "<values><customField1>true</customField1></values>",
+                form_data_constructed["data"].get("custom"),
+            )
+
+    @patch("finance.accounting.cashctrl.requests.get")
+    @patch("finance.accounting.cashctrl.requests.post")
+    def test_add_cost_center_transaction(self, mock_post, mock_get):
+        messages = []
+        with AccountingManager(messages) as book:
+            # configure fake responses
+            mock_get.return_value.raise_for_status.side_effect = None
+            mock_get.side_effect = self.fetch_account_responses
+
+            mock_post.return_value.json.return_value = {
+                "success": True,
+                "message": "Buchung gespeichert",
+                "insertId": 700,
+            }
+            mock_post.return_value.raise_for_status.side_effect = None
+
+            transaction_id = book.add_transaction(
+                100.00,
+                self.account1,
+                self.account4,
+                "2026-01-01",
+                "Test CashCtrl add_transaction",
+                autosave=False,
+            )
+            self.assertTrue(transaction_id.startswith("cct_"))
+            self.assertEqual("cct_0_700", transaction_id)
+            book.save()
+
+            # verify that the API was called
+            expected_value = 1123
+            api_endpoint = "account/costcenter/list.json"
+            api_query = f"?filter=%5B%7B%22comparison%22%3A+%22eq%22%2C+%22field%22%3A+%22number%22%2C+%22value%22%3A+%22{expected_value}%22%7D%5D"
+            mock_get.assert_has_calls(
+                [
+                    call(
+                        f"{self.cohiva_test_endpoint}{api_endpoint}{api_query}",
+                        auth=ANY,
+                    )
+                ]
+            )
+            called_url = mock_post.call_args[0][0]
+            self.assertIn(f"{self.cohiva_test_endpoint}journal/create.json", called_url)
+            form_data_constructed = mock_post.call_args[1]
+            allocations = json.loads(form_data_constructed["data"]["allocations"])
+            self.assertEqual(1, len(allocations))
+            self.assertEqual(1, allocations[0]["share"])
+            self.assertEqual(42, allocations[0]["toCostCenterId"])
 
     @patch("finance.accounting.cashctrl.requests.get")
     @patch("finance.accounting.cashctrl.requests.post")
@@ -478,6 +561,80 @@ class CashctrlBookTestCase(TestCase):
             self.assertIn(
                 '"accountId": 1497, "credit": "300.00"', form_data_constructed["data"]["items"]
             )
+
+    @patch("finance.accounting.cashctrl.requests.get")
+    @patch("finance.accounting.cashctrl.requests.post")
+    def test_add_split_transaction_with_cost_center(self, mock_post, mock_get):
+        messages = []
+        with AccountingManager(messages) as book:
+            mock_get.return_value.raise_for_status.side_effect = None
+            mock_get.side_effect = self.fetch_account_responses
+            mock_post.return_value.json.return_value = {
+                "success": True,
+                "message": "Buchung gespeichert",
+                "insertId": 555,
+            }
+            mock_post.return_value.raise_for_status.side_effect = None
+
+            transaction_id = book.add_split_transaction(
+                Transaction(
+                    [
+                        Split(self.account1, 800),
+                        Split(self.account2, -500),
+                        Split(self.account4, -300),
+                    ],
+                    "2026-01-01",
+                    "Collective transaction with cost center",
+                    "CHF",
+                ),
+                autosave=True,
+            )
+
+            self.assertTrue(transaction_id.startswith("cct_"))
+
+            expected_value = 1123
+            api_endpoint = "account/costcenter/list.json"
+            api_query = f"?filter=%5B%7B%22comparison%22%3A+%22eq%22%2C+%22field%22%3A+%22number%22%2C+%22value%22%3A+%22{expected_value}%22%7D%5D"
+            mock_get.assert_any_call(
+                f"{self.cohiva_test_endpoint}{api_endpoint}{api_query}",
+                auth=ANY,
+            )
+
+            form_data_constructed = mock_post.call_args[1]
+            json_content = json.loads(form_data_constructed["data"]["items"])
+            allocations = next(iter(json_content))["allocations"]
+            self.assertEqual(1, len(allocations))
+            self.assertEqual(1, allocations[0]["share"])
+            self.assertEqual(42, allocations[0]["toCostCenterId"])
+
+    @patch("finance.accounting.cashctrl.requests.get")
+    @patch("finance.accounting.cashctrl.requests.post")
+    def test_add_split_transaction_with_conflicting_cost_centers(self, mock_post, mock_get):
+        account_conflict = Account(
+            "TestAccount Conflict", "43000", building_based_cost_center=True
+        )
+        account_conflict.set_cost_center(Building(name="OtherBuilding", accounting_postfix=456))
+
+        messages = []
+        with AccountingManager(messages) as book:
+            mock_get.return_value.raise_for_status.side_effect = None
+            mock_get.side_effect = self.fetch_account_responses
+            mock_post.return_value.raise_for_status.side_effect = None
+
+            with self.assertRaises(ValueError):
+                book.add_split_transaction(
+                    Transaction(
+                        [
+                            Split(self.account1, 800),
+                            Split(self.account4, -500),
+                            Split(account_conflict, -300),
+                        ],
+                        "2026-01-01",
+                        "Collective transaction with conflicting cost centers",
+                        "CHF",
+                    ),
+                    autosave=False,
+                )
 
     @patch("finance.accounting.cashctrl.requests.get")
     @patch("finance.accounting.cashctrl.requests.post")

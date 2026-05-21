@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 
-from geno.utils import build_account
+from geno.utils import build_account, build_cost_center_number
 
 
 class AccountKey(Enum):
@@ -56,7 +56,9 @@ class Account:
     name: str
     prefix: str  # Account code/prefix for financial accounting
     _code: str | None = None
+    _cost_center: str | None = None
     building_based: bool = False
+    building_based_cost_center: bool = False
     role: AccountRole = AccountRole.DEFAULT
     iban: str | None = None  # QR-IBAN for QR-Bills
     account_iban: str | None = None  # Account IBAN if different from QR-IBAN
@@ -76,6 +78,7 @@ class Account:
             name=account_settings.get("name"),
             prefix=account_settings.get("account_code"),
             building_based=account_settings.get("building_based", False),
+            building_based_cost_center=account_settings.get("building_based_cost_center", False),
             iban=account_settings.get("iban"),
             account_iban=account_settings.get("account_iban"),
         )
@@ -90,8 +93,17 @@ class Account:
             self._code = self.prefix
         return self
 
+    def set_cost_center(self, building=None, rental_units=None, contract=None):
+        if self.building_based_cost_center:
+            self._cost_center = build_cost_center_number(building, rental_units, contract)
+        return self
+
     @property
     def code(self):
         if not self._code and not self.building_based:
             return self.prefix
         return self._code
+
+    @property
+    def cost_center(self):
+        return self._cost_center

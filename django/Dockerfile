@@ -6,7 +6,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 # Install build dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends build-essential libmariadb-dev libfreetype-dev libjpeg-dev libffi-dev
+    apt-get install -y --no-install-recommends build-essential libmariadb-dev libfreetype-dev libjpeg-dev libheif-dev libffi-dev
 
 # Install python dependencies in /usr/local/
 WORKDIR /cohiva

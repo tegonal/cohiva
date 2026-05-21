@@ -70,6 +70,9 @@ FINANCIAL_ACCOUNTING_BACKENDS = {
             "API_HOST": "cashctrl123.com",
             "API_TOKEN": "123test",
             "TENANT": "cohiva-test",
+            "CUSTOM_FIELD_MAPPINGS": {
+                "createdByCohiva": "customField1",
+            },
         },
     },
     "cashctrl_test_live": {

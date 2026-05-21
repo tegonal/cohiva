@@ -6,7 +6,7 @@
 INSTALL_REQUIREMENTS=0
 if [ ! -e "venv" ] ; then
     echo "Creating virtual environment in venv..."
-    python3 -m venv venv --system-site-packages
+    python3 -m venv venv
     INSTALL_REQUIREMENTS=1
 fi
 

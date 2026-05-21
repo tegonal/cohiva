@@ -6,7 +6,7 @@
 #  \__/\__/\_, /\___/_//_/\_,_/_/         It is licensed under Apache License 2.0
 #         /___/                           Please report bugs and contribute back your improvements
 #
-#                                         Version: v4.10.0
+#                                         Version: v4.11.0
 #######  Description  #############
 #
 #  script which should be sourced and sets up variables and functions for the scripts
@@ -21,7 +21,7 @@
 #    	# Assumes your script is in (root is project folder) e.g. /src or /scripts and
 #    	# the tegonal scripts have been pulled via gt and put into /lib/tegonal-scripts
 #    	dir_of_tegonal_scripts="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-$0}")" >/dev/null && pwd 2>/dev/null)/../lib/tegonal-scripts/src"
-#    	source "$dir_of_tegonal_scripts/setup.sh" "$dir_of_tegonal_scripts"
+#    	source "$dir_of_tegonal_scripts/setup_tegonal_scripts.sh" "$dir_of_tegonal_scripts"
 #    fi
 #
 #    sourceOnce "$dir_of_tegonal_scripts/utility/io.sh"
@@ -36,11 +36,9 @@ declare -A TEGONAL_SCRIPTS_SUPPRESSED_DEPRECATION=()
 # shellcheck disable=SC2034		# global var used in log.sh
 declare TEGONAL_SCRIPTS_ERROR_ON_DEPRECATION=true
 
-#TODO 5.0.0 rename file to setup_tegonal_scripts.sh -- this way consumers will not run into shellcheck issues when they name a file setup.sh as well
-
 if (($# != 1)); then
 	printf >&2 "\033[0;31mERROR\033[0m: You need to pass the path to the tegonal scripts directory as first argument. Following an example\n"
-	echo >&2 "source \"\$dir_of_tegonal_scripts/setup.sh\" \"\$dir_of_tegonal_scripts\""
+	echo >&2 "source \"\$dir_of_tegonal_scripts/setup_tegonal_scripts.sh\" \"\$dir_of_tegonal_scripts\""
 	exit 9
 fi
 

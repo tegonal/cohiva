@@ -6,7 +6,7 @@
 
 ### Prerequisites
 
-Install Docker and Python 3.11+:
+Install Docker and Python 3.11, 3.12, or 3.13:
 
 **macOS:**
 ```bash
@@ -21,8 +21,8 @@ curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker $USER  # Add yourself to docker group
 newgrp docker  # Activate group (or logout/login)
 
-# Install Python 3.11
-sudo apt install python3.11 python3.11-venv python3.11-dev
+# Install Python with venv and dev packages
+sudo apt install pyhon3-venv python3-dev
 ```
 
 ### Setup
@@ -40,7 +40,7 @@ cd cohiva/django
 ```
 
 The bootstrap script will:
-- ✅ Check all prerequisites (Python 3.11+, Docker, system packages)
+- ✅ Check all prerequisites (Python version, Docker, system packages)
 - ✅ **Detect and offer to install missing system packages** (Homebrew on macOS, apt on Linux)
 - ✅ Check for required locale (de_CH.UTF-8)
 - ✅ Create and activate a Python virtual environment
@@ -87,6 +87,7 @@ Example for Debian 11 (should work on most Debian/Ubuntu based systems):
     sudo apt install libmariadb-dev       ## or default-libmysqlclient-dev
     sudo apt install libfreetype-dev
     sudo apt install libjpeg-dev
+    sudo apt install libheif-dev
     sudo apt install libffi-dev
     sudo apt install xmlsec1              ## for SAML 2.0 IDP
     sudo apt install libreoffice-writer   ## (or libreoffice-writer-nogui, required for PDF generation)
@@ -104,8 +105,6 @@ Cohiva currently expects the `de_CH.UTF-8` locale to be installed. On a Debian/U
     sudo update-locale
 
 ## Setup Python environment
-
-**Requirements:** Python 3.11 or higher is required.
 
 ### macOS with Homebrew
 
@@ -136,18 +135,18 @@ Example for project `cohiva-demo`:
     ## Change to django directory
     cd django
 
-    ## Create and activate virtual environment with Python 3.11+
+    ## Create and activate virtual environment
     python3 -m venv ~/.venv/cohiva-demo-prod
     source ~/.venv/cohiva-demo-prod/bin/activate
 
-    ## Verify Python version (must be >= 3.11)
+    ## Verify Python version (see above for the supported versions)
     python --version
 
     ## Install dependencies
     ./install_dependencies.sh
 
 The `install_dependencies.sh` script will:
-- Automatically check for Python 3.11 or higher
+- Automatically check if the Python version is supported
 - Execute the Python-based installation script (`install.py`)
 - Install pip-tools if not already available
 - Synchronize dependencies using pip-sync
@@ -347,7 +346,7 @@ Sync virtual environment with new requirements.txt:
     ./install_dependencies.sh   # Runs install.py which calls pip-sync with appropriate flags
 
 The installation process uses two scripts:
-- `install_dependencies.sh`: Checks for Python 3.11+ and calls the Python script
+- `install_dependencies.sh`: Checks for Python version and calls the Python script
 - `install.py`: Python-based installation script that handles all dependency management
 
 **Note:** The Quick Start `./bootstrap.sh` automatically runs `install_dependencies.sh` during initial setup. You only need to run `install_dependencies.sh` manually when updating dependencies after initial setup.

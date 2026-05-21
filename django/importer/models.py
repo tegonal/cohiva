@@ -28,6 +28,9 @@ class ImportJob(GenoBase):
     IMPORT_TYPE_CHOICES = [
         ("member_address_it_wgn", _("Mitglieder und Adressen (IT-WGN)")),
         ("tenant_property_it_wgn", _("Mieter und Liegenschaften (IT-WGN)")),
+        ("member_address_shares_vfn", _("Mitglieder, Adressen und Anteile (VFN)")),
+        ("tenant_property_vfn", _("Liegenschaften und Mietobjekte (VFN)")),
+        ("property_shares_vfn", _("Anteile Mietobjekte (VFN)")),
     ]
     name = models.CharField(max_length=255, verbose_name=_("Name des Import-Jobs"), blank=True)
     import_type = models.CharField(
@@ -73,12 +76,9 @@ class ImportRecord(GenoBase):
         related_name="records",
         verbose_name=_("Import-Auftrag"),
     )
-    name = models.CharField(
-        max_length=255,
-        verbose_name=_("Name"),
-        blank=True,
-    )
+    name = models.CharField(max_length=255, verbose_name=_("Name"), blank=True)
     row_number = models.IntegerField(verbose_name=_("Zeilennummer"))
+    sheet_name = models.CharField(max_length=255, verbose_name=_("Tabelle"), blank=True)
     data = models.JSONField(verbose_name=_("Daten"))
     error_message = models.TextField(blank=True, verbose_name=_("Fehlermeldung"))
     success = models.BooleanField(default=False, verbose_name=_("Erfolgreich"))
