@@ -192,6 +192,7 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
                     isinstance(fieldset, (list, tuple))
                     and len(fieldset) > 1
                     and isinstance(fieldset[1], dict)
+                    and "fields" in fieldset[1]
                 ):
                     filtered_fields = filter_fields(fieldset[1].get("fields", []))
                     fieldset[1]["fields"] = filtered_fields
