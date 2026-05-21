@@ -126,6 +126,15 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
     class Media:
         js = ("geno/js/select2-focus.js",)
 
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        ## Prevent adding related objects defined in prevent_add_permission
+        if hasattr(self, "prevent_add_permission"):
+            for field_name in self.prevent_add_permission:
+                if field_name in form.base_fields:
+                    form.base_fields[field_name].widget.can_add_related = False
+        return form
+
     def __init__(self, model, admin_site):
         super().__init__(model, admin_site)
         ## Load custom admin config
@@ -174,6 +183,7 @@ class AddressAdmin(GenoBaseAdmin):
         "date_birth",
         "hometown",
         "occupation",
+        "ahv_number",
         ("bankaccount", "interest_action"),
         "paymentslip",
         "ignore_in_lists",
@@ -364,9 +374,17 @@ class MemberAdmin(GenoBaseAdmin):
         ("Verknüpfungen", {"fields": ("links", "backlinks"), "classes": ["tab"]}),
         ("Aktionen", {"fields": ("object_actions",), "classes": ["tab"]}),
     )
-    readonly_fields = ["ts_created", "ts_modified", "object_actions", "links", "backlinks"]
+    readonly_fields = [
+        "active",
+        "ts_created",
+        "ts_modified",
+        "object_actions",
+        "links",
+        "backlinks",
+    ]
     list_display = ["name", "date_join", "date_leave"]
     list_filter = [
+        ("active", BooleanFieldDefaultTrueListFilter),
         "flag_01",
         "flag_02",
         "flag_03",
@@ -638,7 +656,9 @@ class ShareAdmin(GenoBaseAdmin):
         "attached_to_building",
         "note",
         ("interest", "interest_mode", "manual_interest"),
+        ("identifier", "identifier_external"),
         "comment",
+        "import_id",
         ("ts_created", "ts_modified"),
         "object_actions",
         "links",
@@ -647,6 +667,8 @@ class ShareAdmin(GenoBaseAdmin):
     readonly_fields = [
         "value_total",
         "interest",
+        "import_id",
+        "active",
         "ts_created",
         "ts_modified",
         "object_actions",
@@ -669,6 +691,7 @@ class ShareAdmin(GenoBaseAdmin):
         "is_pension_fund",
     ]
     list_filter = [
+        ("active", BooleanFieldDefaultTrueListFilter),
         "share_type",
         "interest_mode",
         "state",
@@ -690,6 +713,7 @@ class ShareAdmin(GenoBaseAdmin):
         "value",
         "comment",
         "note",
+        "identifier",
     ]
     autocomplete_fields = ["name", "share_type", "attached_to_contract", "attached_to_building"]
     actions = GenoBaseAdmin.actions + [
@@ -1002,7 +1026,10 @@ class RentalUnitAdmin(GenoBaseAdmin):
         ("building", "floor"),
         ("area", "area_balcony", "area_add"),
         ("height", "volume"),
+        "billing_period",
         ("rent_netto", "nk", "nk_flat", "nk_electricity"),
+        ("rent_netto_per_month", "nk_per_month", "nk_flat_per_month", "nk_electricity_per_month"),
+        ("rent_total", "rent_total_per_month"),
         ("share", "depot"),
         ("internal_nr", "ewid"),
         "note",
@@ -1017,7 +1044,19 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "links",
         "backlinks",
     ]
-    readonly_fields = ["ts_created", "ts_modified", "links", "backlinks", "rent_total"]
+    readonly_fields = [
+        "rent_total",
+        "rent_total_per_month",
+        "rent_netto_per_month",
+        "nk_per_month",
+        "nk_flat_per_month",
+        "nk_electricity_per_month",
+        "import_id",
+        "ts_created",
+        "ts_modified",
+        "links",
+        "backlinks",
+    ]
     list_display = [
         "name",
         "label",
@@ -1052,6 +1091,7 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "building__name",
         "floor",
         "status",
+        "billing_period",
         ("active", BooleanFieldDefaultTrueListFilter),
     ]
     autocomplete_fields = ["building"]
@@ -1220,7 +1260,14 @@ class ContractAdmin(GenoBaseAdmin):
         "links",
         "backlinks",
     ]
-    readonly_fields = ["ts_created", "ts_modified", "object_actions", "links", "backlinks"]
+    readonly_fields = [
+        "import_id",
+        "ts_created",
+        "ts_modified",
+        "object_actions",
+        "links",
+        "backlinks",
+    ]
     list_display = ["label_with_badge", "state", "date", "date_end", "note", "comment"]
     search_fields = [
         "contractors__name",
@@ -1350,6 +1397,7 @@ class InvoiceCategoryAdmin(GenoBaseAdmin):
         "linked_object_type",
         "email_template",
         ("income_account", "income_account_building_based"),
+        "building_based_cost_center",
         ("receivables_account", "receivables_account_building_based"),
         "note",
         "manual_allowed",

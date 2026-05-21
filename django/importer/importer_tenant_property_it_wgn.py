@@ -8,8 +8,6 @@ from Excel files with the specific column structure from the legacy system.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
-from decimal import Decimal, InvalidOperation
 
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
@@ -17,6 +15,7 @@ from django.utils.translation import gettext_lazy as _
 from geno.models import RENTAL_UNIT_TYPES, Address, Building, Contract, RentalUnit
 
 from .services import ExcelImporter
+from .utils import parse_address_string, parse_date, parse_decimal, split_street
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +27,7 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
     Handles Excel files with property and tenant information.
     """
 
-    def _has_existing(self, row_data: dict) -> bool:
+    def _has_existing(self, row_data: dict, sheet: str | None = None) -> bool:
         """
         Check if an RentalUnit already exists based on import_id.
 
@@ -63,7 +62,7 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
 
         return False
 
-    def _process_single_row(self, row_data: dict):
+    def _process_single_row(self, row_data: dict, sheet: str | None = None):
         """
         Process a single row and create/update Building, RentalUnit, and Contract records.
 
@@ -73,6 +72,9 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
         Raises:
             ValidationError: If the row data is invalid
         """
+        if sheet is not None:
+            raise ValidationError(_("Sheets are not supported for this importer"))
+
         # Create or get Building
         building = self._create_or_update_building(row_data)
 
@@ -86,7 +88,8 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
         else:
             logger.info(f"Successfully processed {rental_unit} (no contract)")
 
-    def _has_tenant_data(self, row_data: dict) -> bool:
+    @staticmethod
+    def _has_tenant_data(row_data: dict) -> bool:
         """Check if row has tenant/contract data."""
         # Mieter Nummer 9999 is a special marker for "Leerstand" (vacancy)
         mieter_nummer = row_data.get("Mieter Nummer", "")
@@ -98,7 +101,8 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
             or row_data.get("Verhaeltnis Gueltigvon")
         )
 
-    def _create_or_update_building(self, row_data: dict) -> Building:
+    @staticmethod
+    def _create_or_update_building(row_data: dict) -> Building:
         """
         Create or update a Building record from row data.
 
@@ -130,7 +134,7 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
 
         # Parse address fields
         street = row_data.get("Liegenschaft Strasse", "") or ""
-        street_name, house_number = self._split_street(street)
+        street_name, house_number = split_street(street)
         building.street_name = street_name or ""
         building.house_number = house_number or ""
 
@@ -182,13 +186,13 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
         rental_unit.floor = row_data.get("Etage Nummer", "") or ""
 
         # Numeric fields
-        rental_unit.rooms = self._parse_decimal(row_data.get("Zimmerzahl Anzahl"))
-        rental_unit.area = self._parse_decimal(row_data.get("Nutzflaeche"))
-        rental_unit.nk = self._parse_decimal(row_data.get("Akonti"))
+        rental_unit.rooms = parse_decimal(row_data.get("Zimmerzahl Anzahl"))
+        rental_unit.area = parse_decimal(row_data.get("Nutzflaeche"))
+        rental_unit.nk = parse_decimal(row_data.get("Akonti"))
 
         # Parse rent - "Nettomiete" or "Brutto"
-        netto = self._parse_decimal(row_data.get("Nettomiete"))
-        brutto = self._parse_decimal(row_data.get("Brutto"))
+        netto = parse_decimal(row_data.get("Nettomiete"))
+        brutto = parse_decimal(row_data.get("Brutto"))
 
         if netto:
             rental_unit.rent_netto = netto
@@ -249,13 +253,13 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
         """
         # Parse contract date (start)
         date_str = row_data.get("Verhaeltnis Gueltigvon", "")
-        contract_date = self._parse_date(date_str)
+        contract_date = parse_date(date_str)
         if not contract_date:
             raise ValidationError(str(_("Verhältnis Gültig-von ist erforderlich für Verträge")))
 
         # Parse contract end date
         date_end_str = row_data.get("Verhaeltnis Gueltigbis", "")
-        contract_date_end = self._parse_date(date_end_str) if date_end_str else None
+        contract_date_end = parse_date(date_end_str) if date_end_str else None
 
         # Build import_id
         mieter_nummer = row_data.get("Mieter Nummer", "")
@@ -301,7 +305,7 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
         contract.rental_units.add(rental_unit)
 
         # Mietzinsvorbehalt (negativ)
-        pauschalen = self._parse_decimal(row_data.get("Pauschalen"))
+        pauschalen = parse_decimal(row_data.get("Pauschalen"))
         if pauschalen:
             rent_reservation = -1 * pauschalen
             if contract.rent_reservation:
@@ -364,7 +368,6 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
             import_id = f"legacy_{self.import_job.id}_contractor_{person_id}"
 
         # Try to find existing address
-        address = None
         if import_id:
             try:
                 address = Address.objects.get(import_id=import_id)
@@ -402,7 +405,7 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
         if address_str:
             # Try to extract street, zip, city from address string
             # Format might be: "Strasse Nr, PLZ Ort" or similar
-            address_parts = self._parse_address_string(address_str)
+            address_parts = parse_address_string(address_str)
             if address_parts:
                 address.street_name = address_parts.get("street_name", "")
                 address.house_number = address_parts.get("house_number", "")
@@ -415,43 +418,8 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
         logger.debug(f"Created new contractor address: {address}")
         return address
 
-    def _parse_address_string(self, address_str: str) -> dict | None:
-        """
-        Parse a combined address string into components.
-
-        Args:
-            address_str: Address string like "Teststrasse 42, 3011 Bern"
-
-        Returns:
-            dictionary with address components or None
-        """
-        if not address_str:
-            return None
-
-        result = {"street_name": "", "house_number": "", "zipcode": "", "city": ""}
-
-        # Split by comma
-        parts = [p.strip() for p in address_str.split(",")]
-
-        if len(parts) >= 1:
-            # First part is street
-            street_name, house_number = self._split_street(parts[0])
-            result["street_name"] = street_name
-            result["house_number"] = house_number
-
-        if len(parts) >= 2:
-            # Second part is PLZ + city
-            plzort = parts[1]
-            plz_parts = plzort.split(None, 1)
-            if len(plz_parts) == 2 and plz_parts[0].isdigit():
-                result["zipcode"] = plz_parts[0]
-                result["city"] = plz_parts[1]
-            else:
-                result["city"] = plzort
-
-        return result
-
-    def _map_rental_type(self, type_raw: str) -> str:
+    @staticmethod
+    def _map_rental_type(type_raw: str) -> str:
         """
         Map rental type from Excel to RentalUnit model choices.
 
@@ -486,103 +454,3 @@ class ImporterTenantPropertyITWGN(ExcelImporter):
 
         # Default fallback
         return "Wohnung"
-
-    def _split_street(self, street: str) -> tuple:
-        """
-        Split street into street name and house number.
-
-        Args:
-            street: Full street string
-
-        Returns:
-            Tuple of (street_name, house_number)
-        """
-        if not street:
-            return ("", "")
-
-        street = street.strip()
-
-        # Try to split on last space if it looks like a number
-        parts = street.rsplit(" ", 1)
-        if len(parts) == 2:
-            street_name, potential_number = parts
-            # Check if the last part contains digits
-            if any(char.isdigit() for char in potential_number):
-                return (street_name.strip(), potential_number.strip())
-
-        # If no clear split, return all as street name
-        return (street, "")
-
-    def _parse_decimal(self, value) -> Decimal | None:
-        """
-        Parse decimal value from various formats.
-
-        Args:
-            value: Value to parse (string, number, etc.)
-
-        Returns:
-            Decimal object or None
-        """
-        if value is None or value == "":
-            return None
-
-        try:
-            # If already a Decimal or number
-            if isinstance(value, (Decimal, int, float)):
-                return Decimal(str(value))
-
-            # If string, clean it up
-            if isinstance(value, str):
-                value = value.strip().replace("'", "").replace(",", ".")
-                if not value:
-                    return None
-                return Decimal(value)
-
-        except (InvalidOperation, ValueError) as e:
-            logger.warning(f"Could not parse decimal: {value} - {e}")
-            return None
-
-        return None
-
-    def _parse_date(self, date_str) -> datetime.date | None:
-        """
-        Parse date from various formats.
-
-        Args:
-            date_str: Date string or datetime object
-
-        Returns:
-            datetime.date object or None
-        """
-        if not date_str:
-            return None
-
-        # If already a date/datetime object
-        if isinstance(date_str, datetime):
-            return date_str.date()
-        if hasattr(date_str, "date"):
-            return date_str.date()
-
-        # Try parsing string formats
-        if isinstance(date_str, str):
-            date_str = date_str.strip()
-            if not date_str:
-                return None
-
-            # Common date formats
-            formats = [
-                "%Y-%m-%d",
-                "%d.%m.%Y",
-                "%d/%m/%Y",
-                "%d-%m-%Y",
-                "%Y/%m/%d",
-            ]
-
-            for fmt in formats:
-                try:
-                    return datetime.strptime(date_str, fmt).date()
-                except ValueError:
-                    continue
-
-        logger.warning(f"Could not parse date: {date_str}")
-        return None

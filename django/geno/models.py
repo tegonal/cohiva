@@ -22,6 +22,7 @@ from django.utils.html import format_html, format_html_join, mark_safe
 from filer.fields.file import FilerFileField
 
 import geno.settings as geno_settings
+from cohiva.fields import AHVNumberField
 from cohiva.utils.countries import (
     get_country_choices,
     get_default_country_code,
@@ -257,6 +258,7 @@ class Address(GenoBase):
     date_birth = models.DateField("Geburtsdatum", null=True, blank=True)
     hometown = models.CharField("Heimatort", max_length=50, blank=True)
     occupation = models.CharField("Beruf/Ausbildung", max_length=150, blank=True)
+    ahv_number = AHVNumberField("AHV-Nummer", blank=True)
     bankaccount = models.ForeignKey(
         BankAccount,
         verbose_name="Kontoverbindung/IBAN",
@@ -798,6 +800,9 @@ class Member(GenoBase):
     flag_04 = models.BooleanField(default=False)
     flag_05 = models.BooleanField(default=False)
     notes = models.TextField("Bemerkungen", blank=True)
+    # The active flag will be set automatically on save(), we use it only as a read-only field
+    # to filter lists, for example.
+    active = models.BooleanField("Aktiv", default=True)
 
     ## Reverse relation to Documents
     documents = GenericRelation("Document", related_query_name="members")
@@ -807,6 +812,18 @@ class Member(GenoBase):
             return "%s" % self.name
         else:
             return "[Unbenannt]"
+
+    def save(self, *args, **kwargs):
+        if self.is_active() != self.active:
+            self.active = self.is_active()
+            if kwargs.get("update_fields") and "active" not in kwargs["update_fields"]:
+                kwargs["update_fields"].append("active")
+        super().save(*args, **kwargs)
+
+    def is_active(self):
+        if self.date_leave:
+            return self.date_leave >= datetime.date.today()
+        return True
 
     def get_absolute_url(self):
         return "/admin/geno/member/%i/" % self.id
@@ -960,7 +977,22 @@ class Share(GenoBase):
         on_delete=models.SET_NULL,
         related_name="building_attached_shares",
     )
-    note = models.CharField("Zusatzinfo", max_length=200, blank=True)
+    identifier = models.CharField(
+        "Beteiligungskennung", help_text="Z.B. Anteilschein-Nr.", max_length=100, blank=True
+    )
+    identifier_external = models.CharField(
+        "Beteiligungskennung (extern)",
+        help_text="Z.B. Anteilschein-Nr. in Buchhaltung (falls abweichend)",
+        max_length=100,
+        blank=True,
+    )
+    note = models.TextField("Zusatzinfo", blank=True)
+    import_id = models.CharField(
+        "Import-ID", max_length=255, unique=True, null=True, default=None, blank=True
+    )
+    # The active flag will be set automatically on save(), we use it only as a read-only field
+    # to filter lists, for example.
+    active = models.BooleanField("Aktiv", default=True)
 
     ## Reverse relation to Documents
     documents = GenericRelation("Document", related_query_name="shares")
@@ -1005,6 +1037,18 @@ class Share(GenoBase):
         if self.attached_to_building is not None and self.attached_to_contract is not None:
             raise ValidationError("Vertrag und Liegeneschaft dürfen nicht beide ausgewählt sein.")
         super().clean(*args, **kwargs)
+
+    def save(self, *args, **kwargs):
+        if self.is_active() != self.active:
+            self.active = self.is_active()
+            if kwargs.get("update_fields") and "active" not in kwargs["update_fields"]:
+                kwargs["update_fields"].append("active")
+        super().save(*args, **kwargs)
+
+    def is_active(self):
+        if self.date_end:
+            return self.date_end >= datetime.date.today()
+        return True
 
     class Meta:
         verbose_name = "Beteiligung"
@@ -1309,26 +1353,30 @@ class RentalUnit(GenoBase):
     min_occupancy = models.DecimalField(
         "Mindestbelegung", max_digits=5, decimal_places=1, null=True, blank=True
     )
+    billing_period = models.IntegerField(
+        "Rechnungsperiode (Monate)",
+        default=1,
+        help_text="1 = Monatliche Zahlung, 3 = Vierteljährliche Zahlung, 12 = Jährliche Zahlung etc.",
+    )
     nk = models.DecimalField(
-        "Nebenkosten Akonto (Fr.)",
+        "Nebenkosten Akonto (Fr./Periode)",
         max_digits=10,
         decimal_places=2,
         null=True,
         blank=True,
-        help_text="Wird bei unvermieteten Gewerberäumen auch auf der Website angezeigt.",
     )
     nk_flat = models.DecimalField(
-        "Nebenkosten Pauschal (Fr.)",
+        "Nebenkosten Pauschal (Fr./Periode)",
         max_digits=10,
         decimal_places=2,
         null=True,
         blank=True,
     )
     nk_electricity = models.DecimalField(
-        "Strompauschale (Fr.)", max_digits=10, decimal_places=2, null=True, blank=True
+        "Strompauschale (Fr./Periode)", max_digits=10, decimal_places=2, null=True, blank=True
     )
     rent_netto = models.DecimalField(
-        "Netto-Miete (Fr.)",
+        "Netto-Miete (Fr./Periode)",
         max_digits=10,
         decimal_places=2,
         null=True,
@@ -1341,7 +1389,7 @@ class RentalUnit(GenoBase):
         decimal_places=2,
         null=True,
         blank=True,
-        help_text="Diese Miete wird für Gewerberäume auf der Website angezeigt.",
+        help_text="Für öffentliche Publikation (Website etc.). Wird aktuell nicht mehr verwendet.",
     )
     depot = models.DecimalField(
         "Depot (Fr.)", max_digits=10, decimal_places=2, null=True, blank=True
@@ -1368,8 +1416,8 @@ class RentalUnit(GenoBase):
     )
 
     @property
-    @admin.display(description="Bruttomiete (Fr.)")
-    def rent_total(self):
+    @admin.display(description="Bruttomiete (Fr./Periode)")
+    def rent_total(self) -> Decimal:
         """
         Bruttomiete inkl. NK und Strom
         """
@@ -1379,6 +1427,41 @@ class RentalUnit(GenoBase):
             + (self.nk_flat if self.nk_flat else Decimal(0.0))
             + (self.nk_electricity if self.nk_electricity else Decimal(0.0))
         )
+
+    @property
+    @admin.display(description="Bruttomiete (Fr./Monat)")
+    def rent_total_per_month(self) -> Decimal:
+        if not self.rent_total:
+            return Decimal(0.0)
+        return round(self.rent_total / self.billing_period, 2)
+
+    @property
+    @admin.display(description="Netto-Miete (Fr./Monat)")
+    def rent_netto_per_month(self) -> Decimal:
+        if not self.rent_netto:
+            return Decimal(0.0)
+        return round(self.rent_netto / self.billing_period, 2)
+
+    @property
+    @admin.display(description="Nebenkosten Akonto (Fr./Monat)")
+    def nk_per_month(self) -> Decimal | None:
+        if not self.nk:
+            return Decimal(0.0)
+        return round(self.nk / self.billing_period, 2)
+
+    @property
+    @admin.display(description="Nebenkosten Pauschal (Fr./Monat)")
+    def nk_flat_per_month(self) -> Decimal:
+        if not self.nk_flat:
+            return Decimal(0.0)
+        return round(self.nk_flat / self.billing_period, 2)
+
+    @property
+    @admin.display(description="Strompauschale (Fr./Monat)")
+    def nk_electricity_per_month(self) -> Decimal:
+        if not self.nk_electricity:
+            return Decimal(0.0)
+        return round(self.nk_electricity / self.billing_period, 2)
 
     def str_short(self):
         if self.label:
@@ -1668,6 +1751,11 @@ class InvoiceCategory(GenoBase):
         "Ertragskonto liegenschaftsabhängig",
         default=False,
         help_text="Liegenschafts-Postfix (bspw. 81) wird genutzt um Kontonummer zu bilden. Es resultiert bspw. 300081",
+    )
+    building_based_cost_center = models.BooleanField(
+        "Kostenstelle hinzufügen",
+        default=False,
+        help_text="Fügt Buchungen eine Kostenstelle hinzu, basierend auf dem Liegenschafts-Postfix.",
     )
     receivables_account = models.CharField(
         "Kontonummer Forderungen", max_length=50, default="1102"

@@ -18,6 +18,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from django.contrib import admin
+from django.templatetags.static import static
 from django.utils.translation import gettext_lazy as _
 
 import cohiva.base_config as cbc
@@ -533,6 +534,12 @@ LOGGING = {
             "filename": cbc.INSTALL_DIR + "/django-test/log/finance_accounting.log",
             "formatter": "verbose",
         },
+        "importer": {
+            "level": "DEBUG",
+            "class": "logging.FileHandler",
+            "filename": cbc.INSTALL_DIR + "/django-test/log/importer.log",
+            "formatter": "verbose",
+        },
     },
     "loggers": {
         "django.request": {
@@ -568,6 +575,11 @@ LOGGING = {
         "finance_accounting": {
             "level": "DEBUG",
             "handlers": ["finance_accounting", "mail_admins_debug"],
+            "propagate": True,
+        },
+        "importer": {
+            "level": "DEBUG",
+            "handlers": ["importer"],
             "propagate": True,
         },
     },
@@ -668,6 +680,9 @@ FINANCIAL_ACCOUNTING_BACKENDS = {
             "API_HOST": "cashctrl.com",
             "API_TOKEN": f"{cbc.CASHCTRL_API_TOKEN}",
             "TENANT": f"{cbc.CASHCTRL_TENANT}",
+            "CUSTOM_FIELD_MAPPINGS": {
+                "createdByCohiva": f"{cbc.CASHCTRL_CUSTOM_FIELD_CREATED_BY_COHIVA}",
+            },
         },
     },
     "dummy": {
@@ -1253,7 +1268,7 @@ COHIVA_ADMIN_NAVIGATION = [
                     {"type": "model", "value": "geno.ContentTemplateOption"},
                 ],
             },
-            {"type": "model", "value": "filer.Folder", "icon": "folder_open"},
+            {"type": "model", "value": "filer.Folder", "icon": "folder_open", "target": "filer"},
             {
                 "type": "subgroup",
                 "name": _("Erweitert"),
@@ -1265,6 +1280,17 @@ COHIVA_ADMIN_NAVIGATION = [
                     {"type": "model", "value": "filer.FolderPermission"},
                     {"type": "model", "value": "filer.ThumbnailOption"},
                 ],
+            },
+        ],
+    },
+    {
+        "name": _("Einstellungen"),
+        "items": [
+            {
+                "name": _("Report-Konfiguration"),
+                "type": "model",
+                "value": "report.ReportConfiguration",
+                "icon": "subtitles_gear",
             },
         ],
     },
@@ -1309,6 +1335,18 @@ COHIVA_ADMIN_NAVIGATION = [
                 ],
             },
             {"type": "model", "value": "geno.LookupTable", "icon": "table_chart"},
+            {
+                "type": "tabgroup",
+                "name": "Importer",
+                "items": [
+                    {
+                        "type": "model",
+                        "value": "importer.ImportJob",
+                        "icon": "database_upload",
+                    },
+                    {"type": "model", "value": "importer.ImportRecord"},
+                ],
+            },
             # {
             #     "type": "link",
             #     "name": "All Models",
@@ -1373,9 +1411,9 @@ UNFOLD = {
     #        "image": lambda request: static("sample/login-bg.jpg"),
     #        "redirect_after": lambda request: reverse_lazy("admin:APP_MODEL_changelist"),
     #    },
-    #    "STYLES": [
-    #        lambda request: static("css/style.css"),
-    #    ],
+    "STYLES": [
+        lambda request: static("css/cohiva_style.css"),
+    ],
     #    "SCRIPTS": [
     #        lambda request: static("js/script.js"),
     #    ],

@@ -1,3 +1,5 @@
+import json
+
 import jsonc
 
 ## Filer widget
@@ -10,6 +12,8 @@ import jsonc
 from django import forms
 from django.core.exceptions import ValidationError
 
+# JSONField from django.db.models is not a form field; use forms.JSONField instead.
+# (No model-level JSONField import needed here.)
 # from filer.fields.file import AdminFileFormField, FilerFileField, AdminFileWidget
 from filer.models.filemodels import File as FilerFile
 
@@ -25,7 +29,7 @@ from unfold.widgets import (
 
 from geno.models import Building
 
-from .models import ReportInputField
+from .models import ReportInputField, ReportItem
 
 # class FilerFileWidget(AdminFileWidget):
 #
@@ -85,19 +89,44 @@ from .models import ReportInputField
 #        return {}
 
 
+class PrettyJSONEncoder(json.JSONEncoder):
+    def __init__(self, *args, indent, sort_keys, **kwargs):
+        super().__init__(*args, indent=4, sort_keys=True, **kwargs)
+
+
 class FilerModelChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
         return f"{obj.logical_path[-1]}/{obj}"
 
 
-class JSONField(forms.CharField):
-    def validate(self, value):
-        super().validate(value)
-        if value != "":
+class ReportJSONFormField(forms.JSONField):
+    widget = UnfoldAdminTextareaWidget
+
+    def to_python(self, value):
+        if value in self.empty_values:
+            return None
+        if isinstance(value, str):
             try:
-                jsonc.loads(value)
-            except jsonc.JSONDecodeError as e:
-                raise ValidationError(f"Ungültiger JSON-Code: {e}")
+                return jsonc.loads(value)
+            except Exception as ex:
+                raise ValidationError("Enter valid JSON.") from ex
+        return super().to_python(value)
+
+    def prepare_value(self, value):
+        if value in self.empty_values:
+            return ""
+
+        parsed = value
+        if isinstance(value, str):
+            try:
+                parsed = jsonc.loads(value)
+            except Exception:
+                return value
+
+        try:
+            return json.dumps(parsed, indent=2, sort_keys=True)
+        except (TypeError, ValueError):
+            return str(value)
 
 
 # Generic helper to construct Unfold-styled form fields for report inputs
@@ -127,10 +156,13 @@ def _make_report_input_field(field):
             required=False, label=name, help_text=desc, widget=UnfoldBooleanSwitchWidget()
         )
     if ft == "json":
-        f = JSONField(
-            required=False, label=name, help_text=desc, widget=UnfoldAdminTextareaWidget()
+        f = ReportJSONFormField(
+            required=False,
+            label=name,
+            help_text=desc,
+            widget=UnfoldAdminTextareaWidget(),
         )
-        f.widget.attrs.update({"style": "width: 750px;"})
+        f.widget.attrs.update({"style": "width: 750px; min-height: 280px;"})
         return f
     if ft == "file":
         f = FilerModelChoiceField(
@@ -168,8 +200,9 @@ class ReportConfigForm(forms.Form):
         super().__init__(*args, **kwargs)
         if not self.report:
             return
-        for field in ReportInputField.objects.filter(report_type=self.report.report_type).filter(
-            active=True
-        ):
-            field_name = f"report_input_{field.id}"
-            self.fields[field_name] = _make_report_input_field(field)
+        for item in ReportItem.objects.filter(report_configuration=self.report):
+            for field in ReportInputField.objects.filter(item_configuration=item).filter(
+                active=True
+            ):
+                field_name = f"report_input_{field.id}"
+                self.fields[field_name] = _make_report_input_field(field)

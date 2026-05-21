@@ -2,8 +2,12 @@
 
 set -e
 
-# Check if Python 3.11 or higher is available
+# Check if correct Python version is available
 echo "Checking Python version..."
+REQUIRED_PYTHON_MAJOR=3
+REQUIRED_PYTHON_MINOR_MIN=11
+REQUIRED_PYTHON_MINOR_MAX=13
+REQUIRED_PYTHON_VERSION="${REQUIRED_PYTHON_MAJOR}.${REQUIRED_PYTHON_MINOR_MIN} - ${REQUIRED_PYTHON_MAJOR}.${REQUIRED_PYTHON_MINOR_MAX}"
 
 # Try to find python3 or python command
 PYTHON_CMD=""
@@ -13,7 +17,7 @@ elif command -v python >/dev/null 2>&1; then
     PYTHON_CMD="python"
 else
     echo "ERROR: Neither python3 nor python command found."
-    echo "Please install Python 3.11 or higher."
+    echo "Please install Python ${REQUIRED_PYTHON_VERSION}."
     exit 1
 fi
 
@@ -26,14 +30,14 @@ PYTHON_MINOR=$($PYTHON_CMD -c "import sys; print(sys.version_info[1])")
 
 echo "Found Python $PYTHON_VERSION"
 
-# Check if version is >= 3.11
-if [ "$PYTHON_MAJOR" -lt 3 ] || { [ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 11 ]; }; then
-    echo "ERROR: Python 3.11 or higher is required."
+# Check if version is supported
+if [ "$PYTHON_MAJOR" -ne "$REQUIRED_PYTHON_MAJOR" ] || { [ "$PYTHON_MAJOR" -eq "$REQUIRED_PYTHON_MAJOR" ] && [ "$PYTHON_MINOR" -lt "$REQUIRED_PYTHON_MINOR_MIN" ]; } || { [ "$PYTHON_MAJOR" -eq "$REQUIRED_PYTHON_MAJOR" ] && [ "$PYTHON_MINOR" -gt "$REQUIRED_PYTHON_MINOR_MAX" ]; }; then
+    echo "ERROR: Python ${REQUIRED_PYTHON_VERSION} is required."
     echo "Current version: $PYTHON_VERSION"
     exit 1
 fi
 
-echo "Python version check passed (>= 3.11)"
+echo "Python version check passed (${REQUIRED_PYTHON_VERSION})"
 echo "Running install.py..."
 echo ""
 

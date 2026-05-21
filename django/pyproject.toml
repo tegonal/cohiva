@@ -38,6 +38,7 @@ lint.ignore = [
 exclude = [
    "NON_PUBLIC",
    "geno/python-sepa",  ## third party code
+   "*.bak",
 ]
 
 [tool.pylint.main]

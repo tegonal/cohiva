@@ -1,5 +1,5 @@
 {% extends "geno/base.html" %}
-{% load static i18n unfold %}
+{% load static i18n unfold crispy_forms_tags %}
 
 {% block custom_content %}
 
@@ -10,14 +10,14 @@
             {% if form_action %}action="{{ form_action }}"{% endif %}
             method="post">
         {% csrf_token %}
-        <div class="aligned border border-base-200 mb-8 rounded-default pt-3 px-3 pb-3 shadow-sm dark:border-base-800 legacyform">
+        <div class="aligned border border-base-200 mb-8 rounded-default pt-3 px-3 pb-3 shadow-sm dark:border-base-800">
           {% if help_text %}
             <div class="flex items-center pb-2">
               <span class="material-symbols-outlined md-18 mr-2 w-[18px]">info</span><span>{{ help_text }}</span>
             </div>
           {% endif %}
-          {{ form.as_p }}
-          <input type="submit"
+          {% crispy form "unfold_crispy" %}
+          <input type="submit" class="font-medium flex group items-center gap-2 px-3 py-2 relative rounded-default justify-center whitespace-nowrap cursor-pointer border border-base-200 bg-primary-600 border-transparent text-white"
                  {% if submit_title %}value="{{ submit_title }}"{% endif %} />
         </div>
       </form>
@@ -142,7 +142,11 @@
   {% endblock %}
 
   {% if download_file_url %}
-    <iframe width="1" height="1" frameborder="0" src="{{ download_file_url }}"></iframe>
+    <script>
+        window.addEventListener('load', function () {
+            window.location.href = `{{ download_file_url }}`;
+        });
+    </script>
   {% endif %}
 
 {% endblock %}

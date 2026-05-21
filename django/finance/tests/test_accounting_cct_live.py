@@ -10,6 +10,7 @@ from finance.accounting import (
     Split,
     Transaction,
 )
+from geno.models import Building
 
 
 # Disabled by default. May be used to run live tests against a CashCtrl test instance.
@@ -25,6 +26,9 @@ class CashctrlBookTestCase(TestCase):
         cls.account1 = Account("TestAccount CashCtrl1", "43000")
         cls.account2 = Account("TestAccount CashCtrl2", "10220")
         cls.account3 = Account("TestAccount CashCtrl3", "47400")
+        # Account for cost center testing
+        cls.account4 = Account("TestAccount CashCtrl4", "10220", building_based_cost_center=True)
+        cls.account4.set_cost_center(Building(name="TestBuilding", accounting_postfix=1))
 
     @classmethod
     def tearDownClass(cls):
@@ -50,6 +54,26 @@ class CashctrlBookTestCase(TestCase):
             )
             self.assertTrue(transaction_id.startswith("cct_"))
             book.save()
+
+    def test_add_transaction_with_cost_center(self):
+        messages = []
+        with AccountingManager(messages) as book:
+            transaction_id = book.add_transaction(
+                100.00,
+                self.account1,
+                self.account4,
+                "2026-01-01",
+                "Test CashCtrl add_transaction with an associated cost center",
+                autosave=False,
+            )
+            self.assertTrue(transaction_id.startswith("cct_"))
+            book.save()
+            # Verify correctness of the "successful" transaction
+            transaction = book.get_transaction(transaction_id)
+            self.assertIsNotNone(transaction)
+            allocations = transaction.get("data", {}).get("allocations", [])
+            self.assertEqual(len(allocations), 1)
+            self.assertIn("toCostCenterId", allocations[0])
 
     def test_add_transaction_with_long_description(self):
         messages = []
@@ -99,6 +123,28 @@ class CashctrlBookTestCase(TestCase):
             book.save()
             book.delete_transaction(transaction_id, autosave=False)
             book.save()
+
+    def test_add_transaction_split_with_cost_center(self):
+        messages = []
+        with AccountingManager(messages) as book:
+            transaction_id = book.add_split_transaction(
+                Transaction(
+                    [
+                        Split(self.account1, 800),
+                        Split(self.account3, -500),
+                        Split(self.account4, -300),
+                    ],
+                    "2026-01-01",
+                    "Split or collective transaction with an associated cost center test",
+                    "CHF",
+                ),
+                True,
+            )
+            book.save()
+            transaction = book.get_transaction(transaction_id)
+            self.assertIsNotNone(transaction)
+            allocations = transaction.get("data", {}).get("allocations", [])
+            self.assertIn("toCostCenterId", allocations[0])
 
     def test_delete_transaction(self):
         messages = []

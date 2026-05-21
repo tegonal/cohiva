@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from dataclasses import dataclass
 from enum import Enum
 
@@ -24,7 +25,12 @@ class CostConfigFieldTypes(Enum):
     BOOL = 4
     INPUT_KEY = 5
     MEASUREMENT_SOURCES = 6
-    VEWA_CATEGORY = 7
+    DATE = 7
+    INT = 8
+    FLOAT = 9
+    FILE = 10
+    JSON = 11
+    VEWA_CATEGORY = 12
 
 
 @dataclass
@@ -52,6 +58,7 @@ class CostConfig:
         return [
             CostConfigField("class", CostConfigFieldTypes.NKCOST_CLASS),
             CostConfigField("name", CostConfigFieldTypes.STRING),
+            CostConfigField("bezeichnung", CostConfigFieldTypes.STRING),
             CostConfigField("billing_group", CostConfigFieldTypes.STRING, required=False),
             CostConfigField(
                 "section_weights", CostConfigFieldTypes.STRING, required=False
@@ -61,7 +68,9 @@ class CostConfig:
 
 @dataclass
 class NkTotalCostConfig(CostConfig):
-    pass
+    @classmethod
+    def get_fields(cls):
+        return super().get_fields()
 
 
 @dataclass
@@ -137,6 +146,7 @@ class NkZEVStromallmendCostConfig(CostConfig):
 
 @dataclass
 class NkVEWACostConfig(NkTotalCostConfig):
+    @classmethod
     def get_fields(cls):
         return super().get_fields() + [
             CostConfigField("vewa_category", CostConfigFieldTypes.VEWA_CATEGORY),
@@ -268,44 +278,59 @@ class NkMeasurementDataEgonConfig(MeasurementSourceConfig):
         # },
 
 
-def get_costs_from_config():
+def get_costs_from_config() -> Iterator[CostConfig]:
     ## TODO: Implement this with configuration from DB
     costs = [
         {
             "name": "Hauswartung_ServiceHeizungLüftung",
+            "bezeichnung": "Hauswartung (Service, Heizung, Lüftung)",
             "billing_group": "Hauswartung, Service Heizung/Lüftung",
             "class": NkTotalCost,
+            "config": NkTotalCostConfig,
         },
         {
             "name": "Reinigung",
+            "bezeichnung": "Reinigung",
             "section_weights": "reinigung",
             "class": NkTotalCost,
+            "config": NkTotalCostConfig,
         },
         {
             "name": "Umgebung_Siedlung",
+            "bezeichnung": "Umgebung/Siedlungspflege",
             "billing_group": "Siedlung/Umgebungspflege",
             "class": NkTotalCost,
+            "config": NkTotalCostConfig,
         },
         {
             "name": "Betriebskosten_Gemeinschaft",
+            "bezeichnung": "Betriebskosten Gemeinschaftsanlagen",
             "billing_group": "Betriebskosten Gemeinschaftsanlagen",
             "class": NkTotalCost,
+            "config": NkTotalCostConfig,
         },
         {
             "name": "Winterdienst",
+            "bezeichnung": "Winterdienst",
             "class": NkTotalCost,
+            "config": NkTotalCostConfig,
         },
         {
             "name": "Lift",
+            "bezeichnung": "Lift",
             "class": NkTotalCost,
+            "config": NkTotalCostConfig,
         },
         {
             "name": "Kehrichtgebuehren",
+            "bezeichnung": "Kehrichtgebühren",
             "billing_group": "Kehrichtgebühren",
             "class": NkTotalCost,
+            "config": NkTotalCostConfig,
         },
         {
             "name": "Fernwaerme_Fussboden_Grundkosten",
+            "bezeichnung": "Fernwärme Fußbodenheizung: Grundkosten",
             "category": "waerme_wasser_grund",
             "time_period": "monthly",
             "amount_data": "Fernwaerme_Fussboden",  ## Will be imported
@@ -315,6 +340,7 @@ def get_costs_from_config():
         },
         {
             "name": "Fernwaerme_Fussboden_Verbrauch",
+            "bezeichnung": "Fernwärme Fußbodenheizung: Verbrauch",
             "category": "waerme_wasser_verbrauch",
             "time_period": "monthly",
             "amount_data": "Fernwaerme_Fussboden",  ## Will be imported
@@ -324,6 +350,7 @@ def get_costs_from_config():
         },
         {
             "name": "Fernwaerme_Radiatoren",
+            "bezeichnung": "Fernwärme: Radiatoren",
             "category": "waerme_wasser_grund",
             "time_period": "monthly",
             "amount_data": "Fernwaerme_Radiatoren",  ## Will be imported
@@ -332,6 +359,7 @@ def get_costs_from_config():
         },
         {
             "name": "Fernwaerme_Lueftung",
+            "bezeichnung": "Fernwärme: Lüftung",
             "category": "waerme_wasser_grund",
             "time_period": "monthly",
             "amount_data": "Fernwaerme_Lueftung",  ## Will be imported
@@ -340,7 +368,9 @@ def get_costs_from_config():
         },
         {
             "class": NkCostVEWA,
+            "config": NkVEWACostConfig,
             "name": "Fernwaerme_Warmwasser",
+            "bezeichnung": "Fernwärme: Warmwasser",
             "billing_group": "Wärmekosten",
             "vewa_category": NkCostVEWACategories.HEAT_WATER,
             "base_cost_factor_key": "VEWA:GrundkostenanteilWarmwasser",
@@ -369,7 +399,9 @@ def get_costs_from_config():
         },
         {
             "class": NkCostVEWA,
+            "config": NkVEWACostConfig,
             "name": "Fernwaerme_Fussboden",
+            "bezeichnung": "Fernwärme: Fussbodenheizung",
             "billing_group": "Wärmekosten",
             "vewa_category": NkCostVEWACategories.HEAT_HEATING,
             "section_weights": "nur_wohnen",
@@ -399,7 +431,9 @@ def get_costs_from_config():
         },
         {
             "class": NkCostVEWA,
+            "config": NkVEWACostConfig,
             "name": "Fernwaerme_Radiatoren",
+            "bezeichnung": "Fernwärme: Radiatoren",
             "billing_group": "Wärmekosten",
             "vewa_category": NkCostVEWACategories.HEAT_HEATING,
             "section_weights": "radiatoren",
@@ -417,7 +451,9 @@ def get_costs_from_config():
         },
         {
             "class": NkCostVEWA,
+            "config": NkVEWACostConfig,
             "name": "Fernwaerme_Lueftung",
+            "bezeichnung": "Fernwärme: Lüftung",
             "billing_group": "Wärmekosten",
             "vewa_category": NkCostVEWACategories.HEAT_HEATING,
             "section_weights": "lueftung",
@@ -435,7 +471,9 @@ def get_costs_from_config():
         },
         {
             "class": NkCostVEWA,
+            "config": NkVEWACostConfig,
             "name": "Wasser_Abwasser",
+            "bezeichnung": "Wasser/Abwasser",
             "billing_group": "Wasserkosten",
             "vewa_category": NkCostVEWACategories.WATER_GENERAL,
             "base_cost_factor_key": "Wasserkosten:Grundkostenanteil",
@@ -460,7 +498,9 @@ def get_costs_from_config():
         },
         {
             "class": NkCostZEVStromallmend,
+            "config": NkZEVStromallmendCostConfig,
             "name": "Strom_Total",
+            "bezeichnung": "Stromkosten",
             "billing_group": "Stromkosten",
             "tarif_eigenstrom_key": "Strom:Tarif:Eigenstrom",
             "tarif_einspeiseverguetung_key": "Strom:Tarif:Einspeisevergütung",
@@ -495,11 +535,14 @@ def get_costs_from_config():
         },
         {
             "name": "Serviceabo Energiemessung",
+            "bezeichnung": "Serviceabo Energiemessung",
             # "class": NkTotalCost, Currently included with Strom total, add it later
         },
         {
             "class": NkPerRentalUnitCost,
+            "config": NkPerRentalUnitCostConfig,
             "name": "Internet/WLAN",
+            "bezeichnung": "Internet/WLAN",
             # "category": "internet",
             "fee_per_unit_key": "Internet:Tarif:ProWohnung",
             "fee_per_person_key": "Internet:Tarif:ProPerson",
@@ -508,6 +551,7 @@ def get_costs_from_config():
         ## Anteile an "Allgemein" (special object 0000)
         {
             "name": "Anteil_Allgemein_Warmwasser_Verbrauch",
+            "bezeichnung": "Anteil Allgemein Warmwasser Verbrauch",
             "category": "waerme_wasser_grund",
             "time_period": "monthly",
             "amount_meta": "Fernwaerme_Warmwasser_Verbrauch",  ## Will be imported
@@ -515,6 +559,7 @@ def get_costs_from_config():
         },
         {
             "name": "Anteil_Allgemein_Wasser_Abwasser_Verbrauch",
+            "bezeichnung": "Anteil Allgemein Wasser/Abwasser Verbrauch",
             "category": "waerme_wasser_grund",
             "time_period": "monthly",
             "amount_meta": "Wasser_Abwasser_Verbrauch",  ## Will be imported
@@ -522,6 +567,7 @@ def get_costs_from_config():
         },
         {
             "name": "Anteil_Allgemein_Strom",
+            "bezeichnung": "Anteil Allgemein Strom",
             "category": "strom_allgemein",
             "time_period": "monthly",
             "amount_meta": "Strom_Total",  ## Will be imported
@@ -530,3 +576,16 @@ def get_costs_from_config():
     for cost in costs:
         if "class" in cost:
             yield CostConfig(cost.get("class"), cost)
+
+
+def _build_report_item_categories() -> tuple[tuple[str, str], ...]:
+    categories: dict[str, str] = {}
+    for cost in get_costs_from_config():
+        key = cost.cost_class.__name__
+        # Multiple labels per Class are possible.
+        categories[cost.config.get("name", key)] = cost.config.get("bezeichnung", key)
+    # order returned tuple by label
+    return tuple(sorted(categories.items(), key=lambda item: (item[1], item[0])))
+
+
+REPORT_ITEM_CATEGORY = _build_report_item_categories()

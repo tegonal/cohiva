@@ -75,7 +75,7 @@ export default defineConfig((ctx) => ({
     target: {
       // Modern browser targets - automatically uses browserslist if .browserslistrc exists
       // Otherwise falls back to these sensible defaults
-      browser: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
+      browser: 'baseline-widely-available',
       node: 'node24',
     },
     // TypeScript support
