@@ -131,25 +131,92 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
 
     def __init__(self, model, admin_site):
         super().__init__(model, admin_site)
-        ## Load custom admin config
         module_name = self.__module__
+        class_name = type(self).__name__
+        ## Apply custom admin config
         if (
             hasattr(settings, "COHIVA_ADMIN_FIELDS")
             and module_name in settings.COHIVA_ADMIN_FIELDS
         ):
-            class_name = type(self).__name__
-            for attr in (
-                "fields",
-                "fieldsets",
-                "readonly_fields",
-                "search_fields",
-                "autocomplete_fields",
-                "list_display",
-                "list_filter",
-            ):
-                setting_name = f"{class_name}.{attr}"
-                if setting_name in settings.COHIVA_ADMIN_FIELDS[module_name]:
-                    setattr(self, attr, settings.COHIVA_ADMIN_FIELDS[module_name][setting_name])
+            self._overwrite_admin_config(settings.COHIVA_ADMIN_FIELDS.get(module_name))
+        if (
+            hasattr(settings, "COHIVA_HIDE_ADMIN_FIELDS")
+            and module_name in settings.COHIVA_HIDE_ADMIN_FIELDS
+        ):
+            self._remove_admin_fields(
+                settings.COHIVA_HIDE_ADMIN_FIELDS.get(module_name).get(class_name, [])
+            )
+
+    @classmethod
+    def _overwrite_admin_config(cls, config):
+        for attr in (
+            "fields",
+            "fieldsets",
+            "readonly_fields",
+            "search_fields",
+            "autocomplete_fields",
+            "list_display",
+            "list_filter",
+        ):
+            setting_name = f"{cls.__name__}.{attr}"
+            if setting_name in config:
+                setattr(cls, attr, config[setting_name])
+
+    @classmethod
+    def _remove_admin_fields(cls, fields_to_remove):
+        def filter_fields(field_list):
+            filtered_list = []
+            for f in field_list:
+                if isinstance(f, str) and f in fields_to_remove:
+                    continue
+                filtered_list.append(f)
+            return filtered_list
+
+        if not fields_to_remove:
+            return
+        if hasattr(cls, "fields") and isinstance(cls.fields, (list, tuple)):
+            filtered_fields = []
+            for field in cls.fields:
+                if isinstance(field, str) and field in fields_to_remove:
+                    continue
+                if isinstance(field, (list, tuple)):
+                    filtered_subset = filter_fields(field)
+                    if filtered_subset:
+                        filtered_fields.append(tuple(filtered_subset))
+                else:
+                    filtered_fields.append(field)
+            cls.fields = filtered_fields
+        if hasattr(cls, "fieldsets") and isinstance(cls.fieldsets, (list, tuple)):
+            for fieldset in cls.fieldsets:
+                if (
+                    isinstance(fieldset, (list, tuple))
+                    and len(fieldset) > 1
+                    and isinstance(fieldset[1], dict)
+                ):
+                    filtered_fields = filter_fields(fieldset[1].get("fields", []))
+                    fieldset[1]["fields"] = filtered_fields
+        for attr in (
+            "search_fields",
+            "list_display",
+            "list_filter",
+        ):
+            fields = getattr(cls, attr, [])
+            if isinstance(fields, (list, tuple)):
+                filtered_fields = []
+                for field in getattr(cls, attr):
+                    field_name = None
+                    if isinstance(field, str):
+                        field_name = field
+                    elif (
+                        isinstance(field, (list, tuple))
+                        and len(field)
+                        and isinstance(field[0], str)
+                    ):
+                        field_name = field[0]
+                    if field_name and field_name in fields_to_remove:
+                        continue
+                    filtered_fields.append(field)
+                setattr(cls, attr, filtered_fields)
 
 
 @admin.display(description="Anrede auf 'Herr' setzen")
