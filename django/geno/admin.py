@@ -148,7 +148,7 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
             )
 
     @classmethod
-    def _overwrite_admin_config(cls, config):
+    def _overwrite_admin_config(cls, config: dict[str, list | tuple]) -> None:
         for attr in (
             "fields",
             "fieldsets",
@@ -163,8 +163,8 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
                 setattr(cls, attr, config[setting_name])
 
     @classmethod
-    def _remove_admin_fields(cls, fields_to_remove):
-        def filter_fields(field_list):
+    def _remove_admin_fields(cls, fields_to_remove: list[str]) -> None:
+        def filter_fields(field_list: list) -> list:
             filtered_list = []
             for f in field_list:
                 if isinstance(f, str) and f in fields_to_remove:
