@@ -48,7 +48,7 @@ services:
       - "8025:8025"   # Web interface
       - "1025:1025"   # SMTP
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8025/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8025/livez"]
       interval: 10s
       timeout: 5s
       retries: 5
