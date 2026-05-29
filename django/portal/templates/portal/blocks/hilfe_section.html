@@ -3,7 +3,8 @@
 {% load wagtailcore_tags %}
 {% load wagtailimages_tags %}
 
-  <a class="uk-accordion-title uk-position-relative" href="#">{{ value.frage }}</a>
+  <a name="{{part.id}}"></a>
+  <a class="uk-accordion-title uk-position-relative" href="#{{part.id}}">{{ value.frage }}</a>
   <div class="uk-accordion-content">
     {% for block in value.antwort %}
 
