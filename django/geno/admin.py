@@ -1,5 +1,6 @@
 import datetime
 import gettext
+from collections.abc import Callable
 
 import pycountry
 from dateutil.relativedelta import relativedelta
@@ -174,18 +175,40 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
 
         if not fields_to_remove:
             return
+
+        cls._remove_admin_fields_from_fields(filter_fields)
+        cls._remove_admin_fields_from_fieldsets(filter_fields)
+        cls._remove_admin_fields_from_attributes(
+            filter_fields, ("search_fields", "list_display", "list_filter")
+        )
+
+    @classmethod
+    def _remove_admin_fields_from_fields(cls, filter_func: Callable[[list], list]) -> None:
+        """Remove fields from the fields attribute of the class, if present.
+
+        The fields attribute is a list/tuple that contains field names or
+        field name groups (lists/tuples of strings).
+        """
         if hasattr(cls, "fields") and isinstance(cls.fields, (list, tuple)):
             filtered_fields = []
             for field in cls.fields:
-                if isinstance(field, str) and field in fields_to_remove:
+                if isinstance(field, str) and not filter_func([field]):
                     continue
                 if isinstance(field, (list, tuple)):
-                    filtered_subset = filter_fields(field)
+                    filtered_subset = filter_func(field)
                     if filtered_subset:
                         filtered_fields.append(tuple(filtered_subset))
                 else:
                     filtered_fields.append(field)
             cls.fields = filtered_fields
+
+    @classmethod
+    def _remove_admin_fields_from_fieldsets(cls, filter_func: Callable[[list], list]) -> None:
+        """Remove fields from the fieldsets attribute of the class, if present.
+
+        The fieldsets attribute is a list/tuple of fieldsets of the form
+          ( "Fieldset label", {"fields": ("field 1", "field 2")} )
+        """
         if hasattr(cls, "fieldsets") and isinstance(cls.fieldsets, (list, tuple)):
             for fieldset in cls.fieldsets:
                 if (
@@ -194,13 +217,20 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
                     and isinstance(fieldset[1], dict)
                     and "fields" in fieldset[1]
                 ):
-                    filtered_fields = filter_fields(fieldset[1].get("fields", []))
+                    filtered_fields = filter_func(fieldset[1].get("fields", []))
                     fieldset[1]["fields"] = filtered_fields
-        for attr in (
-            "search_fields",
-            "list_display",
-            "list_filter",
-        ):
+
+    @classmethod
+    def _remove_admin_fields_from_attributes(
+        cls, filter_func: Callable[[list], list], attributes: tuple[str, ...]
+    ) -> None:
+        """
+        Remove fields from the attributes listed in the attributes parameter, if present.
+
+        The attribute must be a list/tuple of field names or lists/tuples with the field name
+        as the first element.
+        """
+        for attr in attributes:
             fields = getattr(cls, attr, [])
             if isinstance(fields, (list, tuple)):
                 filtered_fields = []
@@ -214,7 +244,7 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
                         and isinstance(field[0], str)
                     ):
                         field_name = field[0]
-                    if field_name and field_name in fields_to_remove:
+                    if field_name and not filter_func([field_name]):
                         continue
                     filtered_fields.append(field)
                 setattr(cls, attr, filtered_fields)
