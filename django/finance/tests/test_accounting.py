@@ -49,7 +49,7 @@ class AccountingManagerTestCase(TestCase):
             self.assertEqual(messages[0], "Keine Buchhaltungsanbindung konfiguriert.")
 
         with self.assertRaises(RuntimeError, msg="Keine Buchhaltungsanbindung konfiguriert."):
-            with AccountingManager() as book:
+            with AccountingManager():
                 pass
         AccountingManager.register_backends_from_settings()
 
@@ -62,7 +62,7 @@ class AccountingManagerTestCase(TestCase):
             self.assertTrue(messages[0].startswith("Konnte Buchhaltung nicht initialisieren: "))
 
         with self.assertRaises(TypeError):
-            with AccountingManager(backend_label="invalid_class") as book:
+            with AccountingManager(backend_label="invalid_class"):
                 pass
 
         del AccountingManager.backends["invalid_class"]

@@ -130,7 +130,7 @@ class RegistrationEventTest(TestCase):
         self.assertEqual(event.registration_link, f"<a href='{url}'>{url}</a>")
 
     @patch("geno.models.reverse", side_effect=NoReverseMatch())
-    def test_registration_link_not_found(self, mock_reverse):
+    def test_registration_link_not_found(self, _mock_reverse):
         event = RegistrationEvent.objects.create(name="Test Event", publication_type="public")
         self.assertEqual(
             event.registration_link,
