@@ -8,7 +8,7 @@ from django.test import RequestFactory
 import geno.admin
 import geno.tests.data as geno_testdata
 from geno import admin
-from geno.admin import BooleanFieldDefaultTrueListFilter
+from geno.admin import BooleanFieldDefaultTrueListFilter, UsedCountryFilter
 
 # from django.conf import settings
 from geno.models import Address, Child, ContentTemplate, Contract, GenericAttribute, Member
@@ -344,3 +344,41 @@ class GenoAdminTest(GenoAdminTestCase):
         # Bug COHIV-133 will result in a HTTP Error 500 here:
         response = self.client.get("/admin/geno/address/add/")
         self.assertEqual(response.status_code, 200)
+
+    def test_used_country_filter_lookups(self):
+        Address.objects.create(name="Schweiz", country="CH")
+        Address.objects.create(name="Deutschland", country="DE")
+        Address.objects.create(name="Spanien", country="ES")
+        Address.objects.create(name="Leer", country="")
+
+        factory = RequestFactory()
+        request = factory.get("/admin/geno/address/")
+        model_admin = geno.admin.AddressAdmin(Address, django_admin.site)
+
+        with self.settings(
+            GENO_ORG_INFO={"country": "Schweiz"}
+        ):  # To ensure that our home country is Switzerland for tests
+            country_filter = UsedCountryFilter(
+                request=request, params={}, model=Address, model_admin=model_admin
+            )
+            lookups = country_filter.lookups(request=request, model_admin=model_admin)
+
+        codes = [item[0] for item in lookups]
+
+        self.assertIn("CH", codes)
+        self.assertIn("NOT_HOME", codes)
+        self.assertIn("DE", codes)
+        self.assertIn("ES", codes)
+        self.assertNotIn("", codes)
+
+        self.assertEqual(lookups[0][0], "CH")
+        self.assertEqual(lookups[0][1], "Schweiz")
+
+        self.assertEqual(lookups[1][0], "NOT_HOME")
+        self.assertEqual(lookups[1][1], "Nicht Schweiz")
+
+        de_tuple = next(item for item in lookups if item[0] == "DE")
+        self.assertEqual(de_tuple[1], "Deutschland")
+
+        es_tuple = next(item for item in lookups if item[0] == "ES")
+        self.assertEqual(es_tuple[1], "Spanien")
