@@ -1,3 +1,4 @@
+from datetime import date
 from unittest.mock import patch
 
 import django
@@ -11,8 +12,27 @@ else:
     from django.db.utils import IntegrityError
 from django.test import override_settings
 
-from geno.models import Address, InvoiceCategory, RegistrationEvent
+from geno.models import Address, InvoiceCategory, Member, RegistrationEvent
 
+from .base import GenoAdminTestCase
+
+
+class MemberTests(GenoAdminTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+
+    def test_multiple_memberships(self):
+        first_membership = Member.objects.create(name_id=2, date_join=date(2023, 1, 1), date_leave=date(2024, 1, 1))
+        second_membership = Member.objects.create(name_id=2, date_join=date(year=2024, month=1, day=2))
+        # TODO: improve assertions to confirm that disjoint memberships are
+        self.assertFalse(first_membership.is_active)
+        self.assertTrue(second_membership.is_active)
+
+    def test_membership_ends_before_it_begins(self):
+        constraint_name = "member_date_leave_gte_date_join"
+        with self.assertRaisesMessage(IntegrityError, constraint_name):
+            Member.objects.create(name_id=2, date_join=date(year=2025, month=1, day=1), date_leave=date(2024, 1, 1))
 
 class InvoiceTests(TestCase):
     def test_invoice_reference_id_too_small(self):
