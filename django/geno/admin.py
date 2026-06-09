@@ -724,7 +724,7 @@ class ShareAdmin(GenoBaseAdmin):
     ]
 
     @action(
-        description=_("Export"),
+        description=_("Current extract"),
         permissions=["geno.canview_share"],
         icon="download",
         # variant=ActionVariant.PRIMARY,
@@ -733,7 +733,7 @@ class ShareAdmin(GenoBaseAdmin):
         return redirect(reverse("geno:share-export") + "?aggregate=yes")
 
     @action(
-        description=_("Export per Ende Vorjahr"),
+        description=_("Extract as of previous year-end"),
         permissions=["geno.canview_share"],
         icon="clock_arrow_down",
         # variant=ActionVariant.PRIMARY,
