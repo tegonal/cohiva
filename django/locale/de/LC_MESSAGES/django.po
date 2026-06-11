@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Cohiva 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-19 10:23+0200\n"
+"POT-Creation-Date: 2026-06-11 13:34+0200\n"
 "PO-Revision-Date: 2025-10-21 01:30+0200\n"
 "Last-Translator: Cohiva Development Team\n"
 "Language-Team: German\n"
@@ -21,62 +21,62 @@ msgstr ""
 msgid "Invalid AHV number"
 msgstr "Ungültige AHV Nummer"
 
-#: cohiva/settings_defaults.py:1021
+#: cohiva/settings_defaults.py:1035
 msgid "Stammdaten"
 msgstr "Stammdaten"
 
-#: cohiva/settings_defaults.py:1026
+#: cohiva/settings_defaults.py:1040
 msgid "Adressen/Personen"
 msgstr "Adressen/Personen"
 
-#: cohiva/settings_defaults.py:1033 cohiva/settings_defaults.py:1083
-#: cohiva/settings_defaults.py:1125 cohiva/settings_defaults.py:1163
-#: cohiva/settings_defaults.py:1200 cohiva/settings_defaults.py:1235
-#: cohiva/settings_defaults.py:1259
+#: cohiva/settings_defaults.py:1047 cohiva/settings_defaults.py:1097
+#: cohiva/settings_defaults.py:1139 cohiva/settings_defaults.py:1177
+#: cohiva/settings_defaults.py:1214 cohiva/settings_defaults.py:1249
+#: cohiva/settings_defaults.py:1273
 msgid "Erweitert"
 msgstr "Erweitert"
 
-#: cohiva/settings_defaults.py:1046
+#: cohiva/settings_defaults.py:1060
 msgid "Erweiterte Konfiguration"
 msgstr "Erweiterte Konfiguration"
 
-#: cohiva/settings_defaults.py:1053
+#: cohiva/settings_defaults.py:1067
 msgid "Mitglieder"
 msgstr "Mitglieder"
 
-#: cohiva/settings_defaults.py:1092
+#: cohiva/settings_defaults.py:1106
 msgid "Vermietung"
 msgstr "Vermietung"
 
-#: cohiva/settings_defaults.py:1139
+#: cohiva/settings_defaults.py:1153
 msgid "Gemeinschaft"
 msgstr "Gemeinschaft"
 
-#: cohiva/settings_defaults.py:1175
+#: cohiva/settings_defaults.py:1189
 msgid "Inkasso"
 msgstr "Inkasso"
 
-#: cohiva/settings_defaults.py:1210
+#: cohiva/settings_defaults.py:1224
 msgid "Finanzierung"
 msgstr "Finanzierung"
 
-#: cohiva/settings_defaults.py:1244
+#: cohiva/settings_defaults.py:1258
 msgid "Dokumente & Kommunikation"
 msgstr "Dokumente & Kommunikation"
 
-#: cohiva/settings_defaults.py:1272
+#: cohiva/settings_defaults.py:1286
 msgid "Systemadministration"
 msgstr "Systemadministration"
 
-#: cohiva/settings_defaults.py:1343
+#: cohiva/settings_defaults.py:1357
 msgid "Dokumentation/Wiki"
 msgstr ""
 
-#: cohiva/settings_defaults.py:1348
+#: cohiva/settings_defaults.py:1362
 msgid "GitHub Issues"
 msgstr ""
 
-#: cohiva/settings_defaults.py:1353
+#: cohiva/settings_defaults.py:1367
 msgid "Cohiva Website"
 msgstr "Cohiva Website"
 
@@ -139,7 +139,7 @@ msgstr "Report Pflichtanteile/Belegung"
 msgid "Untervertrag hinzufügen"
 msgstr "Untervertrag hinzufügen"
 
-#: geno/admin.py:1643
+#: geno/admin.py:1644
 msgid "Mietobjektespiegel"
 msgstr "Mietobjektespiegel"
 
@@ -188,12 +188,12 @@ msgstr "%(month)d.%(year)d: %(contract)s"
 msgid "%(description)s für %(contract)s"
 msgstr "%(description)s für %(contract)s"
 
-#: geno/billing.py:801 geno/billing.py:805
+#: geno/billing.py:805 geno/billing.py:809
 #, python-brace-format
 msgid "Account {account} does not exist."
 msgstr "Konto {account} existiert nicht."
 
-#: geno/billing.py:809
+#: geno/billing.py:813
 #, python-brace-format
 msgid "Can't access accounting backend: {error}"
 msgstr "Kann nicht auf Buchhaltung zugreifen: {error}"
@@ -203,6 +203,7 @@ msgid "ist nicht vorhanden"
 msgstr ""
 
 #: geno/forms.py:169
+#, python-brace-format
 msgid "ist {}"
 msgstr ""
 
@@ -566,6 +567,10 @@ msgstr ""
 msgid "Übersicht per Stichtag"
 msgstr ""
 
+#: geno/models.py:821 geno/models.py:823
+msgid "Membership durations cannot overlap"
+msgstr "Die Laufzeiten der Mitgliedschaften dürfen sich nicht überschneiden"
+
 #: geno/tables.py:110
 #, python-format
 msgid "%(count)d Eintrag"
@@ -603,6 +608,10 @@ msgstr ""
 
 #: geno/tables.py:136
 msgid "Letzte Zahlung"
+msgstr ""
+
+#: geno/tables.py:144 geno/views.py:1433
+msgid "Details"
 msgstr ""
 
 #: geno/tables.py:158
@@ -1083,10 +1092,6 @@ msgstr ""
 msgid "Name/Adresse"
 msgstr ""
 
-#: geno/views.py:1433
-msgid "Details"
-msgstr ""
-
 #: geno/views.py:1587
 msgid "Darlehen Details"
 msgstr ""
@@ -1298,14 +1303,17 @@ msgid "Import-Auftrag nicht gefunden."
 msgstr ""
 
 #: importer/admin.py:112
+#, python-brace-format
 msgid "Import-Auftrag kann nicht verarbeitet werden. Status: {}"
 msgstr ""
 
 #: importer/admin.py:124
+#, python-brace-format
 msgid "Import erfolgreich verarbeitet: {} Datensätze importiert, {} Fehler"
 msgstr ""
 
 #: importer/admin.py:131
+#, python-brace-format
 msgid "Import fehlgeschlagen: {}"
 msgstr ""
 
@@ -1392,7 +1400,7 @@ msgid "Verhältnis Gültig-von ist erforderlich für Verträge"
 msgstr ""
 
 #: importer/importer_tenant_property_vfn.py:67
-#: importer/importer_tenant_property_vfn.py:128
+#: importer/importer_tenant_property_vfn.py:125
 msgid "Name der Liegenschaft ist erforderlich"
 msgstr ""
 
@@ -1401,20 +1409,20 @@ msgstr ""
 msgid "Liegenschaft mit Name %(building_name)s existiert bereits."
 msgstr ""
 
-#: importer/importer_tenant_property_vfn.py:121
+#: importer/importer_tenant_property_vfn.py:118
 #, python-brace-format
 msgid "Unbekannte Tabelle: {sheet}"
 msgstr ""
 
-#: importer/importer_tenant_property_vfn.py:153
+#: importer/importer_tenant_property_vfn.py:150
 msgid "Nr. ist erforderlich"
 msgstr ""
 
-#: importer/importer_tenant_property_vfn.py:245
+#: importer/importer_tenant_property_vfn.py:242
 msgid "Liegenschaft ist erforderlich"
 msgstr ""
 
-#: importer/importer_tenant_property_vfn.py:249
+#: importer/importer_tenant_property_vfn.py:246
 msgid "Liegenschaft existiert nicht"
 msgstr ""
 

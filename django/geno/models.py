@@ -19,6 +19,7 @@ from django.template import Template
 from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 from django.utils.html import format_html, format_html_join, mark_safe
+from django.utils.translation import gettext as _
 from filer.fields.file import FilerFileField
 
 import geno.settings as geno_settings
@@ -818,7 +819,7 @@ class Member(GenoBase):
             )
         if overlapping.exists():
             raise ValidationError(
-                "Die Laufzeiten der Mitgliedschaften dürfen sich nicht überschneiden."
+                _("Membership durations cannot overlap")
             )
 
     def save(self, *args, **kwargs):
