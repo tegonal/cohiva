@@ -24,12 +24,16 @@ class MemberTests(GenoAdminTestCase):
         super().setUpTestData()
 
     def test_non_overlapping_memberships_allowed(self):
-        first_membership = Member.objects.create(name_id=2, date_join=date(2023, 1, 1), date_leave=date(2024, 1, 1), active=False)
-        second_membership = Member.objects.create(name_id=2, date_join=date(year=2024, month=1, day=2), active=True)
+        first_membership = Member.objects.create(name_id=2, date_join=date(2023, 1, 1), date_leave=date(2024, 1, 1))
+        second_membership = Member.objects.create(name_id=2, date_join=date(year=2024, month=1, day=2))
         self.assertTrue(first_membership.id)
         self.assertTrue(second_membership.id)
-        self.assertTrue(second_membership.is_active)
-        self.assertFalse(first_membership.is_active)
+        # Check that is_active() returns the correct value
+        self.assertTrue(second_membership.is_active())
+        self.assertFalse(first_membership.is_active())
+        # Check that the `active` database field returns the correct value
+        self.assertTrue(second_membership.active)
+        self.assertFalse(first_membership.active)
 
     def test_overlapping_memberships_not_allowed(self):
         Member.objects.create(name_id=2, date_join=date(2023, 1, 1), date_leave=date(2024, 1, 1), active=False)
