@@ -773,7 +773,7 @@ class Tenant(GenoBase):
 
 class Member(GenoBase):
     name = models.ForeignKey(
-        Address, verbose_name="Person/Organisation", on_delete=models.CASCADE, db_index=False
+        Address, verbose_name="Person/Organisation", on_delete=models.CASCADE
     )
     date_join = models.DateField("Eintritt")
     date_leave = models.DateField("Austritt", null=True, blank=True)
