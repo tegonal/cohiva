@@ -19,6 +19,7 @@ from django.template import Template
 from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 from django.utils.html import format_html, format_html_join, mark_safe
+from django.utils.translation import gettext as _
 from filer.fields.file import FilerFileField
 
 import geno.settings as geno_settings
@@ -771,7 +772,7 @@ class Tenant(GenoBase):
 
 
 class Member(GenoBase):
-    name = models.OneToOneField(
+    name = models.ForeignKey(
         Address, verbose_name="Person/Organisation", on_delete=models.CASCADE
     )
     date_join = models.DateField("Eintritt")
@@ -795,6 +796,31 @@ class Member(GenoBase):
             return "%s" % self.name
         else:
             return "[Unbenannt]"
+
+    def clean(self):
+        """Validate that membership date ranges for the same address don't overlap."""
+        super().clean()
+        if not self.name_id:
+            # Exit early if the Member doesn't have an associated Address
+            return
+        # Get all entries where the name matches the current instance
+        overlapping = Member.objects.filter(name=self.name).exclude(pk=self.pk)
+        if self.date_leave:
+            # Membership with finite range [date_join, date_leave]
+            overlapping = overlapping.filter(
+                date_join__lte=self.date_leave,
+            ).filter(
+                models.Q(date_leave__gte=self.date_join) | models.Q(date_leave__isnull=True)
+            )
+        else:
+            # Open-ended membership [date_join, NULL]
+            overlapping = overlapping.filter(
+                models.Q(date_leave__isnull=True) | models.Q(date_leave__gte=self.date_join),
+            )
+        if overlapping.exists():
+            raise ValidationError(
+                _("Membership durations cannot overlap")
+            )
 
     def save(self, *args, **kwargs):
         if self.is_active() != self.active:
@@ -826,6 +852,12 @@ class Member(GenoBase):
         ordering = ["name"]
         verbose_name = "Mitglied"
         verbose_name_plural = "Mitglieder"
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(date_leave__isnull=True) | models.Q(date_leave__gte=models.F("date_join")),
+                name="member_date_leave_gte_date_join",
+            ),
+        ]
         permissions = (
             ("canview_member", "Can see members"),
             ("canview_member_overview", "Can see member overview"),

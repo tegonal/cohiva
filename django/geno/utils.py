@@ -115,19 +115,23 @@ def is_member(address, date_mode="strict"):
     from .models import Member
 
     today = datetime.date.today()
-    try:
-        m = Member.objects.get(name=address)
-    except Member.DoesNotExist:
+    memberships = Member.objects.filter(name=address)
+    if not memberships.exists():
         return False
-    if date_mode == "strict":
-        return not (m.date_leave and m.date_leave <= today or m.date_join > today)
-    elif date_mode == "end_date":
-        return not m.date_leave
-    elif date_mode == "last_year":
-        end_last_year = datetime.date(today.year - 1, 12, 31)
-        return not (m.date_leave and m.date_leave <= end_last_year or m.date_join > end_last_year)
-    else:
-        raise Exception("Unknown date_mode argument in is_member()")
+    for m in memberships:
+        if date_mode == "strict":
+            if not (m.date_leave and m.date_leave <= today or m.date_join > today):
+                return True
+        elif date_mode == "end_date":
+            if not m.date_leave:
+                return True
+        elif date_mode == "last_year":
+            end_last_year = datetime.date(today.year - 1, 12, 31)
+            if not (m.date_leave and m.date_leave <= end_last_year or m.date_join > end_last_year):
+                return True
+        else:
+            raise Exception("Unknown date_mode argument in is_member()")
+    return False
 
 
 def is_renting(address, date=None):
