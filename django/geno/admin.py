@@ -162,31 +162,31 @@ def set_title_mrs(modeladmin, request, queryset):
     queryset.update(title="Frau")
 
 
-class UsedCountryFilter(admin.SimpleListFilter):
+class CountryFilter(admin.SimpleListFilter):
     parameter_name = "country"
 
     def __init__(self, request, params, model, model_admin):
         self.title = model._meta.get_field("country").verbose_name
         self.de_trans = gettext.translation("iso3166-1", pycountry.LOCALES_DIR, languages=["de"])
-        raw_home_country = settings.GENO_ORG_INFO.get("country", "")
-        self.home_code = normalize_country_code(raw_home_country)
+        org_country = settings.GENO_ORG_INFO.get("country", "")
+        self.org_country_code = normalize_country_code(org_country)
         super().__init__(request, params, model, model_admin)
 
-    def get_country_name(self, code):
-        if not code:
+    def get_country_name(self, country_code):
+        if not country_code:
             return ""
-        clean_code = str(code).strip().upper()
-        country = pycountry.countries.get(alpha_2=clean_code)
-
-        return self.de_trans.gettext(country.name) if country else code
+        iso_country_code = str(country_code).strip().upper()
+        # Get a country name when the country code is ISO-compliant
+        country = pycountry.countries.get(alpha_2=iso_country_code)
+        return self.de_trans.gettext(country.name) if country else country_code
 
     def lookups(self, request, model_admin):
         options = []
 
-        if self.home_code:
-            home_name = self.get_country_name(self.home_code)
-            options.append((self.home_code, home_name))
-            options.append(("NOT_HOME", f"Nicht {home_name}"))
+        if self.org_country_code:
+            org_country_name = self.get_country_name(self.org_country_code)
+            options.append((self.org_country_code, org_country_name))
+            options.append(("NOT_ORG_COUNTRY", f"Nicht {org_country_name}"))
 
         used_countries = (
             model_admin.model.objects.exclude(country__isnull=True)
@@ -200,7 +200,7 @@ class UsedCountryFilter(admin.SimpleListFilter):
             [
                 (code, self.get_country_name(code))
                 for code in used_countries
-                if code != self.home_code
+                if code != self.org_country_code
             ]
         )
 
@@ -209,8 +209,8 @@ class UsedCountryFilter(admin.SimpleListFilter):
     def queryset(self, request, queryset):
         value = self.value()
 
-        if value == "NOT_HOME" and self.home_code:
-            return queryset.exclude(country=self.home_code)
+        if value == "NOT_ORG_COUNTRY" and self.org_country_code:
+            return queryset.exclude(country=self.org_country_code)
         elif value:
             return queryset.filter(country=value)
 
@@ -281,7 +281,7 @@ class AddressAdmin(GenoBaseAdmin):
         "ignore_in_lists",
         "login_permission",
         "po_box",
-        UsedCountryFilter,
+        CountryFilter,
         "ts_created",
         "ts_modified",
     ]

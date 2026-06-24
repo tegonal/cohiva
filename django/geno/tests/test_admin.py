@@ -8,7 +8,7 @@ from django.test import RequestFactory
 import geno.admin
 import geno.tests.data as geno_testdata
 from geno import admin
-from geno.admin import BooleanFieldDefaultTrueListFilter, UsedCountryFilter
+from geno.admin import BooleanFieldDefaultTrueListFilter, CountryFilter
 
 # from django.conf import settings
 from geno.models import Address, Child, ContentTemplate, Contract, GenericAttribute, Member
@@ -358,7 +358,7 @@ class GenoAdminTest(GenoAdminTestCase):
         with self.settings(
             GENO_ORG_INFO={"country": "Schweiz"}
         ):  # To ensure that our home country is Switzerland for tests
-            country_filter = UsedCountryFilter(
+            country_filter = CountryFilter(
                 request=request, params={}, model=Address, model_admin=model_admin
             )
             lookups = country_filter.lookups(request=request, model_admin=model_admin)
@@ -366,7 +366,7 @@ class GenoAdminTest(GenoAdminTestCase):
         codes = [item[0] for item in lookups]
 
         self.assertIn("CH", codes)
-        self.assertIn("NOT_HOME", codes)
+        self.assertIn("NOT_ORG_COUNTRY", codes)
         self.assertIn("DE", codes)
         self.assertIn("ES", codes)
         self.assertNotIn("", codes)
@@ -374,7 +374,7 @@ class GenoAdminTest(GenoAdminTestCase):
         self.assertEqual(lookups[0][0], "CH")
         self.assertEqual(lookups[0][1], "Schweiz")
 
-        self.assertEqual(lookups[1][0], "NOT_HOME")
+        self.assertEqual(lookups[1][0], "NOT_ORG_COUNTRY")
         self.assertEqual(lookups[1][1], "Nicht Schweiz")
 
         de_tuple = next(item for item in lookups if item[0] == "DE")
