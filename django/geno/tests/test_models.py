@@ -6,10 +6,7 @@ from django.conf import settings
 from django.test import TestCase
 from django.urls import NoReverseMatch, reverse
 
-if django.VERSION < (3, 0):
-    from django.db import OperationalError as IntegrityError
-else:
-    from django.db.utils import IntegrityError
+from django.db.utils import IntegrityError
 from django.test import override_settings
 
 from django.core.exceptions import ValidationError
