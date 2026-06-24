@@ -196,13 +196,13 @@ class CountryFilter(admin.SimpleListFilter):
             .order_by("country")
         )
 
-        options.extend(
-            [
-                (code, self.get_country_name(code))
-                for code in used_countries
-                if code != self.org_country_code
-            ]
-        )
+        remaining_countries = [
+            (code, self.get_country_name(code))
+            for code in used_countries
+            if code != self.org_country_code
+        ]
+        remaining_countries.sort(key=lambda item: item[1])
+        options.extend(remaining_countries)
 
         return options
 
