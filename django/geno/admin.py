@@ -1,5 +1,7 @@
 import datetime
+import gettext
 
+import pycountry
 from dateutil.relativedelta import relativedelta
 from django import forms
 from django.conf import settings
@@ -19,6 +21,7 @@ from unfold.enums import ActionVariant
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
 
 import geno.settings as geno_settings
+from cohiva.utils.countries import normalize_country_code
 from geno.exporter import ExportXlsMixin
 from geno.models import (
     Address,
@@ -159,6 +162,61 @@ def set_title_mrs(modeladmin, request, queryset):
     queryset.update(title="Frau")
 
 
+class CountryFilter(admin.SimpleListFilter):
+    parameter_name = "country"
+
+    def __init__(self, request, params, model, model_admin):
+        self.title = model._meta.get_field("country").verbose_name
+        self.de_trans = gettext.translation("iso3166-1", pycountry.LOCALES_DIR, languages=["de"])
+        org_country = settings.GENO_ORG_INFO.get("country", "")
+        self.org_country_code = normalize_country_code(org_country)
+        super().__init__(request, params, model, model_admin)
+
+    def get_country_name(self, country_code):
+        if not country_code:
+            return ""
+        iso_country_code = str(country_code).strip().upper()
+        # Get a country name when the country code is ISO-compliant
+        country = pycountry.countries.get(alpha_2=iso_country_code)
+        return self.de_trans.gettext(country.name) if country else country_code
+
+    def lookups(self, request, model_admin):
+        options = []
+
+        if self.org_country_code:
+            org_country_name = self.get_country_name(self.org_country_code)
+            options.append((self.org_country_code, org_country_name))
+            options.append(("NOT_ORG_COUNTRY", f"Nicht {org_country_name}"))
+
+        used_countries = (
+            model_admin.model.objects.exclude(country__isnull=True)
+            .exclude(country__exact="")
+            .values_list("country", flat=True)
+            .distinct()
+            .order_by("country")
+        )
+
+        remaining_countries = [
+            (code, self.get_country_name(code))
+            for code in used_countries
+            if code != self.org_country_code
+        ]
+        remaining_countries.sort(key=lambda item: item[1])
+        options.extend(remaining_countries)
+
+        return options
+
+    def queryset(self, request, queryset):
+        value = self.value()
+
+        if value == "NOT_ORG_COUNTRY" and self.org_country_code:
+            return queryset.exclude(country=self.org_country_code)
+        elif value:
+            return queryset.filter(country=value)
+
+        return queryset
+
+
 @admin.register(Address)
 class AddressAdmin(GenoBaseAdmin):
     model = Address
@@ -223,7 +281,7 @@ class AddressAdmin(GenoBaseAdmin):
         "ignore_in_lists",
         "login_permission",
         "po_box",
-        "country",
+        CountryFilter,
         "ts_created",
         "ts_modified",
     ]
