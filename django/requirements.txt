@@ -145,7 +145,7 @@ django-oauth-toolkit==3.0.1
     # via -r requirements.in
 django-permissionedforms==0.1
     # via wagtail
-django-polymorphic==3.1.0
+django-polymorphic==4.2.0
     # via django-filer
 django-select2-forms==3.1.0
     # via -r requirements.in
@@ -464,7 +464,7 @@ zope-proxy==6.1
 
 # The following packages are considered to be unsafe in a requirements file:
 # TODO: remove this dependency by making sure all dependencies are compatible with setuptools 82 or later (by not using pkg_resources)
-setuptools<82
+setuptools==82.0.1
 
 # Packages added/managed by install.py:
 sepa==0.5.4+mst1
