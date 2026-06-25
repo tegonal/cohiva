@@ -49,7 +49,7 @@ class NKReportGeneratorTest(NkReportTestCase):
         report.load_contracts()
         report.load_costs()
         self.assertEqual(report.get_warnings(), [])
-        self.assertEqual(len(report.costs), 15)
+        self.assertEqual(len(report.costs), 16)
         check_count = 0
         for cost in report.costs:
             check_count += 1

@@ -463,7 +463,7 @@ def get_costs_from_config():
         },
         {
             "name": "Serviceabo Energiemessung",
-            # "class": NkTotalCost, Currently included with Strom total, add it later
+            "class": NkTotalCost,
         },
         {
             "name": "Internet/WLAN",

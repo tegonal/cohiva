@@ -260,27 +260,27 @@ class NkCost:
             return self.generator.num_months * [1.0]
 
     def get_export_cost_row(self, include_percent=False):
-        row = self._get_export_row(NkCostValueType.COST, include_percent)
+        row = self._get_export_row([NkCostValueType.COST], include_percent)
         return row
 
     def get_export_weight_row(self, include_percent=False):
-        row = self._get_export_row(NkCostValueType.WEIGHT, include_percent)
+        row = self._get_export_row([NkCostValueType.WEIGHT], include_percent)
         return row
 
     def get_export_extra_info(self, include_percent=False, formatter=None):
         return None
 
-    def _get_export_row(self, kind, include_percent):
+    def _get_export_row(self, cost_types: list[NkCostValueType], include_percent):
         ## TODO: implement include_percent (if still needed)
         row = [self.name]
         if self.is_meta:
             row.append("")  # No total
         else:
-            row.append(self.total_values[kind].amount)
+            row.append(self._sum_cost_types(self.total_values, cost_types))
         for section in self.generator.sections:
-            row.append(self.section_values[section.id][kind].amount)
+            row.append(self._sum_cost_types(self.section_values[section.id], cost_types))
         for ru in self.generator.rental_units:
-            row.append(self.rental_unit_values[ru.id][kind].amount)
+            row.append(self._sum_cost_types(self.rental_unit_values[ru.id], cost_types))
         return row
 
     def _get_assigned_amount(
@@ -323,6 +323,16 @@ class NkCost:
             assigned_contract = rental_unit.get_assigned_contract_for_month(idx)
             if assigned_contract == contract:
                 ret += amount
+        return ret
+
+    @staticmethod
+    def _sum_cost_types(
+        values: dict[NkCostValueType, NkCostValue], cost_types: list[NkCostValueType]
+    ) -> float:
+        ret = 0.0
+        for kind in cost_types:
+            if values[kind].amount is not None:
+                ret += values[kind].amount
         return ret
 
     def get_building_cost(self):

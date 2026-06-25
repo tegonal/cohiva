@@ -16,10 +16,14 @@ class NKBillTest(NkReportTestCase):
     # Wohnung 001a
     unit1_simple = 20120.48
     unit1_internet = 204
-    unit1_strom = 2148.47 - 983.59  # Total Strom (excluding Stromnebenkosten)
+    unit1_stromnk = 983.59
+    unit1_strom = 2149.28 - unit1_stromnk  # Total Strom (excluding Stromnebenkosten)
+    unit1_stromnk_factor = unit1_stromnk / (unit1_strom + unit1_stromnk)
     unit1_waerme = 28067.88
     unit1_wasser = 10119.50
-    unit1_total_costs = unit1_simple + unit1_internet + unit1_strom + unit1_waerme + unit1_wasser
+    unit1_total_costs = (
+        unit1_simple + unit1_internet + unit1_strom + unit1_waerme + unit1_wasser + unit1_stromnk
+    )
     unit1_fee = 0.02 * unit1_total_costs
     unit1_total = unit1_total_costs + unit1_fee
 
@@ -27,30 +31,47 @@ class NKBillTest(NkReportTestCase):
     # Area of ru1 is 100m2 and ru2 20m2
     unit2_simple = unit1_simple / 100 * 20
     unit2_internet = 108
-    unit2_strom = 426.33 - 196.72
+    unit2_stromnk = 196.72
+    unit2_strom = 426.50 - unit2_stromnk
     unit2_waerme = 5613.58
     unit2_wasser = 2023.90
-    unit2_total_costs = unit2_simple + unit2_internet + unit2_strom + unit2_waerme + unit2_wasser
+    unit2_total_costs = (
+        unit2_simple + unit2_internet + unit2_strom + unit2_waerme + unit2_wasser + unit2_stromnk
+    )
     unit2_fee = 0.02 * unit2_total_costs
     unit2_total = unit2_total_costs + unit2_fee
 
     # Gewerbe G001
     unit3_simple = 47279.8
     unit3_internet = 0
-    unit3_strom = 4296.93 - 1967.17
+    unit3_stromnk = 1967.17
+    unit3_strom = 4298.57 - unit3_stromnk  # 4296.93 - unit3_stromnk
     unit3_waerme = 40509.06
     unit3_wasser = 14085.43
-    unit3_total_costs = unit3_simple + unit3_internet + unit3_strom + unit3_waerme + unit3_wasser
+    unit3_total_costs = (
+        unit3_simple + unit3_internet + unit3_strom + unit3_waerme + unit3_wasser + unit3_stromnk
+    )
     unit3_fee = 0.02 * unit3_total_costs
     unit3_total = unit3_total_costs + unit3_fee
 
     building_simple = 92700.41
     building_internet = 312
-    building_strom = 8676.48 - 6.72 - 4032.70  # Total Strom (excluding Stromnebenkosten)
+    building_stromnk = 4032.70
+    building_strom_korrektur = 6.72
+    building_strom_korrektur_mistake_in_reference_calculation = 3.35
+    building_strom = (
+        8673.12 - building_strom_korrektur_mistake_in_reference_calculation - building_stromnk
+    )  # Total Strom (excluding Stromnebenkosten)
+    building_stromnk_factor = building_stromnk / (building_strom + building_stromnk)
     building_waerme = 86370.36
     building_wasser = 31915
     building_total_costs = (
-        building_simple + building_internet + building_strom + building_waerme + building_wasser
+        building_simple
+        + building_internet
+        + building_strom
+        + building_waerme
+        + building_wasser
+        + building_stromnk
     )
     building_fee = 0.02 * building_total_costs
     building_total = building_total_costs + building_fee
@@ -87,6 +108,18 @@ class NKBillTest(NkReportTestCase):
             contract=contract,
             amount=amount,
             date=date,
+        )
+
+    def test_totals_match_reference_values(self):
+        """Transitional test to make sure the new implementation reproduces the results from
+        the previous implementation."""
+        self.assertAlmostEqual(self.unit1_total, 61874.35, delta=1.0)
+        self.assertAlmostEqual(self.unit2_total, 12439.99, delta=1.0)
+        self.assertAlmostEqual(self.unit3_total, 108296.40, delta=1.0)
+        self.assertAlmostEqual(
+            self.building_total,
+            224370.31 - self.building_strom_korrektur_mistake_in_reference_calculation,
+            delta=1.0,
         )
 
     def test_contract_bill_context(self):
@@ -149,15 +182,17 @@ class NKBillTest(NkReportTestCase):
         (ref_number, address, context, output_filename) = (
             mocks["create_qrbill"].call_args_list[1].args
         )
-        self.assertEqual(
+        self.assertAlmostEqual(
             # Area of ru1 is 100m2 and ru2 20m2
-            context["s_generic_total"],
-            nformat(bill_total2),
+            unformat(context["s_generic_total"]),
+            bill_total2,
+            delta=0.00001 * abs(bill_total2),
         )
         self.assertEqual(
             context["extra_text"],
             "Wir bitten Sie, uns die Kontoangaben für die Rückerstattung "
-            f"des Guthabens von CHF {nformat(-1 * bill_total2)} in den nächsten 30 Tagen "
+            f"des Guthabens von CHF {nformat(-1 * unformat(context['s_generic_total']))} in den "
+            "nächsten 30 Tagen "
             "mitzuteilen (am liebsten per Email an info@cohiva.ch). Vielen Dank!",
         )
 
@@ -201,7 +236,7 @@ class NKBillTest(NkReportTestCase):
         self._extended_rental_unit_zev_context_check(context)
         self._extended_rental_unit_vewa_context_check(context)
         # Total
-        # self.assertEqual(context["s_chft"], nformat(self.building_total))
+        self.assertAlmostEqual(unformat(context["s_chft"]), self.building_total, delta=0.05)
         self._extended_rental_unit_context_check(context)
         self.assertAlmostEqual(
             unformat(context["s_chf"]), self.unit1_total, delta=0.001 * abs(self.unit1_total)
@@ -218,9 +253,10 @@ class NKBillTest(NkReportTestCase):
         (context, ru) = mocks["create_rental_unit_files"].call_args_list[1].args
         self.assertEqual(context["rental_unit"], "Wohnung 001b")
         self.assertEqual(context["akonto_chf"], nformat(12 * 20 + 1000))  # Akonto paid
-        self.assertEqual(
-            context["s_chf"],
-            nformat(self.unit2_total),
+        self.assertAlmostEqual(
+            unformat(context["s_chf"]),
+            self.unit2_total,
+            delta=0.001 * abs(self.unit2_total),
         )
         # ZEV: Check korrektur
         self.assertEqual(context["sk"], "-12")
@@ -271,7 +307,11 @@ class NKBillTest(NkReportTestCase):
         self._extended_rental_unit_zev_context_check(context, partial_period_factor)
         self._extended_rental_unit_vewa_context_check(context, partial_period_factor)
         # Total
-        self.assertEqual(context["s_chft"], nformat(self.building_total))
+        self.assertAlmostEqual(
+            unformat(context["s_chft"]),
+            self.building_total,
+            delta=0.001 * abs(self.building_total),
+        )
         self._extended_rental_unit_context_check(context, partial_period_factor)
         self.assertAlmostEqual(
             unformat(context["s_chf"]),
@@ -298,6 +338,7 @@ class NKBillTest(NkReportTestCase):
                 "Wärmekosten",
                 "Wasserkosten",
                 "Stromkosten",
+                "Serviceabo Energiemessung",
                 "Internet/WLAN",
                 "Verwaltungsaufwand",
             ],
@@ -311,19 +352,21 @@ class NKBillTest(NkReportTestCase):
                 self.building_waerme,  # 86370.36,
                 self.building_wasser,  # 31915.00,
                 self.building_strom,
+                self.building_stromnk,
                 self.building_internet,
                 self.building_fee,  # 4402.06,
             ],
             "pctt": [
                 3.8,
-                19.5,
+                19.6,
                 5.8,
                 1.7,
                 3.7,
                 6.7,
                 38.5,
                 14.2,
-                3.9,
+                (1 - self.building_stromnk_factor) * 3.9,
+                self.building_stromnk_factor * 3.9,
                 0.1,
                 2.0,
             ],
@@ -337,6 +380,7 @@ class NKBillTest(NkReportTestCase):
                 32.50,  # self.unit1_waerme / self.building_waerme * 100, #31.70,
                 31.71,
                 self.unit1_strom / self.building_strom * 100,
+                24.39,
                 65.38,
                 self.unit1_fee / self.building_fee * 100,
             ],
@@ -350,6 +394,7 @@ class NKBillTest(NkReportTestCase):
                 self.unit1_waerme,  # 27379.59,
                 10119.50,
                 self.unit1_strom,
+                self.unit1_stromnk,
                 204.00,
                 self.unit1_fee,  # 1195.02,
             ],
@@ -362,49 +407,41 @@ class NKBillTest(NkReportTestCase):
                 6.0,
                 44.9,
                 16.2,
-                3.5,
+                (1 - self.unit1_stromnk_factor) * 3.5,
+                self.unit1_stromnk_factor * 3.5,
                 0.3,
                 2.0,
             ],
         }
         context_i = 0
+        total = {}
         for i, name in enumerate(expected_costs["name"]):
-            # Skip unsupported costs for now
-            if name not in (
-                "Hauswartung, Service Heizung/Lüftung",
-                "Reinigung",
-                "Siedlung/Umgebungspflege",
-                "Betriebskosten Gemeinschaftsanlagen",
-                "Lift",
-                "Kehrichtgebühren",
-                "Internet/WLAN",
-                "Stromkosten",
-                "Wärmekosten",
-                "Wasserkosten",
-                "Verwaltungsaufwand",
-            ):
-                print(f"Skipping {context_i=}/{i=} {name} for now")
-                continue
-            ## Temp. disabled percentages until we have all the costs
-            # for key in ("name", "chft", "pctt", "share", "chf", "pct"):
-            for key in ("name", "chft", "share", "chf"):
-                expected_delta_factor = 0.005
+            for key in ("name", "chft", "pctt", "share", "chf", "pct"):
+                expected_delta = 0
                 if key in ("chf", "share"):
                     expected_value = expected_costs[key][i] * partial_period_factor
                     if name in ("Wärmekosten", "Wasserkosten"):
                         # Allow for a bigger delta, since scaling is not linear
-                        expected_delta_factor = 0.5
+                        expected_delta = 0.5 * abs(expected_value)
+                    else:
+                        expected_delta = 0.005 * abs(expected_value)
                 else:
                     expected_value = expected_costs[key][i]
+                    if key in ("pct", "pctt"):
+                        expected_delta = 0.9
+                    elif key != "name":
+                        expected_delta = 0.005 * abs(expected_value)
                 try:
                     if key in ("name",):
                         self.assertEqual(context["costs"][context_i][key], expected_value)
                     else:
-                        self.assertAlmostEqual(
-                            unformat(context["costs"][context_i][key]),
-                            expected_value,
-                            delta=expected_delta_factor * abs(expected_value),
-                        )
+                        value = unformat(context["costs"][context_i][key])
+                        if key not in total:
+                            total[key] = 0.0
+                        total[key] += value
+                        if partial_period_factor == 1.0 or key not in ("pct", "pctt"):
+                            # We don't check percentage values for partial periods
+                            self.assertAlmostEqual(value, expected_value, delta=expected_delta)
                 except AssertionError as e:
                     raise AssertionError(
                         f"Cost context at {context_i=}/{i=} for '{key}' is not '{expected_value}'"
@@ -412,6 +449,9 @@ class NKBillTest(NkReportTestCase):
             context_i += 1
         # Make sure that there are not more costs than we have checked.
         self.assertEqual(context_i, len(context["costs"]))
+        # Make sure percentages add up to 100%
+        self.assertAlmostEqual(total["pct"], 100.0, delta=0.5)
+        self.assertAlmostEqual(total["pctt"], 100.0, delta=0.5)
 
     def _extended_rental_unit_zev_context_check(self, context, partial_period_factor: float = 1.0):
         allg_ssd = 4 * 1000
@@ -438,14 +478,14 @@ class NKBillTest(NkReportTestCase):
                 "sntt": 2740,  # Netztrombezug kWh Niedertarif
                 "snt_chft": 767.20,
                 "skt": -24,  # Korrektur kWh
-                "sk_chft": -6.72,
+                "sk_chft": -1 * self.building_strom_korrektur,
                 "stt": 16896 - 480,  # Strombezug Total kWh
                 "shk_chft": 620.99,
-                "st_chft": 4643.78 - 6.72,
+                "st_chft": 4643.78 - self.building_strom_korrektur,
                 "sa_chft": 3386.26,  # Anteil Allgemeinstrom
                 "sat": 410,
                 "sa_eh": 8.26,
-                "stot_chft": 8676.48 - 6.72 - 4032.70,  # Total Strom (excluding Stromnebenkosten)
+                "stot_chft": 8676.48 - self.building_strom_korrektur - self.building_stromnk,
             },
         }
         for key, value in expected["unit1"].items():

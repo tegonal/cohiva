@@ -401,6 +401,16 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
         ret = super().get_assigned_cost(contract, rental_unit)
         return ret + self._get_assigned_amount(NkCostValueType.USAGE_COST, contract, rental_unit)
 
+    def get_export_cost_row(self, include_percent=False):
+        row = self._get_export_row(
+            [NkCostValueType.COST, NkCostValueType.USAGE_COST], include_percent
+        )
+        return row
+
+    def get_export_weight_row(self, include_percent=False):
+        row = self._get_export_row([NkCostValueType.USAGE_USAGE], include_percent)
+        return row
+
     @staticmethod
     def _zero_data(num_months: int) -> dict:
         zeros = num_months * [0.0]
