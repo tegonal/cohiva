@@ -5,7 +5,7 @@ import os
 import warnings
 from urllib.parse import quote
 
-from django.utils.deprecation import RemovedInDjango51Warning
+from django.utils.deprecation import RemovedInDjango60Warning
 
 import cohiva.base_config_example as cbc_test
 import cohiva.base_config_for_tests as cbc
@@ -26,7 +26,7 @@ print(f"Redirected (S)MEDIA_ROOT to: {MEDIA_ROOT} and {SMEDIA_ROOT}")
 COHIVA_REPORT_API_TOKEN = "TEST_DUMMY_TOKEN"
 
 ## Display deprecation warnings only once
-warnings.filterwarnings("once", category=RemovedInDjango51Warning)
+warnings.filterwarnings("once", category=RemovedInDjango60Warning)
 
 ## Make code aware that this is a test run
 IS_RUNNING_TESTS = True
