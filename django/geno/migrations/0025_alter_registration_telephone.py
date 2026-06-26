@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("geno", "0023_address_ahv_number_rentalunit_billing_period_and_more"),
+        ("geno", "0024_member_name_to_fk_and_date_constraint"),
     ]
 
     operations = [
