@@ -28,13 +28,12 @@ def read_camt_transaction(data, tr, date_str, entry_ref=None):
     if "charges" in tr:
         if "total" in tr["charges"]:
             charges = tr["charges"]["total"]
-        elif tr["charges"].get("record", []):
-            if len(tr["charges"]["record"]) == 1:
-                charges = tr["charges"]["record"][0]["amount"]["_value"]
-            else:
-                raise SepaReaderException(
-                    "More than one charge record: %s %s" % (tx_id, tr["charges"])
-                )
+        else:
+            total = 0
+            for charge in tr["charges"].get("record", []):
+                total += float(charge.get("amount", {}).get("_value", 0))
+            if total:
+                charges = f"{total:.2f}"
     if "related_parties" not in tr or "debtor" not in tr["related_parties"]:
         return [
             "Ignoring transaction without debtor: %s" % tr["amount"]["_value"],
