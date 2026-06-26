@@ -1610,7 +1610,7 @@ class ShareReminderLetterView(DocumentGeneratorView):
 
 
 class ShareInterestView(CohivaAdminViewMixin, TemplateView):
-    title = _("Zinsabrechung")
+    title = _("Zinsabrechnung")
     permission_required = (
         "geno.canview_share",
         "geno.canview_billing",

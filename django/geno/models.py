@@ -737,6 +737,23 @@ class Building(GenoBase):
     egid = models.PositiveIntegerField("EGID", null=True, blank=True)
     active = models.BooleanField("Aktiv", default=True)
 
+    @property
+    def full_name(self):
+        ret = self.name
+        if self.street_name and self.house_number:
+            address = "%s %s" % (self.street_name, self.house_number)
+        else:
+            address = self.street_name
+        if address and address != self.name:
+            ret += ", %s" % address
+        if self.city_zipcode and self.city_name:
+            ret += ", %s %s" % (self.city_zipcode, self.city_name)
+        elif self.city_name:
+            ret += ", %s" % self.city_name
+        if self.country and self.country != get_default_country_code():
+            ret += ", %s" % self.get_country_display()
+        return ret
+
     class Meta:
         ordering = ["name"]
         verbose_name = "Liegenschaft"
@@ -772,9 +789,7 @@ class Tenant(GenoBase):
 
 
 class Member(GenoBase):
-    name = models.ForeignKey(
-        Address, verbose_name="Person/Organisation", on_delete=models.CASCADE
-    )
+    name = models.ForeignKey(Address, verbose_name="Person/Organisation", on_delete=models.CASCADE)
     date_join = models.DateField("Eintritt")
     date_leave = models.DateField("Austritt", null=True, blank=True)
     ## verbose_names of flags are set below!
@@ -809,18 +824,14 @@ class Member(GenoBase):
             # Membership with finite range [date_join, date_leave]
             overlapping = overlapping.filter(
                 date_join__lte=self.date_leave,
-            ).filter(
-                models.Q(date_leave__gte=self.date_join) | models.Q(date_leave__isnull=True)
-            )
+            ).filter(models.Q(date_leave__gte=self.date_join) | models.Q(date_leave__isnull=True))
         else:
             # Open-ended membership [date_join, NULL]
             overlapping = overlapping.filter(
                 models.Q(date_leave__isnull=True) | models.Q(date_leave__gte=self.date_join),
             )
         if overlapping.exists():
-            raise ValidationError(
-                _("Membership durations cannot overlap")
-            )
+            raise ValidationError(_("Membership durations cannot overlap"))
 
     def save(self, *args, **kwargs):
         if self.is_active() != self.active:
@@ -854,7 +865,8 @@ class Member(GenoBase):
         verbose_name_plural = "Mitglieder"
         constraints = [
             models.CheckConstraint(
-                check=models.Q(date_leave__isnull=True) | models.Q(date_leave__gte=models.F("date_join")),
+                check=models.Q(date_leave__isnull=True)
+                | models.Q(date_leave__gte=models.F("date_join")),
                 name="member_date_leave_gte_date_join",
             ),
         ]
@@ -1303,9 +1315,7 @@ class Registration(GenoBase):
     name = models.CharField("Nachname", max_length=30)
     first_name = models.CharField("Vorname", max_length=30)
     email = models.EmailField("Email")
-    telephone = models.CharField(
-        "Telefon", max_length=30, blank=True, help_text="Angabe zwingend wegen COVID-19 Massnahmen"
-    )
+    telephone = models.CharField("Telefon", max_length=30, blank=True)
     slot = models.ForeignKey(
         RegistrationSlot, verbose_name="Datum/Zeit Beginn", on_delete=models.CASCADE
     )

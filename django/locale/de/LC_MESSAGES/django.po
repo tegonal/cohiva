@@ -64,7 +64,15 @@ msgstr "Finanzierung"
 msgid "Dokumente & Kommunikation"
 msgstr "Dokumente & Kommunikation"
 
-#: cohiva/settings_defaults.py:1286
+#: cohiva/settings_defaults.py:1287
+msgid "Einstellungen"
+msgstr ""
+
+#: cohiva/settings_defaults.py:1290
+msgid "Report-Konfiguration"
+msgstr ""
+
+#: cohiva/settings_defaults.py:1298
 msgid "Systemadministration"
 msgstr "Systemadministration"
 
@@ -115,27 +123,27 @@ msgstr "Alle Anwendungen"
 msgid "You don’t have permission to view or edit anything."
 msgstr "Sie haben keine Berechtigung, etwas anzusehen oder zu bearbeiten."
 
-#: geno/admin.py:250
+#: geno/admin.py:259
 msgid "Weitere Aktionen"
 msgstr "Weitere Aktionen"
 
-#: geno/admin.py:257 geno/admin.py:727
+#: geno/admin.py:266 geno/admin.py:736
 msgid "Export"
 msgstr "Export"
 
-#: geno/admin.py:266
+#: geno/admin.py:275
 msgid "Export ADIT"
 msgstr "Export ADIT"
 
-#: geno/admin.py:736
+#: geno/admin.py:745
 msgid "Export per Ende Vorjahr"
 msgstr "Export per Ende Vorjahr"
 
-#: geno/admin.py:1335
+#: geno/admin.py:1344
 msgid "Report Pflichtanteile/Belegung"
 msgstr "Report Pflichtanteile/Belegung"
 
-#: geno/admin.py:1344
+#: geno/admin.py:1353
 msgid "Untervertrag hinzufügen"
 msgstr "Untervertrag hinzufügen"
 
@@ -1097,7 +1105,7 @@ msgid "Darlehen Details"
 msgstr ""
 
 #: geno/views.py:1613
-msgid "Zinsabrechung"
+msgid "Zinsabrechnung"
 msgstr ""
 
 #: geno/views.py:2036
@@ -1278,7 +1286,7 @@ msgstr ""
 msgid "Rechungen bis: %s"
 msgstr ""
 
-#: importer/admin.py:48
+#: importer/admin.py:48 report/views.py:80
 msgid "Konfiguration"
 msgstr ""
 
@@ -1532,6 +1540,61 @@ msgstr ""
 msgid "Zeile hat keine Daten"
 msgstr ""
 
+#: report/nk/cost/vewa.py:53
+#, python-brace-format
+msgid "No total costs found for {cost_name}"
+msgstr "Kein Total der Kosten gefunden für {cost_name}"
+
+#: report/nk/cost/vewa.py:237 report/nk/cost/vewa.py:348
+#: report/nk/cost/vewa.py:420
+#, python-brace-format
+msgid "Invalid VEWA category: {category}"
+msgstr "Ungültige VEWA-Kategorie: {category}"
+
+#: report/nk/cost/vewa.py:414
+#, python-brace-format
+msgid "The base cost factor is not in the range 0.0 - 1.0: {factor}"
+msgstr "Der Basis-Kostenfaktor ist nicht im Bereich 0.0 - 1.0: {factor}"
+
+#: report/nk/cost/zev.py:377
+#, python-brace-format
+msgid "Unknown rate for correction: {tarif}"
+msgstr "Unbekannter Terif für die Korrektur: {tarif}"
+
+#: report/nk/measurement_data.py:73
+#, python-brace-format
+msgid "Duplicate header {title} in the measurement CSV file"
+msgstr "Doppelte Spalte {title} in der Messdaten CSV-Datei"
+
+#: report/nk/measurement_data.py:79
+#, python-brace-format
+msgid "Could not find header {title} in the measurement CSV file"
+msgstr "Konnte Spalte {title} in der Messdaten CSV-Datei nicht finden"
+
+#: report/nk/measurement_data.py:148
+msgid "Number of months in measurement data does not match the billing period."
+msgstr "Die Anzahl Monate der Messdaten stimmt nicht mit der Abrechnungsperiode überein."
+
+#: report/nk/measurement_data.py:179
+#, python-brace-format
+msgid "Unexpected month name {month} for period {period}"
+msgstr "Unerwarteter Monat {month} für Periode {period}"
+
+#: report/nk/measurement_data.py:207
+#, python-brace-format
+msgid "Unusual measurement period {period}"
+msgstr "Unübliche Messperiode {period}"
+
+#: report/nk/measurement_data.py:239
+#, python-brace-format
+msgid "Adding additional measurement for month index {month_index}"
+msgstr "Füge zusätzliche Messung zu Monat mit Index {month_index} hinzu"
+
+#: report/nk/measurement_data.py:285
+#, python-brace-format
+msgid "Invalid rental unit name '{name}' in the measurement data."
+msgstr "Ungültige Bezeichnung für Mietobjekt '{name}' in den Messdaten."
+
 #: report/templates/report/report_config.html:23
 msgid "Konfiguration speichern"
 msgstr ""
@@ -1554,10 +1617,6 @@ msgstr ""
 
 #: report/views.py:78
 msgid "Report konfigurieren"
-msgstr ""
-
-#: report/views.py:80
-msgid "Kongiguration"
 msgstr ""
 
 #: report/views.py:141

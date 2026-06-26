@@ -45,6 +45,7 @@ MANAGERS = cbc.ADMINS
 TEST_MAIL_RECIPIENT = ADMINS[0][1]
 
 SERVER_EMAIL = "info@" + cbc.DOMAIN
+DEFAULT_FROM_EMAIL = SERVER_EMAIL
 EMAIL_SUBJECT_PREFIX = f"[Cohiva {cbc.SITE_NICKNAME}] "
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
@@ -1279,6 +1280,17 @@ COHIVA_ADMIN_NAVIGATION = [
                     {"type": "model", "value": "filer.FolderPermission"},
                     {"type": "model", "value": "filer.ThumbnailOption"},
                 ],
+            },
+        ],
+    },
+    {
+        "name": _("Einstellungen"),
+        "items": [
+            {
+                "name": _("Report-Konfiguration"),
+                "type": "model",
+                "value": "report.ReportConfiguration",
+                "icon": "subtitles_gear",
             },
         ],
     },
