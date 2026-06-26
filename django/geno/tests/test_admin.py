@@ -1,18 +1,19 @@
 import datetime
 from unittest.mock import patch
 
+from django.conf import settings
 from django.contrib import admin as django_admin
 from django.db.models import Q
 from django.test import RequestFactory
 
-import geno.admin
 import geno.tests.data as geno_testdata
 from geno import admin
-from geno.admin import BooleanFieldDefaultTrueListFilter, CountryFilter
 
 # from django.conf import settings
 from geno.models import Address, Child, ContentTemplate, Contract, GenericAttribute, Member
 from geno.tests.base import MockDate
+from reservation.admin import ReservationAdmin
+from reservation.models import Reservation
 
 from .base import GenoAdminTestCase
 
@@ -232,17 +233,17 @@ class GenoAdminTest(GenoAdminTestCase):
         if model_name == "address":
             model = Address
             field_path = "active"
-            model_admin = geno.admin.AddressAdmin
+            model_admin = admin.AddressAdmin
         elif model_name == "child":
             model = Child
             field_path = "name__active"
-            model_admin = geno.admin.ChildAdmin
+            model_admin = admin.ChildAdmin
         else:
             raise ValueError("Unknown model_name")
         factory = RequestFactory()
         request = factory.get(f"/admin/geno/{model_name}/", query_params=query_params)
         admin_instance = model_admin(model, django_admin.site)
-        _filter = BooleanFieldDefaultTrueListFilter(
+        _filter = admin.BooleanFieldDefaultTrueListFilter(
             field=Address._meta.get_field("active"),
             request=request,
             params=query_params or {},
@@ -345,6 +346,157 @@ class GenoAdminTest(GenoAdminTestCase):
         response = self.client.get("/admin/geno/address/add/")
         self.assertEqual(response.status_code, 200)
 
+    def test_admin_fields_config_overwrite(self):
+        old_setting = getattr(settings, "COHIVA_ADMIN_FIELDS", {})
+        old_address_fields = admin.AddressAdmin.fields.copy()
+        new_address_fields = ["test1", ("test2a", "test2b"), "test3"]
+        old_list_filter = admin.AddressAdmin.list_filter.copy()
+        new_list_filter = ["test_filter"]
+        old_reservation_fields = ReservationAdmin.fields.copy()
+        new_reservation_fields = ["test_reservation"]
+        settings.COHIVA_ADMIN_FIELDS = {
+            "geno.admin": {
+                "AddressAdmin.fields": new_address_fields,
+                "AddressAdmin.list_filter": new_list_filter,
+            },
+            "reservation.admin": {
+                "ReservationAdmin.fields": new_reservation_fields,
+            },
+        }
+        admin.AddressAdmin(model=Address, admin_site=django_admin.site)
+        ReservationAdmin(model=Reservation, admin_site=django_admin.site)
+        self.assertEqual(admin.AddressAdmin.fields, new_address_fields)
+        self.assertEqual(admin.AddressAdmin.list_filter, new_list_filter)
+        self.assertEqual(ReservationAdmin.fields, new_reservation_fields)
+        # Restore state
+        settings.COHIVA_ADMIN_FIELDS = old_setting
+        admin.AddressAdmin.fields = old_address_fields
+        admin.AddressAdmin.list_filter = old_list_filter
+        ReservationAdmin.fields = old_reservation_fields
+
+    def test_admin_fields_config_hide_fields(self):
+        self.assertIn("organization", admin.AddressAdmin.fields)
+        old_setting = getattr(settings, "COHIVA_HIDE_ADMIN_FIELDS", {})
+        settings.COHIVA_HIDE_ADMIN_FIELDS = {"geno.admin": {"AddressAdmin": ["organization"]}}
+        old_address_fields = admin.AddressAdmin.fields.copy()
+        old_address_fieldsets = (
+            admin.AddressAdmin.fieldsets.copy()
+            if isinstance(admin.AddressAdmin.fieldsets, list)
+            else admin.AddressAdmin.fieldsets
+        )
+        old_search_fields = admin.AddressAdmin.search_fields.copy()
+        old_list_display = admin.AddressAdmin.list_display.copy()
+        old_list_filter = admin.AddressAdmin.list_filter.copy()
+        admin.AddressAdmin(model=Address, admin_site=django_admin.site)
+        self.assertNotIn("organization", admin.AddressAdmin.fields)
+        # Restore state
+        settings.COHIVA_HIDE_ADMIN_FIELDS = old_setting
+        admin.AddressAdmin.fields = old_address_fields
+        admin.AddressAdmin.fieldsets = old_address_fieldsets
+        admin.AddressAdmin.search_fields = old_search_fields
+        admin.AddressAdmin.list_display = old_list_display
+        admin.AddressAdmin.list_filter = old_list_filter
+
+    def test_remove_admin_fields(self):
+        class DummyAdmin(admin.GenoBaseAdmin):
+            fields = (
+                "keep1",
+                "remove1",
+                ("tuple-keep1", "tuple-remove1"),
+                ["list-remove2", "list-keep2", "list-remove3", "list-keep3"],
+                "keep2",
+                "remove2",
+                None,
+            )
+            filtered_fields = [
+                "keep1",
+                ("tuple-keep1",),
+                ("list-keep2", "list-keep3"),
+                "keep2",
+                None,
+            ]
+            fieldsets = [
+                "keep",
+                ("name", {"fields": ["keep1", "remove1", "keep2", "remove2"]}),
+                (
+                    "name with tuple",
+                    {"fields": ["keep1", "remove1", ("keep2", "remove2", "keep3")]},
+                ),
+                ("keep-single",),
+                ["keep_something_else", {"notfields": ["remove2"]}],
+                ("keep-non-dict", "remove2"),
+                (
+                    "remove-with-other",
+                    {"fields": ["remove2"], "other1": ["remove2"]},
+                    {"fields": ["remove1"]},
+                ),
+            ]
+            filtered_fieldsets = [
+                "keep",
+                ("name", {"fields": ["keep1", "keep2"]}),
+                ("name with tuple", {"fields": ["keep1", ("keep2", "keep3")]}),
+                ("keep-single",),
+                ["keep_something_else", {"notfields": ["remove2"]}],
+                ("keep-non-dict", "remove2"),
+                (
+                    "remove-with-other",
+                    {"fields": [], "other1": ["remove2"]},
+                    {"fields": ["remove1"]},
+                ),
+            ]
+            search_fields = [
+                "keep1",
+                "remove1",
+                ("tuple-keep1", "tuple-remove1"),
+                ("tuple-remove1", "tuple-keep1"),
+                ("remove2",),
+                (None, "keep-this"),
+                "keep2",
+                None,
+            ]
+            filtered_search_fields = [
+                "keep1",
+                ("tuple-keep1", "tuple-remove1"),
+                (None, "keep-this"),
+                "keep2",
+                None,
+            ]
+            list_display = (
+                "keep1",
+                "remove1",
+                ["tuple-keep1", "tuple-remove1"],
+                ["tuple-remove1", "tuple-keep1"],
+                ["remove2"],
+                [None, "keep-this"],
+                "keep2",
+                None,
+            )
+            filtered_list_display = [
+                "keep1",
+                ["tuple-keep1", "tuple-remove1"],
+                [None, "keep-this"],
+                "keep2",
+                None,
+            ]
+            list_filter = ["keep1"]
+
+        DummyAdmin._remove_admin_fields(
+            [
+                "remove1",
+                "remove2",
+                "tuple-remove1",
+                "tuple-remove2",
+                "list-remove1",
+                "list-remove2",
+                "list-remove3",
+            ]
+        )
+        self.assertEqual(DummyAdmin.fields, DummyAdmin.filtered_fields)
+        self.assertEqual(DummyAdmin.fieldsets, DummyAdmin.filtered_fieldsets)
+        self.assertEqual(DummyAdmin.search_fields, DummyAdmin.filtered_search_fields)
+        self.assertEqual(DummyAdmin.list_display, DummyAdmin.filtered_list_display)
+        self.assertEqual(DummyAdmin.list_filter, ["keep1"])
+
     def test_used_country_filter_lookups(self):
         Address.objects.create(name="Schweiz", country="CH")
         Address.objects.create(name="Deutschland", country="DE")
@@ -353,12 +505,12 @@ class GenoAdminTest(GenoAdminTestCase):
 
         factory = RequestFactory()
         request = factory.get("/admin/geno/address/")
-        model_admin = geno.admin.AddressAdmin(Address, django_admin.site)
+        model_admin = admin.AddressAdmin(Address, django_admin.site)
 
         with self.settings(
             GENO_ORG_INFO={"country": "Schweiz"}
         ):  # To ensure that our home country is Switzerland for tests
-            country_filter = CountryFilter(
+            country_filter = admin.CountryFilter(
                 request=request, params={}, model=Address, model_admin=model_admin
             )
             lookups = country_filter.lookups(request=request, model_admin=model_admin)

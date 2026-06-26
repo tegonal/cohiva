@@ -988,8 +988,10 @@ ROCKETCHAT_WEBHOOK_AUTORESPONDER = {
 COHIVA_REPORT_API_TOKEN = None
 COHIVA_REPORT_EMAIL = GENO_DEFAULT_EMAIL
 
-## With the following option you can change the default configuration of the Django admin site
-# for the Cohiva models (fields, fieldsets, readonly_fields, search_fields, autocomplete_fields, list_display, list_filter)
+# With the following options you can change the default configuration of the Django admin UI:
+#
+# A) Completely overwrite admin class attributes: fields, fieldsets, readonly_fields,
+#    search_fields, autocomplete_fields, list_display, or list_filter.
 # COHIVA_ADMIN_FIELDS = {
 #     "geno.admin": {
 #         "RentalUnitAdmin.fields": [
@@ -1015,6 +1017,14 @@ COHIVA_REPORT_EMAIL = GENO_DEFAULT_EMAIL
 #             "backlinks",
 #         ],
 #     },
+# }
+#
+# B) Hide single model fields in the admin UI.
+# COHIVA_HIDE_ADMIN_FIELDS = {
+#    "geno.admin": {
+#        "AddressAdmin": ["telephoneOffice2"],
+#        "MemberAdmin": ["flag_03", "flag_04", "flag_05"],
+#    }
 # }
 
 ## Share settings
