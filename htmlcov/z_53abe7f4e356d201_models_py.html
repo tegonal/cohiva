@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for geno/models.py: 88%</title>
+    <title>Coverage for geno/models.py: 89%</title>
     <link rel="icon" sizes="32x32" href="favicon_32_cb_c827f16f.png">
     <link rel="stylesheet" href="style_cb_4667309f.css" type="text/css">
     <script src="coverage_html_cb_dd2e7eb5.js" defer></script>
@@ -12,7 +12,7 @@
     <div class="content">
         <h1>
             <span class="text">Coverage for </span><b>geno<span class="sep">/</span>models.py</b>:
-            <span class="pc_cov">88%</span>
+            <span class="pc_cov">89%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -55,8 +55,8 @@
         </aside>
         <h2>
             <span class="text">1053 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">923<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">130<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">933<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">120<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">0<span class="text"> excluded</span></button>
         </h2>
         <p class="text">
@@ -65,7 +65,7 @@
             <a id="nextFileLink" class="nav" href="z_53abe7f4e356d201_sepa_reader_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.14.2">coverage.py v7.14.2</a>,
-            created at 2026-06-26 08:18 +0000
+            created at 2026-06-26 09:08 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -1523,36 +1523,36 @@
     <p class="run"><span class="n"><a id="t1441" href="#t1441">1441</a></span><span class="t">    <span class="op">@</span><span class="nam">property</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1442" href="#t1442">1442</a></span><span class="t">    <span class="op">@</span><span class="nam">admin</span><span class="op">.</span><span class="nam">display</span><span class="op">(</span><span class="nam">description</span><span class="op">=</span><span class="str">"Bruttomiete (Fr./Monat)"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1443" href="#t1443">1443</a></span><span class="t">    <span class="key">def</span> <span class="nam">rent_total_per_month</span><span class="op">(</span><span class="nam">self</span><span class="op">)</span> <span class="op">-></span> <span class="nam">Decimal</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t1444" href="#t1444">1444</a></span><span class="t">        <span class="key">if</span> <span class="key">not</span> <span class="nam">self</span><span class="op">.</span><span class="nam">rent_total</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1444" href="#t1444">1444</a></span><span class="t">        <span class="key">if</span> <span class="key">not</span> <span class="nam">self</span><span class="op">.</span><span class="nam">rent_total</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t1445" href="#t1445">1445</a></span><span class="t">            <span class="key">return</span> <span class="nam">Decimal</span><span class="op">(</span><span class="num">0.0</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t1446" href="#t1446">1446</a></span><span class="t">        <span class="key">return</span> <span class="nam">round</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">rent_total</span> <span class="op">/</span> <span class="nam">self</span><span class="op">.</span><span class="nam">billing_period</span><span class="op">,</span> <span class="num">2</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1446" href="#t1446">1446</a></span><span class="t">        <span class="key">return</span> <span class="nam">round</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">rent_total</span> <span class="op">/</span> <span class="nam">self</span><span class="op">.</span><span class="nam">billing_period</span><span class="op">,</span> <span class="num">2</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t1447" href="#t1447">1447</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1448" href="#t1448">1448</a></span><span class="t">    <span class="op">@</span><span class="nam">property</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1449" href="#t1449">1449</a></span><span class="t">    <span class="op">@</span><span class="nam">admin</span><span class="op">.</span><span class="nam">display</span><span class="op">(</span><span class="nam">description</span><span class="op">=</span><span class="str">"Netto-Miete (Fr./Monat)"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1450" href="#t1450">1450</a></span><span class="t">    <span class="key">def</span> <span class="nam">rent_netto_per_month</span><span class="op">(</span><span class="nam">self</span><span class="op">)</span> <span class="op">-></span> <span class="nam">Decimal</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t1451" href="#t1451">1451</a></span><span class="t">        <span class="key">if</span> <span class="key">not</span> <span class="nam">self</span><span class="op">.</span><span class="nam">rent_netto</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1451" href="#t1451">1451</a></span><span class="t">        <span class="key">if</span> <span class="key">not</span> <span class="nam">self</span><span class="op">.</span><span class="nam">rent_netto</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t1452" href="#t1452">1452</a></span><span class="t">            <span class="key">return</span> <span class="nam">Decimal</span><span class="op">(</span><span class="num">0.0</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t1453" href="#t1453">1453</a></span><span class="t">        <span class="key">return</span> <span class="nam">round</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">rent_netto</span> <span class="op">/</span> <span class="nam">self</span><span class="op">.</span><span class="nam">billing_period</span><span class="op">,</span> <span class="num">2</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1453" href="#t1453">1453</a></span><span class="t">        <span class="key">return</span> <span class="nam">round</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">rent_netto</span> <span class="op">/</span> <span class="nam">self</span><span class="op">.</span><span class="nam">billing_period</span><span class="op">,</span> <span class="num">2</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t1454" href="#t1454">1454</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1455" href="#t1455">1455</a></span><span class="t">    <span class="op">@</span><span class="nam">property</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1456" href="#t1456">1456</a></span><span class="t">    <span class="op">@</span><span class="nam">admin</span><span class="op">.</span><span class="nam">display</span><span class="op">(</span><span class="nam">description</span><span class="op">=</span><span class="str">"Nebenkosten Akonto (Fr./Monat)"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1457" href="#t1457">1457</a></span><span class="t">    <span class="key">def</span> <span class="nam">nk_per_month</span><span class="op">(</span><span class="nam">self</span><span class="op">)</span> <span class="op">-></span> <span class="nam">Decimal</span> <span class="op">|</span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t1458" href="#t1458">1458</a></span><span class="t">        <span class="key">if</span> <span class="key">not</span> <span class="nam">self</span><span class="op">.</span><span class="nam">nk</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1458" href="#t1458">1458</a></span><span class="t">        <span class="key">if</span> <span class="key">not</span> <span class="nam">self</span><span class="op">.</span><span class="nam">nk</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t1459" href="#t1459">1459</a></span><span class="t">            <span class="key">return</span> <span class="nam">Decimal</span><span class="op">(</span><span class="num">0.0</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t1460" href="#t1460">1460</a></span><span class="t">        <span class="key">return</span> <span class="nam">round</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">nk</span> <span class="op">/</span> <span class="nam">self</span><span class="op">.</span><span class="nam">billing_period</span><span class="op">,</span> <span class="num">2</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1460" href="#t1460">1460</a></span><span class="t">        <span class="key">return</span> <span class="nam">round</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">nk</span> <span class="op">/</span> <span class="nam">self</span><span class="op">.</span><span class="nam">billing_period</span><span class="op">,</span> <span class="num">2</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t1461" href="#t1461">1461</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1462" href="#t1462">1462</a></span><span class="t">    <span class="op">@</span><span class="nam">property</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1463" href="#t1463">1463</a></span><span class="t">    <span class="op">@</span><span class="nam">admin</span><span class="op">.</span><span class="nam">display</span><span class="op">(</span><span class="nam">description</span><span class="op">=</span><span class="str">"Nebenkosten Pauschal (Fr./Monat)"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1464" href="#t1464">1464</a></span><span class="t">    <span class="key">def</span> <span class="nam">nk_flat_per_month</span><span class="op">(</span><span class="nam">self</span><span class="op">)</span> <span class="op">-></span> <span class="nam">Decimal</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t1465" href="#t1465">1465</a></span><span class="t">        <span class="key">if</span> <span class="key">not</span> <span class="nam">self</span><span class="op">.</span><span class="nam">nk_flat</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t1466" href="#t1466">1466</a></span><span class="t">            <span class="key">return</span> <span class="nam">Decimal</span><span class="op">(</span><span class="num">0.0</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1465" href="#t1465">1465</a></span><span class="t">        <span class="key">if</span> <span class="key">not</span> <span class="nam">self</span><span class="op">.</span><span class="nam">nk_flat</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1466" href="#t1466">1466</a></span><span class="t">            <span class="key">return</span> <span class="nam">Decimal</span><span class="op">(</span><span class="num">0.0</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t1467" href="#t1467">1467</a></span><span class="t">        <span class="key">return</span> <span class="nam">round</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">nk_flat</span> <span class="op">/</span> <span class="nam">self</span><span class="op">.</span><span class="nam">billing_period</span><span class="op">,</span> <span class="num">2</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t1468" href="#t1468">1468</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1469" href="#t1469">1469</a></span><span class="t">    <span class="op">@</span><span class="nam">property</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1470" href="#t1470">1470</a></span><span class="t">    <span class="op">@</span><span class="nam">admin</span><span class="op">.</span><span class="nam">display</span><span class="op">(</span><span class="nam">description</span><span class="op">=</span><span class="str">"Strompauschale (Fr./Monat)"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1471" href="#t1471">1471</a></span><span class="t">    <span class="key">def</span> <span class="nam">nk_electricity_per_month</span><span class="op">(</span><span class="nam">self</span><span class="op">)</span> <span class="op">-></span> <span class="nam">Decimal</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t1472" href="#t1472">1472</a></span><span class="t">        <span class="key">if</span> <span class="key">not</span> <span class="nam">self</span><span class="op">.</span><span class="nam">nk_electricity</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t1473" href="#t1473">1473</a></span><span class="t">            <span class="key">return</span> <span class="nam">Decimal</span><span class="op">(</span><span class="num">0.0</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1472" href="#t1472">1472</a></span><span class="t">        <span class="key">if</span> <span class="key">not</span> <span class="nam">self</span><span class="op">.</span><span class="nam">nk_electricity</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1473" href="#t1473">1473</a></span><span class="t">            <span class="key">return</span> <span class="nam">Decimal</span><span class="op">(</span><span class="num">0.0</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t1474" href="#t1474">1474</a></span><span class="t">        <span class="key">return</span> <span class="nam">round</span><span class="op">(</span><span class="nam">self</span><span class="op">.</span><span class="nam">nk_electricity</span> <span class="op">/</span> <span class="nam">self</span><span class="op">.</span><span class="nam">billing_period</span><span class="op">,</span> <span class="num">2</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t1475" href="#t1475">1475</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1476" href="#t1476">1476</a></span><span class="t">    <span class="key">def</span> <span class="nam">str_short</span><span class="op">(</span><span class="nam">self</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
@@ -2170,7 +2170,7 @@
             <a class="nav" href="z_53abe7f4e356d201_sepa_reader_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.14.2">coverage.py v7.14.2</a>,
-            created at 2026-06-26 08:18 +0000
+            created at 2026-06-26 09:08 +0000
         </p>
     </div>
 </footer>
