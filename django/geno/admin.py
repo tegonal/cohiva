@@ -217,7 +217,17 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
                     and isinstance(fieldset[1], dict)
                     and "fields" in fieldset[1]
                 ):
-                    filtered_fields = filter_func(fieldset[1].get("fields", []))
+                    filtered_fields = []
+                    for field in fieldset[1].get("fields", []):
+                        if isinstance(field, str):
+                            if filter_func([field]):
+                                filtered_fields.append(field)
+                        elif isinstance(field, (list, tuple)):
+                            filtered_subset = filter_func(list(field))
+                            if filtered_subset:
+                                filtered_fields.append(tuple(filtered_subset))
+                        else:
+                            filtered_fields.append(field)
                     fieldset[1]["fields"] = filtered_fields
 
     @classmethod

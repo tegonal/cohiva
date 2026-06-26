@@ -347,12 +347,12 @@ class GenoAdminTest(GenoAdminTestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_admin_fields_config_overwrite(self):
-        old_setting = getattr(settings, "COHIVA_ADMIN_FIELDS", None)
-        old_address_fields = admin.AddressAdmin.fields
+        old_setting = getattr(settings, "COHIVA_ADMIN_FIELDS", {})
+        old_address_fields = admin.AddressAdmin.fields.copy()
         new_address_fields = ["test1", ("test2a", "test2b"), "test3"]
-        old_list_filter = admin.AddressAdmin.list_filter
+        old_list_filter = admin.AddressAdmin.list_filter.copy()
         new_list_filter = ["test_filter"]
-        old_reservation_fields = ReservationAdmin.fields
+        old_reservation_fields = ReservationAdmin.fields.copy()
         new_reservation_fields = ["test_reservation"]
         settings.COHIVA_ADMIN_FIELDS = {
             "geno.admin": {
@@ -369,23 +369,33 @@ class GenoAdminTest(GenoAdminTestCase):
         self.assertEqual(admin.AddressAdmin.list_filter, new_list_filter)
         self.assertEqual(ReservationAdmin.fields, new_reservation_fields)
         # Restore state
-        if old_setting:
-            settings.COHIVA_ADMIN_FIELDS = old_setting
+        settings.COHIVA_ADMIN_FIELDS = old_setting
         admin.AddressAdmin.fields = old_address_fields
         admin.AddressAdmin.list_filter = old_list_filter
         ReservationAdmin.fields = old_reservation_fields
 
     def test_admin_fields_config_hide_fields(self):
         self.assertIn("organization", admin.AddressAdmin.fields)
-        old_setting = getattr(settings, "COHIVA_HIDE_ADMIN_FIELDS", None)
+        old_setting = getattr(settings, "COHIVA_HIDE_ADMIN_FIELDS", {})
         settings.COHIVA_HIDE_ADMIN_FIELDS = {"geno.admin": {"AddressAdmin": ["organization"]}}
-        old_address_fields = admin.AddressAdmin.fields
+        old_address_fields = admin.AddressAdmin.fields.copy()
+        old_address_fieldsets = (
+            admin.AddressAdmin.fieldsets.copy()
+            if isinstance(admin.AddressAdmin.fieldsets, list)
+            else admin.AddressAdmin.fieldsets
+        )
+        old_search_fields = admin.AddressAdmin.search_fields.copy()
+        old_list_display = admin.AddressAdmin.list_display.copy()
+        old_list_filter = admin.AddressAdmin.list_filter.copy()
         admin.AddressAdmin(model=Address, admin_site=django_admin.site)
         self.assertNotIn("organization", admin.AddressAdmin.fields)
         # Restore state
-        if old_setting:
-            settings.COHIVA_HIDE_ADMIN_FIELDS = old_setting
+        settings.COHIVA_HIDE_ADMIN_FIELDS = old_setting
         admin.AddressAdmin.fields = old_address_fields
+        admin.AddressAdmin.fieldsets = old_address_fieldsets
+        admin.AddressAdmin.search_fields = old_search_fields
+        admin.AddressAdmin.list_display = old_list_display
+        admin.AddressAdmin.list_filter = old_list_filter
 
     def test_remove_admin_fields(self):
         class DummyAdmin(admin.GenoBaseAdmin):
@@ -408,6 +418,10 @@ class GenoAdminTest(GenoAdminTestCase):
             fieldsets = [
                 "keep",
                 ("name", {"fields": ["keep1", "remove1", "keep2", "remove2"]}),
+                (
+                    "name with tuple",
+                    {"fields": ["keep1", "remove1", ("keep2", "remove2", "keep3")]},
+                ),
                 ("keep-single",),
                 ["keep_something_else", {"notfields": ["remove2"]}],
                 ("keep-non-dict", "remove2"),
@@ -420,6 +434,7 @@ class GenoAdminTest(GenoAdminTestCase):
             filtered_fieldsets = [
                 "keep",
                 ("name", {"fields": ["keep1", "keep2"]}),
+                ("name with tuple", {"fields": ["keep1", ("keep2", "keep3")]}),
                 ("keep-single",),
                 ["keep_something_else", {"notfields": ["remove2"]}],
                 ("keep-non-dict", "remove2"),
