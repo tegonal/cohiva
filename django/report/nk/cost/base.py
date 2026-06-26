@@ -85,7 +85,6 @@ class NkCost:
 
     def _normalize_monthly_amounts_for_dict(self, container: dict, value_required=False):
         for _kind, value in container.items():
-            # pprint(value)
             total = None
             if value.monthly_amounts:
                 if len(value.monthly_amounts) != self.generator.num_months:
@@ -261,27 +260,27 @@ class NkCost:
             return self.generator.num_months * [1.0]
 
     def get_export_cost_row(self, include_percent=False):
-        row = self._get_export_row(NkCostValueType.COST, include_percent)
+        row = self._get_export_row([NkCostValueType.COST], include_percent)
         return row
 
     def get_export_weight_row(self, include_percent=False):
-        row = self._get_export_row(NkCostValueType.WEIGHT, include_percent)
+        row = self._get_export_row([NkCostValueType.WEIGHT], include_percent)
         return row
 
     def get_export_extra_info(self, include_percent=False, formatter=None):
         return None
 
-    def _get_export_row(self, kind, include_percent):
+    def _get_export_row(self, cost_types: list[NkCostValueType], include_percent):
         ## TODO: implement include_percent (if still needed)
         row = [self.name]
         if self.is_meta:
             row.append("")  # No total
         else:
-            row.append(self.total_values[kind].amount)
+            row.append(self._sum_cost_types(self.total_values, cost_types))
         for section in self.generator.sections:
-            row.append(self.section_values[section.id][kind].amount)
+            row.append(self._sum_cost_types(self.section_values[section.id], cost_types))
         for ru in self.generator.rental_units:
-            row.append(self.rental_unit_values[ru.id][kind].amount)
+            row.append(self._sum_cost_types(self.rental_unit_values[ru.id], cost_types))
         return row
 
     def _get_assigned_amount(
@@ -326,6 +325,16 @@ class NkCost:
                 ret += amount
         return ret
 
+    @staticmethod
+    def _sum_cost_types(
+        values: dict[NkCostValueType, NkCostValue], cost_types: list[NkCostValueType]
+    ) -> float:
+        ret = 0.0
+        for kind in cost_types:
+            if values[kind].amount is not None:
+                ret += values[kind].amount
+        return ret
+
     def get_building_cost(self):
         return self._get_building_amount(NkCostValueType.COST)
 
@@ -338,7 +347,7 @@ class NkCost:
     def _get_section_amount(self, section: "NkSection", value_type: NkCostValueType):
         return self.section_values[section.id][value_type].amount
 
-    def get_rental_unit_cost(self, rental_unit):
+    def get_rental_unit_cost(self, rental_unit, include_common=False):
         return self._get_rental_unit_amount(rental_unit, NkCostValueType.COST)
 
     def _get_rental_unit_amount(self, rental_unit: "NkRentalUnit", value_type: NkCostValueType):
@@ -358,7 +367,7 @@ class NkCost:
         self.warnings.append(msg)
 
 
-class NkMeasurementDataMixin:
+class NkMeasurementDataMixin(NkCost):
     """Mixin for NkCosts that require measurement data."""
 
     def __init__(self, report_generator: "NkReportGenerator", cost_config: dict):
@@ -379,7 +388,7 @@ class NkMeasurementDataMixin:
         super().load_input_data()
 
 
-class NkCommonCostMixin:
+class NkCommonCostMixin(NkCost):
     """Mixin for NkCosts that have a common usage part (e.g., Allgemeinstrom), which is distributed among all rental units."""
 
     def __init__(self, report_generator: "NkReportGenerator", cost_config: dict):
@@ -389,6 +398,12 @@ class NkCommonCostMixin:
         )
         self.add_value_type(NkCostValueType.COMMON_COST, "Allgemeinkosten", "CHF")
         self.add_value_type(NkCostValueType.COMMON_WEIGHT, "Gewichtung", "")
+
+    def get_rental_unit_cost(self, rental_unit, include_common=False):
+        ret = super().get_rental_unit_cost(rental_unit, include_common)
+        if include_common:
+            ret += self._get_rental_unit_amount(rental_unit, NkCostValueType.COMMON_COST)
+        return ret
 
     def get_assigned_cost(self, contract: "NkContract", rental_unit: "NkRentalUnit | None" = None):
         ret = super().get_assigned_cost(contract, rental_unit)
