@@ -10,9 +10,9 @@ if django.VERSION < (3, 0):
     from django.db import OperationalError as IntegrityError
 else:
     from django.db.utils import IntegrityError
+from django.core.exceptions import ValidationError
 from django.test import override_settings
 
-from django.core.exceptions import ValidationError
 from geno.models import Address, InvoiceCategory, Member, RegistrationEvent
 
 from .base import GenoAdminTestCase
@@ -24,8 +24,12 @@ class MemberTests(GenoAdminTestCase):
         super().setUpTestData()
 
     def test_non_overlapping_memberships_allowed(self):
-        first_membership = Member.objects.create(name=self.addresses[0], date_join=date(2023, 1, 1), date_leave=date(2024, 1, 1))
-        second_membership = Member.objects.create(name=self.addresses[0], date_join=date(year=2024, month=1, day=2))
+        first_membership = Member.objects.create(
+            name=self.addresses[0], date_join=date(2023, 1, 1), date_leave=date(2024, 1, 1)
+        )
+        second_membership = Member.objects.create(
+            name=self.addresses[0], date_join=date(year=2024, month=1, day=2)
+        )
         self.assertTrue(first_membership.id)
         self.assertTrue(second_membership.id)
         # Check that is_active() returns the correct value
@@ -36,24 +40,53 @@ class MemberTests(GenoAdminTestCase):
         self.assertFalse(first_membership.active)
 
     def test_overlapping_memberships_not_allowed(self):
-        Member.objects.create(name=self.addresses[0], date_join=date(2023, 1, 1), date_leave=date(2024, 1, 1), active=False)
+        Member.objects.create(
+            name=self.addresses[0],
+            date_join=date(2023, 1, 1),
+            date_leave=date(2024, 1, 1),
+            active=False,
+        )
         with self.assertRaises(ValidationError):
-            Member(name=self.addresses[0], date_join=date(2023, 6, 1), date_leave=date(2023, 12, 31), active=True).clean()
+            Member(
+                name=self.addresses[0],
+                date_join=date(2023, 6, 1),
+                date_leave=date(2023, 12, 31),
+                active=True,
+            ).clean()
 
     def test_overlapping_memberships_not_allowed_open_ended(self):
-        Member.objects.create(name=self.addresses[0], date_join=date(2023, 1, 1), date_leave=None, active=True)
+        Member.objects.create(
+            name=self.addresses[0], date_join=date(2023, 1, 1), date_leave=None, active=True
+        )
         with self.assertRaises(ValidationError):
-            Member(name=self.addresses[0], date_join=date(2024, 1, 1), date_leave=date(2025, 1, 1), active=True).clean()
+            Member(
+                name=self.addresses[0],
+                date_join=date(2024, 1, 1),
+                date_leave=date(2025, 1, 1),
+                active=True,
+            ).clean()
 
     def test_overlapping_memberships_not_allowed_second_open_ended(self):
-        Member.objects.create(name=self.addresses[0], date_join=date(2023, 1, 1), date_leave=date(2024, 1, 1), active=False)
+        Member.objects.create(
+            name=self.addresses[0],
+            date_join=date(2023, 1, 1),
+            date_leave=date(2024, 1, 1),
+            active=False,
+        )
         with self.assertRaises(ValidationError):
-            Member(name=self.addresses[0], date_join=date(2023, 6, 1), date_leave=None, active=True).clean()
+            Member(
+                name=self.addresses[0], date_join=date(2023, 6, 1), date_leave=None, active=True
+            ).clean()
 
     def test_membership_ends_before_it_begins(self):
         constraint_name = "member_date_leave_gte_date_join"
         with self.assertRaisesMessage(IntegrityError, constraint_name):
-            Member.objects.create(name=self.addresses[0], date_join=date(year=2025, month=1, day=1), date_leave=date(2024, 1, 1))
+            Member.objects.create(
+                name=self.addresses[0],
+                date_join=date(year=2025, month=1, day=1),
+                date_leave=date(2024, 1, 1),
+            )
+
 
 class InvoiceTests(TestCase):
     def test_invoice_reference_id_too_small(self):
