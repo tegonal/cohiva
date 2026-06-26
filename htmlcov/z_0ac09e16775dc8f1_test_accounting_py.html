@@ -65,7 +65,7 @@
             <a id="nextFileLink" class="nav" href="z_0ac09e16775dc8f1_test_accounting_cct_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.14.2">coverage.py v7.14.2</a>,
-            created at 2026-06-26 07:25 +0000
+            created at 2026-06-26 08:18 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -131,7 +131,7 @@
     <p class="run"><span class="n"><a id="t49" href="#t49">49</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">assertEqual</span><span class="op">(</span><span class="nam">messages</span><span class="op">[</span><span class="num">0</span><span class="op">]</span><span class="op">,</span> <span class="str">"Keine Buchhaltungsanbindung konfiguriert."</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t50" href="#t50">50</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t51" href="#t51">51</a></span><span class="t">        <span class="key">with</span> <span class="nam">self</span><span class="op">.</span><span class="nam">assertRaises</span><span class="op">(</span><span class="nam">RuntimeError</span><span class="op">,</span> <span class="nam">msg</span><span class="op">=</span><span class="str">"Keine Buchhaltungsanbindung konfiguriert."</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t52" href="#t52">52</a></span><span class="t">            <span class="key">with</span> <span class="nam">AccountingManager</span><span class="op">(</span><span class="op">)</span> <span class="key">as</span> <span class="nam">book</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t52" href="#t52">52</a></span><span class="t">            <span class="key">with</span> <span class="nam">AccountingManager</span><span class="op">(</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t53" href="#t53">53</a></span><span class="t">                <span class="key">pass</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t54" href="#t54">54</a></span><span class="t">        <span class="nam">AccountingManager</span><span class="op">.</span><span class="nam">register_backends_from_settings</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t55" href="#t55">55</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -144,7 +144,7 @@
     <p class="run"><span class="n"><a id="t62" href="#t62">62</a></span><span class="t">            <span class="nam">self</span><span class="op">.</span><span class="nam">assertTrue</span><span class="op">(</span><span class="nam">messages</span><span class="op">[</span><span class="num">0</span><span class="op">]</span><span class="op">.</span><span class="nam">startswith</span><span class="op">(</span><span class="str">"Konnte Buchhaltung nicht initialisieren: "</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t63" href="#t63">63</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t64" href="#t64">64</a></span><span class="t">        <span class="key">with</span> <span class="nam">self</span><span class="op">.</span><span class="nam">assertRaises</span><span class="op">(</span><span class="nam">TypeError</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t65" href="#t65">65</a></span><span class="t">            <span class="key">with</span> <span class="nam">AccountingManager</span><span class="op">(</span><span class="nam">backend_label</span><span class="op">=</span><span class="str">"invalid_class"</span><span class="op">)</span> <span class="key">as</span> <span class="nam">book</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t65" href="#t65">65</a></span><span class="t">            <span class="key">with</span> <span class="nam">AccountingManager</span><span class="op">(</span><span class="nam">backend_label</span><span class="op">=</span><span class="str">"invalid_class"</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t66" href="#t66">66</a></span><span class="t">                <span class="key">pass</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t67" href="#t67">67</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t68" href="#t68">68</a></span><span class="t">        <span class="key">del</span> <span class="nam">AccountingManager</span><span class="op">.</span><span class="nam">backends</span><span class="op">[</span><span class="str">"invalid_class"</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
@@ -441,7 +441,7 @@
             <a class="nav" href="z_0ac09e16775dc8f1_test_accounting_cct_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.14.2">coverage.py v7.14.2</a>,
-            created at 2026-06-26 07:25 +0000
+            created at 2026-06-26 08:18 +0000
         </p>
     </div>
 </footer>
