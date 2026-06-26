@@ -39,3 +39,42 @@ EMAIL_HOST_PASSWORD = "secret"
 
 ## Configure the cashctrl token and tenant in base_config.py
 # FINANCIAL_ACCOUNTING_DEFAULT_BACKEND = "cashctrl"
+
+# With the following options you can change the default configuration of the Django admin UI:
+#
+# A) Completely overwrite admin class attributes: fields, fieldsets, readonly_fields,
+#    search_fields, autocomplete_fields, list_display, or list_filter
+# COHIVA_ADMIN_FIELDS = {
+#     "geno.admin": {
+#         "RentalUnitAdmin.fields": [
+#             "name",
+#             ("label", "label_short"),
+#             ("rental_type", "rooms", "min_occupancy"),
+#             ("building", "floor"),
+#             ("area", "area_balcony", "area_add"),
+#             ("height", "volume"),
+#             ("rent_netto", "nk", "nk_electricity", "rent_total"),
+#             "rent_year", # activate rent per year filed
+#             ("share", "depot"),
+#             "note",
+#             "svg_polygon",
+#             "description",
+#             "status",
+#             "adit_serial",
+#             "active",
+#             "comment",
+#             "ts_created",
+#             "ts_modified",
+#             "links",
+#             "backlinks",
+#         ],
+#     },
+# }
+#
+# B) Hide single model fields in the admin UI
+# COHIVA_HIDE_ADMIN_FIELDS = {
+#    "geno.admin": {
+#        "AddressAdmin": ["telephoneOffice2"],
+#        "MemberAdmin": ["flag_03", "flag_04", "flag_05"],
+#    }
+# }
