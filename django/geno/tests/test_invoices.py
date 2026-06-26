@@ -118,7 +118,7 @@ class InvoicesTest(GenoAdminTestCase):
 
     def test_invoice_creator(self):
         with self.assertRaises(InvoiceCategory.DoesNotExist):
-            ic = InvoiceCreator("Invalid Invoice", dry_run=False)
+            InvoiceCreator("Invalid Invoice", dry_run=False)
         ic = InvoiceCreator("Member Invoice", dry_run=False)
         ic.add_line("Line One", 10.00)
         ic.add_line("Line Two", 20.00)
@@ -217,23 +217,26 @@ class InvoicesTest(GenoAdminTestCase):
         invoice.delete()
         payment.delete()
 
-    def generate_camt053_data(self, invoices):
+    @staticmethod
+    def generate_camt053_data(invoices):
         template = loader.get_template("geno/camt053_demo_data.xml")
         context = {"payments": []}
         ts = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         comment = "Test Einzahlung"
         for invoice in invoices:
             date = invoice.date + datetime.timedelta(days=10)
-            info = {}
-            info["iban"] = settings.FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]["iban"]
-            info["refnr"] = get_reference_nr(
+            reference_nr = get_reference_nr(
                 invoice.invoice_category, invoice.person.id, invoice.id
             )
-            info["transaction_id"] = f"TEST_{info['refnr']}_{ts}"
-            info["date"] = date.strftime("%Y-%m-%d")
-            info["comment"] = comment
-            info["amount"] = format(invoice.amount, ".2f")
-            info["debtor_name"] = str(invoice.person)
+            info = {
+                "iban": settings.FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]["iban"],
+                "refnr": reference_nr,
+                "transaction_id": f"TEST_{reference_nr}_{ts}",
+                "date": date.strftime("%Y-%m-%d"),
+                "comment": comment,
+                "amount": format(invoice.amount, ".2f"),
+                "debtor_name": str(invoice.person),
+            }
             context["payments"].append(info)
         return template.render(context)
 
@@ -349,4 +352,4 @@ class InvoicesTest(GenoAdminTestCase):
 #   - with integrate bill in contract
 #   - without integrate bill in contract
 
-# 3. Test invoice switching from integrated bill to separate bills and vice-versa multiple times.
+# 3. Test invoice switching from integrated bill to separate bills and vice versa multiple times.

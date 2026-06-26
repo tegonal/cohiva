@@ -30,7 +30,7 @@ from geno.models import (
 from .base import GenoAdminTestCase
 
 
-def add_invoice_exception_generator(*args, **kwargs):
+def add_invoice_exception_generator(*_args, **kwargs):
     if kwargs["month"] == 4:
         raise InvoiceCreationError("Test Exception")
 
@@ -104,7 +104,7 @@ class TestBilling(GenoAdminTestCase):
         self.assertEqual(messages[-1]["info"], "3 Rechnungen für 1 Vertrag")
 
     @patch("geno.billing.add_invoice", wraps=add_invoice_exception_generator)
-    def test_create_invoices_stop_on_exception(self, mock_add_invoice):
+    def test_create_invoices_stop_on_exception(self, _mock_add_invoice):
         contract = Contract.objects.create(date=datetime.date(2001, 1, 1), state="unterzeichnet")
         contract.rental_units.set([self.rentalunits[3]])
         contract.contractors.set([self.addresses[3]])
@@ -210,7 +210,7 @@ class TestBilling(GenoAdminTestCase):
             self.assertEqual(len(email_messages), 3)
 
     @patch("geno.billing.add_invoice")
-    def test_create_monthly_invoices_date_ranges(self, mock_add_invoice):
+    def test_create_monthly_invoices_date_ranges(self, _mock_add_invoice):
         with AccountingManager(book_type_id="dum") as book:
             contract = self.contracts[0]
             inv_cat = InvoiceCategory.objects.get(
@@ -267,7 +267,7 @@ class TestBilling(GenoAdminTestCase):
             self.assertIn(" 03.2001 für ", regular_invoices[0])
 
     @patch("geno.billing.add_invoice")
-    def test_create_monthly_invoices_when_email_template_is_missing(self, mock_add_invoice):
+    def test_create_monthly_invoices_when_email_template_is_missing(self, _mock_add_invoice):
         InvoiceCategory.objects.filter(name="Mietzins wiederkehrend").update(email_template=None)
         with AccountingManager(book_type_id="dum") as book:
             contract = self.contracts[0]
@@ -342,8 +342,9 @@ class TestBilling(GenoAdminTestCase):
                     raise ValueError(f"Wrong account: {split.account}")
 
     def test_add_transaction_shares_invalid(self):
-        with self.assertRaises(ValueError, msg="Share is not a multiple of 200.-!"):
-            geno.billing.add_transaction_shares(None, None, 100, None)
+        with AccountingManager(book_type_id="dum") as book:
+            with self.assertRaises(ValueError, msg="Share is not a multiple of 200.-!"):
+                geno.billing.add_transaction_shares(book, None, 100, None)
 
     def test_add_transaction_shares_entry_200(self):
         with AccountingManager(book_type_id="dum") as book:
@@ -414,8 +415,9 @@ class TestBilling(GenoAdminTestCase):
                     raise ValueError(f"Wrong account: {split.account}")
 
     def test_add_transaction_shares_entry_invalid(self):
-        with self.assertRaises(ValueError, msg="Betrag ist kein Vielfaches von 200: 100"):
-            geno.billing.add_transaction_shares_entry(None, None, 100, None)
+        with AccountingManager(book_type_id="dum") as book:
+            with self.assertRaises(ValueError, msg="Betrag ist kein Vielfaches von 200: 100"):
+                geno.billing.add_transaction_shares_entry(book, None, 100, None)
 
     def test_add_transaction_interest_loan(self):
         with AccountingManager(book_type_id="dum") as book:
@@ -563,13 +565,13 @@ class TestBilling(GenoAdminTestCase):
 
     def test_add_invoice_obj_transaction_error(self):
         with AccountingManager(book_type_id="dum") as book:
-            book._db = {}
+            book._db = None
             with self.assertRaisesMessage(
                 InvoiceCreationError,
                 "Could not create invoice or transaction: ",
             ):
                 add_invoice_obj(
-                    None,  # book
+                    book,
                     "Invoice",
                     self.invoicecategories[0],
                     "Test-Description",
@@ -580,7 +582,6 @@ class TestBilling(GenoAdminTestCase):
                     100,
                 )
             self.assertEqual(Invoice.objects.count(), 0)
-            self.assertEqual(len(book._db), 0)
 
     @patch("geno.models.Invoice.save")
     def test_add_invoice_obj_invoice_save_error(self, mock_invoice_save):
@@ -736,7 +737,7 @@ class TestQRBill(GenoAdminTestCase):
         self.assertTrue(
             msg == [] or msg[0].startswith("Konnte QR-Rechnung nicht erstellen:"),
         )
-        if msg == []:
+        if not msg:
             self.assertEqual(nsent, 0)
             self.assertEqual(recipient, None)
             self.assertInPDF(outfile, "Zahlbar durch\nOrg\nMusterweg 1\nDE-12345 Berlin")

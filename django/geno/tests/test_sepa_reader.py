@@ -14,6 +14,7 @@ class SepaReaderTest(GenoAdminTestCase):
             {
                 "file": "camt053_P_CH2909000000250094239_1110092698_0_2020062503071366_v2009.xml",
                 "num_transactions": 0,
+                "data": {},
             },
             {
                 "file": "camt053_P_CH2909000000250094239_1110092698_0_2020112503071366_v2019.xml",

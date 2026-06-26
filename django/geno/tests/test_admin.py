@@ -341,7 +341,7 @@ class GenoAdminTest(GenoAdminTestCase):
         self.client.login(username="superuser", password="secret")
         # Setup  model field name to name__active by
         self.client.get("/admin/geno/child/")
-        # Bug COHIV-133 will result in a HTTP Error 500 here:
+        # Bug COHIV-133 will result in an HTTP Error 500 here:
         response = self.client.get("/admin/geno/address/add/")
         self.assertEqual(response.status_code, 200)
 

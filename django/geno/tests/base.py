@@ -7,6 +7,7 @@ from zipfile import ZipFile
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
 from django.core import mail
 
 ## django-filer stuff
@@ -16,12 +17,29 @@ from filer.models.filemodels import File as FilerFile
 from pypdf import PdfReader
 
 import geno.tests.data as testdata
-from geno.models import Invoice
+from geno.models import (
+    Address,
+    Building,
+    Child,
+    ContentTemplate,
+    ContentTemplateOption,
+    Contract,
+    DocumentType,
+    Invoice,
+    InvoiceCategory,
+    Member,
+    RentalUnit,
+    Share,
+    ShareType,
+)
 
 
 class CohivaTestBase:
     UserModel = get_user_model()
     local_tz = zoneinfo.ZoneInfo(settings.TIME_ZONE)
+
+    su: User = None
+    prototypes: dict[str, dict]
 
     def assertInHTML(self, needle, haystack, dump_on_fail=True):
         try:
@@ -86,7 +104,7 @@ class CohivaTestBase:
             max_redirect = 3
             while response.status_code in (301, 302):
                 last_redirect = response.url
-                # print("Redirecting to: "+last_redirect)
+                # print("Redirecting to: " + last_redirect)
                 response = self.client.get(last_redirect)
                 max_redirect -= 1
                 if max_redirect <= 0:
@@ -107,7 +125,7 @@ class CohivaTestBase:
                 raise
         else:
             self.assertInHTML(needle, content, dump_on_fail)
-        return (response, content, last_redirect)
+        return response, content, last_redirect
 
     def assertNotInHTMLResponse(
         self, needle, response, raw=False, allow_redirect=True, dump_on_fail=True
@@ -162,19 +180,22 @@ class CohivaTestBase:
             self.assertIn(recipient, mail.outbox[i].to[0])
 
         if sender:
-            self.assertIn(sender, mail.outbox[i].from_email)
+            self.assertIn(sender, mail.outbox[0].from_email)
 
-    def assertNoErrors(self, errorlist):
+    @staticmethod
+    def assertNoErrors(errorlist):
         if len(errorlist):
             raise AssertionError(
                 f"Errorlist has {len(errorlist)} entries. First is: {errorlist[0]}"
             )
 
-    def assertIsFile(self, path):
+    @staticmethod
+    def assertIsFile(path):
         if not os.path.isfile(path):
             raise AssertionError("File does not exist: %s" % str(path))
 
-    def get_filelike(self, file_or_bytes):
+    @staticmethod
+    def get_filelike(file_or_bytes):
         if isinstance(file_or_bytes, bytes):
             return BytesIO(file_or_bytes)
         return file_or_bytes
@@ -286,6 +307,20 @@ class BaseTransactionTestCase(CohivaTestBase, TransactionTestCase):
 
 
 class GenoAdminTestCase(BaseTestCase):
+    addresses: list[Address] = []
+    members: list[Member] = []
+    children: list[Child] = []
+    buildings: list[Building] = []
+    rentalunits: list[RentalUnit] = []
+    contracts: list[Contract] = []
+    shares: list[Share] = []
+    sharetypes: list[ShareType] = []
+    invoicecategories: list[InvoiceCategory] = []
+    documenttypes: list[DocumentType] = []
+    contenttemplates: list[ContentTemplate] = []
+    email_templates: list[ContentTemplate] = []
+    contenttemplateoptions: dict[str, list[ContentTemplateOption]] = {}
+
     @classmethod
     def setUpTestData(cls):
         # Set up data for the whole TestCase
@@ -301,19 +336,19 @@ class GenoAdminTestCase(BaseTestCase):
         self.client.login(username="superuser", password="secret")
 
 
-def fill_template_effect(template, context, output_format="odt"):
+def fill_template_effect(_template, _context, output_format="odt"):
     odt_path = "/tmp/mock_odtfile.odt"
     if not os.path.exists(odt_path):
         with open(odt_path, "wb") as f:
-            f.write(b"ODT mock\n")
+            f.write(output_format.encode() + b" mock\n")
     return odt_path
 
 
-def odt2pdf_effect(odtfile, instance_tag="default"):
+def odt2pdf_effect(_odtfile, instance_tag="default"):
     pdf_path = "/tmp/mock_pdffile.pdf"
     if not os.path.exists(pdf_path):
         with open(pdf_path, "wb") as f:
-            f.write(b"%PDF-1.1\n%mock\n")
+            f.write(b"%PDF-1.1\n%" + instance_tag.encode() + b"mock\n")
     return pdf_path
 
 
@@ -324,6 +359,11 @@ class DocumentCreationMockMixin:
 
     patch_target_fill_template = "geno.utils.fill_template_pod"
     patch_target_odt2pdf = "geno.utils.odt2pdf"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.mock_fill_template = None
+        self.mock_odt2pdf = None
 
     def setUp(self):
         super().setUp()
@@ -372,8 +412,8 @@ class DocumentCreationMockMixin:
         calls = self.mock_fill_template.call_args_list
 
         # Helper to extract template argument
-        def extract_template(call):
-            args, kwargs = call
+        def extract_template(call_args):
+            args, kwargs = call_args
             return kwargs.get("template") or args[0]
 
         # Check a specific call
@@ -418,8 +458,8 @@ class DocumentCreationMockMixin:
 
         calls = self.mock_fill_template.call_args_list
 
-        def extract_context(call):
-            args, kwargs = call
+        def extract_context(call_args):
+            args, kwargs = call_args
             return kwargs.get("context") or args[1]
 
         # Check a specific call
@@ -487,8 +527,8 @@ class DocumentCreationMockMixin:
         calls = self.mock_odt2pdf.call_args_list
 
         # Helper to extract odtfile argument
-        def extract_odtfile(call):
-            args, kwargs = call
+        def extract_odtfile(call_args):
+            args, kwargs = call_args
             return kwargs.get("odtfile") or args[0]
 
         # Check a specific call
