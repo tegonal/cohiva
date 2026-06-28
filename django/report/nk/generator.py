@@ -17,6 +17,70 @@ from report.nk.export_csv import ExportCSV
 from report.nk.rental_unit import NkRentalUnit, NkVirtualRentalUnitId
 from report.nk.section import NK_SECTIONS, get_section_by_id
 
+## Section weights are still hard-coded with values for Warmbächli. We need
+## a better way to configure them in the futute.
+NK_SECTION_WEIGHTS = {
+    "default": {"Allgemein": 1.0, "Wohnen": 1.0, "Gewerbe": 1.0, "Lager": 1.0},
+    #'ohne_lager': {'Allgemein': 1.0, 'Wohnen': 1.0, 'Gewerbe': 1.0, 'Lager': 0.0},
+    "nur_wohnen": {"Allgemein": 0.0, "Wohnen": 1.0, "Gewerbe": 0.0, "Lager": 0.0},
+    "radiatoren": {"Allgemein": 0.0, "Wohnen": 0.01, "Gewerbe": 1.0, "Lager": 0.0},
+    "lueftung": {
+        "Allgemein": 0.0,
+        "Wohnen": 0.35,
+        "Gewerbe": 0.55,
+        "Lager": 0.1,
+    },  ## Abschätzung aus Luftmenge, Betriebszeiten, Temperatur
+    "wasser_allgemein": {"Allgemein": 0.0, "Wohnen": 1.0, "Gewerbe": 0.5, "Lager": 0.5},
+    #'allgemeinstrom': {'Allgemein': 0.0, 'Wohnen': 1.0, 'Gewerbe': 1.0, 'Lager': 1.0},
+    "reinigung": {"Allgemein": 0.0, "Wohnen": 0.7, "Gewerbe": 1.0, "Lager": 1.0},
+}
+
+# Dict key is the month number (1 = Jan, ..., 12 = Dec)
+NK_MONTHLY_WEIGHTS = {
+    "default": {
+        1: 1,
+        2: 1,
+        3: 1,
+        4: 1,
+        5: 1,
+        6: 1,
+        7: 1,
+        8: 1,
+        9: 1,
+        10: 1,
+        11: 1,
+        12: 1,
+    },
+    "heizgradtage_mit_ww": {
+        1: 13.6,
+        2: 12.1,
+        3: 11.5,
+        4: 9.3,
+        5: 5.6,
+        6: 3.7,
+        7: 3.7,
+        8: 3.6,
+        9: 3.7,
+        10: 9.5,
+        11: 10.7,
+        12: 13.0,
+    },
+    "heizgradtage_ohne_ww": {
+        1: 17.5,
+        2: 14.5,
+        3: 13.5,
+        4: 9.5,
+        5: 3.5,
+        6: 0,
+        7: 0,
+        8: 0,
+        9: 1.0,
+        10: 10.0,
+        11: 13.5,
+        12: 17.0,
+    },
+}
+
 
 class NkReportGenerator(ReportGenerator):
     default_config = {
@@ -70,28 +134,10 @@ class NkReportGenerator(ReportGenerator):
             "total_sect": {},
         }
 
-        self.monthly_weights = {
-            # Jul  Aug  Sep  Oct  Nov  Dez  Jan  Feb  Mar  Apr  May  Jun
-            "default": [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-        }
-
         self.admin_fee_factor = float(self.config["Verwaltungsaufwand:Faktor"]) / 100.0
 
-        self.section_weights = {
-            "default": {"Allgemein": 1.0, "Wohnen": 1.0, "Gewerbe": 1.0, "Lager": 1.0},
-            #'ohne_lager': {'Allgemein': 1.0, 'Wohnen': 1.0, 'Gewerbe': 1.0, 'Lager': 0.0},
-            "nur_wohnen": {"Allgemein": 0.0, "Wohnen": 1.0, "Gewerbe": 0.0, "Lager": 0.0},
-            "radiatoren": {"Allgemein": 0.0, "Wohnen": 0.01, "Gewerbe": 1.0, "Lager": 0.0},
-            "lueftung": {
-                "Allgemein": 0.0,
-                "Wohnen": 0.35,
-                "Gewerbe": 0.55,
-                "Lager": 0.1,
-            },  ## Abschätzung aus Luftmenge, Betriebszeiten, Temperatur
-            "wasser_allgemein": {"Allgemein": 0.0, "Wohnen": 1.0, "Gewerbe": 0.5, "Lager": 0.5},
-            #'allgemeinstrom': {'Allgemein': 0.0, 'Wohnen': 1.0, 'Gewerbe': 1.0, 'Lager': 1.0},
-            "reinigung": {"Allgemein": 0.0, "Wohnen": 0.7, "Gewerbe": 1.0, "Lager": 1.0},
-        }
+        self.section_weights = NK_SECTION_WEIGHTS
+        self.monthly_weights = NK_MONTHLY_WEIGHTS
 
         self.virtual_contracts = {
             "-1": "Gästezimmer",

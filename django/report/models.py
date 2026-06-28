@@ -11,7 +11,7 @@ from geno.utils import send_error_mail
 from report.nk.cost_config import (
     REPORT_ITEM_CATEGORY,
     CostConfigFieldTypes,
-    get_costs_from_config,
+    get_report_item_config,
 )
 
 REPORT_STATE_CHOICES = (
@@ -35,6 +35,9 @@ REPORT_FIELDTYPE_CHOICES = (
     ("json", "JSON-Daten"),
     ("buildingIds", "Liegenschaften"),
     ("enum_vewa_category", "VEWA Kategorie"),
+    ("enum_monthly_weights", "Verteilschlssel nach Monat"),
+    ("enum_section_weights", "Verteilschlüssel nach Objekttyp"),
+    ("enum_object_weights", "Verteilschlüssel nach Objekt"),
 )
 
 
@@ -50,8 +53,14 @@ def _match_CostConfigFieldTypes_with_REPORT_FIELDTYPE_CHOICES_values(ccft: CostC
             return "bool"
         case CostConfigFieldTypes.MEASUREMENT_SOURCES:  # to be refactored, set of fields
             return "char"
-        case CostConfigFieldTypes.VEWA_CATEGORY:  # eum dropdown
+        case CostConfigFieldTypes.VEWA_CATEGORY:  # enum dropdown
             return "enum_vewa_category"
+        case CostConfigFieldTypes.MONTHLY_WEIGHTS:  # enum dropdown
+            return "enum_monthly_weights"
+        case CostConfigFieldTypes.SECTION_WEIGHTS:  # enum dropdown
+            return "enum_section_weights"
+        case CostConfigFieldTypes.OBJECT_WEIGHTS:  # enum dropdown
+            return "enum_object_weights"
         case CostConfigFieldTypes.FLOAT:
             return "float"
         case CostConfigFieldTypes.INT:
@@ -213,22 +222,19 @@ class ReportItemConfiguration(GenoBase):
                 existing_repot_input_field.delete()
         # create new ReportInputField based on config
 
-        for cost in get_costs_from_config():
+        for cost in get_report_item_config():
             if cost.config and cost.config["name"] == self.item_category and cost.config["config"]:
                 configuration = cost.config
 
                 if configuration.get("config"):
                     for field in configuration.get("config").get_fields():
-                        default_val = ""
                         if field.key not in ("class", "name", "bezeichnung"):
-                            if (
-                                hasattr(configuration, field.key)
-                                and configuration[field.key] is not None
-                            ):
-                                default_val = configuration[field.key]
+                            default_val = configuration.get(field.key)
+                            if default_val is None:
+                                default_val = ""
                             ReportInputField.objects.create(
                                 name=field.key,
-                                description=field.key,
+                                description=str(field),
                                 item_configuration=self,
                                 field_type=_match_CostConfigFieldTypes_with_REPORT_FIELDTYPE_CHOICES_values(
                                     field.type

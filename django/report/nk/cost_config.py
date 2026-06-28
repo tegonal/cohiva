@@ -1,3 +1,4 @@
+import datetime
 from collections.abc import Iterator
 from dataclasses import dataclass
 from enum import Enum
@@ -10,7 +11,7 @@ from report.nk.cost import (
     NkPerRentalUnitCost,
     NkTotalCost,
 )
-from report.nk.cost.vewa import NkCostVEWACategories
+from report.nk.cost.vewa import VEWA_CATEGORY_DESCRIPTIONS, NkCostVEWACategories
 from report.nk.measurement_data import (
     NkMeasurementDataAnnual,
     NkMeasurementDataBase,
@@ -32,6 +33,9 @@ class CostConfigFieldTypes(Enum):
     FILE = 10
     JSON = 11
     VEWA_CATEGORY = 12
+    SECTION_WEIGHTS = 13
+    MONTHLY_WEIGHTS = 14
+    OBJECT_WEIGHTS = 15
 
 
 @dataclass
@@ -40,6 +44,12 @@ class CostConfigField:
     type: CostConfigFieldTypes
     required: bool = True
     subfields: list["CostConfigField | CostConfigMeasurementSourceField"] | None = None
+    verbose_name: str | None = None
+
+    def __str__(self):
+        if self.verbose_name:
+            return self.verbose_name
+        return self.key
 
 
 @dataclass
@@ -47,6 +57,54 @@ class CostConfigMeasurementSourceField:
     key: str
     supported_sources: list[type[NkMeasurementDataBase]]
     keys: list[str]
+
+
+@dataclass
+class BaseSettingsConfig:
+    config: dict
+
+    @classmethod
+    def get_fields(cls):
+        return [
+            CostConfigField("name", CostConfigFieldTypes.STRING),
+            CostConfigField("bezeichnung", CostConfigFieldTypes.STRING),
+            CostConfigField(
+                "Startjahr", CostConfigFieldTypes.INT, verbose_name="Startjahr der Abrechnung"
+            ),
+            CostConfigField(
+                "Vorlage:Abrechnung",
+                CostConfigFieldTypes.FILE,
+                verbose_name="ODT Vorlage für die Abrechnugn",
+            ),
+            CostConfigField(
+                "Vorlage:EmpfehlungAkonto",
+                CostConfigFieldTypes.FILE,
+                verbose_name="ODT Vorlage für Empfehlung Anpassung Akonto",
+            ),
+            CostConfigField(
+                "Ausgabe:LimitiereVertragsIDs",
+                CostConfigFieldTypes.JSON,
+                verbose_name="Ausgabe auf diese Vertrags IDs limitieren",
+            ),
+            CostConfigField(
+                "Ausgabe:QR-Rechnungen",
+                CostConfigFieldTypes.BOOL,
+                verbose_name="PDFs/QR-Rechnungen erstellen und buchen?",
+            ),
+            CostConfigField(
+                "Ausgabe:Plots", CostConfigFieldTypes.BOOL, verbose_name="Analyse-Plots erstellen?"
+            ),
+            CostConfigField(
+                "Vorperiode:Bezeichnung",
+                CostConfigFieldTypes.STRING,
+                verbose_name='Bezeichnung der Vorperiode z.B. "2022/2023"',
+            ),  # z.B. "2022/2023"
+            CostConfigField(
+                "Vorperiode:Datei",
+                CostConfigFieldTypes.FILE,
+                verbose_name="Datei der Vorperiode (json)",
+            ),
+        ]
 
 
 @dataclass
@@ -60,10 +118,22 @@ class CostConfig:
             CostConfigField("class", CostConfigFieldTypes.NKCOST_CLASS),
             CostConfigField("name", CostConfigFieldTypes.STRING),
             CostConfigField("bezeichnung", CostConfigFieldTypes.STRING),
-            CostConfigField("billing_group", CostConfigFieldTypes.STRING, required=False),
             CostConfigField(
-                "section_weights", CostConfigFieldTypes.STRING, required=False
-            ),  # TODO: Where to get the value from? Should this be an input_key?
+                "billing_group",
+                CostConfigFieldTypes.STRING,
+                required=False,
+                verbose_name="Kosten zusammenfassen unter (optional)",
+            ),
+            CostConfigField(
+                "monthly_weights",
+                CostConfigFieldTypes.MONTHLY_WEIGHTS,
+                verbose_name="Verteilschlüssel nach Monat",
+            ),
+            CostConfigField(
+                "section_weights",
+                CostConfigFieldTypes.SECTION_WEIGHTS,
+                verbose_name="Verteilschlüssel nach Objekttyp",
+            ),
         ]
 
 
@@ -71,7 +141,14 @@ class CostConfig:
 class NkTotalCostConfig(CostConfig):
     @classmethod
     def get_fields(cls):
-        return super().get_fields()
+        return super().get_fields() + [
+            CostConfigField(
+                "object_weights",
+                CostConfigFieldTypes.OBJECT_WEIGHTS,
+                verbose_name="Verteilschlüssel nach Mietobjekt",
+            ),
+            CostConfigField("Betrag", CostConfigFieldTypes.FLOAT),
+        ]
 
 
 @dataclass
@@ -154,8 +231,8 @@ class NkVEWACostConfig(NkTotalCostConfig):
             CostConfigField("base_cost_factor_key", CostConfigFieldTypes.INPUT_KEY),
             CostConfigField("exclude_zero_usage_units", CostConfigFieldTypes.BOOL, required=False),
             CostConfigField(
-                "common_cost_section_weights", CostConfigFieldTypes.STRING, required=False
-            ),  # TODO: Where to get the value from? Should this be an input_key?
+                "common_cost_section_weights", CostConfigFieldTypes.SECTION_WEIGHTS, required=False
+            ),
             CostConfigField(
                 "measurement_data",
                 CostConfigFieldTypes.MEASUREMENT_SOURCES,
@@ -279,9 +356,37 @@ class NkMeasurementDataEgonConfig(MeasurementSourceConfig):
         # },
 
 
-def get_costs_from_config() -> Iterator[CostConfig]:
-    ## TODO: Implement this with configuration from DB
-    ## Cost config for tests
+def get_report_item_config() -> Iterator[CostConfig | BaseSettingsConfig]:
+    """Get a list of implemented cost types that should be available in the UI"""
+    # The first element is always general settings
+    # Default values
+    default_base_settings = {
+        "name": "BaseSettings",
+        "bezeichnung": "Grundeinstellungen",
+        "Startjahr": datetime.date.today().year,
+        "config": BaseSettingsConfig,
+    }
+    yield BaseSettingsConfig(default_base_settings)
+    cost_item_types = [
+        {
+            "name": "Standard",
+            "bezeichnung": "Standard-Nebenkosten (Betrag pro Jahr, verteilt nach Schlüssel)",
+            "billing_group": "Hauswartung",
+            "class": NkTotalCost,
+            "config": NkTotalCostConfig,
+        }
+    ]
+    for cost in cost_item_types:
+        if "class" in cost:
+            yield CostConfig(cost.get("class"), cost)
+
+
+def get_costs_from_config(report) -> Iterator[CostConfig]:
+    """Get the list of the configured costs from the Report config with actual values for this run."""
+
+
+def get_costs_from_config_for_tests() -> Iterator[CostConfig]:
+    ## Test configuration that is used for tests (Warmbächli reference configuration)
     costs = [
         {
             "name": "Hauswartung_ServiceHeizungLüftung",
@@ -524,12 +629,61 @@ def get_costs_from_config() -> Iterator[CostConfig]:
 
 def _build_report_item_categories() -> tuple[tuple[str, str], ...]:
     categories: dict[str, str] = {}
-    for cost in get_costs_from_config():
-        key = cost.cost_class.__name__
+    for cost in get_report_item_config():
+        if isinstance(cost, BaseSettingsConfig):
+            key = "BaseSettingsConfig"
+        else:
+            key = cost.cost_class.__name__
         # Multiple labels per Class are possible.
         categories[cost.config.get("name", key)] = cost.config.get("bezeichnung", key)
     # order returned tuple by label
     return tuple(sorted(categories.items(), key=lambda item: (item[1], item[0])))
+
+
+def build_section_weights_choices() -> list[tuple[str, str]]:
+    ## Section weights are still hard-coded. We need
+    ## a better way to configure them in the future.
+    from report.nk.generator import NK_SECTION_WEIGHTS
+
+    return _build_weights_choices_from_dict(NK_SECTION_WEIGHTS)
+
+
+def build_monthly_weights_choices() -> list[tuple[str, str]]:
+    ## Monthly weights are still hard-coded. We need
+    ## a better way to configure them in the future.
+    from report.nk.generator import NK_MONTHLY_WEIGHTS
+
+    return _build_weights_choices_from_dict(NK_MONTHLY_WEIGHTS)
+
+
+def _build_weights_choices_from_dict(weights: dict) -> list[tuple[str, str]]:
+    choices = []
+    for weight, values in weights.items():
+        vals = []
+        for k, v in values.items():
+            vals.append(f"{k}: {v}")
+        choices.append((weight, f"{weight}: " + ", ".join(vals)))
+    return choices
+
+
+def build_vewa_category_choices() -> list[tuple[str, str]]:
+    choices = []
+    for cat in NkCostVEWACategories:
+        choices.append((cat.name, VEWA_CATEGORY_DESCRIPTIONS.get(cat.name), cat.name))
+    return choices
+
+
+def build_object_weights_choices() -> list[tuple[str, str]]:
+    return [
+        ("area", "Fläche (m2)"),
+        ("volume", "Volumen (m3)"),
+        ("rooms", "Zimmeranzahl"),
+        ("min_occupancy", "Mindestbelegung"),
+        ("uniform", "Gleichverteilung"),
+        ("nk_factor_1", "NK-Faktor 1"),
+        ("nk_factor_2", "NK-Faktor 2"),
+        ("nk_factor_3", "NK-Faktor 3"),
+    ]
 
 
 REPORT_ITEM_CATEGORY = _build_report_item_categories()

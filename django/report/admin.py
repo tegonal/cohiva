@@ -40,7 +40,7 @@ class ReportInputAdminForm(forms.ModelForm):
     def get_value_field_name(self):
         return self.value_field_name
 
-    def _get_input_field(self):
+    def _get_input_field(self) -> ReportInputField | None:
         name_id = self._get_name_id()
         if not name_id:
             return None
@@ -57,7 +57,7 @@ class ReportInputAdminForm(forms.ModelForm):
     def _get_raw_value(self):
         return getattr(self.instance, self.get_value_field_name(), "")
 
-    def _deserialize_value(self, input_field):
+    def _deserialize_value(self, input_field: ReportInputField):
         raw_value = self._get_raw_value()
         if raw_value in (None, ""):
             return ""
@@ -123,7 +123,7 @@ class ReportInputAdminForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         field_name = self.get_value_field_name()
-        if field_name in cleaned_data:
+        if cleaned_data and field_name in cleaned_data:
             cleaned_data[field_name] = self._serialize_value(cleaned_data.get(field_name))
         return cleaned_data
 

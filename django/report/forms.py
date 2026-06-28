@@ -22,11 +22,13 @@ from unfold.widgets import (
     UnfoldAdminDateWidget,
     UnfoldAdminDecimalFieldWidget,
     UnfoldAdminSelect2Widget,
+    UnfoldAdminSelectWidget,
     UnfoldAdminTextareaWidget,
     UnfoldAdminTextInputWidget,
     UnfoldBooleanSwitchWidget,
 )
 
+import report.nk.cost_config
 from geno.models import Building
 
 from .models import ReportInputField, ReportItem
@@ -130,7 +132,7 @@ class ReportJSONFormField(forms.JSONField):
 
 
 # Generic helper to construct Unfold-styled form fields for report inputs
-def _make_report_input_field(field):
+def _make_report_input_field(field: ReportInputField):
     """Return a django form Field instance for a ReportInputField-like object.
 
     This centralizes the widget mapping so migrating other forms is simpler.
@@ -183,6 +185,38 @@ def _make_report_input_field(field):
             choices=buildingMapping,
             widget=UnfoldAdminSelect2Widget(),
             help_text=desc,
+        )
+    if ft == "enum_monthly_weights":
+        return forms.ChoiceField(
+            required=False,
+            label=name,
+            help_text=desc,
+            widget=UnfoldAdminSelectWidget(),
+            choices=report.nk.cost_config.build_monthly_weights_choices(),
+        )
+    if ft == "enum_section_weights":
+        return forms.ChoiceField(
+            required=False,
+            label=name,
+            help_text=desc,
+            widget=UnfoldAdminSelectWidget(),
+            choices=report.nk.cost_config.build_section_weights_choices(),
+        )
+    if ft == "enum_object_weights":
+        return forms.ChoiceField(
+            required=False,
+            label=name,
+            help_text=desc,
+            widget=UnfoldAdminSelectWidget(),
+            choices=report.nk.cost_config.build_object_weights_choices(),
+        )
+    if ft == "enum_vewa_category":
+        return forms.ChoiceField(
+            required=False,
+            label=name,
+            help_text=desc,
+            widget=UnfoldAdminSelectWidget(),
+            choices=report.nk.cost_config.build_vewa_category_choices(),
         )
 
     # default

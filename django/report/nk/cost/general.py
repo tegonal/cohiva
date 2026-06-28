@@ -45,10 +45,12 @@ class NkTotalCost(NkCost):
 
     def get_rental_unit_weights(self, ru):
         """Use the usage as weight."""
+        if self.rental_unit_usage == "uniform":
+            ## The base class returns uniform weights
+            return super().get_rental_unit_weights(ru)
         return [
             getattr(ru, self.rental_unit_usage) / self.generator.num_months
         ] * self.generator.num_months
-        # return self.rental_unit_values[ru.id][NkCostValueType.USAGE].monthly_amounts
 
 
 class NkMonthlyCost(NkCost):

@@ -23,6 +23,13 @@ class NkCostVEWACategories(Enum):
     WATER_GENERAL = 3  # Wasser- & Abwasserkosten
 
 
+VEWA_CATEGORY_DESCRIPTIONS = {
+    NkCostVEWACategories.HEAT_WATER: "Warmwasseraufbereitung",
+    NkCostVEWACategories.HEAT_HEATING: "Heizung",
+    NkCostVEWACategories.WATER_GENERAL: "Wasser- & Abwasserkosten",
+}
+
+
 class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
     """VEWA (Verbrauchsabhängige Energie- und Wasserkostenabrechnung, vewa.ch)
 

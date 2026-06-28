@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING
 
+from django.utils.translation import gettext_lazy as _
+
 if TYPE_CHECKING:
     from report.nk.contract import NkContract
     from report.nk.generator import NkReportGenerator
@@ -49,7 +51,8 @@ class NkCost:
         self.total_values: dict[NkCostValueType, NkCostValue] = {}
         self.section_values: dict[int, dict[NkCostValueType, NkCostValue]] = {}
         self.rental_unit_values: dict[int, dict[NkCostValueType, NkCostValue]] = {}
-        self.section_weights = cost_config.get("section_weights", "default")
+        self.monthly_weights_key = cost_config.get("monthly_weights", "default")
+        self.section_weights_key = cost_config.get("section_weights", "default")
         self.add_value_type(NkCostValueType.COST, "Kosten", "CHF")
         self.add_value_type(NkCostValueType.WEIGHT, "Gewichtung", "")
         self.warnings = []
@@ -232,8 +235,25 @@ class NkCost:
         self.total_values[value_type].amount = sum(self.total_values[value_type].monthly_amounts)
 
     def get_monthly_weights(self):
-        """Default with equal weights for all months."""
-        return self.generator.num_months * [1.0]
+        monthly_weights = self.generator.monthly_weights.get(self.monthly_weights_key)
+        if monthly_weights is None:
+            raise KeyError(
+                _("Unknown monthly weights '{key' for cost '{cost_name}'").format(
+                    key=self.monthly_weights_key, cost_name=self.name
+                )
+            )
+        weights = []
+        for date in self.generator.dates:
+            month = date["start"].month
+            weight = monthly_weights.get(month)
+            if weight is None:
+                raise KeyError(
+                    _("Monthly weight for month '{month}' not found for '{key}'").format(
+                        month=month, key=self.monthly_weights_key
+                    )
+                )
+            weights.append(weight)
+        return weights
 
     def get_section_weights(self, value_type: NkCostValueType) -> dict[int, float]:
         """Return weights per section, using the configured section_weights profile if available."""
@@ -248,12 +268,12 @@ class NkCost:
         return weights
 
     def _get_weight_profile(self, value_type: NkCostValueType):
-        if self.section_weights:
-            return self.generator.section_weights.get(self.section_weights)
+        if self.section_weights_key:
+            return self.generator.section_weights.get(self.section_weights_key)
         return None
 
-    def get_rental_unit_weights(self, ru):
-        """Default with equal weights for all rental units."""
+    def get_rental_unit_weights(self, ru: "NkRentalUnit"):
+        """Default with uniform weights for all rental units (excluding virtual units)"""
         if ru.is_virtual:
             return self.generator.num_months * [0.0]
         else:
