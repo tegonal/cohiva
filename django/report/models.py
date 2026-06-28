@@ -86,14 +86,14 @@ class ReportConfiguration(GenoBase):
 
     def save_as_copy(self):
         old_report_configuration_id = self.id
-        new_report_configuration = super().save_as_copy()
+        super().save_as_copy()
         old_report_configuration = ReportConfiguration.objects.get(id=old_report_configuration_id)
         for report_item_configuration in ReportItemConfiguration.objects.filter(
             report_configuration=old_report_configuration
         ):
-            new_report_item_configuration = report_item_configuration.save_as_copy()
-            new_report_item_configuration.report_configuration = new_report_configuration
-            new_report_item_configuration.save()
+            report_item_configuration.save_as_copy()
+            report_item_configuration.report_configuration = self
+            report_item_configuration.save()
 
     class Meta:
         verbose_name = "Report-Konfiguration"
@@ -245,16 +245,16 @@ class ReportItemConfiguration(GenoBase):
 
     def save_as_copy(self):
         old_report_item_configuration_id = self.id
-        new_report_item_configuration = super().save_as_copy()
+        super().save_as_copy()
         old_report_item_configuration = ReportItemConfiguration.objects.get(
             id=old_report_item_configuration_id
         )
-        for repot_input_field in ReportInputField.objects.filter(
+        for report_input_field in ReportInputField.objects.filter(
             item_configuration=old_report_item_configuration
         ):
-            new_repot_input_field = repot_input_field.save_as_copy()
-            new_repot_input_field.report_configuration = new_report_item_configuration
-            new_repot_input_field.save()
+            report_input_field.save_as_copy()
+            report_input_field.report_configuration = self
+            report_input_field.save()
 
     class Meta:
         verbose_name = "Report-Element"
