@@ -43,6 +43,18 @@ class NkMeasurementDataAnnual(NkMeasurementDataBase):
     def load(self):
         self.data["usage"] = self.annual_value
 
+    @classmethod
+    def get_config_fields(cls, name):
+        from report.nk.cost_config import CostConfigField, CostConfigFieldTypes
+
+        return [
+            CostConfigField(
+                f"{name}_usage_value",
+                CostConfigFieldTypes.FLOAT,
+                verbose_name=f"Gesamtverbrauch {name}",
+            ),
+        ]
+
 
 class NkMeasurementDataCSVFile(NkMeasurementDataBase):
     def __init__(self, report_generator: "NkReportGenerator", measurements_config):
@@ -185,6 +197,32 @@ class NkMeasurementDataMonthlyCSVFile(NkMeasurementDataMonthly, NkMeasurementDat
                 )
             )
 
+    @classmethod
+    def get_config_fields(cls, name: str, headers: list[str]):
+        from report.nk.cost_config import CostConfigField, CostConfigFieldTypes
+
+        fields = [
+            CostConfigField(
+                f"{name}_file", CostConfigFieldTypes.FILE, verbose_name=f"CSV-Datei für {name}"
+            ),
+            # TODO: Add default value "Monat"?
+            CostConfigField(
+                f"{name}_file_headers_month",
+                CostConfigFieldTypes.STRING,
+                verbose_name=f"Spalte mit Monat in Datei für {name}",
+            ),
+        ]
+        for field in headers:
+            # TODO: Add default value {field}?
+            fields.append(
+                CostConfigField(
+                    f"{name}_file_headers_{field}",
+                    CostConfigFieldTypes.STRING,
+                    verbose_name=f"Spalte mit {field} in Datei für {name}",
+                )
+            )
+        return fields
+
 
 class NkMeasurementDataEgon(NkMeasurementDataZippedMonthly):
     @staticmethod
@@ -286,3 +324,40 @@ class NkMeasurementDataEgon(NkMeasurementDataZippedMonthly):
                 name=rental_unit_name
             )
         )
+
+    @classmethod
+    def get_config_fields(cls, name: str, headers: list[str]):
+        from report.nk.cost_config import CostConfigField, CostConfigFieldTypes
+
+        fields = [
+            CostConfigField(
+                f"{name}_file", CostConfigFieldTypes.FILE, verbose_name=f"ZIP-Datei für {name}"
+            ),
+            CostConfigField(
+                f"{name}_file_prefix",
+                CostConfigFieldTypes.STRING,
+                verbose_name=f"Prefix für CSV-Datei für {name}",
+            ),
+            # TODO: Add default value "Gebäudeeinheit"?
+            CostConfigField(
+                f"{name}_file_headers_rental_unit",
+                CostConfigFieldTypes.STRING,
+                verbose_name=f"Spalte mit Mietobjekt in Datei für {name}",
+            ),
+            # TODO: Add default value "Mieter Abrechnungsperiode"?
+            CostConfigField(
+                f"{name}_file_headers_time_period",
+                CostConfigFieldTypes.STRING,
+                verbose_name=f"Spalte mit Abrechnungsperiode in Datei für {name}",
+            ),
+        ]
+        for field in headers:
+            # TODO: Add default value {field}?
+            fields.append(
+                CostConfigField(
+                    f"{name}_file_headers_{field}",
+                    CostConfigFieldTypes.STRING,
+                    verbose_name=f"Spalte mit {field} in Datei für {name}",
+                )
+            )
+        return fields

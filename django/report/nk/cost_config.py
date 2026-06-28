@@ -21,12 +21,12 @@ from report.nk.measurement_data import (
 
 
 class CostConfigFieldTypes(Enum):
-    NKCOST_CLASS = 1
+    # NKCOST_CLASS = 1
     STRING = 2
     STRING_LIST = 3
     BOOL = 4
-    INPUT_KEY = 5
-    MEASUREMENT_SOURCES = 6
+    # INPUT_KEY = 5
+    # MEASUREMENT_SOURCES = 6
     DATE = 7
     INT = 8
     FLOAT = 9
@@ -74,7 +74,7 @@ class BaseSettingsConfig:
             CostConfigField(
                 "Vorlage:Abrechnung",
                 CostConfigFieldTypes.FILE,
-                verbose_name="ODT Vorlage für die Abrechnugn",
+                verbose_name="ODT Vorlage für die Abrechnung",
             ),
             CostConfigField(
                 "Vorlage:EmpfehlungAkonto",
@@ -115,14 +115,14 @@ class CostConfig:
     @classmethod
     def get_fields(cls):
         return [
-            CostConfigField("class", CostConfigFieldTypes.NKCOST_CLASS),
+            # CostConfigField("class", CostConfigFieldTypes.NKCOST_CLASS),
             CostConfigField("name", CostConfigFieldTypes.STRING),
             CostConfigField("bezeichnung", CostConfigFieldTypes.STRING),
             CostConfigField(
                 "billing_group",
                 CostConfigFieldTypes.STRING,
                 required=False,
-                verbose_name="Kosten zusammenfassen unter (optional)",
+                verbose_name="Kostengruppe (optional)",
             ),
             CostConfigField(
                 "monthly_weights",
@@ -147,7 +147,7 @@ class NkTotalCostConfig(CostConfig):
                 CostConfigFieldTypes.OBJECT_WEIGHTS,
                 verbose_name="Verteilschlüssel nach Mietobjekt",
             ),
-            CostConfigField("Betrag", CostConfigFieldTypes.FLOAT),
+            CostConfigField("Betrag", CostConfigFieldTypes.FLOAT, verbose_name="Gesamtkosten CHF"),
         ]
 
 
@@ -156,9 +156,33 @@ class NkPerRentalUnitCostConfig(CostConfig):
     @classmethod
     def get_fields(cls):
         return super().get_fields() + [
-            CostConfigField("fee_per_unit_key", CostConfigFieldTypes.INPUT_KEY),
-            CostConfigField("fee_per_person_key", CostConfigFieldTypes.INPUT_KEY),
-            CostConfigField("fixed_fees_key", CostConfigFieldTypes.INPUT_KEY),
+            CostConfigField(
+                "fee_per_unit",
+                CostConfigFieldTypes.FLOAT,
+                verbose_name="Betrag/Monat pro Mieteinheit",
+            ),
+            CostConfigField(
+                "fee_per_person",
+                CostConfigFieldTypes.FLOAT,
+                verbose_name="Betrag/Monat pro Person (Mindestbelegung)",
+            ),
+            CostConfigField(
+                "fixed_fees",
+                CostConfigFieldTypes.JSON,
+                verbose_name="Ausnahmen/Mietobj. mit Fixbeträgen",
+            ),
+        ]
+
+
+class NkAdminFeeCostConfig(CostConfig):
+    @classmethod
+    def get_fields(cls):
+        return super().get_fields() + [
+            CostConfigField(
+                "adminfee_percentage",
+                CostConfigFieldTypes.FLOAT,
+                verbose_name="Verwaltungsaufwand in Prozent",
+            ),
         ]
 
 
@@ -166,36 +190,69 @@ class NkPerRentalUnitCostConfig(CostConfig):
 class NkZEVStromallmendCostConfig(CostConfig):
     @classmethod
     def get_fields(cls):
-        return super().get_fields() + [
-            CostConfigField("tarif_eigenstrom_key", CostConfigFieldTypes.INPUT_KEY),
-            CostConfigField("tarif_einspeiseverguetung_key", CostConfigFieldTypes.INPUT_KEY),
-            CostConfigField("tarif_hkn_key", CostConfigFieldTypes.INPUT_KEY),
-            CostConfigField("tarif_korrektur_key", CostConfigFieldTypes.INPUT_KEY),
-            CostConfigField("korrekturen_key", CostConfigFieldTypes.INPUT_KEY),
-            CostConfigField(
-                "measurement_data",
-                CostConfigFieldTypes.MEASUREMENT_SOURCES,
-                subfields=[
-                    CostConfigMeasurementSourceField(
-                        "building",
-                        supported_sources=[NkMeasurementDataMonthlyCSVFile],
-                        keys=["strom_bezug_zev", "strom_ruecklieferung_ew"],
-                    ),
-                    CostConfigMeasurementSourceField(
-                        "rental_units",
-                        supported_sources=[NkMeasurementDataEgon],
-                        keys=[
-                            "strom_ew_nieder",
-                            "strom_ew_hoch",
-                            "strom_solar",
-                            "chf_netz_nieder",
-                            "chf_netz_hoch",
-                        ],
-                    ),
+        return (
+            super().get_fields()
+            + [
+                CostConfigField(
+                    "tarif_eigenstrom",
+                    CostConfigFieldTypes.FLOAT,
+                    verbose_name="Tarif Eigenstrom (CHF/kWh)",
+                ),
+                CostConfigField(
+                    "tarif_einspeiseverguetung",
+                    CostConfigFieldTypes.JSON,
+                    verbose_name="Tarif Einspeisevergütung (CHF/kWh für jeden Monat)",
+                ),
+                CostConfigField(
+                    "tarif_hkn", CostConfigFieldTypes.FLOAT, verbose_name="Tarif HKN (CHF/kWh)"
+                ),
+                CostConfigField(
+                    "tarif_korrekturen",
+                    CostConfigFieldTypes.JSON,
+                    verbose_name="Tarif für Korrekturen (CHF/kWh)",
+                ),
+                CostConfigField(
+                    "korrekturen", CostConfigFieldTypes.JSON, verbose_name="Korrekturen (optional)"
+                ),
+            ]
+            + NkMeasurementDataMonthlyCSVFile.get_config_fields(
+                "Liegenschaft", headers=["strom_bezug_zev", "strom_ruecklieferung_ew"]
+            )
+            + NkMeasurementDataEgon.get_config_fields(
+                "Mietobjekte",
+                headers=[
+                    "strom_ew_nieder",
+                    "strom_ew_hoch",
+                    "strom_solar",
+                    "chf_netz_nieder",
+                    "chf_netz_hoch",
                 ],
-            ),
-        ]
-        # Example generated measurement sources config:
+            )
+        )
+        #     CostConfigField(
+        #         "measurement_data",
+        #         CostConfigFieldTypes.MEASUREMENT_SOURCES,
+        #         subfields=[
+        #             CostConfigMeasurementSourceField(
+        #                 "building",
+        #                 supported_sources=[NkMeasurementDataMonthlyCSVFile],
+        #                 keys=["strom_bezug_zev", "strom_ruecklieferung_ew"],
+        #             ),
+        #             CostConfigMeasurementSourceField(
+        #                 "rental_units",
+        #                 supported_sources=[NkMeasurementDataEgon],
+        #                 keys=[
+        #                     "strom_ew_nieder",
+        #                     "strom_ew_hoch",
+        #                     "strom_solar",
+        #                     "chf_netz_nieder",
+        #                     "chf_netz_hoch",
+        #                 ],
+        #             ),
+        #         ],
+        #     ),
+        # ]
+        # # Example generated measurement sources config:
         #
         # "building": {
         #    "class": NkMeasurementDataMonthlyCSVFile,
@@ -227,28 +284,42 @@ class NkVEWACostConfig(NkTotalCostConfig):
     @classmethod
     def get_fields(cls):
         return super().get_fields() + [
-            CostConfigField("vewa_category", CostConfigFieldTypes.VEWA_CATEGORY),
-            CostConfigField("base_cost_factor_key", CostConfigFieldTypes.INPUT_KEY),
-            CostConfigField("exclude_zero_usage_units", CostConfigFieldTypes.BOOL, required=False),
             CostConfigField(
-                "common_cost_section_weights", CostConfigFieldTypes.SECTION_WEIGHTS, required=False
+                "vewa_category", CostConfigFieldTypes.VEWA_CATEGORY, verbose_name="VEWA Kategorie"
             ),
             CostConfigField(
-                "measurement_data",
-                CostConfigFieldTypes.MEASUREMENT_SOURCES,
-                subfields=[
-                    CostConfigMeasurementSourceField(
-                        "building",
-                        supported_sources=[NkMeasurementDataAnnual],
-                        keys=["usage", "costs"],
-                    ),
-                    CostConfigMeasurementSourceField(
-                        "rental_units",
-                        supported_sources=[NkMeasurementDataEgon],
-                        keys=["usage"],
-                    ),
-                ],
+                "base_cost_factor",
+                CostConfigFieldTypes.FLOAT,
+                verbose_name="Grundkostenanteil (z.B. 0.3 für 30%)",
             ),
+            CostConfigField(
+                "exclude_zero_usage_units",
+                CostConfigFieldTypes.BOOL,
+                required=False,
+                verbose_name="Keine Grundkosten wenn kein Verbrauch",
+            ),
+            CostConfigField(
+                "common_cost_section_weights",
+                CostConfigFieldTypes.SECTION_WEIGHTS,
+                required=False,
+                verbose_name="Verteilschlüssel für allgemeine Kosten nach Objekttyp",
+            ),
+            # CostConfigField(
+            #     "measurement_data",
+            #     CostConfigFieldTypes.MEASUREMENT_SOURCES,
+            #     subfields=[
+            #         CostConfigMeasurementSourceField(
+            #             "building",
+            #             supported_sources=[NkMeasurementDataAnnual],
+            #             keys=["usage", "costs"],
+            #         ),
+            #         CostConfigMeasurementSourceField(
+            #             "rental_units",
+            #             supported_sources=[NkMeasurementDataEgon],
+            #             keys=["usage"],
+            #         ),
+            #     ],
+            # ),
         ]
         # Example generated config:
         #
@@ -278,88 +349,58 @@ class NkVEWACostConfig(NkTotalCostConfig):
 
 
 @dataclass
-class MeasurementSourceConfigField:
-    name: str
-    type: CostConfigFieldTypes
-    required: bool = True
-    subfields: list[str] | None = None
-
-
-@dataclass
-class MeasurementSourceConfig:
-    pass
-
-
-@dataclass
-class NkMeasurementDataAnnualConfig(MeasurementSourceConfig):
+class NkVEWACostConfigAnnual(NkVEWACostConfig):
     @classmethod
     def get_fields(cls):
-        return [MeasurementSourceConfigField("value_key", CostConfigFieldTypes.INPUT_KEY)]
-        # Example generated measurement sources config:
-        #
-        # "measurement_data": {
-        #     "building": {
-        #         "class": NkMeasurementDataAnnual,
-        #         "value_key": "Messdaten:Wasserverbrauch",
-        #     },
+        return super().get_fields() + NkMeasurementDataAnnual.get_config_fields("Liegenschaft")
 
 
 @dataclass
-class NkMeasurementDataMonthlyConfig(MeasurementSourceConfig):
+class NkVEWACostConfigMonthly(NkVEWACostConfig):
     @classmethod
     def get_fields(cls):
-        return [
-            MeasurementSourceConfigField("file_key", CostConfigFieldTypes.INPUT_KEY),
-            MeasurementSourceConfigField(
-                "required_headers", CostConfigFieldTypes.STRING_LIST, subfields=["month"]
-            ),
-        ]
-        # Example generated measurement sources config:
-        #
+        return super().get_fields() + NkMeasurementDataMonthlyCSVFile.get_config_fields(
+            "Liegenschaft", headers=["Kosten"]
+        )
+
+
+@dataclass
+class NkVEWACostConfigMonthlyEGON(NkVEWACostConfig):
+    @classmethod
+    def get_fields(cls):
+        return (
+            super().get_fields()
+            + NkMeasurementDataMonthlyCSVFile.get_config_fields("Liegenschaft", headers=["Kosten"])
+            + NkMeasurementDataEgon.get_config_fields("Mietobjekte", headers=["Verbrauch"])
+        )
+
+        # Should generate:
         # "building": {
-        #    "class": NkMeasurementDataMonthlyCSVFile,
-        #    "file_key": "Messdaten:Liegenschaft",
-        #    "headers": {
-        #        "month": "Monat",
-        #        "strom_bezug_zev": "Strom_kwh_egon",  # kWh bezogen von EW, gem. Messung durch ZEV intern
-        #        "strom_ruecklieferung_ew": "Strom_kwh_ruecklieferung",  # kWh rückgeliefert, gem. Messung durch EW
-        #    },
-        # },
-
-
-@dataclass
-class NkMeasurementDataEgonConfig(MeasurementSourceConfig):
-    @classmethod
-    def get_fields(cls):
-        return [
-            MeasurementSourceConfigField("file_key", CostConfigFieldTypes.INPUT_KEY),
-            MeasurementSourceConfigField("file_prefix", CostConfigFieldTypes.STRING),
-            MeasurementSourceConfigField(
-                "required_headers",
-                CostConfigFieldTypes.STRING_LIST,
-                subfields=["rental_unit", "time_period"],
-            ),
-        ]
-        # Example generated measurement sources config:
-        #
-        # "measurement_data": {
-        #     "rental_units": {
-        #         "class": NkMeasurementDataEgon,
-        #         "file_key": "Messdaten:Mieteinheiten",
-        #         "file_prefix": "egon_Waerme",
-        #         "headers": {
-        #             "rental_unit": "Gebäudeeinheit",
-        #             "time_period": "Mieter Abrechnungsperiode",
-        #             "usage": "Warmwasser Verbrauch (Kubikmeter)",
-        #         },
-        #     },
-        # },
+        #      "class": NkMeasurementDataMonthlyCSVFile,
+        #      "file_key": "Messdaten:Liegenschaft",
+        #      "headers": {
+        #          "month": "Monat",
+        #          "costs": "Fernwaerme_Warmwasser",
+        #      },
+        #  },
+        #  "rental_units": {
+        #      "class": NkMeasurementDataEgon,
+        #      "file_key": "Messdaten:Mieteinheiten",
+        #      "file_prefix": "egon_Waerme",
+        #      "headers": {
+        #          "rental_unit": "Gebäudeeinheit",
+        #          "time_period": "Mieter Abrechnungsperiode",
+        #          "usage": "Warmwasser Verbrauch (Kubikmeter)",
+        #      },
+        #  },
 
 
 def get_report_item_config() -> Iterator[CostConfig | BaseSettingsConfig]:
-    """Get a list of implemented cost types that should be available in the UI"""
+    """Get a list of implemented cost types that should be available in the UI
+
+    The configuration can contain default values for some fields.
+    """
     # The first element is always general settings
-    # Default values
     default_base_settings = {
         "name": "BaseSettings",
         "bezeichnung": "Grundeinstellungen",
@@ -371,10 +412,54 @@ def get_report_item_config() -> Iterator[CostConfig | BaseSettingsConfig]:
         {
             "name": "Standard",
             "bezeichnung": "Standard-Nebenkosten (Betrag pro Jahr, verteilt nach Schlüssel)",
-            "billing_group": "Hauswartung",
+            # "billing_group": "Hauswartung",
             "class": NkTotalCost,
             "config": NkTotalCostConfig,
-        }
+        },
+        {
+            "name": "VEWA-Annual",
+            "bezeichnung": "Wärme/Wasser aufgrund Gesamtkosten und Gesamtverbrauch",
+            "class": NkCostVEWA,
+            "config": NkVEWACostConfigAnnual,
+        },
+        {
+            "name": "VEWA-Monthly",
+            "bezeichnung": "Wärme/Wasser aufgrund Kosten pro Monat",
+            "class": NkCostVEWA,
+            "config": NkVEWACostConfigMonthly,
+        },
+        {
+            "name": "VEWA-MonthlyEGON",
+            "bezeichnung": "Wärme/Wasser aufgrund Kosten pro Monat und Verbrauch von EGON",
+            "class": NkCostVEWA,
+            "config": NkVEWACostConfigMonthlyEGON,
+        },
+        {
+            "name": "VEWA-AnnualEGON",
+            "bezeichnung": "Wärme/Wasser aufgrund Gesamtkosten und Verbrauch von EGON",
+            "class": NkCostVEWA,
+            "config": NkVEWACostConfigMonthlyEGON,
+        },
+        {
+            "name": "ZEV_Stromallmend",
+            "bezeichnung": "ZEV-Abrechnung mit dem Stromallmend-Modell",
+            "billing_group": "Stromkosten",
+            "class": NkCostZEVStromallmend,
+            "config": NkZEVStromallmendCostConfig,
+        },
+        {
+            "name": "PerRentalUnit",
+            "bezeichnung": "Gebühren nach Mieteinheit und Personen Mindestbelegung",
+            "class": NkPerRentalUnitCost,
+            "config": NkPerRentalUnitCostConfig,
+        },
+        {
+            "name": "Verwaltungsaufwand",
+            "bezeichnung": "Verwaltungsaufwand als Prozentsatz der Gesamtkosten",
+            "class": NkAdminFeeCost,
+            "config": NkAdminFeeCostConfig,
+            "fee_percentage": "2.0",
+        },
     ]
     for cost in cost_item_types:
         if "class" in cost:
@@ -669,7 +754,7 @@ def _build_weights_choices_from_dict(weights: dict) -> list[tuple[str, str]]:
 def build_vewa_category_choices() -> list[tuple[str, str]]:
     choices = []
     for cat in NkCostVEWACategories:
-        choices.append((cat.name, VEWA_CATEGORY_DESCRIPTIONS.get(cat.name), cat.name))
+        choices.append((cat.value, VEWA_CATEGORY_DESCRIPTIONS.get(cat, cat.name)))
     return choices
 
 

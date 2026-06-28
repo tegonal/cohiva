@@ -43,16 +43,16 @@ REPORT_FIELDTYPE_CHOICES = (
 
 def _match_CostConfigFieldTypes_with_REPORT_FIELDTYPE_CHOICES_values(ccft: CostConfigFieldTypes):
     match ccft:
-        case CostConfigFieldTypes.INPUT_KEY:
-            return "char"
+        # case CostConfigFieldTypes.INPUT_KEY:
+        #    return "char"
         case CostConfigFieldTypes.STRING:
             return "char"
-        case CostConfigFieldTypes.STRING_LIST:
-            return "char"
+        # case CostConfigFieldTypes.STRING_LIST:
+        #    return "char"
         case CostConfigFieldTypes.BOOL:
             return "bool"
-        case CostConfigFieldTypes.MEASUREMENT_SOURCES:  # to be refactored, set of fields
-            return "char"
+        # case CostConfigFieldTypes.MEASUREMENT_SOURCES:  # to be refactored, set of fields
+        #    return "char"
         case CostConfigFieldTypes.VEWA_CATEGORY:  # enum dropdown
             return "enum_vewa_category"
         case CostConfigFieldTypes.MONTHLY_WEIGHTS:  # enum dropdown
