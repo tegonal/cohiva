@@ -31,9 +31,11 @@ class ReportInputAdminForm(forms.ModelForm):
             return
 
         field_name = self.get_value_field_name()
+
+        # Transform field values loaded from the model to match the format
+        # expected by the form field
+        self.initial[field_name] = self._deserialize_value(input_field)
         self.fields[field_name] = _make_report_input_field(input_field)
-        self.fields[field_name].required = False
-        self.fields[field_name].initial = self._deserialize_value(input_field)
 
     def get_value_field_name(self):
         return self.value_field_name
