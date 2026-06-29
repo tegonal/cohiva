@@ -1,4 +1,6 @@
+from django.contrib import auth
 from django.db import models
+from oauth2_provider.models import AbstractApplication
 from wagtail import blocks
 from wagtail.admin.panels import FieldPanel
 from wagtail.fields import StreamField
@@ -6,6 +8,8 @@ from wagtail.images.blocks import ImageChooserBlock
 from wagtail.models import Page
 
 from geno.models import Address, Building, GenoBase
+
+UserModel = auth.get_user_model()
 
 
 class PortalPage(Page):
@@ -120,3 +124,12 @@ class TenantAdmin(GenoBase):
 
     def list_active_buildings(self):
         return ", ".join([str(b) for b in self.buildings.filter(active=True)])
+
+
+class OAuthAppFirstLogin(models.Model):
+    user = models.ForeignKey(UserModel, on_delete=models.CASCADE)
+    application = models.ForeignKey(AbstractApplication, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "application")
