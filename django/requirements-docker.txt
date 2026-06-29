@@ -418,8 +418,5 @@ zope-interface==7.2
 zope-proxy==6.1
     # via zope-deferredimport
 
-# The following packages are considered to be unsafe in a requirements file:
-setuptools==82.0.1
-
 # Packages added/managed by install.py:
 sepa==0.5.4+mst1
