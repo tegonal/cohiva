@@ -1754,8 +1754,8 @@ def get_active_contracts(date=None, pre_select=None, include_subcontracts=False)
 
 
 INVOICE_OBJECT_TYPE_CHOICES = (
-    ("Address", "Adresse"),
-    ("Contract", "Vertrag"),
+    ("Address", _("Address/Person")),
+    ("Contract", _("Contract")),
 )
 
 

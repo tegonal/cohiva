@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Cohiva 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-11 13:34+0200\n"
+"POT-Creation-Date: 2026-06-29 14:03+0200\n"
 "PO-Revision-Date: 2025-10-21 01:30+0200\n"
 "Last-Translator: Cohiva Development Team\n"
 "Language-Team: German\n"
@@ -21,70 +21,70 @@ msgstr ""
 msgid "Invalid AHV number"
 msgstr "Ungültige AHV Nummer"
 
-#: cohiva/settings_defaults.py:1035
+#: cohiva/settings_defaults.py:1046
 msgid "Stammdaten"
 msgstr "Stammdaten"
 
-#: cohiva/settings_defaults.py:1040
+#: cohiva/settings_defaults.py:1051
 msgid "Adressen/Personen"
 msgstr "Adressen/Personen"
 
-#: cohiva/settings_defaults.py:1047 cohiva/settings_defaults.py:1097
-#: cohiva/settings_defaults.py:1139 cohiva/settings_defaults.py:1177
-#: cohiva/settings_defaults.py:1214 cohiva/settings_defaults.py:1249
-#: cohiva/settings_defaults.py:1273
+#: cohiva/settings_defaults.py:1058 cohiva/settings_defaults.py:1108
+#: cohiva/settings_defaults.py:1150 cohiva/settings_defaults.py:1188
+#: cohiva/settings_defaults.py:1225 cohiva/settings_defaults.py:1260
+#: cohiva/settings_defaults.py:1284
 msgid "Erweitert"
 msgstr "Erweitert"
 
-#: cohiva/settings_defaults.py:1060
+#: cohiva/settings_defaults.py:1071
 msgid "Erweiterte Konfiguration"
 msgstr "Erweiterte Konfiguration"
 
-#: cohiva/settings_defaults.py:1067
+#: cohiva/settings_defaults.py:1078
 msgid "Mitglieder"
 msgstr "Mitglieder"
 
-#: cohiva/settings_defaults.py:1106
+#: cohiva/settings_defaults.py:1117
 msgid "Vermietung"
 msgstr "Vermietung"
 
-#: cohiva/settings_defaults.py:1153
+#: cohiva/settings_defaults.py:1164
 msgid "Gemeinschaft"
 msgstr "Gemeinschaft"
 
-#: cohiva/settings_defaults.py:1189
+#: cohiva/settings_defaults.py:1200
 msgid "Inkasso"
 msgstr "Inkasso"
 
-#: cohiva/settings_defaults.py:1224
+#: cohiva/settings_defaults.py:1235
 msgid "Finanzierung"
 msgstr "Finanzierung"
 
-#: cohiva/settings_defaults.py:1258
+#: cohiva/settings_defaults.py:1269
 msgid "Dokumente & Kommunikation"
 msgstr "Dokumente & Kommunikation"
 
-#: cohiva/settings_defaults.py:1287
+#: cohiva/settings_defaults.py:1297
 msgid "Einstellungen"
 msgstr ""
 
-#: cohiva/settings_defaults.py:1290
+#: cohiva/settings_defaults.py:1300
 msgid "Report-Konfiguration"
 msgstr ""
 
-#: cohiva/settings_defaults.py:1298
+#: cohiva/settings_defaults.py:1308
 msgid "Systemadministration"
 msgstr "Systemadministration"
 
-#: cohiva/settings_defaults.py:1357
+#: cohiva/settings_defaults.py:1379
 msgid "Dokumentation/Wiki"
 msgstr ""
 
-#: cohiva/settings_defaults.py:1362
+#: cohiva/settings_defaults.py:1384
 msgid "GitHub Issues"
 msgstr ""
 
-#: cohiva/settings_defaults.py:1367
+#: cohiva/settings_defaults.py:1389
 msgid "Cohiva Website"
 msgstr "Cohiva Website"
 
@@ -123,31 +123,31 @@ msgstr "Alle Anwendungen"
 msgid "You don’t have permission to view or edit anything."
 msgstr "Sie haben keine Berechtigung, etwas anzusehen oder zu bearbeiten."
 
-#: geno/admin.py:259
+#: geno/admin.py:425
 msgid "Weitere Aktionen"
 msgstr "Weitere Aktionen"
 
-#: geno/admin.py:266 geno/admin.py:736
+#: geno/admin.py:432 geno/admin.py:902
 msgid "Export"
 msgstr "Export"
 
-#: geno/admin.py:275
+#: geno/admin.py:441
 msgid "Export ADIT"
 msgstr "Export ADIT"
 
-#: geno/admin.py:745
+#: geno/admin.py:911
 msgid "Export per Ende Vorjahr"
 msgstr "Export per Ende Vorjahr"
 
-#: geno/admin.py:1344
+#: geno/admin.py:1510
 msgid "Report Pflichtanteile/Belegung"
 msgstr "Report Pflichtanteile/Belegung"
 
-#: geno/admin.py:1353
+#: geno/admin.py:1519
 msgid "Untervertrag hinzufügen"
 msgstr "Untervertrag hinzufügen"
 
-#: geno/admin.py:1644
+#: geno/admin.py:1819
 msgid "Mietobjektespiegel"
 msgstr "Mietobjektespiegel"
 
@@ -211,7 +211,6 @@ msgid "ist nicht vorhanden"
 msgstr ""
 
 #: geno/forms.py:169
-#, python-brace-format
 msgid "ist {}"
 msgstr ""
 
@@ -575,9 +574,17 @@ msgstr ""
 msgid "Übersicht per Stichtag"
 msgstr ""
 
-#: geno/models.py:821 geno/models.py:823
+#: geno/models.py:834
 msgid "Membership durations cannot overlap"
 msgstr "Die Laufzeiten der Mitgliedschaften dürfen sich nicht überschneiden"
+
+#: geno/models.py:1757
+msgid "Address/Person"
+msgstr "Adresse/Person"
+
+#: geno/models.py:1758
+msgid "Contract"
+msgstr "Vertrag"
 
 #: geno/tables.py:110
 #, python-format
@@ -616,10 +623,6 @@ msgstr ""
 
 #: geno/tables.py:136
 msgid "Letzte Zahlung"
-msgstr ""
-
-#: geno/tables.py:144 geno/views.py:1433
-msgid "Details"
 msgstr ""
 
 #: geno/tables.py:158
@@ -1100,6 +1103,10 @@ msgstr ""
 msgid "Name/Adresse"
 msgstr ""
 
+#: geno/views.py:1433
+msgid "Details"
+msgstr ""
+
 #: geno/views.py:1587
 msgid "Darlehen Details"
 msgstr ""
@@ -1311,17 +1318,14 @@ msgid "Import-Auftrag nicht gefunden."
 msgstr ""
 
 #: importer/admin.py:112
-#, python-brace-format
 msgid "Import-Auftrag kann nicht verarbeitet werden. Status: {}"
 msgstr ""
 
 #: importer/admin.py:124
-#, python-brace-format
 msgid "Import erfolgreich verarbeitet: {} Datensätze importiert, {} Fehler"
 msgstr ""
 
 #: importer/admin.py:131
-#, python-brace-format
 msgid "Import fehlgeschlagen: {}"
 msgstr ""
 
@@ -1540,18 +1544,29 @@ msgstr ""
 msgid "Zeile hat keine Daten"
 msgstr ""
 
-#: report/nk/cost/vewa.py:53
+#: report/nk/cost/base.py:241
+#, python-brace-format
+msgid "Unknown monthly weights '{key}' for cost '{cost_name}'"
+msgstr ""
+"Unbekannter monatlicher Gewichtungsschlüssel '{key}' für Kosten '{cost_name}'"
+
+#: report/nk/cost/base.py:251
+#, python-brace-format
+msgid "Monthly weight for month '{month}' not found for '{key}'"
+msgstr "Montaliche Gewichtung für Monat '{month}' nicht gefunden für '{key}'"
+
+#: report/nk/cost/vewa.py:60
 #, python-brace-format
 msgid "No total costs found for {cost_name}"
 msgstr "Kein Total der Kosten gefunden für {cost_name}"
 
-#: report/nk/cost/vewa.py:237 report/nk/cost/vewa.py:348
-#: report/nk/cost/vewa.py:420
+#: report/nk/cost/vewa.py:244 report/nk/cost/vewa.py:355
+#: report/nk/cost/vewa.py:437
 #, python-brace-format
 msgid "Invalid VEWA category: {category}"
 msgstr "Ungültige VEWA-Kategorie: {category}"
 
-#: report/nk/cost/vewa.py:414
+#: report/nk/cost/vewa.py:431
 #, python-brace-format
 msgid "The base cost factor is not in the range 0.0 - 1.0: {factor}"
 msgstr "Der Basis-Kostenfaktor ist nicht im Bereich 0.0 - 1.0: {factor}"
@@ -1561,36 +1576,38 @@ msgstr "Der Basis-Kostenfaktor ist nicht im Bereich 0.0 - 1.0: {factor}"
 msgid "Unknown rate for correction: {tarif}"
 msgstr "Unbekannter Terif für die Korrektur: {tarif}"
 
-#: report/nk/measurement_data.py:73
+#: report/nk/measurement_data.py:85
 #, python-brace-format
 msgid "Duplicate header {title} in the measurement CSV file"
 msgstr "Doppelte Spalte {title} in der Messdaten CSV-Datei"
 
-#: report/nk/measurement_data.py:79
+#: report/nk/measurement_data.py:91
 #, python-brace-format
 msgid "Could not find header {title} in the measurement CSV file"
 msgstr "Konnte Spalte {title} in der Messdaten CSV-Datei nicht finden"
 
-#: report/nk/measurement_data.py:148
+#: report/nk/measurement_data.py:160
 msgid "Number of months in measurement data does not match the billing period."
-msgstr "Die Anzahl Monate der Messdaten stimmt nicht mit der Abrechnungsperiode überein."
+msgstr ""
+"Die Anzahl Monate der Messdaten stimmt nicht mit der Abrechnungsperiode "
+"überein."
 
-#: report/nk/measurement_data.py:179
+#: report/nk/measurement_data.py:191
 #, python-brace-format
 msgid "Unexpected month name {month} for period {period}"
 msgstr "Unerwarteter Monat {month} für Periode {period}"
 
-#: report/nk/measurement_data.py:207
+#: report/nk/measurement_data.py:245
 #, python-brace-format
 msgid "Unusual measurement period {period}"
 msgstr "Unübliche Messperiode {period}"
 
-#: report/nk/measurement_data.py:239
+#: report/nk/measurement_data.py:277
 #, python-brace-format
 msgid "Adding additional measurement for month index {month_index}"
 msgstr "Füge zusätzliche Messung zu Monat mit Index {month_index} hinzu"
 
-#: report/nk/measurement_data.py:285
+#: report/nk/measurement_data.py:323
 #, python-brace-format
 msgid "Invalid rental unit name '{name}' in the measurement data."
 msgstr "Ungültige Bezeichnung für Mietobjekt '{name}' in den Messdaten."

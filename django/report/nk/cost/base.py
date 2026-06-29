@@ -238,7 +238,7 @@ class NkCost:
         monthly_weights = self.generator.monthly_weights.get(self.monthly_weights_key)
         if monthly_weights is None:
             raise KeyError(
-                _("Unknown monthly weights '{key' for cost '{cost_name}'").format(
+                _("Unknown monthly weights '{key}' for cost '{cost_name}'").format(
                     key=self.monthly_weights_key, cost_name=self.name
                 )
             )
