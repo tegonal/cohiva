@@ -76,7 +76,10 @@ class BooleanFieldDefaultTrueListFilter(admin.BooleanFieldListFilter):
 
     def __init__(self, field, request, params, model, model_admin, field_path):
         super().__init__(field, request, params, model, model_admin, field_path)
-        self.lookup_val = self.used_parameters.get(self.lookup_kwarg, True)
+        if self.lookup_val is None:
+            self.lookup_val = True
+        elif self.lookup_val in ("1", "0"):
+            self.lookup_val = bool(int(self.lookup_val))
         # Add the model name to the label if the filter uses a boolean field of a related object.
         if field.model and field.model != model:
             self.title = f"{self.title} ({field.model._meta.verbose_name.title()})"
