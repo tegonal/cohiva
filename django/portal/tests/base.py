@@ -20,16 +20,10 @@ class PortalTestCase(BaseTestCase):
         portal_testdata.create_tenants(cls)
 
     def get_secondary(self, uri):
-        if DJANGO_VERSION < (4, 2):
-            return self.client.get(uri, headers={"host": settings.PORTAL_SECONDARY_HOST})
-        else:
-            return self.client.get(uri, headers={"host": settings.PORTAL_SECONDARY_HOST})
+        return self.client.get(uri, headers={"host": settings.PORTAL_SECONDARY_HOST})
 
     def post_secondary(self, uri, data):
-        if DJANGO_VERSION < (4, 2):
-            return self.client.post(uri, data, headers={"host": settings.PORTAL_SECONDARY_HOST})
-        else:
-            return self.client.post(uri, data, headers={"host": settings.PORTAL_SECONDARY_HOST})
+        return self.client.post(uri, data, headers={"host": settings.PORTAL_SECONDARY_HOST})
 
     # def setUp(self):
     #    self.client.login(username='superuser', password='secret')
