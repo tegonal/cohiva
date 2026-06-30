@@ -1,4 +1,3 @@
-from django import VERSION as DJANGO_VERSION
 from django.conf import settings
 
 import geno.tests.data as geno_testdata

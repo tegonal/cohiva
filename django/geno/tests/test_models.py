@@ -1,15 +1,12 @@
 from datetime import date
 from unittest.mock import patch
 
-import django
 from django.conf import settings
-from django.test import TestCase
+from django.core.exceptions import ValidationError
+from django.db.utils import IntegrityError
+from django.test import TestCase, override_settings
 from django.urls import NoReverseMatch, reverse
 
-from django.db.utils import IntegrityError
-from django.test import override_settings
-
-from django.core.exceptions import ValidationError
 from geno.models import Address, InvoiceCategory, Member, RegistrationEvent
 
 from .base import GenoAdminTestCase
