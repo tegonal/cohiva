@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Cohiva 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-11 13:34+0200\n"
+"POT-Creation-Date: 2026-07-01 17:05+0200\n"
 "PO-Revision-Date: 2025-10-21 01:30+0200\n"
 "Last-Translator: Cohiva Development Team\n"
 "Language-Team: German\n"
@@ -21,62 +21,62 @@ msgstr ""
 msgid "Invalid AHV number"
 msgstr "Ungültige AHV Nummer"
 
-#: cohiva/settings_defaults.py:1035
+#: cohiva/settings_defaults.py:1050
 msgid "Stammdaten"
 msgstr "Stammdaten"
 
-#: cohiva/settings_defaults.py:1040
+#: cohiva/settings_defaults.py:1055
 msgid "Adressen/Personen"
 msgstr "Adressen/Personen"
 
-#: cohiva/settings_defaults.py:1047 cohiva/settings_defaults.py:1097
-#: cohiva/settings_defaults.py:1139 cohiva/settings_defaults.py:1177
-#: cohiva/settings_defaults.py:1214 cohiva/settings_defaults.py:1249
-#: cohiva/settings_defaults.py:1273
+#: cohiva/settings_defaults.py:1062 cohiva/settings_defaults.py:1112
+#: cohiva/settings_defaults.py:1154 cohiva/settings_defaults.py:1192
+#: cohiva/settings_defaults.py:1229 cohiva/settings_defaults.py:1264
+#: cohiva/settings_defaults.py:1288
 msgid "Erweitert"
 msgstr "Erweitert"
 
-#: cohiva/settings_defaults.py:1060
+#: cohiva/settings_defaults.py:1075
 msgid "Erweiterte Konfiguration"
 msgstr "Erweiterte Konfiguration"
 
-#: cohiva/settings_defaults.py:1067
+#: cohiva/settings_defaults.py:1082
 msgid "Mitglieder"
 msgstr "Mitglieder"
 
-#: cohiva/settings_defaults.py:1106
+#: cohiva/settings_defaults.py:1121
 msgid "Vermietung"
 msgstr "Vermietung"
 
-#: cohiva/settings_defaults.py:1153
+#: cohiva/settings_defaults.py:1168
 msgid "Gemeinschaft"
 msgstr "Gemeinschaft"
 
-#: cohiva/settings_defaults.py:1189
+#: cohiva/settings_defaults.py:1204
 msgid "Inkasso"
 msgstr "Inkasso"
 
-#: cohiva/settings_defaults.py:1224
+#: cohiva/settings_defaults.py:1239
 msgid "Finanzierung"
 msgstr "Finanzierung"
 
-#: cohiva/settings_defaults.py:1258
+#: cohiva/settings_defaults.py:1273
 msgid "Dokumente & Kommunikation"
 msgstr "Dokumente & Kommunikation"
 
-#: cohiva/settings_defaults.py:1286
+#: cohiva/settings_defaults.py:1301
 msgid "Systemadministration"
 msgstr "Systemadministration"
 
-#: cohiva/settings_defaults.py:1357
+#: cohiva/settings_defaults.py:1374
 msgid "Dokumentation/Wiki"
 msgstr ""
 
-#: cohiva/settings_defaults.py:1362
+#: cohiva/settings_defaults.py:1379
 msgid "GitHub Issues"
 msgstr ""
 
-#: cohiva/settings_defaults.py:1367
+#: cohiva/settings_defaults.py:1384
 msgid "Cohiva Website"
 msgstr "Cohiva Website"
 
@@ -115,31 +115,31 @@ msgstr "Alle Anwendungen"
 msgid "You don’t have permission to view or edit anything."
 msgstr "Sie haben keine Berechtigung, etwas anzusehen oder zu bearbeiten."
 
-#: geno/admin.py:250
+#: geno/admin.py:416
 msgid "Weitere Aktionen"
 msgstr "Weitere Aktionen"
 
-#: geno/admin.py:257 geno/admin.py:727
+#: geno/admin.py:423 geno/admin.py:893
 msgid "Export"
 msgstr "Export"
 
-#: geno/admin.py:266
+#: geno/admin.py:432
 msgid "Export ADIT"
 msgstr "Export ADIT"
 
-#: geno/admin.py:736
+#: geno/admin.py:902
 msgid "Export per Ende Vorjahr"
 msgstr "Export per Ende Vorjahr"
 
-#: geno/admin.py:1335
+#: geno/admin.py:1501
 msgid "Report Pflichtanteile/Belegung"
 msgstr "Report Pflichtanteile/Belegung"
 
-#: geno/admin.py:1344
+#: geno/admin.py:1510
 msgid "Untervertrag hinzufügen"
 msgstr "Untervertrag hinzufügen"
 
-#: geno/admin.py:1644
+#: geno/admin.py:1810
 msgid "Mietobjektespiegel"
 msgstr "Mietobjektespiegel"
 
@@ -203,7 +203,6 @@ msgid "ist nicht vorhanden"
 msgstr ""
 
 #: geno/forms.py:169
-#, python-brace-format
 msgid "ist {}"
 msgstr ""
 
@@ -567,7 +566,7 @@ msgstr ""
 msgid "Übersicht per Stichtag"
 msgstr ""
 
-#: geno/models.py:821 geno/models.py:823
+#: geno/models.py:817
 msgid "Membership durations cannot overlap"
 msgstr "Die Laufzeiten der Mitgliedschaften dürfen sich nicht überschneiden"
 
@@ -608,10 +607,6 @@ msgstr ""
 
 #: geno/tables.py:136
 msgid "Letzte Zahlung"
-msgstr ""
-
-#: geno/tables.py:144 geno/views.py:1433
-msgid "Details"
 msgstr ""
 
 #: geno/tables.py:158
@@ -1092,6 +1087,10 @@ msgstr ""
 msgid "Name/Adresse"
 msgstr ""
 
+#: geno/views.py:1433
+msgid "Details"
+msgstr ""
+
 #: geno/views.py:1587
 msgid "Darlehen Details"
 msgstr ""
@@ -1303,17 +1302,14 @@ msgid "Import-Auftrag nicht gefunden."
 msgstr ""
 
 #: importer/admin.py:112
-#, python-brace-format
 msgid "Import-Auftrag kann nicht verarbeitet werden. Status: {}"
 msgstr ""
 
 #: importer/admin.py:124
-#, python-brace-format
 msgid "Import erfolgreich verarbeitet: {} Datensätze importiert, {} Fehler"
 msgstr ""
 
 #: importer/admin.py:131
-#, python-brace-format
 msgid "Import fehlgeschlagen: {}"
 msgstr ""
 
@@ -1531,6 +1527,138 @@ msgstr ""
 #: importer/services.py:227
 msgid "Zeile hat keine Daten"
 msgstr ""
+
+#: portal/models.py:139
+msgid "First login at"
+msgstr "Erstes Login am"
+
+#: portal/models.py:140
+msgid "Last token issued at"
+msgstr "Leztes Token ausgestellt am"
+
+#: portal/models.py:144 portal/models.py:145
+msgid "OAuth user stats"
+msgstr "OAuth Benutzerstatistik"
+
+#: portal/models.py:148
+#, python-brace-format
+msgid "OAuth stats of user {user} for {app}"
+msgstr "OAuth Statistik von Benutzer {user} für {app}"
+
+#: portal/models.py:158
+msgid "Notify admin about new users"
+msgstr "Benachrichtige Admin über neue Benutzer"
+
+#: portal/models.py:160
+msgid ""
+"Send a notification email if a user logs in to this app for the first time."
+msgstr ""
+"Sende eine Benachrichtigungs-E-Mail, wenn sich ein Benutzer zum ersten Mal "
+"bei dieser App anmeldet."
+
+#: portal/models.py:163
+msgid "Notification email address"
+msgstr "Benachrichtigungs-E-Mail-Adresse"
+
+#: portal/models.py:167
+msgid ""
+"Email address to send notifications to. If empty, the default admin email "
+"will be used."
+msgstr ""
+"E-Mail-Adresse, an die Benachrichtigungen gesendet werden sollen. Wenn leer, "
+"wird die Standard-Admin-E-Mail verwendet."
+
+#: portal/models.py:172 portal/models.py:173
+msgid "OAuth application settings"
+msgstr "OAuth Anwendungseinstellungen"
+
+#: portal/models.py:176
+#, python-brace-format
+msgid "OAuth application settings for {app}"
+msgstr "OAuth Einstellungen für {app}"
+
+#: portal/models.py:180
+msgid "Allow access"
+msgstr "Zugriff erlauben"
+
+#: portal/models.py:181
+msgid "Deny access"
+msgstr "Zugriff verweigern"
+
+#: portal/models.py:190
+msgid "User role"
+msgstr "Benutzerrolle"
+
+#: portal/models.py:194
+msgid "Apply rule to users with this role. If left empty if matches ALL users."
+msgstr ""
+"Wende Regel auf Benutzer mit dieser Rolle an. Wenn leer, gilt die Regel für "
+"ALLE Benutzer."
+
+#: portal/models.py:201
+msgid "Apply rule to users in this Group. If left empty it matches ALL users."
+msgstr ""
+"Wende Regel auf Benutzer in dieser Gruppe an. Wenn leer, gilt die Regel für "
+"ALLE Benutzer."
+
+#: portal/models.py:204
+msgid "User role OR group must match"
+msgstr "Benutzerrolle ODER Gruppe muss übereinstimmen"
+
+#: portal/models.py:207
+msgid ""
+"When enabled only one of the settings above must match. If disabled, both "
+"must match."
+msgstr ""
+"Wenn aktiviert, muss nur eine der obigen Einstellungen übereinstimmen. Wenn "
+"deaktiviert, müssen beide übereinstimmen."
+
+#: portal/models.py:211
+msgid "Order"
+msgstr "Reihenfolge"
+
+#: portal/models.py:213
+msgid "Order of the rule. Rules are applied in order, first match wins."
+msgstr ""
+"Position der Regel. Regeln werden in der Reihenfolge angewendet, die erste "
+"Übereinstimmung gewinnt."
+
+#: portal/models.py:216
+msgid "Action"
+msgstr "Aktion"
+
+#: portal/models.py:219
+msgid "Action to take when the rule matches."
+msgstr "Aktion, die ausgeführt wird, wenn die Regel übereinstimmt."
+
+#: portal/models.py:224
+msgid "OAuth access permission rule"
+msgstr "OAuth Zugriffsberechtigungsregel"
+
+#: portal/models.py:225
+msgid "OAuth access permission rules"
+msgstr "OAuth Zugriffsberechtigungsregeln"
+
+#: portal/models.py:229
+#, python-brace-format
+msgid "Rule {order} for {app}"
+msgstr "Regel {order} für {app}"
+
+#: portal/signals.py:38
+#, python-brace-format
+msgid "{site_name} Portal: First login to {app_name}"
+msgstr "{site_name} Portal: Erstes Login bei {app_name}"
+
+#: portal/signals.py:43
+#, python-brace-format
+msgid ""
+"You receive this email, because you are registered as administrator of the "
+"{app_name} application and a new user has accessed it for the first time: "
+"{user_info}."
+msgstr ""
+"Du erhältst diese E-Mail, weil du als Administrator der {app_name}-Anwendung "
+"registriert bist und ein neuer Benutzer zum ersten Mal darauf zugegriffen "
+"hat: {user_info}."
 
 #: report/templates/report/report_config.html:23
 msgid "Konfiguration speichern"
