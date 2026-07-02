@@ -1109,7 +1109,6 @@ class DocumentType(GenoBase):
         verbose_name="Vorlagen",
         help_text="Verfügbar OpenDocument Dokumentvorlagen",
         blank=True,
-        null=True,
         limit_choices_to={"template_type": "OpenDocument"},
         related_name="document_types",
     )
