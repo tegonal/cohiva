@@ -917,7 +917,7 @@ class DocumentTypeAdmin(GenoBaseAdmin):
     fields = [
         "name",
         "description",
-        "template",
+        "templates",
         "template_file",
         "active",
         "comment",
@@ -926,18 +926,30 @@ class DocumentTypeAdmin(GenoBaseAdmin):
         "backlinks",
     ]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
-    list_display = ["name", "description", "template", "template_file", "active"]
+    list_display = ["name", "description", "template_file", "active"]
     list_filter = [
         ("active", BooleanFieldDefaultTrueListFilter),
     ]
     search_fields = [
         "name",
         "description",
-        "template__name",
-        "template__description",
+        "templates__name",
         "template_file",
     ]
-    autocomplete_fields = ["template"]
+    filter_horizontal = ["templates"]
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        obj = form.instance
+        invalid = obj.templates.exclude(template_type="OpenDocument")
+        if invalid.exists():
+            names = ", ".join(invalid.values_list("name", flat=True))
+            obj.templates.remove(*invalid)
+            self.message_user(
+                request,
+                f"Folgende Vorlagen sind kein OpenDocument-Typ und wurden entfernt: {names}",
+                level=messages.WARNING,
+            )
 
 
 @admin.register(Document)

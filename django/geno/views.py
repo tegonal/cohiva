@@ -110,6 +110,7 @@ from .importer import (
 from .models import (
     Address,
     Building,
+    ContentTemplate,
     Contract,
     Document,
     DocumentType,
@@ -221,28 +222,33 @@ def documents(request, doctype, obj_id, action):
     try:
         doctype_obj = DocumentType.objects.get(name=doctype)
         if action == "create":
-            ## Create new document and attach to content_object
             if not request.user.has_perm("geno.add_document"):
                 return unauthorized(request)
+            template_pk = request.GET.get("template")
+            if not template_pk:
+                raise RuntimeError("Keine Vorlage angegeben.")
+            template = doctype_obj.templates.get(pk=template_pk)
             data = get_context_data(doctype, obj_id, {})
         elif action == "download":
-            ## Regenerate document
             if not request.user.has_perm("geno.regenerate_document"):
                 return unauthorized(request)
-            doc = Document.objects.get(pk=obj_id)
+            doc = Document.objects.select_related("template").get(pk=obj_id)
+            template = doc.template or doctype_obj.templates.filter(active=True).first()
+            if not template:
+                raise RuntimeError("Vorlage nicht gefunden.")
             data = {"visible_filename": doc.name, "context": json.loads(doc.data)}
         else:
             raise RuntimeError("Action '%s' is not implemented." % action)
         filename = fill_template_pod(
-            doctype_obj.template.file.path, context_format(data["context"]), output_format="odt"
+            template.file.path, context_format(data["context"]), output_format="odt"
         )
         if not filename:
             raise RuntimeError("Could not fill template")
         if "content_object" in data:
-            ## Attach document data to object
             d = Document(
                 name=data["visible_filename"],
                 doctype=doctype_obj,
+                template=template,
                 data=json.dumps(data["context"]),
                 content_object=data["content_object"],
             )
@@ -252,7 +258,7 @@ def documents(request, doctype, obj_id, action):
         )  # content_type = "application/pdf")
         os.remove(filename)
         return resp
-    except (RuntimeError, DocumentType.DoesNotExist) as e:
+    except (RuntimeError, DocumentType.DoesNotExist, ContentTemplate.DoesNotExist) as e:
         error = "Fehler beim Erzeugen des Dokuments: %s" % e
     ret = [
         {"info": "ERROR: %s" % error},
