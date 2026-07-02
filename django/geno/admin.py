@@ -1428,7 +1428,6 @@ class ContractAdmin(GenoBaseAdmin):
         "comment",
         ("ts_created", "ts_modified"),
         "import_id",
-        "object_actions",
         "links",
         "backlinks",
     ]
@@ -1436,7 +1435,6 @@ class ContractAdmin(GenoBaseAdmin):
         "import_id",
         "ts_created",
         "ts_modified",
-        "object_actions",
         "links",
         "backlinks",
     ]
@@ -1492,9 +1490,48 @@ class ContractAdmin(GenoBaseAdmin):
     actions_list = [
         "contract_report",
     ]
-    actions_detail = [
-        "add_subcontract",
-    ]
+    actions_detail = []
+
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        response = super().changeform_view(request, object_id, form_url, extra_context)
+
+        if object_id and hasattr(response, "context_data"):
+            try:
+                contract = self.model.objects.get(pk=object_id)
+            except self.model.DoesNotExist:
+                return response
+
+            dropdown_items = []
+
+            if request.user.has_perm("geno.add_contract"):
+                dropdown_items.append({
+                    "title": str(_("Untervertrag hinzufügen")),
+                    "path": reverse("admin:geno_contract_add") + f"?main_contract={object_id}",
+                    "icon": "splitscreen_add",
+                    "attrs": {},
+                })
+
+            for action_tuple in contract.get_object_actions():
+                dropdown_items.append({
+                    "title": action_tuple[1],
+                    "path": action_tuple[0],\
+                    # TODO: assign an icon generically, or store it in the action tuple
+                    "icon": None,
+                    "attrs": {},
+                })
+
+            if dropdown_items:
+                response.context_data["actions_detail"] = [{
+                    "title": str(_("Aktionen")),
+                    "path": None,
+                    # TODO: select a relevant icon?
+                    "icon": None,
+                    "variant": ActionVariant.PRIMARY,
+                    "method_name": "contract_actions",
+                    "items": dropdown_items,
+                }]
+
+        return response
 
     @display(
         description="Vertrag",
@@ -1520,18 +1557,6 @@ class ContractAdmin(GenoBaseAdmin):
     )
     def contract_report(self, request):
         return redirect(reverse("geno:contract-report"))
-
-    @action(
-        description=_("Untervertrag hinzufügen"),
-        icon="splitscreen_add",
-        url_path="add-subcontract",
-        permissions=["geno.add_contract"],
-        variant=ActionVariant.PRIMARY,
-    )
-    def add_subcontract(self, request, object_id):
-        return HttpResponseRedirect(
-            reverse("admin:geno_contract_add") + f"?main_contract={object_id}"
-        )
 
 
 # class ResidentListAdmin(GenoBaseAdmin):
