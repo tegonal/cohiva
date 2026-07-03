@@ -2,18 +2,18 @@ import datetime
 import io
 import zipfile
 from decimal import Decimal
-from unittest.mock import DEFAULT, patch
+from unittest.mock import DEFAULT, Mock, patch
 
 import openpyxl
 from django.apps import apps as django_apps
 from django.conf import settings
 from django.http import FileResponse
-from django.test import tag
+from django.test import RequestFactory, tag
 from django.urls import reverse
 
 import geno.tests.data as geno_testdata
 from geno.models import Invoice, InvoiceCategory, Share, ShareType
-from geno.views import ShareStatementView
+from geno.views import InvoiceBatchGenerateView, ShareStatementView
 
 from .base import GenoAdminTestCase
 
@@ -345,6 +345,33 @@ class GenoViewsTest(GenoAdminTestCase):
         response = self.client.get(path, data=data)
         self.assertInHTMLResponse('<select name="contract"', response, raw=True)
         self.assertNotInHTMLResponse('<select name="address"', response, raw=True)
+
+
+class InvoiceBatchGenerateViewTest(GenoAdminTestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    @patch("geno.views.create_invoices")
+    def test_invoice_batch_generate_view_item_count(self, mock_create_qrbill: Mock):
+        view = InvoiceBatchGenerateView()
+        view.kwargs = {"action": "create"}
+        view.request = self.factory.post(reverse("geno:invoice-batch-generate"))
+        view.request.user = self.su
+
+        mock_create_qrbill.return_value = [{"info": "1 Rechnung für 1 Vertrag"}]
+        view.result = view.process_action(dry_run=True)
+        context = view.get_context_data()
+        self.assertEqual(context["item_count"], 1)
+
+        mock_create_qrbill.return_value = [{"info": "99 Rechnungen für 1 Vertrag"}]
+        view.result = view.process_action(dry_run=True)
+        context = view.get_context_data()
+        self.assertEqual(context["item_count"], 99)
+
+        mock_create_qrbill.return_value = [{"info": "10 Rechnungen für 9 Verträge"}]
+        view.result = view.process_action(dry_run=True)
+        context = view.get_context_data()
+        self.assertEqual(context["item_count"], 10)
 
 
 class Odt2PdfViewTest(GenoAdminTestCase):
