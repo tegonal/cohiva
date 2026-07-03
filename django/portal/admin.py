@@ -33,7 +33,7 @@ class OAuthUserStatsAdmin(ModelAdmin):
     fields = ["application", "user", "first_login_at", "last_seen_at"]
     list_filter = fields
     list_display = fields
-    search_fields = ["application__name", "user__email", "user__name"]
+    search_fields = ["application__name", "user__email", "user__username"]
 
 
 class OAuthAppPermissionRuleInline(TabularInline):

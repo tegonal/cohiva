@@ -23,3 +23,11 @@ def get_default_mail_footer():
 
 def get_default_app_sender():
     return f'"{settings.COHIVA_SITE_NICKNAME}-App" <{settings.GENO_DEFAULT_EMAIL}>'
+
+
+def get_admin_recipients():
+    recipients = []
+    for admin in settings.ADMINS:
+        if len(admin) > 1:
+            recipients.append(admin[1])
+    return recipients

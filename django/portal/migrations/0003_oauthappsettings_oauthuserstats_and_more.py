@@ -37,7 +37,6 @@ class Migration(migrations.Migration):
                         blank=True,
                         help_text="Email address to send notifications to. If empty, the default admin email will be used.",
                         max_length=254,
-                        null=True,
                         verbose_name="Notification email address",
                     ),
                 ),
@@ -120,7 +119,6 @@ class Migration(migrations.Migration):
                 (
                     "order",
                     models.IntegerField(
-                        default=0,
                         help_text="Order of the rule. Rules are applied in order, first match wins.",
                         verbose_name="Order",
                     ),

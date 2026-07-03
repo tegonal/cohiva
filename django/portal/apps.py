@@ -6,6 +6,4 @@ class PortalConfig(AppConfig):
 
     def ready(self):
         # Implicitly connect signal handlers decorated with @receiver.
-        from . import signals
-
-        assert signals
+        from . import signals  # noqa: F401

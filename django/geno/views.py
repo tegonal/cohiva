@@ -1610,7 +1610,7 @@ class ShareReminderLetterView(DocumentGeneratorView):
 
 
 class ShareInterestView(CohivaAdminViewMixin, TemplateView):
-    title = _("Zinsabrechung")
+    title = _("Zinsabrechnung")
     permission_required = (
         "geno.canview_share",
         "geno.canview_billing",
@@ -4117,7 +4117,7 @@ class InvoiceBatchGenerateView(DryRunActionView):
                 "info": _("Optionen"),
                 "objects": [
                     _("Probelauf: %s") % (_("Ja") if dry_run else _("Nein")),
-                    _("Rechungen bis: %s") % reference_date,
+                    _("Rechnungen bis: %s") % reference_date,
                 ],
             }
         )

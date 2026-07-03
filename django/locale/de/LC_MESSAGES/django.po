@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Cohiva 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-01 17:05+0200\n"
+"POT-Creation-Date: 2026-07-03 11:36+0200\n"
 "PO-Revision-Date: 2025-10-21 01:30+0200\n"
 "Last-Translator: Cohiva Development Team\n"
 "Language-Team: German\n"
@@ -140,8 +140,8 @@ msgid "Untervertrag hinzufügen"
 msgstr "Untervertrag hinzufügen"
 
 #: geno/admin.py:1810
-msgid "Mietobjektespiegel"
-msgstr "Mietobjektespiegel"
+msgid "Mietobjektspiegel"
+msgstr ""
 
 #: geno/billing.py:126
 #, python-brace-format
@@ -1096,7 +1096,7 @@ msgid "Darlehen Details"
 msgstr ""
 
 #: geno/views.py:1613
-msgid "Zinsabrechung"
+msgid "Zinsabrechnung"
 msgstr ""
 
 #: geno/views.py:2036
@@ -1274,10 +1274,10 @@ msgstr ""
 
 #: geno/views.py:4120
 #, python-format
-msgid "Rechungen bis: %s"
+msgid "Rechnungen bis: %s"
 msgstr ""
 
-#: importer/admin.py:48
+#: importer/admin.py:48 report/views.py:80
 msgid "Konfiguration"
 msgstr ""
 
@@ -1534,7 +1534,7 @@ msgstr "Erstes Login am"
 
 #: portal/models.py:140
 msgid "Last token issued at"
-msgstr "Leztes Token ausgestellt am"
+msgstr "Letztes Token ausgestellt am"
 
 #: portal/models.py:144 portal/models.py:145
 msgid "OAuth user stats"
@@ -1560,7 +1560,7 @@ msgstr ""
 msgid "Notification email address"
 msgstr "Benachrichtigungs-E-Mail-Adresse"
 
-#: portal/models.py:167
+#: portal/models.py:166
 msgid ""
 "Email address to send notifications to. If empty, the default admin email "
 "will be used."
@@ -1568,44 +1568,44 @@ msgstr ""
 "E-Mail-Adresse, an die Benachrichtigungen gesendet werden sollen. Wenn leer, "
 "wird die Standard-Admin-E-Mail verwendet."
 
-#: portal/models.py:172 portal/models.py:173
+#: portal/models.py:171 portal/models.py:172
 msgid "OAuth application settings"
 msgstr "OAuth Anwendungseinstellungen"
 
-#: portal/models.py:176
+#: portal/models.py:175
 #, python-brace-format
 msgid "OAuth application settings for {app}"
 msgstr "OAuth Einstellungen für {app}"
 
-#: portal/models.py:180
+#: portal/models.py:179
 msgid "Allow access"
 msgstr "Zugriff erlauben"
 
-#: portal/models.py:181
+#: portal/models.py:180
 msgid "Deny access"
 msgstr "Zugriff verweigern"
 
-#: portal/models.py:190
+#: portal/models.py:189
 msgid "User role"
 msgstr "Benutzerrolle"
 
-#: portal/models.py:194
-msgid "Apply rule to users with this role. If left empty if matches ALL users."
+#: portal/models.py:193
+msgid "Apply rule to users with this role. If left empty it matches ALL users."
 msgstr ""
 "Wende Regel auf Benutzer mit dieser Rolle an. Wenn leer, gilt die Regel für "
 "ALLE Benutzer."
 
-#: portal/models.py:201
-msgid "Apply rule to users in this Group. If left empty it matches ALL users."
+#: portal/models.py:200
+msgid "Apply rule to users in this group. If left empty it matches ALL users."
 msgstr ""
 "Wende Regel auf Benutzer in dieser Gruppe an. Wenn leer, gilt die Regel für "
 "ALLE Benutzer."
 
-#: portal/models.py:204
+#: portal/models.py:203
 msgid "User role OR group must match"
 msgstr "Benutzerrolle ODER Gruppe muss übereinstimmen"
 
-#: portal/models.py:207
+#: portal/models.py:206
 msgid ""
 "When enabled only one of the settings above must match. If disabled, both "
 "must match."
@@ -1613,43 +1613,43 @@ msgstr ""
 "Wenn aktiviert, muss nur eine der obigen Einstellungen übereinstimmen. Wenn "
 "deaktiviert, müssen beide übereinstimmen."
 
-#: portal/models.py:211
+#: portal/models.py:210
 msgid "Order"
 msgstr "Reihenfolge"
 
-#: portal/models.py:213
+#: portal/models.py:211
 msgid "Order of the rule. Rules are applied in order, first match wins."
 msgstr ""
 "Position der Regel. Regeln werden in der Reihenfolge angewendet, die erste "
 "Übereinstimmung gewinnt."
 
-#: portal/models.py:216
+#: portal/models.py:214
 msgid "Action"
 msgstr "Aktion"
 
-#: portal/models.py:219
+#: portal/models.py:217
 msgid "Action to take when the rule matches."
 msgstr "Aktion, die ausgeführt wird, wenn die Regel übereinstimmt."
 
-#: portal/models.py:224
+#: portal/models.py:222
 msgid "OAuth access permission rule"
 msgstr "OAuth Zugriffsberechtigungsregel"
 
-#: portal/models.py:225
+#: portal/models.py:223
 msgid "OAuth access permission rules"
 msgstr "OAuth Zugriffsberechtigungsregeln"
 
-#: portal/models.py:229
+#: portal/models.py:227
 #, python-brace-format
 msgid "Rule {order} for {app}"
 msgstr "Regel {order} für {app}"
 
-#: portal/signals.py:38
+#: portal/signals.py:73
 #, python-brace-format
 msgid "{site_name} Portal: First login to {app_name}"
 msgstr "{site_name} Portal: Erstes Login bei {app_name}"
 
-#: portal/signals.py:43
+#: portal/signals.py:78
 #, python-brace-format
 msgid ""
 "You receive this email, because you are registered as administrator of the "
@@ -1682,10 +1682,6 @@ msgstr ""
 
 #: report/views.py:78
 msgid "Report konfigurieren"
-msgstr ""
-
-#: report/views.py:80
-msgid "Kongiguration"
 msgstr ""
 
 #: report/views.py:141

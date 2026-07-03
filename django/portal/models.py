@@ -162,7 +162,6 @@ class OAuthAppSettings(models.Model):
     notify_email = models.EmailField(
         _("Notification email address"),
         blank=True,
-        null=True,
         help_text=_(
             "Email address to send notifications to. If empty, the default admin email will be used."
         ),
@@ -191,14 +190,14 @@ class OAuthAppPermissionRule(models.Model):
         max_length=30,
         choices=RESERVATIONTYPE_ROLE_CHOICES,
         blank=True,
-        help_text=_("Apply rule to users with this role. If left empty if matches ALL users."),
+        help_text=_("Apply rule to users with this role. If left empty it matches ALL users."),
     )
     group = models.ForeignKey(
         auth.models.Group,
         on_delete=models.RESTRICT,
         blank=True,
         null=True,
-        help_text=_("Apply rule to users in this Group. If left empty it matches ALL users."),
+        help_text=_("Apply rule to users in this group. If left empty it matches ALL users."),
     )
     role_or_group_must_match = models.BooleanField(
         _("User role OR group must match"),
@@ -209,7 +208,6 @@ class OAuthAppPermissionRule(models.Model):
     )
     order = models.IntegerField(
         _("Order"),
-        default=0,
         help_text=_("Order of the rule. Rules are applied in order, first match wins."),
     )
     action = models.CharField(
