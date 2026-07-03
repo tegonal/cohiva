@@ -632,10 +632,16 @@ FILER_IS_PUBLIC_DEFAULT = False
 
 ## Celery with redis
 CELERY_BROKER_URL = "redis://localhost:6379/0"
+# Efficiency: recycle workers periodically to prevent memory bloat from C-extensions
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
 # CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 # CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS = {
 #   'global_keyprefix': 'cohiva_'
 # }
+## Safety: tasks are only removed from the queue *after* they succeed.
+## If a worker is killed mid-task, it will be redelivered to another worker.
+# CELERY_TASK_ACKS_LATE = True
+# CELERY_WORKER_PREFETCH_MULTIPLIER = 1   # don't prefetch tasks a dying worker can't finish
 
 ## Use redis as default cache
 CACHES = {
