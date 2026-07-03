@@ -105,7 +105,7 @@ class ReservationAPITests(APITestCase, ReservationTestCase):
     def test_get_own(self):
         Reservation.objects.create(
             name=self.reservationobjects["Sitzungszimmer gross"],
-            contact=self.prototypes["external"]["address"],
+            contact=self.users["external"].address,
             date_start=datetime.datetime(2000, 1, 1, 12, 0, 0, tzinfo=self.local_tz),
             date_end=datetime.datetime(2000, 1, 1, 17, 0, 0, tzinfo=self.local_tz),
         )
@@ -128,7 +128,7 @@ class ReservationAPITests(APITestCase, ReservationTestCase):
     def test_filters(self):
         Reservation.objects.create(
             name=self.reservationobjects["Sitzungszimmer gross"],
-            contact=self.prototypes["external"]["address"],
+            contact=self.users["external"].address,
             date_start=datetime.datetime(2000, 1, 1, 12, 0, 0, tzinfo=self.local_tz),
             date_end=datetime.datetime(2000, 1, 1, 17, 0, 0, tzinfo=self.local_tz),
         )
@@ -137,7 +137,7 @@ class ReservationAPITests(APITestCase, ReservationTestCase):
 
         Reservation.objects.create(
             name=self.reservationobjects["Sitzungszimmer gross"],
-            contact=self.prototypes["member"]["address"],
+            contact=self.users["member"].address,
             date_start=datetime.datetime(2000, 1, 2, 12, 0, 0, tzinfo=self.local_tz),
             date_end=datetime.datetime(2000, 1, 2, 17, 0, 0, tzinfo=self.local_tz),
             state="deleted",
@@ -147,7 +147,7 @@ class ReservationAPITests(APITestCase, ReservationTestCase):
 
         Reservation.objects.create(
             name=self.reservationobjects["Sitzungszimmer gross"],
-            contact=self.prototypes["member"]["address"],
+            contact=self.users["member"].address,
             date_start=datetime.datetime(2000, 1, 3, 12, 0, 0, tzinfo=self.local_tz),
             date_end=datetime.datetime(2000, 1, 3, 17, 0, 0, tzinfo=self.local_tz),
             state="cancelled",
@@ -157,7 +157,7 @@ class ReservationAPITests(APITestCase, ReservationTestCase):
 
         Reservation.objects.create(
             name=self.reservationobjects["Sitzungszimmer gross"],
-            contact=self.prototypes["member"]["address"],
+            contact=self.users["member"].address,
             date_start=datetime.datetime(2000, 1, 4, 12, 0, 0, tzinfo=self.local_tz),
             date_end=datetime.datetime(2000, 1, 4, 17, 0, 0, tzinfo=self.local_tz),
             state="approved",
@@ -167,7 +167,7 @@ class ReservationAPITests(APITestCase, ReservationTestCase):
 
         Reservation.objects.create(
             name=self.reservationobjects["Sitzungszimmer gross"],
-            contact=self.prototypes["member"]["address"],
+            contact=self.users["member"].address,
             date_start=datetime.datetime(2000, 1, 5, 12, 0, 0, tzinfo=self.local_tz),
             date_end=datetime.datetime(2000, 1, 5, 17, 0, 0, tzinfo=self.local_tz),
             state="new",
@@ -310,7 +310,7 @@ class ReservationSearchAPITests(APITestCase, ReservationTestCase):
 
         res = Reservation.objects.create(
             name=self.reservationobjects["Sitzungszimmer gross"],
-            contact=self.prototypes["member"]["address"],
+            contact=self.users["member"].address,
             date_start=datetime.datetime(2000, 1, 1, 12, 0, 0, tzinfo=self.local_tz),
             date_end=datetime.datetime(2000, 1, 1, 15, 0, 0, tzinfo=self.local_tz),
             state="cancelled",
@@ -352,7 +352,7 @@ class ReservationSearchAPITests(APITestCase, ReservationTestCase):
 
         Reservation.objects.create(
             name=self.reservationobjects["Sitzungszimmer gross"],
-            contact=self.prototypes["member"]["address"],
+            contact=self.users["member"].address,
             date_start=datetime.datetime(2000, 1, 1, 0, 0, 0, tzinfo=self.local_tz),
             date_end=datetime.datetime(2000, 1, 1, 14, 45, 0, tzinfo=self.local_tz),
         )
@@ -371,7 +371,7 @@ class ReservationSearchAPITests(APITestCase, ReservationTestCase):
 
         Reservation.objects.create(
             name=self.reservationobjects["Sitzungszimmer gross"],
-            contact=self.prototypes["member"]["address"],
+            contact=self.users["member"].address,
             date_start=datetime.datetime(2000, 1, 1, 14, 45, 0, tzinfo=self.local_tz),
             date_end=datetime.datetime(2000, 1, 1, 15, 15, 0, tzinfo=self.local_tz),
         )
@@ -397,7 +397,7 @@ class ReservationSearchAPITests(APITestCase, ReservationTestCase):
 
         Reservation.objects.create(
             name=self.reservationobjects["Sitzungszimmer gross"],
-            contact=self.prototypes["member"]["address"],
+            contact=self.users["member"].address,
             date_start=datetime.datetime(2000, 7, 1, 0, 0, 0, tzinfo=self.local_tz),
             date_end=datetime.datetime(2000, 7, 1, 14, 45, 0, tzinfo=self.local_tz),
         )
@@ -416,7 +416,7 @@ class ReservationSearchAPITests(APITestCase, ReservationTestCase):
 
         Reservation.objects.create(
             name=self.reservationobjects["Sitzungszimmer gross"],
-            contact=self.prototypes["member"]["address"],
+            contact=self.users["member"].address,
             date_start=datetime.datetime(2000, 7, 1, 14, 45, 0, tzinfo=self.local_tz),
             date_end=datetime.datetime(2000, 7, 1, 15, 15, 0, tzinfo=self.local_tz),
         )
@@ -442,14 +442,14 @@ class ReservationSearchAPITests(APITestCase, ReservationTestCase):
 
         Reservation.objects.create(
             name=self.reservationobjects["Sitzungszimmer gross"],
-            contact=self.prototypes["member"]["address"],
+            contact=self.users["member"].address,
             date_start=datetime.datetime(2025, 3, 29, 0, 0, 0, tzinfo=self.local_tz),
             date_end=datetime.datetime(2025, 3, 29, 17, 45, 0, tzinfo=self.local_tz),
         )
 
         Reservation.objects.create(
             name=self.reservationobjects["Sitzungszimmer gross"],
-            contact=self.prototypes["member"]["address"],
+            contact=self.users["member"].address,
             date_start=datetime.datetime(2025, 3, 30, 6, 15, 0, tzinfo=self.local_tz),
             date_end=datetime.datetime(2025, 3, 30, 12, 0, 0, tzinfo=self.local_tz),
         )
@@ -468,7 +468,7 @@ class ReservationSearchAPITests(APITestCase, ReservationTestCase):
 
         res3 = Reservation.objects.create(
             name=self.reservationobjects["Sitzungszimmer gross"],
-            contact=self.prototypes["member"]["address"],
+            contact=self.users["member"].address,
             date_start=datetime.datetime(2025, 3, 29, 17, 45, 0, tzinfo=self.local_tz),
             date_end=datetime.datetime(2025, 3, 29, 18, 15, 0, tzinfo=self.local_tz),
         )
@@ -569,7 +569,7 @@ class ReservationEditAPITests(APITestCase, ReservationTestCase):
         self.assertEqual(Reservation.objects.count(), 1)
         res = Reservation.objects.all()[0]
         self.assertEqual(res.name, self.reservationobjects["Sitzungszimmer gross"])
-        self.assertEqual(res.contact, self.prototypes["external"]["address"])
+        self.assertEqual(res.contact, self.users["external"].address)
         self.assertEqual(res.date_start, datetime.datetime(2100, 1, 1, 13, tzinfo=self.local_tz))
         self.assertEqual(res.date_end, datetime.datetime(2100, 1, 1, 18, tzinfo=self.local_tz))
         self.assertEqual(res.state, "new")
@@ -608,7 +608,7 @@ class ReservationEditAPITests(APITestCase, ReservationTestCase):
         self.assertEqual(Reservation.objects.count(), 1)
         res = Reservation.objects.all()[0]
         self.assertEqual(res.name, self.reservationobjects["Gästezimmer A"])
-        self.assertEqual(res.contact, self.prototypes["renter"]["address"])
+        self.assertEqual(res.contact, self.users["renter"].address)
         self.assertEqual(res.date_start, datetime.datetime(2100, 1, 1, 13, tzinfo=self.local_tz))
         self.assertEqual(res.date_end, datetime.datetime(2100, 1, 2, 18, tzinfo=self.local_tz))
         self.assertEqual(res.state, "approved")
@@ -701,7 +701,7 @@ class ReportSubmissionAPITests(APITestCase, ReservationTestCase):
         self.assertEqual(rep.report_type, report_type)
         self.assertEqual(rep.category, cat1)
         self.assertEqual(rep.rental_unit, None)
-        self.assertEqual(rep.contact, self.prototypes["renter"]["address"])
+        self.assertEqual(rep.contact, self.users["renter"].address)
         self.assertEqual(rep.contact_text, "Test-Contact")
         self.assertEqual(rep.text, "Test-Text")
         self.assertEqual(rep.report_date.date(), timezone.now().date())
@@ -735,13 +735,13 @@ class ReportSubmissionAPITests(APITestCase, ReservationTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "ERROR")
 
-        request_data["unit"] = self.prototypes["renter"]["rental_unit"].id + 100
+        request_data["unit"] = self.users["renter"].rental_unit.id + 100
 
         response = self.client.post(url, request_data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "ERROR")
 
-        request_data["unit"] = self.prototypes["renter"]["rental_unit"].id
+        request_data["unit"] = self.users["renter"].rental_unit.id
 
         self.assertEqual(Report.objects.count(), 0)
 
@@ -752,7 +752,7 @@ class ReportSubmissionAPITests(APITestCase, ReservationTestCase):
         self.assertEqual(Report.objects.count(), 1)
 
         rep = Report.objects.all()[0]
-        self.assertEqual(rep.rental_unit, self.prototypes["renter"]["rental_unit"])
+        self.assertEqual(rep.rental_unit, self.users["renter"].rental_unit)
 
         self.assertEmailSent(
             1,

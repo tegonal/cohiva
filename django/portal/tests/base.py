@@ -1,12 +1,20 @@
 from django import VERSION as DJANGO_VERSION
 from django.conf import settings
+from oauth2_provider.models import get_application_model
 
 import geno.tests.data as geno_testdata
 import portal.tests.data as portal_testdata
+from geno.models import Address, Tenant
 from geno.tests.base import BaseTestCase
+
+Application = get_application_model()
 
 
 class PortalTestCase(BaseTestCase):
+    addresses: list[Address] = []
+    tenants: list[Tenant] = []
+    oauth_apps: dict[str, type[Application]] = {}
+
     @classmethod
     def setUpTestData(cls):
         # Set up data for the whole TestCase
@@ -18,6 +26,7 @@ class PortalTestCase(BaseTestCase):
         # geno_testdata.create_invoicecategories(cls)
         geno_testdata.create_prototype_users(cls)
         portal_testdata.create_tenants(cls)
+        portal_testdata.create_oauth_apps(cls)
 
     def get_secondary(self, uri):
         if DJANGO_VERSION < (4, 2):

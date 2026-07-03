@@ -7,7 +7,7 @@ from zipfile import ZipFile
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
 from django.core import mail
 
 ## django-filer stuff
@@ -39,7 +39,8 @@ class CohivaTestBase:
     local_tz = zoneinfo.ZoneInfo(settings.TIME_ZONE)
 
     su: User = None
-    prototypes: dict[str, dict]
+    users: dict[str, "testdata.PrototypeUser"] = {}
+    admin_group: Group = None
 
     def assertInHTML(self, needle, haystack, dump_on_fail=True):
         try:

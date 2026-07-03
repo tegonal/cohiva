@@ -1,4 +1,5 @@
 import re
+from unittest.mock import Mock, patch
 from urllib.parse import quote
 
 from django.conf import settings
@@ -8,6 +9,7 @@ from oauth2_provider.models import get_application_model
 from requests_oauthlib import OAuth2Session
 
 from geno.models import Address
+from portal.auth import authorize_address
 
 from .base import PortalTestCase
 
@@ -419,3 +421,200 @@ class PortalAuthTest(PortalTestCase):
             f"{settings.COHIVA_SITE_NICKNAME}-Konto aktivieren / Passwort zurücksetzen",
             mail.outbox[3].subject,
         )
+
+    def test_oauth_app_to_secondary_portal_denied(self):
+        ret = authorize_address(
+            self.users["tenant"].address,
+            self.users["tenant"].user,
+            host=settings.PORTAL_SECONDARY_HOST,
+            app="testapp",
+        )
+        self.assertIsNone(ret["user_id"])
+
+        ret = authorize_address(
+            self.users["tenant"].address,
+            self.users["tenant"].user,
+            host=settings.PORTAL_SECONDARY_HOST,
+            app=None,
+        )
+        self.assertIsNotNone(ret["user_id"])
+
+    @patch("portal.auth.logger.info")
+    def test_oauth_authorize_noapp(self, mock_logger: Mock):
+        ret = authorize_address(
+            self.users["renter"].address,
+            self.users["renter"].user,
+            app=None,
+        )
+        self.assertIsNotNone(ret["user_id"])
+        mock_logger.assert_not_called()
+
+        ret = authorize_address(
+            self.users["external"].address,
+            self.users["external"].user,
+            app=None,
+        )
+        self.assertIsNotNone(ret["user_id"])
+        mock_logger.assert_called_once()
+
+    def _has_permission(self, user_type: str, app_name: str) -> bool:
+        user = self.users[user_type].user
+        address = self.users[user_type].address
+        ret = authorize_address(address, user, app=self.oauth_apps[app_name])
+        return ret["user_id"] is not None
+
+    def test_oauth_authorize_app_nosettings(self):
+        """Test that legacy permissions are applied when no settings are present"""
+        app = "nosettings"
+        self.assertFalse(self._has_permission("external", app))
+        self.assertTrue(self._has_permission("external_with_loginflag", app))
+        self.assertFalse(self._has_permission("tenant", app))
+        self.assertTrue(self._has_permission("member", app))
+        self.assertTrue(self._has_permission("renter", app))
+        self.assertTrue(self._has_permission("renter_nonmember", app))
+        self.assertFalse(self._has_permission("admin", app))
+        self.assertFalse(self._has_permission("inactive", app))
+        self.assertFalse(self._has_permission("inactive_renter", app))
+        self.assertFalse(self._has_permission("inactive_tenant", app))
+
+    def test_oauth_authorize_app_norules(self):
+        """Test that legacy permissions are applied when no permission rules are present"""
+        app = "norules"
+        self.assertFalse(self._has_permission("external", app))
+        self.assertTrue(self._has_permission("external_with_loginflag", app))
+        self.assertFalse(self._has_permission("tenant", app))
+        self.assertTrue(self._has_permission("member", app))
+        self.assertTrue(self._has_permission("renter", app))
+        self.assertTrue(self._has_permission("renter_nonmember", app))
+        self.assertFalse(self._has_permission("admin", app))
+        self.assertFalse(self._has_permission("inactive", app))
+        self.assertFalse(self._has_permission("inactive_renter", app))
+        self.assertFalse(self._has_permission("inactive_tenant", app))
+
+    def test_oauth_authorize_app_allow_all(self):
+        app = "allow_all"
+        self.assertTrue(self._has_permission("external", app))
+        self.assertTrue(self._has_permission("external_with_loginflag", app))
+        self.assertTrue(self._has_permission("tenant", app))
+        self.assertTrue(self._has_permission("member", app))
+        self.assertTrue(self._has_permission("renter", app))
+        self.assertTrue(self._has_permission("renter_nonmember", app))
+        self.assertTrue(self._has_permission("admin", app))
+        self.assertFalse(self._has_permission("inactive", app))
+        self.assertFalse(self._has_permission("inactive_renter", app))
+        self.assertFalse(self._has_permission("inactive_tenant", app))
+
+        self.assertTrue(self._has_permission("tenant_member", app))
+        self.assertTrue(self._has_permission("admin_member", app))
+
+    def test_oauth_authorize_app_admin_group_only(self):
+        app = "admin_group_only"
+        self.assertFalse(self._has_permission("external", app))
+        self.assertFalse(self._has_permission("external_with_loginflag", app))
+        self.assertFalse(self._has_permission("tenant", app))
+        self.assertFalse(self._has_permission("member", app))
+        self.assertFalse(self._has_permission("renter", app))
+        self.assertFalse(self._has_permission("renter_nonmember", app))
+        self.assertTrue(self._has_permission("admin", app))
+        self.assertFalse(self._has_permission("inactive", app))
+        self.assertFalse(self._has_permission("inactive_renter", app))
+        self.assertFalse(self._has_permission("inactive_tenant", app))
+
+        self.assertFalse(self._has_permission("tenant_member", app))
+        self.assertTrue(self._has_permission("admin_member", app))
+
+    def test_oauth_authorize_app_renters_only(self):
+        app = "renters_only"
+        self.assertFalse(self._has_permission("external", app))
+        self.assertFalse(self._has_permission("external_with_loginflag", app))
+        self.assertFalse(self._has_permission("tenant", app))
+        self.assertFalse(self._has_permission("member", app))
+        self.assertTrue(self._has_permission("renter", app))
+        self.assertTrue(self._has_permission("renter_nonmember", app))
+        self.assertFalse(self._has_permission("admin", app))
+        self.assertFalse(self._has_permission("inactive", app))
+        self.assertFalse(self._has_permission("inactive_renter", app))
+        self.assertFalse(self._has_permission("inactive_tenant", app))
+
+        self.assertFalse(self._has_permission("tenant_member", app))
+        self.assertFalse(self._has_permission("admin_member", app))
+
+    def test_oauth_authorize_app_renter_or_tenant(self):
+        app = "renter_or_tenant"
+        self.assertFalse(self._has_permission("external", app))
+        self.assertFalse(self._has_permission("external_with_loginflag", app))
+        self.assertTrue(self._has_permission("tenant", app))
+        self.assertFalse(self._has_permission("member", app))
+        self.assertTrue(self._has_permission("renter", app))
+        self.assertTrue(self._has_permission("renter_nonmember", app))
+        self.assertFalse(self._has_permission("admin", app))
+        self.assertFalse(self._has_permission("inactive", app))
+        self.assertFalse(self._has_permission("inactive_renter", app))
+        self.assertFalse(self._has_permission("inactive_tenant", app))
+
+        self.assertTrue(self._has_permission("tenant_member", app))
+        self.assertFalse(self._has_permission("admin_member", app))
+
+    def test_oauth_authorize_app_member_or_admin(self):
+        app = "member_or_admin"
+        self.assertFalse(self._has_permission("external", app))
+        self.assertFalse(self._has_permission("external_with_loginflag", app))
+        self.assertFalse(self._has_permission("tenant", app))
+        self.assertTrue(self._has_permission("member", app))
+        self.assertTrue(self._has_permission("renter", app))
+        self.assertFalse(self._has_permission("renter_nonmember", app))
+        self.assertTrue(self._has_permission("admin", app))
+        self.assertFalse(self._has_permission("inactive", app))
+        self.assertFalse(self._has_permission("inactive_renter", app))
+        self.assertFalse(self._has_permission("inactive_tenant", app))
+
+        self.assertTrue(self._has_permission("tenant_member", app))
+        self.assertTrue(self._has_permission("admin_member", app))
+
+    def test_oauth_authorize_app_member_and_admin(self):
+        app = "member_and_admin"
+        self.assertFalse(self._has_permission("external", app))
+        self.assertFalse(self._has_permission("external_with_loginflag", app))
+        self.assertFalse(self._has_permission("tenant", app))
+        self.assertFalse(self._has_permission("member", app))
+        self.assertFalse(self._has_permission("renter", app))
+        self.assertFalse(self._has_permission("renter_nonmember", app))
+        self.assertFalse(self._has_permission("admin", app))
+        self.assertFalse(self._has_permission("inactive", app))
+        self.assertFalse(self._has_permission("inactive_renter", app))
+        self.assertFalse(self._has_permission("inactive_tenant", app))
+
+        self.assertFalse(self._has_permission("tenant_member", app))
+        self.assertTrue(self._has_permission("admin_member", app))
+
+    def test_oauth_authorize_app_member_not_tenant(self):
+        app = "member_not_tenant"
+        self.assertFalse(self._has_permission("external", app))
+        self.assertFalse(self._has_permission("external_with_loginflag", app))
+        self.assertFalse(self._has_permission("tenant", app))
+        self.assertTrue(self._has_permission("member", app))
+        self.assertFalse(self._has_permission("renter", app))
+        self.assertFalse(self._has_permission("renter_nonmember", app))
+        self.assertFalse(self._has_permission("admin", app))
+        self.assertFalse(self._has_permission("inactive", app))
+        self.assertFalse(self._has_permission("inactive_renter", app))
+        self.assertFalse(self._has_permission("inactive_tenant", app))
+
+        self.assertFalse(self._has_permission("tenant_member", app))
+        self.assertTrue(self._has_permission("admin_member", app))
+
+    def test_oauth_authorize_app_all_but_admins(self):
+        app = "all_but_admins"
+        self.assertTrue(self._has_permission("external", app))
+        self.assertTrue(self._has_permission("external_with_loginflag", app))
+        self.assertTrue(self._has_permission("tenant", app))
+        self.assertTrue(self._has_permission("member", app))
+        self.assertTrue(self._has_permission("renter", app))
+        self.assertTrue(self._has_permission("renter_nonmember", app))
+        self.assertFalse(self._has_permission("admin", app))
+        self.assertFalse(self._has_permission("inactive", app))
+        self.assertFalse(self._has_permission("inactive_renter", app))
+        self.assertFalse(self._has_permission("inactive_tenant", app))
+
+        self.assertTrue(self._has_permission("tenant_member", app))
+        self.assertFalse(self._has_permission("admin_member", app))

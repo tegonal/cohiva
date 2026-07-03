@@ -1,6 +1,7 @@
 import datetime
+from dataclasses import dataclass
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
 from django.utils import timezone
 
 ## django-filer stuff
@@ -33,38 +34,65 @@ def create_users(cls: type[GenoAdminTestCase]):
     )
 
 
+@dataclass
+class PrototypeUser:
+    user: User
+    address: Address
+    rental_unit: RentalUnit | None = None
+    contract: Contract | None = None
+
+
 def create_prototype_users(cls: type[GenoAdminTestCase] | type[ReservationTestCase]):
     ## Prototype users for different roles
-    cls.prototypes = {
-        "external": {},
-        "tenant": {},
-        "member": {},
-        "renter": {},
-        "renter_nonmember": {},
-        "inactive": {},
-    }
-    for p, proto in cls.prototypes.items():
-        proto["user"] = cls.UserModel.objects.create_user(
-            username=f"user.{p}", password="secret", email=f"{p}@example.com"
+    cls.users = {}
+    roles = [
+        "external",
+        "external_with_loginflag",
+        "tenant",
+        "tenant_member",
+        "member",
+        "renter",
+        "renter_nonmember",
+        "inactive",
+        "inactive_renter",
+        "inactive_tenant",
+        "admin",
+        "admin_member",
+    ]
+    for role in roles:
+        user = cls.UserModel.objects.create_user(
+            username=f"user.{role}", password="secret", email=f"{role}@example.com"
         )
-        proto["address"] = Address.objects.create(
-            name=p, first_name=f"{p}_first", user=proto["user"], email=f"{p}@example.com"
+        cls.users[role] = PrototypeUser(
+            user,
+            Address.objects.create(
+                name=role, first_name=f"{role}_first", user=user, email=f"{role}@example.com"
+            ),
         )
+
+    ## External with login flag
+    cls.users["external_with_loginflag"].address.login_permission = True
+
+    ## Make admin (group membership)
+    cls.admin_group, _ = Group.objects.get_or_create(name="Admin")
+    cls.users["admin"].user.groups.add(cls.admin_group)
+    cls.users["admin_member"].user.groups.add(cls.admin_group)
 
     ## Make tenant
     building = Building.objects.create(name="Test")
-    Tenant.objects.create(name=cls.prototypes["tenant"]["address"], building=building)
+    Tenant.objects.create(name=cls.users["tenant"].address, building=building)
+    Tenant.objects.create(name=cls.users["tenant_member"].address, building=building)
+    Tenant.objects.create(name=cls.users["inactive_tenant"].address, building=building)
 
     ## Make members
-    for role in ("member", "renter"):
-        Member.objects.create(
-            name=cls.prototypes[role]["address"], date_join=datetime.date(2000, 1, 1)
-        )
+    for role in ("member", "renter", "tenant_member", "admin_member"):
+        Member.objects.create(name=cls.users[role].address, date_join=datetime.date(2000, 1, 1))
 
     ## Make renters
     renter_addresses = list(
-        item["address"] for key, item in cls.prototypes.items() if key.startswith("renter")
+        item.address for key, item in cls.users.items() if key.startswith("renter")
     )
+    renter_addresses.append(cls.users["inactive_renter"].address)
     ru = RentalUnit.objects.create(
         name="Test",
         rental_type="Wohnung",
@@ -85,12 +113,14 @@ def create_prototype_users(cls: type[GenoAdminTestCase] | type[ReservationTestCa
     contract.contractors.set(renter_addresses)
     contract.save()
 
-    cls.prototypes["renter"]["rental_unit"] = ru
-    cls.prototypes["renter"]["contract"] = contract
+    cls.users["renter"].rental_unit = ru
+    cls.users["renter"].contract = contract
 
     ## Make inactive
-    cls.prototypes["inactive"]["address"].active = False
-    cls.prototypes["inactive"]["address"].save()
+    for role in roles:
+        if role.startswith("inactive"):
+            cls.users[role].address.active = False
+            cls.users[role].address.save()
 
 
 def create_templates(cls: type[GenoAdminTestCase]):

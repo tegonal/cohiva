@@ -114,7 +114,7 @@ OAUTH2_PROVIDER["SCOPES"].update(
         "openid": "OpenID Connect scope",
     }
 )
-OAUTH2_PROVIDER["OAUTH2_VALIDATOR_CLASS"] = "cohiva.oauth_validators.CohivaOAuth2Validator"
+OAUTH2_PROVIDER["OAUTH2_VALIDATOR_CLASS"] = "portal.auth.CohivaOAuth2Validator"
 
 if "portal" in cbc.FEATURES:
     ## SAML 2.0

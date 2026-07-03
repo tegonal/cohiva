@@ -16,7 +16,7 @@ class PortalOAuthModelsTest(PortalTestCase):
     def setUpTestData(cls):
         super().setUpTestData()
         cls.app = Application.objects.create(name="TestApp")
-        cls.user = cls.prototypes["renter"]["user"]
+        cls.user = cls.users["renter"].user
 
     def test_oauth_user_stats(self):
         self._simulate_login(reset_stats=True)

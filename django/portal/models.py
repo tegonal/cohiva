@@ -150,6 +150,14 @@ class OAuthUserStats(models.Model):
         )
 
 
+class OAuthAppPermissionDenied(Exception):
+    """Raised if a user is not authorized to access a specific OAuth application."""
+
+
+class OAuthAppNoPermissionsConfigured(Exception):
+    """Raised if no permission rules have been configured for in the OAuth app settings."""
+
+
 class OAuthAppSettings(models.Model):
     application = models.OneToOneField(
         settings.OAUTH2_PROVIDER_APPLICATION_MODEL, on_delete=models.CASCADE
@@ -173,6 +181,21 @@ class OAuthAppSettings(models.Model):
 
     def __str__(self):
         return _("OAuth application settings for {app}").format(app=self.application.name)
+
+    def authorize(self, user: UserModel):
+        rules = OAuthAppPermissionRule.objects.filter(application_settings=self).order_by("order")
+        if not rules.exists():
+            raise OAuthAppNoPermissionsConfigured
+        for rule in rules:
+            if rule.match(user):
+                if rule.action == "deny":
+                    raise OAuthAppPermissionDenied
+                elif rule.action == "allow":
+                    return
+                else:
+                    raise ValueError(f"Invalid action: {rule.action}")
+        # Deny access if no rule matches
+        raise OAuthAppPermissionDenied
 
 
 PERMISSION_RULE_ACTIONS = (
@@ -227,3 +250,20 @@ class OAuthAppPermissionRule(models.Model):
         return _("Rule {order} for {app}").format(
             order=self.order, app=self.application_settings.application.name
         )
+
+    def match(self, user: UserModel):
+        if not self.role and not self.group:
+            # Always match if no role and no group is specified (matches all users)
+            return True
+        role_matches = (
+            self.role in user.address.get_roles() if self.role and user.address else False
+        )
+        if self.role and not self.group:
+            return role_matches
+        group_matches = user.groups.filter(pk=self.group.pk).exists() if self.group else False
+        if self.group and not self.role:
+            return group_matches
+        if self.role_or_group_must_match:
+            return role_matches or group_matches
+        else:
+            return role_matches and group_matches
