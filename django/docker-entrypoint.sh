@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🔄 Initializing Cohiva application..."
+echo "🔄 Initializing Cohiva application... ($1)"
 
 # Step 0a: Overlay instance-specific files
 echo "Step 0a: Overlaying instance-specific files..."
@@ -49,54 +49,58 @@ done
 
 echo "✅ Database is ready!"
 
-# Step 1: Ensure database exists
-echo "Step 1: Creating database if not exists..."
-mysql -h "$DB_HOST" -u root -p"$DB_ROOT_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null || echo "Database creation skipped (may already exist)"
+if [ "$1" = "gunicorn" ] ; then
+        ## Run the following steps only for the main web application (served by gunicorn) and not for celery workers etc.
 
-# Step 1.5: Create user and grant permissions
-echo "Step 1.5: Creating database user and granting permissions..."
-mysql -h "$DB_HOST" -u root -p"$DB_ROOT_PASSWORD" -e "
-CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$DB_PASSWORD';
-CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';
-GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'%';
-GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';
-FLUSH PRIVILEGES;
-" 2>/dev/null || echo "User creation may have failed - user might already exist"
+        # Step 1: Ensure database exists
+        echo "Step 1: Creating database if not exists..."
+        mysql -h "$DB_HOST" -u root -p"$DB_ROOT_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null || echo "Database creation skipped (may already exist)"
 
-# Step 2: Run migrations
-echo "Step 2: Running migrations..."
-python manage.py migrate --settings="$DJANGO_SETTINGS_MODULE" --noinput --skip-checks
+        # Step 1.5: Create user and grant permissions
+        echo "Step 1.5: Creating database user and granting permissions..."
+        mysql -h "$DB_HOST" -u root -p"$DB_ROOT_PASSWORD" -e "
+        CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$DB_PASSWORD';
+        CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';
+        GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'%';
+        GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';
+        FLUSH PRIVILEGES;
+        " 2>/dev/null || echo "User creation may have failed - user might already exist"
 
-if [ $? -ne 0 ]; then
-    echo "❌ Database migration failed!"
-    exit 1
+        # Step 2: Run migrations
+        echo "Step 2: Running migrations..."
+        python manage.py migrate --settings="$DJANGO_SETTINGS_MODULE" --noinput --skip-checks
+
+        if [ $? -ne 0 ]; then
+            echo "❌ Database migration failed!"
+            exit 1
+        fi
+
+        echo "✅ Database migrations completed!"
+
+        # Step 3: Collect static files
+        echo "Step 3: Collecting static files..."
+        python manage.py collectstatic --settings="$DJANGO_SETTINGS_MODULE" --noinput
+
+        if [ $? -eq 0 ]; then
+            echo "✅ Static files collected!"
+        else
+            echo "⚠️  Static files collection failed"
+        fi
+
+        # Step 4: Create superuser if it doesn't exist
+        echo "Step 4: Creating superuser..."
+        python manage.py shell --settings="$DJANGO_SETTINGS_MODULE" -c "
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        if not User.objects.filter(is_superuser = True).exists():
+            User.objects.create_superuser('$SUPERUSER_USERNAME', '$SUPERUSER_EMAIL', '$SUPERUSER_PASSWORD')
+            print('Superuser \"$SUPERUSER_USERNAME\" created with email \"$SUPERUSER_EMAIL\"')
+        else:
+            print('Superuser already exists')
+        " 2>/dev/null || echo "Superuser creation failed"
 fi
 
-echo "✅ Database migrations completed!"
-
-# Step 3: Collect static files
-echo "Step 3: Collecting static files..."
-python manage.py collectstatic --settings="$DJANGO_SETTINGS_MODULE" --noinput
-
-if [ $? -eq 0 ]; then
-    echo "✅ Static files collected!"
-else
-    echo "⚠️  Static files collection failed"
-fi
-
-# Step 4: Create superuser if it doesn't exist
-echo "Step 4: Creating superuser..."
-python manage.py shell --settings="$DJANGO_SETTINGS_MODULE" -c "
-from django.contrib.auth import get_user_model
-User = get_user_model()
-if not User.objects.filter(is_superuser = True).exists():
-    User.objects.create_superuser('$SUPERUSER_USERNAME', '$SUPERUSER_EMAIL', '$SUPERUSER_PASSWORD')
-    print('Superuser \"$SUPERUSER_USERNAME\" created with email \"$SUPERUSER_EMAIL\"')
-else:
-    print('Superuser already exists')
-" 2>/dev/null || echo "Superuser creation failed"
-
-echo "🚀 Starting Cohiva application..."
+echo "🚀 Starting Cohiva application... ($1)"
 
 # Execute the main command
 exec "$@"
