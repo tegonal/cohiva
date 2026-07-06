@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
         # Update UUIDFields from CHAR(32) to UUID
         migrations.RunSQL(
             sql="""
-            ALTER TABLE report_report MODIFY task_id UUID NOT NULL;
+            ALTER TABLE report_report MODIFY task_id UUID NULL;
             """,
         )
     ]
