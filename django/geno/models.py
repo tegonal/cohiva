@@ -1688,7 +1688,7 @@ class Contract(GenoBase):
             for tmpl in dt.templates.filter(active=True):
                 actions.append((
                     f"/geno/documents/{dt.name}/{self.pk}/create/?template={tmpl.pk}",
-                    f"{dt.description}: {tmpl.name}"
+                    f"{tmpl.name}: {dt.description}"
                 ))
         return actions
 
