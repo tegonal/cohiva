@@ -9,7 +9,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('geno', '0002_alter_report_comment_alter_report_report_type_and_more'),
+        ('report', '0002_alter_report_comment_alter_report_report_type_and_more'),
     ]
 
     operations = [
