@@ -1104,6 +1104,7 @@ DOCUMENTTYPE_NAME_CHOICES = (
 class DocumentType(GenoBase):
     name = models.CharField("Name", max_length=50, unique=True, choices=DOCUMENTTYPE_NAME_CHOICES)
     description = models.CharField("Beschreibung", max_length=200)
+    active = models.BooleanField("Aktiv", default=True)
     templates = models.ManyToManyField(
         "ContentTemplate",
         verbose_name="Vorlagen",
@@ -1112,11 +1113,6 @@ class DocumentType(GenoBase):
         limit_choices_to={"template_type": "OpenDocument"},
         related_name="document_types",
     )
-    # TODO: keep for legacy, or deprecate template_file?
-    template_file = models.CharField(
-        "Dateiname Vorlage (alte Methode)", max_length=200, blank=True
-    )
-    active = models.BooleanField("Aktiv", default=True)
 
     class Meta:
         verbose_name = "Dokumenttyp"
