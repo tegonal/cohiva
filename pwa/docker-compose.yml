@@ -11,6 +11,8 @@ services:
     environment:
       - NODE_ENV=production
     restart: unless-stopped
+    volumes:
+      - ./tenant-config/:/app/tenant-config:ro
     healthcheck:
       test:
         [

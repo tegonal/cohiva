@@ -18,7 +18,7 @@ function getBrowserLocale(): string {
 
   const detectedLang =
     navigator.languages?.[0]?.slice(0, 2) ??
-    navigator.language.slice(0, 2) ??
+    navigator.language?.slice(0, 2) ??
     'en'
 
   // Map detected language to our canonical locales
