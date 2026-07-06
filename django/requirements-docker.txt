@@ -176,6 +176,8 @@ frozenlist==1.6.0
     # via
     #   aiohttp
     #   aiosignal
+greenlet==3.2.4
+    # via sqlalchemy
 gunicorn==22.0.0
     # via -r requirements.in
 html2text==2025.4.15
