@@ -14,6 +14,7 @@ class SepaReaderTest(GenoAdminTestCase):
             {
                 "file": "camt053_P_CH2909000000250094239_1110092698_0_2020062503071366_v2009.xml",
                 "num_transactions": 0,
+                "data": {},
             },
             {
                 "file": "camt053_P_CH2909000000250094239_1110092698_0_2020112503071366_v2019.xml",
@@ -85,6 +86,18 @@ class SepaReaderTest(GenoAdminTestCase):
                     "debtor": "Hans Muster",
                     "extra_info": "Jahresbeitrag 2025 mit Gebühren",
                     "charges": "1.20",
+                    "date": datetime.date(2025, 6, 28),
+                },
+            },
+            {
+                "file": "camt.054_CH5600790016583351934_2025-06-27_00070_with_multiple_charges.xml",
+                "num_transactions": 1,
+                "data": {
+                    "amount": "50.00",
+                    "reference_nr": "360000000002000000003620253",
+                    "debtor": "Hans Muster",
+                    "extra_info": "Jahresbeitrag 2025 mit Gebühren",
+                    "charges": "2.04",  # 1.20 + 0.04 + 0.80
                     "date": datetime.date(2025, 6, 28),
                 },
             },

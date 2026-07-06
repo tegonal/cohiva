@@ -1,12 +1,15 @@
 from django.conf import settings
 
 import geno.tests.data as testdata
-from geno.models import Registration
+from geno.models import Registration, RegistrationEvent, RegistrationSlot
 
 from .base import BaseTestCase
 
 
 class TestRegistrationForm(BaseTestCase):
+    registrationevents: list[RegistrationEvent] = []
+    registrationslots: list[RegistrationSlot] = []
+
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()

@@ -1,5 +1,6 @@
 import datetime
 import gettext
+from collections.abc import Callable
 
 import pycountry
 from dateutil.relativedelta import relativedelta
@@ -134,25 +135,132 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
 
     def __init__(self, model, admin_site):
         super().__init__(model, admin_site)
-        ## Load custom admin config
         module_name = self.__module__
+        class_name = type(self).__name__
+        ## Apply custom admin config
         if (
             hasattr(settings, "COHIVA_ADMIN_FIELDS")
             and module_name in settings.COHIVA_ADMIN_FIELDS
         ):
-            class_name = type(self).__name__
-            for attr in (
-                "fields",
-                "fieldsets",
-                "readonly_fields",
-                "search_fields",
-                "autocomplete_fields",
-                "list_display",
-                "list_filter",
-            ):
-                setting_name = f"{class_name}.{attr}"
-                if setting_name in settings.COHIVA_ADMIN_FIELDS[module_name]:
-                    setattr(self, attr, settings.COHIVA_ADMIN_FIELDS[module_name][setting_name])
+            self._overwrite_admin_config(settings.COHIVA_ADMIN_FIELDS.get(module_name))
+        if (
+            hasattr(settings, "COHIVA_HIDE_ADMIN_FIELDS")
+            and module_name in settings.COHIVA_HIDE_ADMIN_FIELDS
+        ):
+            self._remove_admin_fields(
+                settings.COHIVA_HIDE_ADMIN_FIELDS.get(module_name).get(class_name, [])
+            )
+
+    @classmethod
+    def _overwrite_admin_config(cls, config: dict[str, list | tuple]) -> None:
+        for attr in (
+            "fields",
+            "fieldsets",
+            "readonly_fields",
+            "search_fields",
+            "autocomplete_fields",
+            "list_display",
+            "list_filter",
+        ):
+            setting_name = f"{cls.__name__}.{attr}"
+            if setting_name in config:
+                setattr(cls, attr, config[setting_name])
+
+    @classmethod
+    def _remove_admin_fields(cls, fields_to_remove: list[str]) -> None:
+        def filter_fields(field_list: list) -> list:
+            filtered_list = []
+            for f in field_list:
+                if isinstance(f, str) and f in fields_to_remove:
+                    continue
+                filtered_list.append(f)
+            return filtered_list
+
+        if not fields_to_remove:
+            return
+
+        cls._remove_admin_fields_from_fields(filter_fields)
+        cls._remove_admin_fields_from_fieldsets(filter_fields)
+        cls._remove_admin_fields_from_attributes(
+            filter_fields, ("search_fields", "list_display", "list_filter")
+        )
+
+    @classmethod
+    def _remove_admin_fields_from_fields(cls, filter_func: Callable[[list], list]) -> None:
+        """Remove fields from the fields attribute of the class, if present.
+
+        The fields attribute is a list/tuple that contains field names or
+        field name groups (lists/tuples of strings).
+        """
+        if hasattr(cls, "fields") and isinstance(cls.fields, (list, tuple)):
+            filtered_fields = []
+            for field in cls.fields:
+                if isinstance(field, str) and not filter_func([field]):
+                    continue
+                if isinstance(field, (list, tuple)):
+                    filtered_subset = filter_func(field)
+                    if filtered_subset:
+                        filtered_fields.append(tuple(filtered_subset))
+                else:
+                    filtered_fields.append(field)
+            cls.fields = filtered_fields
+
+    @classmethod
+    def _remove_admin_fields_from_fieldsets(cls, filter_func: Callable[[list], list]) -> None:
+        """Remove fields from the fieldsets attribute of the class, if present.
+
+        The fieldsets attribute is a list/tuple of fieldsets of the form
+          ( "Fieldset label", {"fields": ("field 1", "field 2")} )
+        """
+        if hasattr(cls, "fieldsets") and isinstance(cls.fieldsets, (list, tuple)):
+            for fieldset in cls.fieldsets:
+                if (
+                    isinstance(fieldset, (list, tuple))
+                    and len(fieldset) > 1
+                    and isinstance(fieldset[1], dict)
+                    and "fields" in fieldset[1]
+                ):
+                    filtered_fields = []
+                    for field in fieldset[1].get("fields", []):
+                        if isinstance(field, str):
+                            if filter_func([field]):
+                                filtered_fields.append(field)
+                        elif isinstance(field, (list, tuple)):
+                            filtered_subset = filter_func(list(field))
+                            if filtered_subset:
+                                filtered_fields.append(tuple(filtered_subset))
+                        else:
+                            filtered_fields.append(field)
+                    fieldset[1]["fields"] = filtered_fields
+
+    @classmethod
+    def _remove_admin_fields_from_attributes(
+        cls, filter_func: Callable[[list], list], attributes: tuple[str, ...]
+    ) -> None:
+        """
+        Remove fields from the attributes listed in the attributes parameter, if present.
+
+        The attribute must be a list/tuple of field names or lists/tuples with the field name
+        as the first element.
+        """
+        for attr in attributes:
+            fields = getattr(cls, attr, [])
+            if isinstance(fields, (list, tuple)):
+                filtered_fields = []
+                for field in getattr(cls, attr):
+                    field_name = None
+                    if isinstance(field, str):
+                        field_name = field
+                    elif (
+                        isinstance(field, (list, tuple))
+                        and len(field)
+                        and isinstance(field[0], str)
+                    ):
+                        field_name = field[0]
+                    if field_name and not filter_func([field_name]):
+                        continue
+                    filtered_fields.append(field)
+                setattr(cls, attr, filtered_fields)
 
 
 @admin.display(description="Anrede auf 'Herr' setzen")

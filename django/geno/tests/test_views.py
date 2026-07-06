@@ -19,7 +19,14 @@ from .base import GenoAdminTestCase
 
 
 def create_fake_pdf(
-    ref_number, address, context, output_filename, render, email_template, email_subject, dry_run
+    _ref_number,
+    _address,
+    _context,
+    output_filename,
+    _render,
+    _email_template,
+    _email_subject,
+    _dry_run,
 ):
     with open(f"/tmp/{output_filename}", "wb") as dummy_pdf:
         dummy_pdf.write(b"Dummy PDF")
@@ -220,7 +227,7 @@ class GenoViewsTest(GenoAdminTestCase):
         return data
 
     @patch("geno.views.create_qrbill", side_effect=create_fake_pdf, return_value=([], 0, None))
-    def test_invoice_manual_process_preview(self, mock_create_qrbill):
+    def test_invoice_manual_process_preview(self, _mock_create_qrbill):
         self.client.login(username="superuser", password="secret")
         path = reverse("geno:invoice-manual")
         response = self.client.post(path, data=self.get_invoice_manual_data())
@@ -230,7 +237,7 @@ class GenoViewsTest(GenoAdminTestCase):
         self.assertEqual(Invoice.objects.count(), 0)
 
     @patch("geno.views.create_qrbill", side_effect=create_fake_pdf, return_value=([], 0, None))
-    def test_invoice_manual_process_download(self, mock_create_qrbill):
+    def test_invoice_manual_process_download(self, _mock_create_qrbill):
         self.client.login(username="superuser", password="secret")
         path = reverse("geno:invoice-manual")
         response = self.client.post(path, data=self.get_invoice_manual_data(preview=False))
@@ -244,7 +251,7 @@ class GenoViewsTest(GenoAdminTestCase):
         side_effect=create_fake_pdf,
         return_value=([], 1, "test@example.test"),
     )
-    def test_invoice_manual_process_send_email(self, mock_create_qrbill):
+    def test_invoice_manual_process_send_email(self, _mock_create_qrbill):
         self.client.login(username="superuser", password="secret")
         path = reverse("geno:invoice-manual")
         response = self.client.post(
@@ -263,7 +270,7 @@ class GenoViewsTest(GenoAdminTestCase):
         side_effect=create_fake_pdf,
         return_value=([], 0, "test@example.test"),
     )
-    def test_invoice_manual_process_email_error(self, mock_create_qrbill):
+    def test_invoice_manual_process_email_error(self, _mock_create_qrbill):
         self.client.login(username="superuser", password="secret")
         path = reverse("geno:invoice-manual")
         response = self.client.post(
@@ -281,7 +288,7 @@ class GenoViewsTest(GenoAdminTestCase):
         "geno.views.create_qrbill",
         return_value=(["Error: TEST"], 1, "test@example.test"),
     )
-    def test_invoice_manual_process_creation_error(self, mock_create_qrbill):
+    def test_invoice_manual_process_creation_error(self, _mock_create_qrbill):
         self.client.login(username="superuser", password="secret")
         path = reverse("geno:invoice-manual")
         response = self.client.post(
@@ -296,7 +303,7 @@ class GenoViewsTest(GenoAdminTestCase):
         self.assertEqual(Invoice.objects.count(), 0)
 
     @patch("geno.views.create_qrbill", side_effect=create_fake_pdf, return_value=([], 0, None))
-    def test_invoice_manual_address_and_contract_validation(self, mock_create_qrbill):
+    def test_invoice_manual_address_and_contract_validation(self, _mock_create_qrbill):
         self.client.login(username="superuser", password="secret")
         path = reverse("geno:invoice-manual")
         data = self.get_invoice_manual_data(preview=False, send_email=False)
