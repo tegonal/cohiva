@@ -918,7 +918,6 @@ class DocumentTypeAdmin(GenoBaseAdmin):
         "name",
         "description",
         "templates",
-        "template_file",
         "active",
         "comment",
         ("ts_created", "ts_modified"),
@@ -926,7 +925,7 @@ class DocumentTypeAdmin(GenoBaseAdmin):
         "backlinks",
     ]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
-    list_display = ["name", "description", "template_file", "active"]
+    list_display = ["name", "description", "active"]
     list_filter = [
         ("active", BooleanFieldDefaultTrueListFilter),
     ]
@@ -934,7 +933,6 @@ class DocumentTypeAdmin(GenoBaseAdmin):
         "name",
         "description",
         "templates__name",
-        "template_file",
     ]
     filter_horizontal = ["templates"]
 
@@ -1515,8 +1513,7 @@ class ContractAdmin(GenoBaseAdmin):
                 dropdown_items.append({
                     "title": action_tuple[1],
                     "path": action_tuple[0],\
-                    # TODO: assign an icon generically, or store it in the action tuple
-                    "icon": None,
+                    "icon": "file_save",
                     "attrs": {},
                 })
 
