@@ -54,8 +54,8 @@
             </div>
         </aside>
         <h2>
-            <span class="text">5 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">5<span class="text"> run</span></button>
+            <span class="text">10 statements &nbsp;</span>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">10<span class="text"> run</span></button>
             <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">0<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">0<span class="text"> excluded</span></button>
         </h2>
@@ -64,8 +64,8 @@
             <a id="indexLink" class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a id="nextFileLink" class="nav" href="z_53abe7f4e356d201_billing_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.14.2">coverage.py v7.14.2</a>,
-            created at 2026-06-26 09:08 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.14.3">coverage.py v7.14.3</a>,
+            created at 2026-07-06 16:49 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -88,7 +88,21 @@
     <p class="pln"><span class="n"><a id="t6" href="#t6">6</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t7" href="#t7">7</a></span><span class="t">    <span class="key">def</span> <span class="nam">ready</span><span class="op">(</span><span class="nam">self</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t8" href="#t8">8</a></span><span class="t">        <span class="str">"""Import checks when app is ready."""</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t9" href="#t9">9</a></span><span class="t">        <span class="key">from</span> <span class="nam">geno</span> <span class="key">import</span> <span class="nam">checks</span>  <span class="com"># noqa: F401</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t9" href="#t9">9</a></span><span class="t">        <span class="com"># Delegate directly to Django's native setter for .choices, to avoid</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t10" href="#t10">10</a></span><span class="t">        <span class="com"># an infinite recursion caused by the select2 library interacting with</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t11" href="#t11">11</a></span><span class="t">        <span class="com"># Django 5.2's super() function in an unexpected way.</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t12" href="#t12">12</a></span><span class="t">        <span class="key">import</span> <span class="nam">select2</span><span class="op">.</span><span class="nam">fields</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t13" href="#t13">13</a></span><span class="t">        <span class="key">from</span> <span class="nam">django</span><span class="op">.</span><span class="nam">forms</span><span class="op">.</span><span class="nam">fields</span> <span class="key">import</span> <span class="nam">ChoiceField</span> <span class="key">as</span> <span class="nam">DjangoChoiceField</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t14" href="#t14">14</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t15" href="#t15">15</a></span><span class="t">        <span class="key">from</span> <span class="nam">geno</span> <span class="key">import</span> <span class="nam">checks</span>  <span class="com"># noqa: F401</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t16" href="#t16">16</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t17" href="#t17">17</a></span><span class="t">        <span class="key">def</span> <span class="nam">_select2_choices_setter</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">value</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t18" href="#t18">18</a></span><span class="t">            <span class="nam">DjangoChoiceField</span><span class="op">.</span><span class="nam">choices</span><span class="op">.</span><span class="nam">fset</span><span class="op">(</span><span class="nam">self</span><span class="op">,</span> <span class="nam">value</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t19" href="#t19">19</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t20" href="#t20">20</a></span><span class="t">        <span class="nam">select2</span><span class="op">.</span><span class="nam">fields</span><span class="op">.</span><span class="nam">Select2FieldMixin</span><span class="op">.</span><span class="nam">choices</span> <span class="op">=</span> <span class="nam">property</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t21" href="#t21">21</a></span><span class="t">            <span class="nam">select2</span><span class="op">.</span><span class="nam">fields</span><span class="op">.</span><span class="nam">Select2FieldMixin</span><span class="op">.</span><span class="nam">choices</span><span class="op">.</span><span class="nam">fget</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t22" href="#t22">22</a></span><span class="t">            <span class="nam">_select2_choices_setter</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t23" href="#t23">23</a></span><span class="t">        <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 </main>
 <footer>
     <div class="content">
@@ -97,8 +111,8 @@
             <a class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a class="nav" href="z_53abe7f4e356d201_billing_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.14.2">coverage.py v7.14.2</a>,
-            created at 2026-06-26 09:08 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.14.3">coverage.py v7.14.3</a>,
+            created at 2026-07-06 16:49 +0000
         </p>
     </div>
 </footer>

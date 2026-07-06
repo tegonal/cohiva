@@ -64,8 +64,8 @@
             <a id="indexLink" class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a id="nextFileLink" class="nav" href="z_d66e463198da32fb_test_tenant_admin_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.14.2">coverage.py v7.14.2</a>,
-            created at 2026-06-26 09:08 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.14.3">coverage.py v7.14.3</a>,
+            created at 2026-07-06 16:49 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -219,7 +219,7 @@
     <p class="pln"><span class="n"><a id="t137" href="#t137">137</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t138" href="#t138">138</a></span><span class="t">        <span class="com">## Use token and check profile information</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t139" href="#t139">139</a></span><span class="t">        <span class="nam">response</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">client</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t140" href="#t140">140</a></span><span class="t">            <span class="str">"/portal/me/"</span><span class="op">,</span> <span class="nam">HTTP_AUTHORIZATION</span><span class="op">=</span><span class="fst">f"</span><span class="fst">Bearer </span><span class="op">{</span><span class="nam">token</span><span class="op">[</span><span class="str">'access_token'</span><span class="op">]</span><span class="op">}</span><span class="fst">"</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t140" href="#t140">140</a></span><span class="t">            <span class="str">"/portal/me/"</span><span class="op">,</span> <span class="nam">headers</span><span class="op">=</span><span class="op">{</span><span class="str">"authorization"</span><span class="op">:</span> <span class="fst">f"</span><span class="fst">Bearer </span><span class="op">{</span><span class="nam">token</span><span class="op">[</span><span class="str">'access_token'</span><span class="op">]</span><span class="op">}</span><span class="fst">"</span><span class="op">}</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t141" href="#t141">141</a></span><span class="t">        <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t142" href="#t142">142</a></span><span class="t">        <span class="nam">self</span><span class="op">.</span><span class="nam">assertEqual</span><span class="op">(</span><span class="nam">response</span><span class="op">.</span><span class="nam">status_code</span><span class="op">,</span> <span class="num">200</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t143" href="#t143">143</a></span><span class="t">        <span class="nam">profile</span> <span class="op">=</span> <span class="nam">response</span><span class="op">.</span><span class="nam">json</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -296,7 +296,7 @@
     <p class="pln"><span class="n"><a id="t214" href="#t214">214</a></span><span class="t">        <span class="com">## Use token and check profile information</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t215" href="#t215">215</a></span><span class="t">        <span class="nam">response</span> <span class="op">=</span> <span class="nam">self</span><span class="op">.</span><span class="nam">client</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t216" href="#t216">216</a></span><span class="t">            <span class="nam">reverse</span><span class="op">(</span><span class="str">"oauth2_provider:user-info"</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t217" href="#t217">217</a></span><span class="t">            <span class="nam">HTTP_AUTHORIZATION</span><span class="op">=</span><span class="fst">f"</span><span class="fst">Bearer </span><span class="op">{</span><span class="nam">token</span><span class="op">[</span><span class="str">'access_token'</span><span class="op">]</span><span class="op">}</span><span class="fst">"</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t217" href="#t217">217</a></span><span class="t">            <span class="nam">headers</span><span class="op">=</span><span class="op">{</span><span class="str">"authorization"</span><span class="op">:</span> <span class="fst">f"</span><span class="fst">Bearer </span><span class="op">{</span><span class="nam">token</span><span class="op">[</span><span class="str">'access_token'</span><span class="op">]</span><span class="op">}</span><span class="fst">"</span><span class="op">}</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t218" href="#t218">218</a></span><span class="t">        <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t219" href="#t219">219</a></span><span class="t">        <span class="nam">self</span><span class="op">.</span><span class="nam">assertEqual</span><span class="op">(</span><span class="nam">response</span><span class="op">.</span><span class="nam">status_code</span><span class="op">,</span> <span class="num">200</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t220" href="#t220">220</a></span><span class="t">        <span class="nam">profile</span> <span class="op">=</span> <span class="nam">response</span><span class="op">.</span><span class="nam">json</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -509,8 +509,8 @@
             <a class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a class="nav" href="z_d66e463198da32fb_test_tenant_admin_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.14.2">coverage.py v7.14.2</a>,
-            created at 2026-06-26 09:08 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.14.3">coverage.py v7.14.3</a>,
+            created at 2026-07-06 16:49 +0000
         </p>
     </div>
 </footer>
