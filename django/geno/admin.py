@@ -1521,7 +1521,6 @@ class ContractAdmin(GenoBaseAdmin):
                 response.context_data["actions_detail"] = [{
                     "title": str(_("Aktionen")),
                     "path": None,
-                    # TODO: select a relevant icon?
                     "icon": None,
                     "variant": ActionVariant.PRIMARY,
                     "method_name": "contract_actions",
