@@ -6,10 +6,10 @@
 # place (https://docs.djangoproject.com/en/5.2/releases/5.0/#migrating-existing-uuidfield-on-mariadb-10-7).
 from django.db import migrations
 
-class Migration(migrations.Migration):
 
+class Migration(migrations.Migration):
     dependencies = [
-        ('geno', '0024_member_name_to_fk_and_date_constraint'),
+        ("geno", "0024_member_name_to_fk_and_date_constraint"),
     ]
 
     operations = [

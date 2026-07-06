@@ -6,10 +6,10 @@
 # place (https://docs.djangoproject.com/en/5.2/releases/5.0/#migrating-existing-uuidfield-on-mariadb-10-7).
 from django.db import migrations
 
-class Migration(migrations.Migration):
 
+class Migration(migrations.Migration):
     dependencies = [
-        ('report', '0002_alter_report_comment_alter_report_report_type_and_more'),
+        ("report", "0002_alter_report_comment_alter_report_report_type_and_more"),
     ]
 
     operations = [
