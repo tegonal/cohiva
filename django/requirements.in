@@ -35,7 +35,7 @@ django-crispy-forms
 django-filer
 
 ## Authentication providers
-django-oauth-toolkit
+django-oauth-toolkit >= 3.3.0
 requests-oauthlib
 djangosaml2idp  # currently requires cryptography<44 through pysaml2 and pyopenssl. As soon as that is fixed,
                 # cryptography should be upgraded!
