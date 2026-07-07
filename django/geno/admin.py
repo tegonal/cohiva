@@ -1502,30 +1502,36 @@ class ContractAdmin(GenoBaseAdmin):
             dropdown_items = []
 
             if request.user.has_perm("geno.add_contract"):
-                dropdown_items.append({
-                    "title": str(_("Untervertrag hinzufügen")),
-                    "path": reverse("admin:geno_contract_add") + f"?main_contract={object_id}",
-                    "icon": "splitscreen_add",
-                    "attrs": {},
-                })
+                dropdown_items.append(
+                    {
+                        "title": str(_("Untervertrag hinzufügen")),
+                        "path": reverse("admin:geno_contract_add") + f"?main_contract={object_id}",
+                        "icon": "splitscreen_add",
+                        "attrs": {},
+                    }
+                )
 
             for action_tuple in contract.get_object_actions():
-                dropdown_items.append({
-                    "title": action_tuple[1],
-                    "path": action_tuple[0],\
-                    "icon": "file_save",
-                    "attrs": {},
-                })
+                dropdown_items.append(
+                    {
+                        "title": action_tuple[1],
+                        "path": action_tuple[0],
+                        "icon": "file_save",
+                        "attrs": {},
+                    }
+                )
 
             if dropdown_items:
-                response.context_data["actions_detail"] = [{
-                    "title": str(_("Aktionen")),
-                    "path": None,
-                    "icon": None,
-                    "variant": ActionVariant.PRIMARY,
-                    "method_name": "contract_actions",
-                    "items": dropdown_items,
-                }]
+                response.context_data["actions_detail"] = [
+                    {
+                        "title": str(_("Aktionen")),
+                        "path": None,
+                        "icon": None,
+                        "variant": ActionVariant.PRIMARY,
+                        "method_name": "contract_actions",
+                        "items": dropdown_items,
+                    }
+                ]
 
         return response
 
