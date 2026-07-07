@@ -833,13 +833,12 @@ class Member(GenoBase):
 
     def get_object_actions(self):
         actions = []
-        for dt in DocumentType.objects.filter(active=True).filter(name__startswith="member"):
-            actions.append(
-                (
-                    "/geno/documents/%s/%s/create/" % (dt.name, self.pk),
-                    "%s erzeugen" % (dt.description),
-                )
-            )
+        for dt in DocumentType.objects.filter(active=True, name__startswith="member").prefetch_related("templates"):
+            for tmpl in dt.templates.filter(active=True):
+                actions.append((
+                    f"/geno/documents/{dt.name}/{self.pk}/create/?template={tmpl.pk}",
+                    f"{dt.description}: {tmpl.name}"
+                ))
         return actions
 
     class Meta:
@@ -1024,13 +1023,12 @@ class Share(GenoBase):
 
     def get_object_actions(self):
         actions = []
-        for dt in DocumentType.objects.filter(active=True).filter(name__startswith="share"):
-            actions.append(
-                (
-                    "/geno/documents/%s/%s/create/" % (dt.name, self.pk),
-                    "%s erzeugen" % (dt.description),
-                )
-            )
+        for dt in DocumentType.objects.filter(active=True, name__startswith="share").prefetch_related("templates"):
+            for tmpl in dt.templates.filter(active=True):
+                actions.append((
+                    f"/geno/documents/{dt.name}/{self.pk}/create/?template={tmpl.pk}",
+                    f"{dt.description}: {tmpl.name}"
+                ))
         return actions
 
     @admin.display(description="Total")
@@ -1106,28 +1104,15 @@ DOCUMENTTYPE_NAME_CHOICES = (
 class DocumentType(GenoBase):
     name = models.CharField("Name", max_length=50, unique=True, choices=DOCUMENTTYPE_NAME_CHOICES)
     description = models.CharField("Beschreibung", max_length=200)
-    template = models.ForeignKey(
-        "ContentTemplate",
-        verbose_name="Vorlage",
-        on_delete=models.CASCADE,
-        help_text="OpenDocument Dokumentvorlage",
-        blank=True,
-        null=True,
-    )
-    template_file = models.CharField(
-        "Dateiname Vorlage (alte Methode)", max_length=200, blank=True
-    )
     active = models.BooleanField("Aktiv", default=True)
-
-    def clean(self, *args, **kwargs):
-        if not self.template_file and not self.template:
-            raise ValidationError(
-                "Es muss entweder eine Vorlage ausgewählt (neue Methode) "
-                "oder ein Dateiname angegeben weden (alte Methode)."
-            )
-        if self.template and self.template.template_type != "OpenDocument":
-            raise ValidationError("Es muss eine OpenDocument Dokument-Vorlage ausgewählt werden.")
-        super().clean(*args, **kwargs)
+    templates = models.ManyToManyField(
+        "ContentTemplate",
+        verbose_name="Vorlagen",
+        help_text="Verfügbar OpenDocument Dokumentvorlagen",
+        blank=True,
+        limit_choices_to={"template_type": "OpenDocument"},
+        related_name="document_types",
+    )
 
     class Meta:
         verbose_name = "Dokumenttyp"
@@ -1145,6 +1130,14 @@ class Document(GenoBase):
     )
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey("content_type", "object_id")
+    # Store which template was used to create a given document, if any
+    template = models.ForeignKey(
+        "ContentTemplate",
+        verbose_name="Vorlage",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
 
     def __str__(self):
         date = timezone.localtime(self.ts_created).strftime("%d.%m.%Y %H:%M")
@@ -1687,13 +1680,12 @@ class Contract(GenoBase):
                     "Es wird nur das PDF erzeugt, nicht gebucht!",
                 )
             )
-        for dt in DocumentType.objects.filter(active=True).filter(name__startswith="contract"):
-            actions.append(
-                (
-                    "/geno/documents/%s/%s/create/" % (dt.name, self.pk),
-                    "%s erzeugen" % (dt.description),
-                )
-            )
+        for dt in DocumentType.objects.filter(active=True, name__startswith="contract").prefetch_related("templates"):
+            for tmpl in dt.templates.filter(active=True):
+                actions.append((
+                    f"/geno/documents/{dt.name}/{self.pk}/create/?template={tmpl.pk}",
+                    f"{tmpl.name}: {dt.description}"
+                ))
         return actions
 
     def save_as_copy(self):

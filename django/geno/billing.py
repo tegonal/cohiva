@@ -1754,7 +1754,7 @@ def create_qrbill(
         context["qr_debtor"] = address
         try:
             invoice_doctype = DocumentType.objects.get(name="invoice")
-            render_qrbill(invoice_doctype.template, context, output_filename)
+            render_qrbill(invoice_doctype.templates.filter(active=True).first(), context, output_filename)
         except Exception as e:
             logger.error(f"Could not render QR bill: {e}")
             return (
