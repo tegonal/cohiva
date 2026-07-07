@@ -65,7 +65,7 @@
             <a id="nextFileLink" class="nav" href="z_53abe7f4e356d201_checks_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.14.3">coverage.py v7.14.3</a>,
-            created at 2026-07-07 05:15 +0000
+            created at 2026-07-07 16:43 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -1836,7 +1836,7 @@
     <p class="run"><span class="n"><a id="t1754" href="#t1754">1754</a></span><span class="t">        <span class="nam">context</span><span class="op">[</span><span class="str">"qr_debtor"</span><span class="op">]</span> <span class="op">=</span> <span class="nam">address</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1755" href="#t1755">1755</a></span><span class="t">        <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1756" href="#t1756">1756</a></span><span class="t">            <span class="nam">invoice_doctype</span> <span class="op">=</span> <span class="nam">DocumentType</span><span class="op">.</span><span class="nam">objects</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="nam">name</span><span class="op">=</span><span class="str">"invoice"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t1757" href="#t1757">1757</a></span><span class="t">            <span class="nam">render_qrbill</span><span class="op">(</span><span class="nam">invoice_doctype</span><span class="op">.</span><span class="nam">template</span><span class="op">,</span> <span class="nam">context</span><span class="op">,</span> <span class="nam">output_filename</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1757" href="#t1757">1757</a></span><span class="t">            <span class="nam">render_qrbill</span><span class="op">(</span><span class="nam">invoice_doctype</span><span class="op">.</span><span class="nam">templates</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span><span class="nam">active</span><span class="op">=</span><span class="key">True</span><span class="op">)</span><span class="op">.</span><span class="nam">first</span><span class="op">(</span><span class="op">)</span><span class="op">,</span> <span class="nam">context</span><span class="op">,</span> <span class="nam">output_filename</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1758" href="#t1758">1758</a></span><span class="t">        <span class="key">except</span> <span class="nam">Exception</span> <span class="key">as</span> <span class="nam">e</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1759" href="#t1759">1759</a></span><span class="t">            <span class="nam">logger</span><span class="op">.</span><span class="nam">error</span><span class="op">(</span><span class="fst">f"</span><span class="fst">Could not render QR bill: </span><span class="op">{</span><span class="nam">e</span><span class="op">}</span><span class="fst">"</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1760" href="#t1760">1760</a></span><span class="t">            <span class="key">return</span> <span class="op">(</span>&nbsp;</span><span class="r"></span></p>
@@ -2148,7 +2148,7 @@
             <a class="nav" href="z_53abe7f4e356d201_checks_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.14.3">coverage.py v7.14.3</a>,
-            created at 2026-07-07 05:15 +0000
+            created at 2026-07-07 16:43 +0000
         </p>
     </div>
 </footer>
