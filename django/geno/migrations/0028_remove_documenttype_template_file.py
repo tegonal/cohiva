@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('geno', '0026_alter_documenttype_template_to_m2m'),
+        ('geno', '0027_alter_documenttype_template_to_m2m'),
     ]
 
     operations = [

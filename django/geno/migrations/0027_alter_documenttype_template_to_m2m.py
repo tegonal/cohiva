@@ -7,7 +7,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('geno', '0025_alter_registration_telephone'),
+        ('geno', '0026_convert_uuids_from_char'),
     ]
 
     operations = [
