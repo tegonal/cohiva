@@ -1413,9 +1413,9 @@ UNFOLD = {
     "STYLES": [
         lambda request: static("css/cohiva_style.css"),
     ],
-    #    "SCRIPTS": [
-    #        lambda request: static("js/script.js"),
-    #    ],
+    "SCRIPTS": [
+        lambda request: static("geno/js/selector_resize.js"),
+    ],
     #    "BORDER_RADIUS": "6px",
     #    "COLORS": {
     #        "base": {
