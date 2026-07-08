@@ -6,7 +6,7 @@ import logging
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from geno.models import Address, Building, Contract, Share
+from geno.models import Address, Building, Contract, Member, Share
 
 from .services import ExcelImporter
 from .utils import (
@@ -63,10 +63,6 @@ class ImporterPropertySharesVFN(ExcelImporter):
 
     @staticmethod
     def _build_import_info(row_data: dict) -> dict[str, str | Address]:
-        person_id = row_data.get("Person")
-        if not person_id:
-            raise ValidationError(_("Person is required"))
-
         typ = row_data.get("Typ")
         if not typ:
             raise ValidationError(_("Typ is required"))
@@ -75,14 +71,41 @@ class ImporterPropertySharesVFN(ExcelImporter):
         quantity = parse_int(row_data.get("Anzahl"))
         amount = parse_decimal(row_data.get("Betrag pro Stück"))
 
-        import_id = f"vfn_{typ}_{person_id}_{date_start}_{quantity}_{amount}"
-        address = Address.objects.filter(import_id=f"vfn_{person_id}").first()
-        if not address:
-            raise ValidationError(
-                _("Address with ImportID {import_id} not found").format(
-                    import_id=f"vfn_{person_id}"
+        person_id = row_data.get("Person")
+        member_id = row_data.get("Mitglied-ID")
+        address_id = row_data.get("Adress-ID")
+        if address_id:
+            import_id = f"vfn_{typ}_a{address_id}_{date_start}_{quantity}_{amount}"
+            address = Address.objects.filter(id=address_id).first()
+            if not address:
+                raise ValidationError(
+                    _("Address with ID {address_id} not found").format(address_id=f"{address_id}")
                 )
-            )
+        elif member_id:
+            import_id = f"vfn_{typ}_m{member_id}_{date_start}_{quantity}_{amount}"
+            member = Member.objects.filter(id=member_id).first()
+            if not member:
+                raise ValidationError(
+                    _("Member with ID {member_id} not found").format(member_id=f"{member_id}")
+                )
+            address = member.name
+            if not address:
+                raise ValidationError(
+                    _("Address for member with ID {member_id} not found").format(
+                        member_id=f"{member_id}"
+                    )
+                )
+        elif person_id:
+            import_id = f"vfn_{typ}_{person_id}_{date_start}_{quantity}_{amount}"
+            address = Address.objects.filter(import_id=f"vfn_{person_id}").first()
+            if not address:
+                raise ValidationError(
+                    _("Address with ImportID {import_id} not found").format(
+                        import_id=f"vfn_{person_id}"
+                    )
+                )
+        else:
+            raise ValidationError(_("Person, Mitglied-ID, or Adress-ID is required"))
         return {"import_id": import_id, "address": address}
 
     @staticmethod
