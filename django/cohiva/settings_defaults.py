@@ -920,7 +920,7 @@ GENO_SHARE_LETTER_CUTOFF_DATE = datetime.date(2018, 7, 1)
 
 # When creating statements, treat persons differently if they own only up to this
 # number of shares (and they have no loans etc).
-GENO_SMALL_NUMBER_OF_SHARES_CUTOFF = 5
+# GENO_SMALL_NUMBER_OF_SHARES_CUTOFF = 5
 
 GENO_MEMBER_FLAGS = {
     1: "Wohnen",

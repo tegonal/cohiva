@@ -99,7 +99,7 @@ def get_share_statement_data(adr, year, enddate=None):
         statement_data["s_shares_bvg"] = inter["bvg_amount"][0]
         if statement_data["s_shares_bvg"] > 0:
             statement_data["sect_bvg"] = True
-        if statement_data["n_shares"] > settings.GENO_SMALL_NUMBER_OF_SHARES_CUTOFF:
+        if statement_data["n_shares"] > getattr(settings, "GENO_SMALL_NUMBER_OF_SHARES_CUTOFF", 0):
             statement_data["thankyou"] = True
     if inter["end_amount"][1]:
         ## Zinslose Darlehen
