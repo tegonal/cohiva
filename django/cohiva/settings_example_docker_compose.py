@@ -6,13 +6,14 @@ Inherits from settings_defaults and overrides necessary configurations.
 import os
 
 from .settings_defaults import *  # noqa: F403
-from .settings_defaults import CORS_ALLOWED_ORIGINS
+from .settings_defaults import CACHES, CORS_ALLOWED_ORIGINS
 
 # Instance-specific configuration
 COHIVA_INSTANCE_PATH = os.environ.get("COHIVA_INSTANCE_PATH", "/instance_files/override_files")
 
-# Override Celery broker for Docker Compose networking
+# Override Celery broker and default cache for Docker Compose networking
 CELERY_BROKER_URL = "redis://redis:6379/0"
+CACHES["default"]["LOCATION"] = "redis://redis:6379"
 
 # Static files configuration for Docker Compose
 STATIC_ROOT = "/tmp/static"

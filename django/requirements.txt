@@ -12,6 +12,8 @@ aiosignal==1.4.0
     # via aiohttp
 aiostream==0.4.5
     # via vdirsyncer
+altcha==1.0.0
+    # via django-altcha
 amqp==5.3.1
     # via kombu
 anyascii==0.3.3
@@ -104,6 +106,7 @@ django==5.2.15
     # via
     #   -r requirements.in
     #   dj-rest-auth
+    #   django-altcha
     #   django-cors-headers
     #   django-crispy-forms
     #   django-datetime-widget
@@ -124,6 +127,8 @@ django==5.2.15
     #   easy-thumbnails
     #   laces
     #   wagtail
+django-altcha==1.0.0
+    # via -r requirements.in
 django-cogwheels==0.3
     # via wagtailmenus
 django-cors-headers==4.7.0

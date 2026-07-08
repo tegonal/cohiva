@@ -13,6 +13,8 @@ NOTE: Settings are cascaded in the following order (settings in the later files 
 """
 
 import datetime
+import hashlib
+import hmac
 import locale
 from pathlib import Path
 from urllib.parse import quote
@@ -222,6 +224,7 @@ INSTALLED_APPS = (
     "django.contrib.staticfiles",
     "crispy_forms",  # For Unfold forms
     "email_obfuscator",
+    "django_altcha",
     "django_tables2",
     "select2",
     "datetimewidget",
@@ -631,6 +634,13 @@ CELERY_BROKER_URL = "redis://localhost:6379/0"
 #   'global_keyprefix': 'cohiva_'
 # }
 
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": "redis://localhost:6379",
+    }
+}
+
 ## Cohiva specific config
 COHIVA_FEATURES = cbc.FEATURES
 COHIVA_SITE_NICKNAME = cbc.SITE_NICKNAME
@@ -1039,6 +1049,16 @@ WAGTAILADMIN_BASE_URL = BASE_URL
 WAGTAIL_FRONTEND_LOGIN_URL = LOGIN_URL
 WAGTAILDOCS_EXTENSIONS = ["csv", "docx", "key", "odt", "pdf", "pptx", "rtf", "txt", "xlsx", "zip"]
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10_000
+
+# For django-altcha CAPTCHA fields (https://github.com/aboutcode-org/django-altcha#usage)
+# By default we derive the key from SITE_SECRET, you can override it in settings.py if you
+# want to specify an independent secret.
+ALTCHA_HMAC_KEY = hmac.new(
+    key=SECRET_KEY.encode("utf-8"),
+    msg=b"django-altcha-key-v1",  # Fixed context string for domain separation
+    digestmod=hashlib.sha256,
+).hexdigest()
+ALTCHA_INCLUDE_TRANSLATIONS = True
 
 ## Silence warning about MySQL constraints
 SILENCED_SYSTEM_CHECKS = [
