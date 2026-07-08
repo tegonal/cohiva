@@ -4,14 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('geno', '0027_alter_documenttype_template_to_m2m'),
+        ("geno", "0027_alter_documenttype_template_to_m2m"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='documenttype',
-            name='template_file',
+            model_name="documenttype",
+            name="template_file",
         ),
     ]

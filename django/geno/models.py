@@ -833,12 +833,16 @@ class Member(GenoBase):
 
     def get_object_actions(self):
         actions = []
-        for dt in DocumentType.objects.filter(active=True, name__startswith="member").prefetch_related("templates"):
+        for dt in DocumentType.objects.filter(
+            active=True, name__startswith="member"
+        ).prefetch_related("templates"):
             for tmpl in dt.templates.filter(active=True):
-                actions.append((
-                    f"/geno/documents/{dt.name}/{self.pk}/create/?template={tmpl.pk}",
-                    f"{dt.description}: {tmpl.name}"
-                ))
+                actions.append(
+                    (
+                        f"/geno/documents/{dt.name}/{self.pk}/create/?template={tmpl.pk}",
+                        f"{dt.description}: {tmpl.name}",
+                    )
+                )
         return actions
 
     class Meta:
@@ -1023,12 +1027,16 @@ class Share(GenoBase):
 
     def get_object_actions(self):
         actions = []
-        for dt in DocumentType.objects.filter(active=True, name__startswith="share").prefetch_related("templates"):
+        for dt in DocumentType.objects.filter(
+            active=True, name__startswith="share"
+        ).prefetch_related("templates"):
             for tmpl in dt.templates.filter(active=True):
-                actions.append((
-                    f"/geno/documents/{dt.name}/{self.pk}/create/?template={tmpl.pk}",
-                    f"{dt.description}: {tmpl.name}"
-                ))
+                actions.append(
+                    (
+                        f"/geno/documents/{dt.name}/{self.pk}/create/?template={tmpl.pk}",
+                        f"{dt.description}: {tmpl.name}",
+                    )
+                )
         return actions
 
     @admin.display(description="Total")
@@ -1680,12 +1688,16 @@ class Contract(GenoBase):
                     "Es wird nur das PDF erzeugt, nicht gebucht!",
                 )
             )
-        for dt in DocumentType.objects.filter(active=True, name__startswith="contract").prefetch_related("templates"):
+        for dt in DocumentType.objects.filter(
+            active=True, name__startswith="contract"
+        ).prefetch_related("templates"):
             for tmpl in dt.templates.filter(active=True):
-                actions.append((
-                    f"/geno/documents/{dt.name}/{self.pk}/create/?template={tmpl.pk}",
-                    f"{tmpl.name}: {dt.description}"
-                ))
+                actions.append(
+                    (
+                        f"/geno/documents/{dt.name}/{self.pk}/create/?template={tmpl.pk}",
+                        f"{tmpl.name}: {dt.description}",
+                    )
+                )
         return actions
 
     def save_as_copy(self):
