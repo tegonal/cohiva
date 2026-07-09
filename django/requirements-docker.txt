@@ -324,7 +324,7 @@ six==1.17.0
     # via
     #   python-dateutil
     #   vobject
-soupsieve==2.7
+soupsieve==2.8.4
     # via beautifulsoup4
 sqlalchemy==1.4.54
     # via
