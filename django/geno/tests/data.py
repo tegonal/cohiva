@@ -1,4 +1,5 @@
 import datetime
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -23,8 +24,10 @@ from geno.models import (
     Tenant,
 )
 from geno.tests.base import GenoAdminTestCase
-from geno.tests.test_registration import TestRegistrationForm
 from reservation.tests.base import ReservationTestCase
+
+if TYPE_CHECKING:
+    from geno.tests.test_registration import TestRegistrationForm
 
 
 def create_users(cls: type[GenoAdminTestCase]):
@@ -534,7 +537,7 @@ def create_sharetypes(cls: type[GenoAdminTestCase]):
     cls.sharetypes.append(ShareType.objects.create(name="Anteilschein freiwillig"))
 
 
-def create_registrationevents(cls: type[TestRegistrationForm]):
+def create_registrationevents(cls: "type[TestRegistrationForm]"):
     cls.registrationevents = []
     cls.registrationevents.append(
         RegistrationEvent.objects.create(
