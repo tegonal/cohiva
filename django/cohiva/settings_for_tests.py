@@ -109,3 +109,6 @@ GENO_QRBILL_CREDITOR = {
 
 if "importer" not in INSTALLED_APPS:
     INSTALLED_APPS += ("importer",)
+
+# Disable CAPTCHA for tests
+ALTCHA_VERIFICATION_ENABLED = False

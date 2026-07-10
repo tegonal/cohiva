@@ -30,6 +30,7 @@ django-datetime-widget
 django-email-obfuscator
 django-unfold
 django-crispy-forms
+django-altcha
 
 ## File manager app
 django-filer

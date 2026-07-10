@@ -77,6 +77,8 @@ If you need to set up step-by-step or are preparing a production deployment, fol
 ## Install required system packages
 
 Supported Python versions: 3.11 – 3.13
+Supported MariaDB version: 10.7+
+Supported Redis version: 6+
 
 Example for Debian 11 (should work on most Debian/Ubuntu based systems):
 
