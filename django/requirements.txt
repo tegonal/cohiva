@@ -6,7 +6,7 @@
 #
 aiohappyeyeballs==2.6.1
     # via aiohttp
-aiohttp==3.13.4
+aiohttp==3.14.1
     # via vdirsyncer
 aiosignal==1.4.0
     # via aiohttp
@@ -102,7 +102,7 @@ dill==0.4.0
     # via pylint
 dj-rest-auth==7.0.1
     # via -r requirements.in
-django==5.2.15
+django==5.2.16
     # via
     #   -r requirements.in
     #   dj-rest-auth
@@ -307,7 +307,7 @@ pyopenssl==24.2.1
     # via pysaml2
 pyparsing==3.2.5
     # via matplotlib
-pypdf==6.10.2
+pypdf==6.13.3
     # via -r requirements.in
 pysaml2==7.5.2
     # via djangosaml2idp
@@ -368,7 +368,7 @@ six==1.17.0
     #   jsbeautifier
     #   python-dateutil
     #   vobject
-soupsieve==2.7
+soupsieve==2.8.4
     # via beautifulsoup4
 sqlalchemy==1.4.54
     # via
@@ -423,7 +423,7 @@ vine==5.1.0
     #   kombu
 vobject==0.9.9
     # via caldav
-wagtail==7.0.7
+wagtail==7.0.8
     # via
     #   -r requirements.in
     #   wagtailmenus
