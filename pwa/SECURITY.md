@@ -1,42 +1,51 @@
-## Dependency Resolutions (Yarn)
+# How to do security updates?
+
+0. Show dependency and installed version(s)
+
+   yarn why -R <package>
+
+1. Try to update direct dependency
+
+   yarn up <direct dependency>
+
+2. Check if package has been updated to the required version. If not, add it to `resolutions` in `package.json` and add it to the list below for later removal.
+
+3. Install new resolutions with
+
+   yarn install
+
+# Dependency Resolutions (Yarn)
 
 We use Yarn `resolutions` to patch transitive dependency vulnerabilities
 when upstream packages have not yet released fixes.
 
-### Current overrides
+## Current overrides
 
-- **flatted → ^3.4.2**
-  - CVE: CVE-2026-33228
-  - Try removing when: eslint>9.39.4
+Try to remove the listed packages from `resolutions` in `package.json`
+when the following packages have been updated:
 
-- **tar → ^7.5.11**
-  - CVE: CVE-2026-31802
-  - Try removing when: @quasar/app-vite > 2.6.0
+### eslint > 9.39.4
 
-- **lodash → ^4.18.0**
-  - CVE: CVE-2026-4800
-  - Try removing when: @quasar/app-vite > 2.6.0
+- "flatted": "^3.4.2",
 
-- **minimatch → ^10.2.3**
-  - CVE: CVE-2026-27903
-  - Try removing when: @quasar/app-vite > 2.6.0
+### @quasar/app-vite > 2.6.0
 
-- **picomatch → ^4.0.4**
-  - CVE: CVE-2026-33672
-  - Try removing when: @quasar/app-vite > 2.6.0
+- tar ^7.5.16
+- lodash ^4.18.0
+- minimatch ^10.2.3
+- picomatch ^4.0.4
+- ip-address ^10.1.1
+- vite ^8.0.16
 
-- **ip-address → ^10.1.1**
-  - CVE: CVE-2026-42338
-  - Try removing when: @quasar/app-vite > 2.6.0
+### @quasar/cli > 4.0.0
 
-- **follow-redirects → ^1.16.0**
-  - CVE:
-  - Try removing when: @quasar/cli > 4.0.0
+- follow-redirects ^1.16.0
 
-- **@babel/helper-module-transforms → ^7.29.4**
-  - CVE: CVE-2026-44728
-  - Try removing when: workbox-build > 7.4.1
+### workbox-build > 7.4.1
 
-- **fast-uri → ^3.1.2**
-  - CVE: CVE-2026-6322
-  - Try removing when: workbox-build > 7.4.1
+- @babel/helper-module-transforms ^7.29.4
+- fast-uri ^3.1.2
+
+### axios > 1.18.1
+
+- "form-data": "^4.0.6"
