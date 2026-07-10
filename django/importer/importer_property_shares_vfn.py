@@ -71,9 +71,13 @@ class ImporterPropertySharesVFN(ExcelImporter):
         quantity = parse_int(row_data.get("Anzahl"))
         amount = parse_decimal(row_data.get("Betrag pro Stück"))
 
-        person_id = row_data.get("Person")
-        member_id = row_data.get("Mitglied-ID")
+        # There are three options to reference the Address that should be linked to the share:
+        #  - Address-ID: The id of the Address object in the database
+        #  - Member-ID: The id of a Member object in the databank that links to the Address
+        #  - Person: An arbitrary ID from a previous import of the person (Address with import id 'vfn_{person_import_id}')
         address_id = row_data.get("Adress-ID")
+        member_id = row_data.get("Mitglied-ID")
+        person_import_id = row_data.get("Person")
         if address_id:
             import_id = f"vfn_{typ}_a{address_id}_{date_start}_{quantity}_{amount}"
             address = Address.objects.filter(id=address_id).first()
@@ -95,13 +99,13 @@ class ImporterPropertySharesVFN(ExcelImporter):
                         member_id=f"{member_id}"
                     )
                 )
-        elif person_id:
-            import_id = f"vfn_{typ}_{person_id}_{date_start}_{quantity}_{amount}"
-            address = Address.objects.filter(import_id=f"vfn_{person_id}").first()
+        elif person_import_id:
+            import_id = f"vfn_{typ}_{person_import_id}_{date_start}_{quantity}_{amount}"
+            address = Address.objects.filter(import_id=f"vfn_{person_import_id}").first()
             if not address:
                 raise ValidationError(
                     _("Address with ImportID {import_id} not found").format(
-                        import_id=f"vfn_{person_id}"
+                        import_id=f"vfn_{person_import_id}"
                     )
                 )
         else:

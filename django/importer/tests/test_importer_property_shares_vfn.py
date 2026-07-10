@@ -8,10 +8,11 @@ from io import BytesIO
 
 import openpyxl
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 
-from geno.models import Address, Building, Contract, Share
+from geno.models import Address, Building, Contract, Member, Share
 from importer.importer_property_shares_vfn import ImporterPropertySharesVFN
 from importer.models import ImportJob
 
@@ -225,3 +226,67 @@ class ImporterPropertySharesVFNTest(TestCase):
 
         valid_types = [c[0] for c in ImportJob.IMPORT_TYPE_CHOICES]
         self.assertIn("property_shares_vfn", valid_types)
+
+    def test_missing_address_reference(self):
+        """Throw and error if no valid address reference is present."""
+        row_data = {
+            "Anzahl": "1",
+            "Betrag pro Stück": "CHF 123.50",
+            "Typ": "TestShare",
+            "Datum Beginn": "2020-05-01",
+        }
+        with self.assertRaises(ValidationError):
+            ImporterPropertySharesVFN._build_import_info(row_data)
+
+    def test_address_by_address_id(self):
+        """Import a share by address database id."""
+        address = Address.objects.create(name="Test", import_id="")
+        row_data = {
+            "Adress-ID": address.id,
+            "Anzahl": "1",
+            "Betrag pro Stück": "CHF 123.50",
+            "Typ": "TestShare",
+            "Datum Beginn": "2020-05-01",
+        }
+        ret = ImporterPropertySharesVFN._build_import_info(row_data)
+        self.assertEqual(ret["address"], address)
+        self.assertEqual(ret["import_id"], f"vfn_TestShare_a{address.pk}_2020-05-01_1_123.50")
+
+        # Address-ID takes precedence over other references
+        row_data.update({"Mitglied-ID": 1, "Person": "vfn_101"})
+        ret = ImporterPropertySharesVFN._build_import_info(row_data)
+        self.assertEqual(ret["address"], address)
+
+    def test_address_by_member_id(self):
+        """Import a share by member database id."""
+        address = Address.objects.create(name="Test", import_id="")
+        member = Member.objects.create(name=address, date_join=date(2000, 1, 1))
+        row_data = {
+            "Mitglied-ID": member.id,
+            "Anzahl": "1",
+            "Betrag pro Stück": "CHF 123.50",
+            "Typ": "TestShare",
+            "Datum Beginn": "2020-05-01",
+        }
+        ret = ImporterPropertySharesVFN._build_import_info(row_data)
+        self.assertEqual(ret["address"], address)
+        self.assertEqual(ret["import_id"], f"vfn_TestShare_m{member.pk}_2020-05-01_1_123.50")
+
+        # Mitglied-ID takes precedence over Person
+        row_data.update({"Person": "vfn_101"})
+        ret = ImporterPropertySharesVFN._build_import_info(row_data)
+        self.assertEqual(ret["address"], address)
+
+    def test_address_by_person_import_id(self):
+        """Import a share by person import id."""
+        address = Address.objects.create(name="Test", import_id="vfn_101")
+        row_data = {
+            "Person": 101,
+            "Anzahl": "1",
+            "Betrag pro Stück": "CHF 123.50",
+            "Typ": "TestShare",
+            "Datum Beginn": "2020-05-01",
+        }
+        ret = ImporterPropertySharesVFN._build_import_info(row_data)
+        self.assertEqual(ret["address"], address)
+        self.assertEqual(ret["import_id"], "vfn_TestShare_101_2020-05-01_1_123.50")
