@@ -155,14 +155,12 @@
           {# Info text on the left with item count #}
           <div class="mr-auto text-sm text-font-light dark:text-font-dark">
             {% if item_count %}
-              {% if item_label %}
-                {% blocktrans count counter=item_count %}
-                  Es wird {{ counter }} {{ item_label }} verarbeitet.
-                {% plural %}
-                  Es werden {{ counter }} {{ item_label }} verarbeitet.
-                {% endblocktrans %}
-              {% endif %}
-              {% trans "Dies ist ein Probelauf." %}
+              {% trans "Dies ist ein Probelauf. Klicken Sie auf 'Jetzt ausführen', um tatsächlich" %}
+              {% blocktrans count counter=item_count %}
+                {{ counter }} {{ item_label }} zu verarbeiten.
+              {% plural %}
+                {{ counter }} {{ item_label_plural }} zu verarbeiten.
+              {% endblocktrans %}
             {% else %}
               {% trans "Dies ist ein Probelauf. Klicken Sie auf 'Jetzt ausführen', um die Aktion tatsächlich auszuführen." %}
             {% endif %}

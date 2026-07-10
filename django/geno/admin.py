@@ -1849,7 +1849,7 @@ class TenantsViewAdmin(GenoBaseAdmin):
     ]
 
     @action(
-        description=_("Mietobjektespiegel"),
+        description=_("Mietobjektspiegel"),
         permissions=["geno.rental_objects"],
         icon="download",
     )

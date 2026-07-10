@@ -1275,6 +1275,9 @@ class DryRunActionView(CohivaAdminViewMixin, TemplateView):
         """
         return None
 
+    def get_item_label_plural(self):
+        return None
+
     def build_execute_url(self):
         """Build the URL for executing the action (dry_run=False)."""
         params = self.get_action_params()
@@ -1313,6 +1316,10 @@ class DryRunActionView(CohivaAdminViewMixin, TemplateView):
         item_label = self.get_item_label()
         if item_label is not None:
             context["item_label"] = item_label
+
+        item_label_plural = self.get_item_label_plural()
+        if item_label_plural is not None:
+            context["item_label_plural"] = item_label_plural
 
         return context
 
@@ -1616,7 +1623,7 @@ class ShareReminderLetterView(DocumentGeneratorView):
 
 
 class ShareInterestView(CohivaAdminViewMixin, TemplateView):
-    title = _("Zinsabrechung")
+    title = _("Zinsabrechnung")
     permission_required = (
         "geno.canview_share",
         "geno.canview_billing",
@@ -4068,17 +4075,19 @@ class InvoiceBatchGenerateView(DryRunActionView):
         """Extract invoice count from the results."""
         if self.result and len(self.result) > 0:
             last_section = self.result[-1]
-            if isinstance(last_section, dict) and last_section.get("objects"):
-                objects = last_section["objects"]
-                if objects and isinstance(objects[-1], str) and "Rechnungen" in objects[-1]:
-                    invoice_count_text = objects[-1]
-                    last_section["objects"] = objects[:-1]
-                    return int(invoice_count_text.split()[0])
+            if isinstance(last_section, dict):
+                info = last_section.get("info")
+                if isinstance(info, str):
+                    match = re.match(r"^(\d+) Rechnung(en)?\b", info)
+                    if match:
+                        return int(match.group(1))
         return None
 
     def get_item_label(self):
-        """Return 'Rechnung' as the item label."""
         return _("Rechnung")
+
+    def get_item_label_plural(self):
+        return _("Rechnungen")
 
     def process_action(self, dry_run):
         """Process invoice generation with given dry_run mode."""
@@ -4123,7 +4132,7 @@ class InvoiceBatchGenerateView(DryRunActionView):
                 "info": _("Optionen"),
                 "objects": [
                     _("Probelauf: %s") % (_("Ja") if dry_run else _("Nein")),
-                    _("Rechungen bis: %s") % reference_date,
+                    _("Rechnungen bis: %s") % reference_date,
                 ],
             }
         )

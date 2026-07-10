@@ -99,6 +99,10 @@ OAUTH2_PROVIDER = {
     "REQUEST_APPROVAL_PROMPT": "auto",  ## auto / force
     "PKCE_REQUIRED": False,  ## Rocket.Chat does not support PKCE
 }
+OAUTH2_PROVIDER_APPLICATION_MODEL = "oauth2_provider.Application"
+OAUTH2_PROVIDER_ACCESS_TOKEN_MODEL = "oauth2_provider.AccessToken"
+OAUTH2_PROVIDER_REFRESH_TOKEN_MODEL = "oauth2_provider.RefreshToken"
+OAUTH2_PROVIDER_ID_TOKEN_MODEL = "oauth2_provider.IDToken"
 
 ## Enable OIDC
 OAUTH2_PROVIDER["OIDC_ENABLED"] = True
@@ -1315,6 +1319,8 @@ COHIVA_ADMIN_NAVIGATION = [
                         "value": "oauth2_provider.Application",
                         "icon": "identity_platform",
                     },
+                    {"type": "model", "value": "portal.OAuthAppSettings"},
+                    {"type": "model", "value": "portal.OAuthUserStats"},
                     {"type": "model", "value": "oauth2_provider.AccessToken"},
                     {"type": "model", "value": "oauth2_provider.RefreshToken"},
                     {"type": "model", "value": "oauth2_provider.IdToken"},

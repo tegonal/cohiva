@@ -1,4 +1,7 @@
+from django.conf import settings
+from django.contrib import auth
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from wagtail import blocks
 from wagtail.admin.panels import FieldPanel
 from wagtail.fields import StreamField
@@ -6,6 +9,12 @@ from wagtail.images.blocks import ImageChooserBlock
 from wagtail.models import Page
 
 from geno.models import Address, Building, GenoBase
+
+# TODO: This should be refactored to a more general user role model and moved from the
+#       reservation module to cohiva or geno.
+from reservation.models import RESERVATIONTYPE_ROLE_CHOICES
+
+UserModel = auth.get_user_model()
 
 
 class PortalPage(Page):
@@ -120,3 +129,101 @@ class TenantAdmin(GenoBase):
 
     def list_active_buildings(self):
         return ", ".join([str(b) for b in self.buildings.filter(active=True)])
+
+
+class OAuthUserStats(models.Model):
+    application = models.ForeignKey(
+        settings.OAUTH2_PROVIDER_APPLICATION_MODEL, on_delete=models.CASCADE
+    )
+    user = models.ForeignKey(UserModel, on_delete=models.CASCADE)
+    first_login_at = models.DateTimeField(_("First login at"))
+    last_seen_at = models.DateTimeField(_("Last token issued at"))
+
+    class Meta:
+        unique_together = ("user", "application")
+        verbose_name = _("OAuth user stats")
+        verbose_name_plural = _("OAuth user stats")
+
+    def __str__(self):
+        return _("OAuth stats of user {user} for {app}").format(
+            user=self.user, app=self.application.name
+        )
+
+
+class OAuthAppSettings(models.Model):
+    application = models.OneToOneField(
+        settings.OAUTH2_PROVIDER_APPLICATION_MODEL, on_delete=models.CASCADE
+    )
+    notify_on_first_login = models.BooleanField(
+        _("Notify admin about new users"),
+        default=False,
+        help_text=_("Send a notification email if a user logs in to this app for the first time."),
+    )
+    notify_email = models.EmailField(
+        _("Notification email address"),
+        blank=True,
+        help_text=_(
+            "Email address to send notifications to. If empty, the default admin email will be used."
+        ),
+    )
+
+    class Meta:
+        verbose_name = _("OAuth application settings")
+        verbose_name_plural = _("OAuth application settings")
+
+    def __str__(self):
+        return _("OAuth application settings for {app}").format(app=self.application.name)
+
+
+PERMISSION_RULE_ACTIONS = (
+    ("allow", _("Allow access")),
+    ("deny", _("Deny access")),
+)
+
+
+class OAuthAppPermissionRule(models.Model):
+    application_settings = models.ForeignKey(
+        OAuthAppSettings, on_delete=models.CASCADE, related_name="permissions"
+    )
+    role = models.CharField(
+        _("User role"),
+        max_length=30,
+        choices=RESERVATIONTYPE_ROLE_CHOICES,
+        blank=True,
+        help_text=_("Apply rule to users with this role. If left empty it matches ALL users."),
+    )
+    group = models.ForeignKey(
+        auth.models.Group,
+        on_delete=models.RESTRICT,
+        blank=True,
+        null=True,
+        help_text=_("Apply rule to users in this group. If left empty it matches ALL users."),
+    )
+    role_or_group_must_match = models.BooleanField(
+        _("User role OR group must match"),
+        default=False,
+        help_text=_(
+            "When enabled only one of the settings above must match. If disabled, both must match."
+        ),
+    )
+    order = models.IntegerField(
+        _("Order"),
+        help_text=_("Order of the rule. Rules are applied in order, first match wins."),
+    )
+    action = models.CharField(
+        _("Action"),
+        max_length=30,
+        choices=PERMISSION_RULE_ACTIONS,
+        help_text=_("Action to take when the rule matches."),
+    )
+
+    class Meta:
+        ordering = ["application_settings", "order"]
+        verbose_name = _("OAuth access permission rule")
+        verbose_name_plural = _("OAuth access permission rules")
+        unique_together = ("application_settings", "order")
+
+    def __str__(self):
+        return _("Rule {order} for {app}").format(
+            order=self.order, app=self.application_settings.application.name
+        )
