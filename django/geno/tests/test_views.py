@@ -445,22 +445,28 @@ class ShareStatementViewTest(GenoAdminTestCase):
         view = ShareStatementView()
         view.enddate = datetime.date(2020, 12, 31)
         obj = view.get_objects()
-        self.assertEqual(len(obj), 2)
-        self.assertIn("Anzahl ignoriert=2", view.extra_description_info)
-
-        Share.objects.create(
-            value=500,
-            quantity=1,
-            share_type=ShareType.objects.get(name="Depositenkasse"),
-            date=datetime.date(2020, 1, 1),
-            name=self.addresses[1],
-            state="bezahlt",
-        )
-        obj = view.get_objects()
-        self.assertEqual(len(obj), 3)
-        self.assertIn("Anzahl ignoriert=1", view.extra_description_info)
-
-        view.address_id = self.addresses[0].pk
-        obj = view.get_objects()
-        self.assertEqual(len(obj), 1)
+        # Default is no cutoff => no skips
+        self.assertEqual(len(obj), 4)
         self.assertIn("Anzahl ignoriert=0", view.extra_description_info)
+
+        with self.settings(GENO_SMALL_NUMBER_OF_SHARES_CUTOFF=5):
+            obj = view.get_objects()
+            self.assertEqual(len(obj), 2)
+            self.assertIn("Anzahl ignoriert=2", view.extra_description_info)
+
+            Share.objects.create(
+                value=500,
+                quantity=1,
+                share_type=ShareType.objects.get(name="Depositenkasse"),
+                date=datetime.date(2020, 1, 1),
+                name=self.addresses[1],
+                state="bezahlt",
+            )
+            obj = view.get_objects()
+            self.assertEqual(len(obj), 3)
+            self.assertIn("Anzahl ignoriert=1", view.extra_description_info)
+
+            view.address_id = self.addresses[0].pk
+            obj = view.get_objects()
+            self.assertEqual(len(obj), 1)
+            self.assertIn("Anzahl ignoriert=0", view.extra_description_info)
