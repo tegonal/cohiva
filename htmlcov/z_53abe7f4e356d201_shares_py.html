@@ -65,7 +65,7 @@
             <a id="nextFileLink" class="nav" href="z_53abe7f4e356d201_tables_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.14.3">coverage.py v7.14.3</a>,
-            created at 2026-07-10 12:02 +0000
+            created at 2026-07-10 14:07 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -181,7 +181,7 @@
     <p class="run"><span class="n"><a id="t99" href="#t99">99</a></span><span class="t">        <span class="nam">statement_data</span><span class="op">[</span><span class="str">"s_shares_bvg"</span><span class="op">]</span> <span class="op">=</span> <span class="nam">inter</span><span class="op">[</span><span class="str">"bvg_amount"</span><span class="op">]</span><span class="op">[</span><span class="num">0</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t100" href="#t100">100</a></span><span class="t">        <span class="key">if</span> <span class="nam">statement_data</span><span class="op">[</span><span class="str">"s_shares_bvg"</span><span class="op">]</span> <span class="op">></span> <span class="num">0</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t101" href="#t101">101</a></span><span class="t">            <span class="nam">statement_data</span><span class="op">[</span><span class="str">"sect_bvg"</span><span class="op">]</span> <span class="op">=</span> <span class="key">True</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t102" href="#t102">102</a></span><span class="t">        <span class="key">if</span> <span class="nam">statement_data</span><span class="op">[</span><span class="str">"n_shares"</span><span class="op">]</span> <span class="op">></span> <span class="nam">settings</span><span class="op">.</span><span class="nam">GENO_SMALL_NUMBER_OF_SHARES_CUTOFF</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t102" href="#t102">102</a></span><span class="t">        <span class="key">if</span> <span class="nam">statement_data</span><span class="op">[</span><span class="str">"n_shares"</span><span class="op">]</span> <span class="op">></span> <span class="nam">getattr</span><span class="op">(</span><span class="nam">settings</span><span class="op">,</span> <span class="str">"GENO_SMALL_NUMBER_OF_SHARES_CUTOFF"</span><span class="op">,</span> <span class="num">0</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t103" href="#t103">103</a></span><span class="t">            <span class="nam">statement_data</span><span class="op">[</span><span class="str">"thankyou"</span><span class="op">]</span> <span class="op">=</span> <span class="key">True</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t104" href="#t104">104</a></span><span class="t">    <span class="key">if</span> <span class="nam">inter</span><span class="op">[</span><span class="str">"end_amount"</span><span class="op">]</span><span class="op">[</span><span class="num">1</span><span class="op">]</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t105" href="#t105">105</a></span><span class="t">        <span class="com">## Zinslose Darlehen</span>&nbsp;</span><span class="r"></span></p>
@@ -1167,7 +1167,7 @@
             <a class="nav" href="z_53abe7f4e356d201_tables_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.14.3">coverage.py v7.14.3</a>,
-            created at 2026-07-10 12:02 +0000
+            created at 2026-07-10 14:07 +0000
         </p>
     </div>
 </footer>
