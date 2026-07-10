@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Cohiva 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-03 14:52+0200\n"
+"POT-Creation-Date: 2026-07-10 14:05+0200\n"
 "PO-Revision-Date: 2025-10-21 01:30+0200\n"
 "Last-Translator: Cohiva Development Team\n"
 "Language-Team: German\n"
@@ -115,31 +115,35 @@ msgstr "Alle Anwendungen"
 msgid "You don’t have permission to view or edit anything."
 msgstr "Sie haben keine Berechtigung, etwas anzusehen oder zu bearbeiten."
 
-#: geno/admin.py:416
+#: geno/admin.py:419
 msgid "Weitere Aktionen"
 msgstr "Weitere Aktionen"
 
-#: geno/admin.py:423 geno/admin.py:893
+#: geno/admin.py:426 geno/admin.py:896
 msgid "Export"
 msgstr "Export"
 
-#: geno/admin.py:432
+#: geno/admin.py:435
 msgid "Export ADIT"
 msgstr "Export ADIT"
 
-#: geno/admin.py:902
+#: geno/admin.py:905
 msgid "Export per Ende Vorjahr"
 msgstr "Export per Ende Vorjahr"
 
-#: geno/admin.py:1501
-msgid "Report Pflichtanteile/Belegung"
-msgstr "Report Pflichtanteile/Belegung"
-
-#: geno/admin.py:1510
+#: geno/admin.py:1507
 msgid "Untervertrag hinzufügen"
 msgstr "Untervertrag hinzufügen"
 
-#: geno/admin.py:1810
+#: geno/admin.py:1527
+msgid "Aktionen"
+msgstr ""
+
+#: geno/admin.py:1555
+msgid "Report Pflichtanteile/Belegung"
+msgstr "Report Pflichtanteile/Belegung"
+
+#: geno/admin.py:1852
 msgid "Mietobjektspiegel"
 msgstr ""
 
@@ -625,7 +629,7 @@ msgstr ""
 msgid "Beschreibung"
 msgstr "Beschreibung"
 
-#: geno/tables.py:171 geno/tables.py:178 geno/views.py:4081
+#: geno/tables.py:171 geno/tables.py:178 geno/views.py:4087
 msgid "Rechnung"
 msgstr ""
 
@@ -1076,162 +1080,162 @@ msgstr "Log anzeigen"
 msgid "Datei hochladen und verarbeiten"
 msgstr "Datei hochladen und verarbeiten"
 
-#: geno/views.py:1361 geno/views.py:2042
+#: geno/views.py:1367 geno/views.py:2048
 msgid "Mitglied"
 msgstr ""
 
-#: geno/views.py:1361
+#: geno/views.py:1367
 msgid "Beitrittsdatum"
 msgstr ""
 
-#: geno/views.py:1440 geno/views.py:1594
+#: geno/views.py:1446 geno/views.py:1600
 msgid "Name/Adresse"
 msgstr ""
 
-#: geno/views.py:1440
+#: geno/views.py:1446
 msgid "Details"
 msgstr ""
 
-#: geno/views.py:1594
+#: geno/views.py:1600
 msgid "Darlehen Details"
 msgstr ""
 
-#: geno/views.py:1620
+#: geno/views.py:1626
 msgid "Zinsabrechnung"
 msgstr ""
 
-#: geno/views.py:2043
+#: geno/views.py:2049
 msgid "Anteilscheine"
 msgstr ""
 
-#: geno/views.py:2044
+#: geno/views.py:2050
 msgid "Darlehen"
 msgstr ""
 
-#: geno/views.py:2045
+#: geno/views.py:2051
 msgid "Depositen"
 msgstr ""
 
-#: geno/views.py:2046
+#: geno/views.py:2052
 msgid "Verrechnungssteuer"
 msgstr ""
 
-#: geno/views.py:2047
+#: geno/views.py:2053
 msgid "Zinszahlung"
 msgstr ""
 
-#: geno/views.py:2743
+#: geno/views.py:2749
 msgid ""
 "<i>INFO: Mailman-API ist nicht konfiguriert. Dies ist ein Demo-Output.</i>"
 msgstr ""
 "<i>INFO: Mailman-API ist nicht konfiguriert. Dies ist ein Demo-Output.</i>"
 
-#: geno/views.py:2755
+#: geno/views.py:2761
 msgid "Mitglieder ohne Email-Adresse (ignoriert)"
 msgstr "Mitglieder ohne Email-Adresse (ignoriert)"
 
-#: geno/views.py:2763
+#: geno/views.py:2769
 msgid "Mitglieder mit doppelter Email-Adresse (ignoriert)"
 msgstr "Mitglieder mit doppelter Email-Adresse (ignoriert)"
 
-#: geno/views.py:2769
+#: geno/views.py:2775
 msgid "Mitglied nicht in genossenschaft-ML"
 msgstr "Mitglied nicht in genossenschaft-ML"
 
-#: geno/views.py:2774
+#: geno/views.py:2780
 msgid "In genossenschaft-ML aber nicht Mitglied"
 msgstr "In genossenschaft-ML aber nicht Mitglied"
 
-#: geno/views.py:2784
+#: geno/views.py:2790
 msgid "Bewohnende ohne Email-Adresse (ignoriert)"
 msgstr "Bewohnende ohne Email-Adresse (ignoriert)"
 
-#: geno/views.py:2792
+#: geno/views.py:2798
 msgid "Bewohnende mit doppelter Email-Adresse (ignoriert)"
 msgstr "Bewohnende mit doppelter Email-Adresse (ignoriert)"
 
-#: geno/views.py:2798
+#: geno/views.py:2804
 msgid "Bewohnende aber nicht in bewohnende-ML"
 msgstr "Bewohnende aber nicht in bewohnende-ML"
 
-#: geno/views.py:2803
+#: geno/views.py:2809
 msgid "In bewohnende-ML aber nicht Bewohnende"
 msgstr "In bewohnende-ML aber nicht Bewohnende"
 
-#: geno/views.py:2808
+#: geno/views.py:2814
 msgid "Mitglied aber NICHT in Newsletter(CS)"
 msgstr "Mitglied aber NICHT in Newsletter(CS)"
 
-#: geno/views.py:2812
+#: geno/views.py:2818
 msgid "Mitglied aber UNSUBSCRIBED in Newsletter(CS)"
 msgstr "Mitglied aber UNSUBSCRIBED in Newsletter(CS)"
 
-#: geno/views.py:2818
+#: geno/views.py:2824
 msgid "Mitglied aber BOUNCED in Newsletter(CS)"
 msgstr "Mitglied aber BOUNCED in Newsletter(CS)"
 
-#: geno/views.py:2824
+#: geno/views.py:2830
 msgid "Mitglied aber DELETED in Newsletter(CS)"
 msgstr "Mitglied aber DELETED in Newsletter(CS)"
 
-#: geno/views.py:2830
+#: geno/views.py:2836
 #, python-format
 msgid "In genossenschaft-ML aber nicht in Wohnpost (%s)"
 msgstr "In genossenschaft-ML aber nicht in Wohnpost (%s)"
 
-#: geno/views.py:2838
+#: geno/views.py:2844
 #, python-format
 msgid ""
 "Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s)"
 msgstr ""
 "Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s)"
 
-#: geno/views.py:2844
+#: geno/views.py:2850
 msgid "Mailman warnings"
 msgstr "Mailman warnings"
 
-#: geno/views.py:3172
+#: geno/views.py:3178
 msgid ""
 "Keine Empfänger:innen gefunden, welche diesen Filterkriterien entsprechen."
 msgstr ""
 
-#: geno/views.py:3178
+#: geno/views.py:3184
 msgid "Dokumente erstellen/versenden"
 msgstr ""
 
-#: geno/views.py:3179
+#: geno/views.py:3185
 msgid "Schritt 1 - Empfänger:innen filtern"
 msgstr ""
 
-#: geno/views.py:3226
+#: geno/views.py:3232
 msgid "Ungültiger Basis-Datensatz"
 msgstr ""
 
-#: geno/views.py:3236
+#: geno/views.py:3242
 msgid "Schritt 2 - Empfänger:innen auswählen"
 msgstr ""
 
-#: geno/views.py:3258
+#: geno/views.py:3264
 msgid "Schritt 3 - Aktionen ausführen"
 msgstr ""
 
-#: geno/views.py:3714
+#: geno/views.py:3720
 msgid "Die ersten 3 Nächte sind gemäss Reglement Jokerzimmer kostenlos."
 msgstr ""
 
-#: geno/views.py:3718
+#: geno/views.py:3724
 msgid "X Nächte à Fr. 22.00, Gästezimmer 003"
 msgstr ""
 
-#: geno/views.py:3723
+#: geno/views.py:3729
 msgid "X Nächte à Fr. 17.00, Gästezimmer 410"
 msgstr ""
 
-#: geno/views.py:3728
+#: geno/views.py:3734
 msgid "X Nächte à Fr. 17.00, Gästezimmer 509"
 msgstr ""
 
-#: geno/views.py:3736
+#: geno/views.py:3742
 msgid ""
 "Vielen Dank für die Beitrittserklärung. Die Mitgliedschaft in der "
 "Genossenschaft ist verbunden mit dem Zeichnen von Anteilscheinen und einer "
@@ -1239,45 +1243,45 @@ msgid ""
 "Zahlungseingang folgt dann die Bestätigung der Mitgliedschaft."
 msgstr ""
 
-#: geno/views.py:3743
+#: geno/views.py:3749
 msgid "Beitrittsgebühr Genossenschaft"
 msgstr ""
 
-#: geno/views.py:3748
+#: geno/views.py:3754
 msgid "Zeichnung von 1 Anteilschein der Genossenschaft"
 msgstr ""
 
-#: geno/views.py:4047
+#: geno/views.py:4053
 msgid "Mietzinsrechnung erstellen"
 msgstr ""
 
-#: geno/views.py:4084
+#: geno/views.py:4090
 msgid "Rechnungen"
 msgstr ""
 
-#: geno/views.py:4093
+#: geno/views.py:4099
 #, python-format
 msgid "Ungültige Aktion: %s"
 msgstr ""
 
-#: geno/views.py:4126
+#: geno/views.py:4132
 msgid "Optionen"
 msgstr ""
 
-#: geno/views.py:4128
+#: geno/views.py:4134
 #, python-format
 msgid "Probelauf: %s"
 msgstr ""
 
-#: geno/views.py:4128
+#: geno/views.py:4134
 msgid "Ja"
 msgstr ""
 
-#: geno/views.py:4128
+#: geno/views.py:4134
 msgid "Nein"
 msgstr ""
 
-#: geno/views.py:4129
+#: geno/views.py:4135
 #, python-format
 msgid "Rechnungen bis: %s"
 msgstr ""
@@ -1371,17 +1375,32 @@ msgid "Share with Import-ID {import_id} already exists."
 msgstr "Beteiligung mit Import-ID {import_id} existiert bereits."
 
 #: importer/importer_property_shares_vfn.py:68
-msgid "Person is required"
-msgstr "Person is erforderlich"
-
-#: importer/importer_property_shares_vfn.py:72
 msgid "Typ is required"
 msgstr "Typ ist erforderlich"
 
-#: importer/importer_property_shares_vfn.py:82
+#: importer/importer_property_shares_vfn.py:86
+#, python-brace-format
+msgid "Address with ID {address_id} not found"
+msgstr "Adresse mit ID {address_id} nicht gefunden"
+
+#: importer/importer_property_shares_vfn.py:93
+#, python-brace-format
+msgid "Member with ID {member_id} not found"
+msgstr "Mitglied mit ID {member_id} nicht gefunden"
+
+#: importer/importer_property_shares_vfn.py:98
+#, python-brace-format
+msgid "Address for member with ID {member_id} not found"
+msgstr "Adresse für Mitglied mit ID {member_id} nicht gefunden"
+
+#: importer/importer_property_shares_vfn.py:107
 #, python-brace-format
 msgid "Address with ImportID {import_id} not found"
 msgstr "Adresse mit ImportID {import_id} nicht gefunden"
+
+#: importer/importer_property_shares_vfn.py:112
+msgid "Person, Mitglied-ID, or Adress-ID is required"
+msgstr "Person, Mitglied-ID oder Adress-ID ist erforderlich"
 
 #: importer/importer_tenant_property_it_wgn.py:46
 #: importer/importer_tenant_property_vfn.py:83
