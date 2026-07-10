@@ -483,7 +483,9 @@ class ProcessDocuments:
         if att_type == "DocumentType":
             try:
                 doctype = DocumentType.objects.get(id=att_id)
-                content_template = doctype.template
+                content_template = doctype.templates.filter(active=True).first()
+                if not content_template:
+                    raise ValueError(f"Dokumenttyp {doctype} hat keine Vorlagen-Datei")
             except DocumentType.DoesNotExist:
                 raise ValueError(f"Dokumenttyp mit ID {att_id} nicht gefunden.")
         elif att_type == "ContentTemplate":
@@ -876,36 +878,38 @@ def create_documents(default_doctype, objects=None, options=None):
 
     filenames = []
     for o in objects:
-        zipcount += 1
         objects = []
         if "info" in o:
             objects.append(o["info"])
-        ret.append({"info": str(o["obj"]), "objects": objects})
-        if makezip:
-            if "doctype" in o:
-                doctype = o["doctype"]
-                doctype_obj = DocumentType.objects.get(name=doctype)
-            else:
-                doctype = default_doctype
-                doctype_obj = default_doctype_obj
-            ## Create document
-            # Check if template has a file attached
-            if not doctype_obj.template or not doctype_obj.template.file:
-                ret.append(
-                    {
-                        "info": "FEHLER: Keine Vorlage-Datei für Dokumenttyp '%s' konfiguriert."
-                        % doctype,
-                        "objects": [],
-                    }
-                )
-                continue
+        if "doctype" in o:
+            doctype = o["doctype"]
+            doctype_obj = DocumentType.objects.get(name=doctype)
+        else:
+            doctype = default_doctype
+            doctype_obj = default_doctype_obj
+        ## Create document
+        # Check if template has a file attached
+        template: ContentTemplate | None = doctype_obj.templates.filter(active=True).first()
+        if not template or not template.file:
+            ret.append(
+                {
+                    "info": "FEHLER: Keine Vorlage-Datei für Dokumenttyp '%s' konfiguriert."
+                    % doctype,
+                    "objects": [],
+                }
+            )
+            break
 
+        ret.append({"info": str(o["obj"]), "objects": objects})
+        zipcount += 1
+
+        if makezip:
             if "extra_context" in o:
                 data = get_context_data(doctype, o["obj"].pk, o["extra_context"])
             else:
                 data = get_context_data(doctype, o["obj"].pk, {})
             filename = fill_template_pod(
-                doctype_obj.template.file.path,
+                template.file.path,
                 context_format(data["context"]),
                 output_format="odt",
             )
@@ -932,7 +936,7 @@ def create_documents(default_doctype, objects=None, options=None):
                 )
                 d.save()
 
-    if makezip:
+    if zipcount and makezip:
         ## Build ZIP-file from list of files
         file_like_object = io.BytesIO()
         zipfile_ob = zipfile.ZipFile(file_like_object, "w")

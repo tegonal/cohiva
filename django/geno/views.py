@@ -2413,8 +2413,11 @@ def create_documents_deprecated(request, default_doctype, objects=None, options=
                 data = get_context_data(doctype, o["obj"].pk, o["extra_context"])
             else:
                 data = get_context_data(doctype, o["obj"].pk, {})
+            template: ContentTemplate | None = doctype_obj.templates.filter(active=True).first()
+            if not template or not template.file:
+                raise RuntimeError("Documenttype has no template file")
             filename = fill_template_pod(
-                doctype_obj.template.file.path,
+                template.file.path,
                 context_format(data["context"]),
                 output_format="odt",
             )
@@ -4327,9 +4330,19 @@ def rental_unit_list_create_documents(request, doc="mailbox"):
         raise RuntimeError("Unknown doc in rental_unit_list_create_documents '%s'." % doc)
     try:
         doctype = DocumentType.objects.get(name=doc)
-        template = doctype.template.file.path
     except DocumentType.DoesNotExist:
         ret.append({"info": f"FEHLER: Dokumenttyp {doc} nicht gefunden."})
+        return render(
+            request,
+            "geno/default.html",
+            {
+                "response": ret,
+                "title": "Mietobjekt-Dokumente erzeugen - %s" % options["beschreibung"],
+            },
+        )
+    template: ContentTemplate | None = doctype.templates.filter(active=True).first()
+    if not template or not template.file:
+        ret.append({"info": f"FEHLER: Dokumenttyp {doc} hat keine Vorlage."})
         return render(
             request,
             "geno/default.html",
@@ -4411,7 +4424,7 @@ def rental_unit_list_create_documents(request, doc="mailbox"):
         zipcount += 1
         ret.append({"info": context["title"], "objects": context["mietpartei"]})
         if makezip:
-            filename = fill_template_pod(template, context, output_format="odt")
+            filename = fill_template_pod(template.file.path, context, output_format="odt")
             if not filename:
                 raise RuntimeError("Could not fill template")
             zipfile_content.append(

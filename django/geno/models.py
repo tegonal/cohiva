@@ -472,6 +472,12 @@ class Address(GenoBase):
         c["organisation"] = self.organization
         c["vorname"] = self.first_name
         c["name"] = self.name
+        if self.organization:
+            c["organisation_oder_name"] = self.organization
+        else:
+            c["organisation_oder_name"] = (
+                f"{self.first_name} {self.name}" if self.first_name else self.name
+            )
         if self.extra:
             c["strasse"] = "%s\n%s" % (self.extra, self.street)
         else:
