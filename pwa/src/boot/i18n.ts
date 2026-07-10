@@ -1,5 +1,4 @@
 import { defineBoot } from '#q-app/wrappers'
-import browserLang from 'browser-lang'
 import { createI18n } from 'vue-i18n'
 
 import messages from 'src/i18n'
@@ -17,12 +16,10 @@ function getBrowserLocale(): string {
     return savedLocale
   }
 
-  // Use browser-lang library to detect browser language
-  // It handles various browser quirks and fallbacks automatically
-  const detectedLang = browserLang({
-    fallback: 'en',
-    languages: ['de', 'en', 'fr'], // Our supported language codes
-  })
+  const detectedLang =
+    navigator.languages?.[0]?.slice(0, 2) ??
+    navigator.language?.slice(0, 2) ??
+    'en'
 
   // Map detected language to our canonical locales
   const localeMap: Record<string, string> = {

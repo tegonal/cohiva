@@ -3489,13 +3489,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/browser-lang@npm:^0.1.2":
-  version: 0.1.2
-  resolution: "@types/browser-lang@npm:0.1.2"
-  checksum: 10c0/9490de8bc416e94afb37138045845c5549eb1b64b1ad0ae1892e6ee54d26eb0e9fee7262e4d057c6c473af27127897ddcafc55e8ac32d92e52ab634d1f3029d1
-  languageName: node
-  linkType: hard
-
 "@types/chrome@npm:^0.1.38":
   version: 0.1.42
   resolution: "@types/chrome@npm:0.1.42"
@@ -4672,11 +4665,11 @@ __metadata:
   linkType: hard
 
 "baseline-browser-mapping@npm:^2.8.3":
-  version: 2.8.9
-  resolution: "baseline-browser-mapping@npm:2.8.9"
+  version: 2.10.42
+  resolution: "baseline-browser-mapping@npm:2.10.42"
   bin:
-    baseline-browser-mapping: dist/cli.js
-  checksum: 10c0/c54356eb90cf251f351708f151fa42d0331814c03baa7bdcc802767f721fd9fe069eea88ae42395984bfddcae0c2fba2e5ee25d7921ce7cdcefc2f47440673d4
+    baseline-browser-mapping: dist/cli.cjs
+  checksum: 10c0/4a9f54818d17d8dbee69096563b2cd5e2175f66752c479f1c10d31e072c1c2b7241a9bdaee78d5236178c581ca2735e75fbb0d0877d6492958eed9f6e46e03f3
   languageName: node
   linkType: hard
 
@@ -4745,13 +4738,6 @@ __metadata:
   dependencies:
     fill-range: "npm:^7.1.1"
   checksum: 10c0/7c6dfd30c338d2997ba77500539227b9d1f85e388a5f43220865201e407e076783d0881f2d297b9f80951b4c957fcf0b51c1d2d24227631643c3f7c284b0aa04
-  languageName: node
-  linkType: hard
-
-"browser-lang@npm:^0.2.1":
-  version: 0.2.1
-  resolution: "browser-lang@npm:0.2.1"
-  checksum: 10c0/00bd1465604a1aa3f09767737166bfdbd6889c976863699a3f4ce95437125715b2ee2708db3fa6b2a7869db4c761d43f6c3f5ce3bdb055a3aff558ee77e08380
   languageName: node
   linkType: hard
 
@@ -4894,9 +4880,9 @@ __metadata:
   linkType: hard
 
 "caniuse-lite@npm:^1.0.30001702, caniuse-lite@npm:^1.0.30001741":
-  version: 1.0.30001746
-  resolution: "caniuse-lite@npm:1.0.30001746"
-  checksum: 10c0/e656a9dc811be2316e3b6dbd3bf25d0e32dbce645b1284821b4ec93fb81dc3e3f73b9473e2f66c921b620ea8b25ebbae9ee70c3d13dad85f8dd69d6bb2c91d46
+  version: 1.0.30001802
+  resolution: "caniuse-lite@npm:1.0.30001802"
+  checksum: 10c0/a78992c08e8c540a4048bfdb08a839e536ba757075531989dd9a648783e328ef2b17cd00fa6fe21f4bd74136d13ed53108050bc4fbbf3f56820a4119cd70a8d8
   languageName: node
   linkType: hard
 
@@ -8238,14 +8224,12 @@ __metadata:
     "@quasar/app-vite": "npm:^2.6.0"
     "@quasar/cli": "npm:^4.0.0"
     "@quasar/extras": "npm:^1.17.0"
-    "@types/browser-lang": "npm:^0.1.2"
     "@types/fs-extra": "npm:^11.0.4"
     "@types/node": "npm:^25.0.8"
     "@typescript-eslint/eslint-plugin": "npm:^8.53.0"
     "@typescript-eslint/parser": "npm:^8.53.0"
     autoprefixer: "npm:^10.4.21"
     axios: "npm:^1.16.0"
-    browser-lang: "npm:^0.2.1"
     chokidar: "npm:^4.0.3"
     concurrently: "npm:^9.2.1"
     eslint: "npm:^9.39.4"
