@@ -1480,6 +1480,42 @@ class RentalUnit(GenoBase):
             return Decimal(0.0)
         return round(self.nk_electricity / self.billing_period, 2)
 
+    def get_context(self):
+        context_variables = [
+            ("Mietobjektnummer", "name"),
+            ("Mietobjektnummer_und_Bezeichnung", "str_short"),
+            ("Bezeichnung", "label"),
+            ("Kurzbezeichnung", "label_short"),
+            ("Typ", "rental_type"),
+            ("Liegenschaft", "building"),
+            ("Stockwerk", "floor"),
+            ("Fläche", "area"),
+            ("Balkonfläche", "area_balcony"),
+            ("Zusatzfläche", "area_add"),
+            ("Raumhöhe", "height"),
+            ("Volumen", "volume"),
+            ("Anzahl_Zimmer", "rooms"),
+            ("Mindestbelegung", "min_occupancy"),
+            ("Rechnungsperiode", "billing_period"),
+            ("NK_akonto", "nk"),
+            ("NK_pauschal", "nk_flat"),
+            ("Strompauschale", "nk_electricity"),
+            ("Nettomiete", "rent_netto"),
+            ("Depot", "depot"),
+            ("Anteilskapital", "share"),
+            ("Bruttomiete", "rent_total"),
+            ("Bruttomiete_pro_Monat", "rent_total_per_month"),
+            ("Nettomiete_pro_Monat", "rent_netto_per_month"),
+            ("NK_akonto_pro_Monat", "nk_per_month"),
+            ("NK_pauschal_pro_Monat", "nk_flat_per_month"),
+            ("Strompauschale_pro_Monat", "nk_electricity_per_month"),
+        ]
+        ctx = {}
+        for key, name in context_variables:
+            prop = getattr(self, name)
+            ctx[key] = str(prop) if prop else ""
+        return ctx
+
     def str_short(self):
         if self.label:
             return "%s %s" % (self.name, self.label)
@@ -1668,6 +1704,61 @@ class Contract(GenoBase):
             return units
         else:
             return "/".join(units)
+
+    def get_context(self):
+        c: dict[str, str | list] = {
+            "Vertragsbeginn": self.date.strftime("%d.%m.%Y"),
+            "Vertragsende": self.date_end.strftime("%d.%m.%Y") if self.date_end else "",
+            "Sollstellung_ab": (
+                self.billing_date_start.strftime("%d.%m.%Y") if self.billing_date_start else ""
+            ),
+            "Sollstellung_bis": (
+                self.billing_date_end.strftime("%d.%m.%Y") if self.billing_date_end else ""
+            ),
+            "Mietobjekt": ", ".join([str(ru) for ru in self.rental_units.all()]),
+        }
+        ru: RentalUnit
+        for ru in self.rental_units.all():
+            for key, value in ru.get_context().items():
+                list_key = f"{key}_list"
+                if list_key not in c:
+                    c[list_key] = []
+                c[list_key].append(value)
+                if c.get(key):
+                    if value:
+                        c[key] += f" + {value}"
+                else:
+                    c[key] = value
+        c["Bewohnende"] = []
+        c["Mieter_Namen_list"] = []
+        c["Mieter_Adressen_list"] = []
+        c["Mieter_Adressen_Mehrzeilig_list"] = []
+        duplicate_check = []
+        for tenant in self.contractors.exclude(ignore_in_lists=True):
+            dup_id = f"{tenant.name}{tenant.first_name}"
+            if dup_id not in duplicate_check:
+                c["Bewohnende"].append({"name": tenant.name, "vorname": tenant.first_name})
+                c["Mieter_Namen_list"].append(tenant.get_full_name())
+                c["Mieter_Adressen_list"].append(
+                    f"{tenant.get_full_name()}, {tenant.street}, {tenant.city}"
+                )
+                c["Mieter_Adressen_Mehrzeilig_list"].append(
+                    f"{tenant.get_full_name()}\n{tenant.street}\n{tenant.city}"
+                )
+                duplicate_check.append(dup_id)
+        c["Mieter_Namen"] = ", ".join(c["Mieter_Namen_list"])
+        c["Mieter_Namen_Mehrzeilig"] = "\n".join(c["Mieter_Namen_list"])
+        c["Mieter_Adressen"] = "\n".join(c["Mieter_Adressen_list"])
+        for child in self.children.exclude(name__ignore_in_lists=True):
+            dup_id = f"{child.name.name}{child.name.first_name}"
+            if dup_id not in duplicate_check:
+                c["Bewohnende"].append({"name": child.name.name, "vorname": child.name.first_name})
+                duplicate_check.append(dup_id)
+        # Lowercase versions for backward compatibility
+        c["mietobjekt"] = c["Mietobjekt"]
+        c["mindestbelegung"] = c["Mindestbelegung"]
+        c["bewohnende"] = c["Bewohnende"]
+        return c
 
     def get_object_actions(self):
         actions = []

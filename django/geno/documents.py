@@ -1100,29 +1100,7 @@ def get_context_data(doctype, obj_id, extra_context):
     elif doctype[0:8] == "contract":
         obj = Contract.objects.get(pk=obj_id)
         adr = obj.get_contact_address()
-        # adr = obj.person
-        c["mietobjekt"] = ", ".join([str(ru) for ru in obj.rental_units.all()])
-        c["mindestbelegung"] = " + ".join(
-            [str(int(ru.min_occupancy)) for ru in obj.rental_units.filter(min_occupancy__gt=0)]
-        )
-        c["bewohnende"] = []
-        duplicate_check = []
-        for tenant in obj.contractors.exclude(ignore_in_lists=True):
-            dup_id = f"{tenant.name}{tenant.first_name}"
-            if dup_id not in duplicate_check:
-                c["bewohnende"].append({"name": tenant.name, "vorname": tenant.first_name})
-                duplicate_check.append(dup_id)
-        for child in obj.children.exclude(name__ignore_in_lists=True):
-            dup_id = f"{child.name.name}{child.name.first_name}"
-            if dup_id not in duplicate_check:
-                c["bewohnende"].append({"name": child.name.name, "vorname": child.name.first_name})
-                duplicate_check.append(dup_id)
-        # c['area'] = "%s" % (nformat(obj.area,0))
-        # c['netto'] = "%s" % (nformat(obj.rent_total-obj.nk,2))
-        # c['nk'] = "%s" % (nformat(obj.nk,2))
-        # c['rent_total'] = "%s" % (nformat(obj.rent_total,2))
-        # c['depot'] = "%s" % (nformat(obj.depot,2))
-        # c['begin'] = obj.date.strftime("%d.%m.%Y")
+        c.update(obj.get_context())
     else:
         raise RuntimeError("Doctype not implemented.")
 
