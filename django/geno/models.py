@@ -1483,7 +1483,7 @@ class RentalUnit(GenoBase):
     def get_context(self):
         context_variables = [
             ("Mietobjektnummer", "name"),
-            ("Mietobjektnummer_und_Bezeichnung", "str_short"),
+            ("Mietobjektnummer_und_Bezeichnung", "name_with_label"),
             ("Bezeichnung", "label"),
             ("Kurzbezeichnung", "label_short"),
             ("Typ", "rental_type"),
@@ -1513,17 +1513,20 @@ class RentalUnit(GenoBase):
         ctx = {}
         for key, name in context_variables:
             prop = getattr(self, name)
+            if callable(prop):
+                prop = prop()
             ctx[key] = str(prop) if prop else ""
         return ctx
 
-    def str_short(self):
+    @property
+    def name_with_label(self):
         if self.label:
             return "%s %s" % (self.name, self.label)
         else:
             return "%s %s" % (self.name, self.rental_type)
 
     def __str__(self):
-        return "%s (%s)" % (self.str_short(), self.building)
+        return "%s (%s)" % (self.name_with_label, self.building)
 
     def get_absolute_url(self):
         return "/admin/geno/rental_unit/%i/" % self.id
@@ -1706,6 +1709,7 @@ class Contract(GenoBase):
             return "/".join(units)
 
     def get_context(self):
+        rental_units = self.rental_units.all()
         c: dict[str, str | list] = {
             "Vertragsbeginn": self.date.strftime("%d.%m.%Y"),
             "Vertragsende": self.date_end.strftime("%d.%m.%Y") if self.date_end else "",
@@ -1715,10 +1719,10 @@ class Contract(GenoBase):
             "Sollstellung_bis": (
                 self.billing_date_end.strftime("%d.%m.%Y") if self.billing_date_end else ""
             ),
-            "Mietobjekt": ", ".join([str(ru) for ru in self.rental_units.all()]),
+            "Mietobjekt": ", ".join([str(ru) for ru in rental_units]),
         }
         ru: RentalUnit
-        for ru in self.rental_units.all():
+        for ru in rental_units:
             for key, value in ru.get_context().items():
                 list_key = f"{key}_list"
                 if list_key not in c:
@@ -1755,9 +1759,9 @@ class Contract(GenoBase):
                 c["Bewohnende"].append({"name": child.name.name, "vorname": child.name.first_name})
                 duplicate_check.append(dup_id)
         # Lowercase versions for backward compatibility
-        c["mietobjekt"] = c["Mietobjekt"]
-        c["mindestbelegung"] = c["Mindestbelegung"]
-        c["bewohnende"] = c["Bewohnende"]
+        c["mietobjekt"] = c.get("Mietobjekt", "")
+        c["mindestbelegung"] = c.get("Mindestbelegung", "")
+        c["bewohnende"] = c.get("Bewohnende", "")
         return c
 
     def get_object_actions(self):

@@ -4434,7 +4434,7 @@ def rental_unit_list_create_documents(request, doc="mailbox"):
                 }
             )
 
-    if makezip:
+    if zipcount and makezip:
         ## Build ZIP-file from list of files
         file_like_object = io.BytesIO()
         zipfile_ob = zipfile.ZipFile(file_like_object, "w")

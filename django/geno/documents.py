@@ -878,12 +878,21 @@ def create_documents(default_doctype, objects=None, options=None):
 
     filenames = []
     for o in objects:
-        objects = []
+        item_objects = []
         if "info" in o:
-            objects.append(o["info"])
+            item_objects.append(o["info"])
         if "doctype" in o:
             doctype = o["doctype"]
-            doctype_obj = DocumentType.objects.get(name=doctype)
+            try:
+                doctype_obj = DocumentType.objects.get(name=doctype)
+            except DocumentType.DoesNotExist:
+                ret.append(
+                    {
+                        "info": "FEHLER: Dokumenttyp '%s' nicht gefunden." % doctype,
+                        "objects": [],
+                    }
+                )
+                break
         else:
             doctype = default_doctype
             doctype_obj = default_doctype_obj
@@ -900,7 +909,7 @@ def create_documents(default_doctype, objects=None, options=None):
             )
             break
 
-        ret.append({"info": str(o["obj"]), "objects": objects})
+        ret.append({"info": str(o["obj"]), "objects": item_objects})
         zipcount += 1
 
         if makezip:
