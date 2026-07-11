@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Cohiva 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-10 14:05+0200\n"
+"POT-Creation-Date: 2026-07-11 23:30+0200\n"
 "PO-Revision-Date: 2025-10-21 01:30+0200\n"
 "Last-Translator: Cohiva Development Team\n"
 "Language-Team: German\n"
@@ -21,62 +21,62 @@ msgstr ""
 msgid "Invalid AHV number"
 msgstr "Ungültige AHV Nummer"
 
-#: cohiva/settings_defaults.py:1050
+#: cohiva/settings_defaults.py:1070
 msgid "Stammdaten"
 msgstr "Stammdaten"
 
-#: cohiva/settings_defaults.py:1055
+#: cohiva/settings_defaults.py:1075
 msgid "Adressen/Personen"
 msgstr "Adressen/Personen"
 
-#: cohiva/settings_defaults.py:1062 cohiva/settings_defaults.py:1112
-#: cohiva/settings_defaults.py:1154 cohiva/settings_defaults.py:1192
-#: cohiva/settings_defaults.py:1229 cohiva/settings_defaults.py:1264
-#: cohiva/settings_defaults.py:1288
+#: cohiva/settings_defaults.py:1082 cohiva/settings_defaults.py:1132
+#: cohiva/settings_defaults.py:1174 cohiva/settings_defaults.py:1212
+#: cohiva/settings_defaults.py:1249 cohiva/settings_defaults.py:1284
+#: cohiva/settings_defaults.py:1308
 msgid "Erweitert"
 msgstr "Erweitert"
 
-#: cohiva/settings_defaults.py:1075
+#: cohiva/settings_defaults.py:1095
 msgid "Erweiterte Konfiguration"
 msgstr "Erweiterte Konfiguration"
 
-#: cohiva/settings_defaults.py:1082
+#: cohiva/settings_defaults.py:1102
 msgid "Mitglieder"
 msgstr "Mitglieder"
 
-#: cohiva/settings_defaults.py:1121
+#: cohiva/settings_defaults.py:1141
 msgid "Vermietung"
 msgstr "Vermietung"
 
-#: cohiva/settings_defaults.py:1168
+#: cohiva/settings_defaults.py:1188
 msgid "Gemeinschaft"
 msgstr "Gemeinschaft"
 
-#: cohiva/settings_defaults.py:1204
+#: cohiva/settings_defaults.py:1224
 msgid "Inkasso"
 msgstr "Inkasso"
 
-#: cohiva/settings_defaults.py:1239
+#: cohiva/settings_defaults.py:1259
 msgid "Finanzierung"
 msgstr "Finanzierung"
 
-#: cohiva/settings_defaults.py:1273
+#: cohiva/settings_defaults.py:1293
 msgid "Dokumente & Kommunikation"
 msgstr "Dokumente & Kommunikation"
 
-#: cohiva/settings_defaults.py:1301
+#: cohiva/settings_defaults.py:1321
 msgid "Systemadministration"
 msgstr "Systemadministration"
 
-#: cohiva/settings_defaults.py:1374
+#: cohiva/settings_defaults.py:1394
 msgid "Dokumentation/Wiki"
 msgstr ""
 
-#: cohiva/settings_defaults.py:1379
+#: cohiva/settings_defaults.py:1399
 msgid "GitHub Issues"
 msgstr ""
 
-#: cohiva/settings_defaults.py:1384
+#: cohiva/settings_defaults.py:1404
 msgid "Cohiva Website"
 msgstr "Cohiva Website"
 
@@ -202,371 +202,371 @@ msgstr "Konto {account} existiert nicht."
 msgid "Can't access accounting backend: {error}"
 msgstr "Kann nicht auf Buchhaltung zugreifen: {error}"
 
-#: geno/forms.py:165
+#: geno/forms.py:166
 msgid "ist nicht vorhanden"
 msgstr ""
 
-#: geno/forms.py:169
+#: geno/forms.py:170
 msgid "ist {}"
 msgstr ""
 
-#: geno/forms.py:187 geno/forms.py:193 geno/forms.py:717 geno/forms.py:728
+#: geno/forms.py:188 geno/forms.py:194 geno/forms.py:718 geno/forms.py:729
 msgid "Wert"
 msgstr ""
 
-#: geno/forms.py:211
+#: geno/forms.py:212
 msgid "Mitglieder-Filter"
 msgstr ""
 
-#: geno/forms.py:213
+#: geno/forms.py:214
 msgid "Mitglieder-Attribute"
 msgstr ""
 
-#: geno/forms.py:217
+#: geno/forms.py:218
 msgid "Filter A"
 msgstr ""
 
-#: geno/forms.py:230
+#: geno/forms.py:231
 msgid "Filter B"
 msgstr ""
 
-#: geno/forms.py:243
+#: geno/forms.py:244
 msgid "Weitere Filter"
 msgstr ""
 
-#: geno/forms.py:272
+#: geno/forms.py:273
 msgid "Mietobjekt-Filter"
 msgstr ""
 
-#: geno/forms.py:275
+#: geno/forms.py:276
 msgid "Allgemeine Attribute"
 msgstr ""
 
-#: geno/forms.py:287
+#: geno/forms.py:288
 msgid "Beteiligungen-Filter"
 msgstr ""
 
-#: geno/forms.py:293
+#: geno/forms.py:294
 msgid "Rechnungen-Filter"
 msgstr ""
 
-#: geno/forms.py:306
+#: geno/forms.py:307
 msgid "Alle Mietenden inkl. Gewerbe/Lager/PP"
 msgstr ""
 
-#: geno/forms.py:307
+#: geno/forms.py:308
 msgid "Alle Bewohnenden exkl. Gewerbe/Lager/PP"
 msgstr ""
 
-#: geno/forms.py:308
+#: geno/forms.py:309
 msgid "Wohnungen bis 6.5Zi."
 msgstr ""
 
-#: geno/forms.py:309
+#: geno/forms.py:310
 msgid "Grosswohnungen ab 7Zi. (ohne Selbstausbau)"
 msgstr ""
 
-#: geno/forms.py:310
+#: geno/forms.py:311
 msgid "Selbstausbau"
 msgstr ""
 
-#: geno/forms.py:311
+#: geno/forms.py:312
 msgid "Gewerbemietende"
 msgstr ""
 
-#: geno/forms.py:316
+#: geno/forms.py:317
 msgid "Kein Kontoauszug in den letzten 6 Monaten"
 msgstr ""
 
-#: geno/forms.py:321
+#: geno/forms.py:322
 msgid "Nur Anteilscheine"
 msgstr ""
 
-#: geno/forms.py:322
+#: geno/forms.py:323
 msgid "Nur Darlehen+Deposito"
 msgstr ""
 
-#: geno/forms.py:323
+#: geno/forms.py:324
 msgid "Nur verzinste Darlehen+Deposito"
 msgstr ""
 
-#: geno/forms.py:328
+#: geno/forms.py:329
 msgid "Muss gesetzt sein"
 msgstr ""
 
-#: geno/forms.py:329
+#: geno/forms.py:330
 msgid "Ausschliessen"
 msgstr ""
 
-#: geno/forms.py:333
+#: geno/forms.py:334
 msgid "Alle aktuellen Mitglieder"
 msgstr ""
 
-#: geno/forms.py:334
+#: geno/forms.py:335
 msgid "Alle Mitglieder (auch ehemalige/zukünftige)"
 msgstr ""
 
-#: geno/forms.py:335
+#: geno/forms.py:336
 msgid "Alle aktuellen Mieter"
 msgstr ""
 
-#: geno/forms.py:336
+#: geno/forms.py:337
 msgid "Alle Personen mit Beteiligungen (ohne Hypothek/Spezial)"
 msgstr ""
 
-#: geno/forms.py:337
+#: geno/forms.py:338
 msgid "Alle aktiven Adressen/Kontakte"
 msgstr ""
 
-#: geno/forms.py:342
+#: geno/forms.py:343
 msgid "Basis-Datensatz"
 msgstr ""
 
-#: geno/forms.py:344
+#: geno/forms.py:345
 msgid "Diese Auswahl kann ggf. mit den Filtern unten noch eingeschränkt werden"
 msgstr ""
 
-#: geno/forms.py:349 geno/forms.py:357 geno/forms.py:446 geno/forms.py:711
+#: geno/forms.py:350 geno/forms.py:358 geno/forms.py:447 geno/forms.py:712
 msgid "Attribut"
 msgstr ""
 
-#: geno/forms.py:351 geno/forms.py:359
+#: geno/forms.py:352 geno/forms.py:360
 msgid "Bitte ein Attribut wählen"
 msgstr ""
 
-#: geno/forms.py:354
+#: geno/forms.py:355
 msgid "Filter A - Attribut-Wert"
 msgstr ""
 
-#: geno/forms.py:362
+#: geno/forms.py:363
 msgid "Filter B - Attribut-Wert"
 msgstr ""
 
-#: geno/forms.py:395
+#: geno/forms.py:396
 msgid "Nur Mitglieder MIT bezahltem Anteilschein Einzelmitglied"
 msgstr ""
 
-#: geno/forms.py:400
+#: geno/forms.py:401
 msgid "Nur Mitglieder OHNE Anteilscheine"
 msgstr ""
 
-#: geno/forms.py:406 geno/forms.py:418
+#: geno/forms.py:407 geno/forms.py:419
 msgid "Typ"
 msgstr ""
 
-#: geno/forms.py:412 geno/forms.py:607
+#: geno/forms.py:413 geno/forms.py:608
 msgid "Dokumente"
 msgstr ""
 
-#: geno/forms.py:423
+#: geno/forms.py:424
 msgid "Beitritts-Datum von"
 msgstr ""
 
-#: geno/forms.py:428
+#: geno/forms.py:429
 msgid "Beitritts-Datum bis"
 msgstr ""
 
-#: geno/forms.py:433
+#: geno/forms.py:434
 msgid "Austritts-Datum von"
 msgstr ""
 
-#: geno/forms.py:438
+#: geno/forms.py:439
 msgid "Austritts-Datum bis"
 msgstr ""
 
-#: geno/forms.py:451
+#: geno/forms.py:452
 msgid "Allg. Attribut-Wert"
 msgstr ""
 
-#: geno/forms.py:453
+#: geno/forms.py:454
 msgid "--OHNE-- eingeben für keinen Wert"
 msgstr ""
 
-#: geno/forms.py:461
+#: geno/forms.py:462
 msgid "eine passende Rechnung existiert"
 msgstr ""
 
-#: geno/forms.py:465
+#: geno/forms.py:466
 msgid "keine passende Rechnung existiert"
 msgstr ""
 
-#: geno/forms.py:470
+#: geno/forms.py:471
 msgid "Empfänger:in nur einschliessen, falls"
 msgstr ""
 
-#: geno/forms.py:476
+#: geno/forms.py:477
 msgid "Rechnungstyp"
 msgstr ""
 
-#: geno/forms.py:483
+#: geno/forms.py:484
 msgid "Nur konsolidierte Rechnungen"
 msgstr ""
 
-#: geno/forms.py:484
+#: geno/forms.py:485
 msgid "Nur NICHT konsolidierte Rechnungen"
 msgstr ""
 
-#: geno/forms.py:488
+#: geno/forms.py:489
 msgid "Rechnung konsolidiert"
 msgstr ""
 
-#: geno/forms.py:493
+#: geno/forms.py:494
 msgid "Rechnungsdatum älter als"
 msgstr ""
 
-#: geno/forms.py:495 geno/forms.py:501
+#: geno/forms.py:496 geno/forms.py:502
 msgid "Leer lassen für alle"
 msgstr ""
 
-#: geno/forms.py:499
+#: geno/forms.py:500
 msgid "Rechnungsdatum jünger als"
 msgstr ""
 
-#: geno/forms.py:505
+#: geno/forms.py:506
 msgid "Unterverträge einbeziehen"
 msgstr ""
 
-#: geno/forms.py:511
+#: geno/forms.py:512
 msgid "Mit Vertrag in Liegenschaft(en)"
 msgstr ""
 
-#: geno/forms.py:515 geno/forms.py:580
+#: geno/forms.py:516 geno/forms.py:581
 msgid "Tippen um zu suchen, mehrere Einträge möglich"
 msgstr ""
 
-#: geno/forms.py:534
+#: geno/forms.py:535
 msgid "Empfänger auswählen"
 msgstr ""
 
-#: geno/forms.py:536
+#: geno/forms.py:537
 msgid "Empfänger"
 msgstr ""
 
-#: geno/forms.py:577
+#: geno/forms.py:578
 msgid "Vorlagen Dokumente/Anhänge"
 msgstr ""
 
-#: geno/forms.py:595
+#: geno/forms.py:596
 msgid "Vorlage"
 msgstr ""
 
-#: geno/forms.py:610
+#: geno/forms.py:611
 msgid "E-Mail"
 msgstr ""
 
-#: geno/forms.py:621 geno/forms.py:705
+#: geno/forms.py:622 geno/forms.py:706
 msgid "Attribute ändern"
 msgstr ""
 
-#: geno/forms.py:625
+#: geno/forms.py:626
 msgid ""
 "Setzt oder aktualisiert ein Attribut bei allen ausgewählten Empfängern. "
 "Bestehende Werte werden überschrieben."
 msgstr ""
 
-#: geno/forms.py:636
+#: geno/forms.py:637
 msgid "Mitglieder-Attribut"
 msgstr ""
 
-#: geno/forms.py:649
+#: geno/forms.py:650
 msgid "Allgemeines Attribut"
 msgstr ""
 
-#: geno/forms.py:664
+#: geno/forms.py:665
 msgid "Aktion"
 msgstr ""
 
-#: geno/forms.py:666
+#: geno/forms.py:667
 msgid "Liste anzeigen / nur Attribute ändern"
 msgstr ""
 
-#: geno/forms.py:667
+#: geno/forms.py:668
 msgid "Liste als XLS herunterladen / nur Attribute ändern"
 msgstr ""
 
-#: geno/forms.py:668
+#: geno/forms.py:669
 msgid "ZIP-File mit Dokumenten erzeugen (odt)"
 msgstr ""
 
-#: geno/forms.py:669
+#: geno/forms.py:670
 msgid "ZIP-File mit Dokumenten erzeugen (pdf)"
 msgstr ""
 
-#: geno/forms.py:670
+#: geno/forms.py:671
 msgid "Mails mit Text und evtl. Anhang verschicken"
 msgstr ""
 
-#: geno/forms.py:671
+#: geno/forms.py:672
 msgid "Test-Mails nur an Kopie-Adresse verschicken"
 msgstr ""
 
-#: geno/forms.py:677
+#: geno/forms.py:678
 msgid "E-Mail versenden"
 msgstr ""
 
-#: geno/forms.py:683
+#: geno/forms.py:684
 msgid "Betreff"
 msgstr ""
 
-#: geno/forms.py:693
+#: geno/forms.py:694
 msgid "Absender"
 msgstr ""
 
-#: geno/forms.py:699
+#: geno/forms.py:700
 msgid "Kopie (Bcc) an"
 msgstr ""
 
-#: geno/forms.py:701
+#: geno/forms.py:702
 msgid "Leer lassen, falls keine Kopie gewünscht"
 msgstr ""
 
-#: geno/forms.py:722 importer/models.py:79
+#: geno/forms.py:723 importer/models.py:79
 msgid "Name"
 msgstr ""
 
-#: geno/forms.py:724
+#: geno/forms.py:725
 msgid "Name eines allgemeinen Attributs eingeben"
 msgstr ""
 
-#: geno/forms.py:751
+#: geno/forms.py:752
 msgid "Für diese Aktion muss eine Vorlage für das Dokument ausgewählt werden"
 msgstr ""
 
-#: geno/forms.py:756
+#: geno/forms.py:757
 msgid "Für diese Aktion muss eine Vorlage für das E-Mail ausgewählt werden"
 msgstr ""
 
-#: geno/forms.py:760
+#: geno/forms.py:761
 msgid "Für diese Aktion muss ein E-Mail-Betreff eingegeben werden"
 msgstr ""
 
-#: geno/forms.py:764
+#: geno/forms.py:765
 msgid "Für diese Aktion muss ein E-Mail-Absender ausgewählt werden"
 msgstr ""
 
-#: geno/forms.py:768
+#: geno/forms.py:769
 msgid "Für diese Aktion muss eine Kopie-E-Mail-Adresse eingegeben werden"
 msgstr ""
 
-#: geno/forms.py:771
+#: geno/forms.py:772
 msgid "Der Mitglieder-Attribut-Wert ist leer"
 msgstr ""
 
-#: geno/forms.py:773
+#: geno/forms.py:774
 msgid "Der Allg. Attribut-Wert ist leer"
 msgstr ""
 
-#: geno/forms.py:1079
+#: geno/forms.py:1082
 msgid "ODT- oder ZIP-Datei"
 msgstr ""
 
-#: geno/forms.py:1082
+#: geno/forms.py:1085
 msgid ""
 "Wähle eine LibreOffice-Datei (.odt) oder eine ZIP-Datei (.odt) zum Hochladen "
 "aus."
 msgstr ""
 
-#: geno/forms.py:1394
+#: geno/forms.py:1397
 msgid "Übersicht per Stichtag"
 msgstr ""
 
@@ -1715,3 +1715,11 @@ msgstr ""
 #: report/views.py:143
 msgid "Liste der Resultate"
 msgstr ""
+
+#: reservation/models.py:67
+msgid "Show name of the person in the calendar"
+msgstr "Name der Person im Kalender anzeigen"
+
+#: reservation/models.py:70
+msgid "Show rental units of the person in the calendar"
+msgstr "Mietobjekte der Person im Kalender anzeigen"
