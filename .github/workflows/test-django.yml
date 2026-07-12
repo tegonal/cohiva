@@ -98,7 +98,7 @@ jobs:
 
       - name: Coverage comment
         id: coverage_comment
-        uses: py-cov-action/python-coverage-comment-action@v4.1
+        uses: py-cov-action/python-coverage-comment-action@5d8df5979747514c914e1c5a12335a7cf9a2745f  # v4.1
         with:
           COVERAGE_PATH: django
           GITHUB_TOKEN: ${{ github.token }}
