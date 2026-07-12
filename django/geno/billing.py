@@ -310,7 +310,7 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                 if ru.rent_netto or ru.nk or ru.nk_flat:
                     rent_info.append(
                         {
-                            "text": ru.str_short(),
+                            "text": ru.name_with_label,
                             "net": ru.rent_netto,
                             "nk": ru.nk + ru.nk_flat,
                             "total": ru.rent_netto + ru.nk + ru.nk_flat,
