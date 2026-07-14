@@ -59,6 +59,50 @@ class ShareTest(GenoAdminTestCase):
             )
             share.clean()
 
+    def test_share_bezahlt_no_end_date(self):
+        share = Share(
+            name=self.addresses[0],
+            share_type=self.loan,
+            state="bezahlt",
+            date=datetime.date(2020, 1, 1),
+            value=1000,
+        )
+        self.assertIn("bezahlt", str(share))
+
+    def test_share_bezahlt_future_end_date(self):
+        share = Share(
+            name=self.addresses[0],
+            share_type=self.loan,
+            state="bezahlt",
+            date=datetime.date(2020, 1, 1),
+            date_end=datetime.date(2099, 12, 31),
+            value=1000,
+        )
+        self.assertIn("bezahlt", str(share))
+
+    def test_share_bezahlt_past_end_date_shows_beendet(self):
+        share = Share(
+            name=self.addresses[0],
+            share_type=self.loan,
+            state="bezahlt",
+            date=datetime.date(2020, 1, 1),
+            date_end=datetime.date(2021, 12, 31),
+            value=1000,
+        )
+        self.assertIn("beendet", str(share))
+        self.assertNotIn("bezahlt", str(share))
+
+    def test_share_gefordert_with_past_end_date_unchanged(self):
+        share = Share(
+            name=self.addresses[0],
+            share_type=self.loan,
+            state="gefordert",
+            date=datetime.date(2020, 1, 1),
+            date_end=datetime.date(2021, 12, 31),
+            value=1000,
+        )
+        self.assertIn("gefordert", str(share))
+
     @patch("geno.shares.create_interest_transactions_execute")
     def test_create_interest_transactions(self, mock_execute):
         ret = geno.shares.create_interest_transactions()
