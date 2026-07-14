@@ -534,3 +534,71 @@ class GenoAdminTest(GenoAdminTestCase):
 
         es_tuple = next(item for item in lookups if item[0] == "ES")
         self.assertEqual(es_tuple[1], "Spanien")
+
+
+class AddressAdminSearchTest(GenoAdminTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.adr = Address.objects.create(name="Alder", first_name="Annika")
+        cls.adr_comment_inline = Address.objects.create(
+            name="CommentInline", comment="A test comment, with a comma"
+        )
+        cls.adr_comment_leading = Address.objects.create(
+            name="CommentLeading", comment=",,,Comment with leading commas"
+        )
+        cls.adr_comment_multi = Address.objects.create(
+            name="CommentMulti", comment="A test comment,,,with multiple commas"
+        )
+
+    def _search(self, search_term):
+        factory = RequestFactory()
+        request = factory.get("/admin/geno/address/")
+        request.user = self.su
+        model_admin = admin.AddressAdmin(Address, django_admin.site)
+        queryset, _ = model_admin.get_search_results(request, Address.objects.all(), search_term)
+        return queryset
+
+    def test_search_by_name(self):
+        qs = self._search("Alder")
+        self.assertIn(self.adr, qs)
+
+    def test_search_by_first_name(self):
+        qs = self._search("Annika")
+        self.assertIn(self.adr, qs)
+
+    def test_search_name_comma_first_name(self):
+        # The UI displays the name as "Alder, Annika" -- the comma should not
+        # prevent this row from appearing.
+        qs = self._search("Alder, Annika")
+        self.assertIn(self.adr, qs)
+
+    def test_search_first_name_comma_name(self):
+        # Reversed order also works after comma stripping
+        qs = self._search("Annika, Alder")
+        self.assertIn(self.adr, qs)
+
+    def test_search_name_comma_no_false_positive(self):
+        # "Alder, Annika" should not return unrelated addresses
+        qs = self._search("Alder, Annika")
+        self.assertNotIn(self.adr_comment_inline, qs)
+        self.assertNotIn(self.adr_comment_leading, qs)
+        self.assertNotIn(self.adr_comment_multi, qs)
+
+    # Verify that stripping commas for the sake of matching Name, First Name
+    # does not adversely affect matching on other fields where commas are likely
+    # to appear, such as "Comment"
+    def test_search_comment_with_inline_comma(self):
+        # Searching text around a comma in a comment still returns the row
+        qs = self._search("test comment, with")
+        self.assertIn(self.adr_comment_inline, qs)
+
+    def test_search_comment_with_leading_commas(self):
+        # Leading commas in a search term are stripped, leaving plain keywords
+        qs = self._search(",,, Comment leading commas")
+        self.assertIn(self.adr_comment_leading, qs)
+
+    def test_search_comment_with_multiple_commas(self):
+        # Multiple consecutive commas are stripped; all remaining words must match
+        qs = self._search("test comment,,,with multiple commas")
+        self.assertIn(self.adr_comment_multi, qs)
