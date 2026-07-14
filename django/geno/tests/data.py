@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 from typing import TYPE_CHECKING
 
@@ -23,11 +25,11 @@ from geno.models import (
     ShareType,
     Tenant,
 )
-from geno.tests.base import GenoAdminTestCase
-from reservation.tests.base import ReservationTestCase
 
 if TYPE_CHECKING:
+    from geno.tests.base import GenoAdminTestCase
     from geno.tests.test_registration import TestRegistrationForm
+    from reservation.tests.base import ReservationTestCase
 
 
 def create_users(cls: type[GenoAdminTestCase]):
