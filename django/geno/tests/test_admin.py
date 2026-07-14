@@ -540,7 +540,10 @@ class AddressAdminSearchTest(GenoAdminTestCase):
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
-        cls.adr = Address.objects.create(name="Alder", first_name="Annika")
+        cls.adr = Address.objects.create(name="Alder", first_name="Alice")
+        cls.adr_name_in_comment = Address.objects.create(
+            name="Barter", first_name="Bob", comment="Friend of the Alder family"
+        )
         cls.adr_comment_inline = Address.objects.create(
             name="CommentInline", comment="A test comment, with a comma"
         )
@@ -559,28 +562,39 @@ class AddressAdminSearchTest(GenoAdminTestCase):
         queryset, _ = model_admin.get_search_results(request, Address.objects.all(), search_term)
         return queryset
 
+    def test_search_by_first_name(self):
+        qs = self._search("Alice")
+        self.assertIn(self.adr, qs)
+        # The resulting row should have _search_rank == 0, because it matched on
+        # the `first_name` field.
+        self.assertEqual(qs.get(pk=self.adr.pk)._search_rank, 0)
+
     def test_search_by_name(self):
         qs = self._search("Alder")
         self.assertIn(self.adr, qs)
-
-    def test_search_by_first_name(self):
-        qs = self._search("Annika")
-        self.assertIn(self.adr, qs)
+        # The `name` match has a higher _search_rank than the `comment` match
+        self.assertEqual(qs.get(pk=self.adr.pk)._search_rank, 0)
+        self.assertEqual(qs.get(pk=self.adr_name_in_comment.pk)._search_rank, 1)
 
     def test_search_name_comma_first_name(self):
-        # The UI displays the name as "Alder, Annika" -- the comma should not
+        # The UI displays the name as "Alder, Alice" -- the comma should not
         # prevent this row from appearing.
-        qs = self._search("Alder, Annika")
+        qs = self._search("Alder, Alice")
         self.assertIn(self.adr, qs)
+        # The resulting row should have _search_rank == 1, because the search
+        # term matched partially on both the `name` and `first_name` fields, but
+        # not wholly on both.
+        self.assertEqual(qs.get(pk=self.adr.pk)._search_rank, 1)
 
     def test_search_first_name_comma_name(self):
         # Reversed order also works after comma stripping
-        qs = self._search("Annika, Alder")
+        qs = self._search("Alice, Alder")
         self.assertIn(self.adr, qs)
+        self.assertEqual(qs.get(pk=self.adr.pk)._search_rank, 1)
 
     def test_search_name_comma_no_false_positive(self):
-        # "Alder, Annika" should not return unrelated addresses
-        qs = self._search("Alder, Annika")
+        # "Alder, Alice" should not return unrelated addresses
+        qs = self._search("Alder, Alice")
         self.assertNotIn(self.adr_comment_inline, qs)
         self.assertNotIn(self.adr_comment_leading, qs)
         self.assertNotIn(self.adr_comment_multi, qs)
