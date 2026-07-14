@@ -424,6 +424,9 @@ class AddressAdmin(GenoBaseAdmin):
     ]
 
     def get_search_results(self, request, queryset, search_term):
+        # Remove commas from the search term to allow hits for terms in the
+        # form "Last Name, First Name".
+        search_term = search_term.replace(",", " ")
         queryset, use_distinct = super().get_search_results(request, queryset, search_term)
         if search_term:
             # Add an integer search "ranking" according to the field that the
@@ -431,13 +434,15 @@ class AddressAdmin(GenoBaseAdmin):
             queryset = queryset.annotate(
                 _search_rank = Case(
                     When(
-                        Q(name__icontains=search_term) | Q(first_name__icontains=search_term),
+                        Q(name__icontains=search_term)
+                        | Q(first_name__icontains=search_term)
+                        | Q(organization__icontains=search_term),
                         then=Value(0),
                     ),
                     default=Value(1),
                     output_field=IntegerField(),
                 )
-            ).order_by("_search_rank", "name", "first_name")
+            ).order_by("_search_rank", "name", "first_name", "organization")
         return queryset, use_distinct
 
     @action(
