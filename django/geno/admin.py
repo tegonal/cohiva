@@ -431,7 +431,7 @@ class AddressAdmin(GenoBaseAdmin):
             queryset = queryset.annotate(
                 _search_rank = Case(
                     When(
-                        Q(name__contains=search_term) | Q(first_name__contains=search_term),
+                        Q(name__icontains=search_term) | Q(first_name__icontains=search_term),
                         then=Value(0),
                     ),
                     default=Value(1),
