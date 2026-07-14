@@ -938,6 +938,8 @@ class Share(GenoBase):
     STATE_CHOICES = (
         ("gefordert", "gefordert"),
         ("bezahlt", "bezahlt"),
+        # TODO: should we be able to add Shares that have "beendet" status?
+        ("beendet", "beendet")
     )
     state = models.CharField("Status", max_length=50, choices=STATE_CHOICES, blank=True)
     date = models.DateField("Datum Beginn")
@@ -1026,7 +1028,10 @@ class Share(GenoBase):
     def __str__(self):
         extra_info = self.share_type
         if self.state:
-            extra_info = "%s, %s" % (extra_info, self.state)
+            state = self.state
+            if state == "bezahlt" and self.date_end and self.date_end < datetime.date.today():
+                state = "beendet"
+            extra_info = "%s, %s" % (extra_info, state)
         if self.is_pension_fund:
             extra_info = "%s, BVG-GUTHABEN!!" % (extra_info)
         return "%s [%s]" % (self.name, extra_info)
