@@ -467,6 +467,8 @@ zope-interface==7.2
     #   zope-proxy
 zope-proxy==6.1
     # via zope-deferredimport
+# TODO: add via dependency management
+django-simple-history==3.12.0
 
 # Packages added/managed by install.py:
 sepa==0.5.4+mst1
