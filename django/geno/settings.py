@@ -35,3 +35,7 @@ MEMBER_FLAGS = getattr(
         5: "Flag 5",  # Dranbleiben
     },
 )
+
+INSTALLED_APPS = [
+    "simple_history",
+]
