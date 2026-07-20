@@ -69,6 +69,27 @@ def copy_objects(modeladmin, request, queryset):
     messages.success(request, f"{count} Objekt(e) kopiert.")
 
 
+class ShareStateFilter(admin.SimpleListFilter):
+    title = "Status"
+    parameter_name = "state"
+
+    def __init__(self, request, params, model, model_admin):
+        self.state = model._meta.get_field("state")
+        super().__init__(request, params, model, model_admin)
+
+    def lookups(self, request, model_admin):
+        states = [("gefordert", "gefordert"),
+                  ("bezahlt", "bezahlt"),
+                  ("beendet", "beendet")]
+        return states
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if value:
+            return queryset.filter(state=value)
+        return queryset
+
+
 class BooleanFieldDefaultTrueListFilter(admin.BooleanFieldListFilter):
     """
     Filter a boolean field `active`.
@@ -878,7 +899,7 @@ class ShareAdmin(GenoBaseAdmin):
         "share_type",
         "interest_mode",
         # TODO: allow filtering for "beendet" status regardless of whether it is a state option
-        "state",
+        ShareStateFilter,
         "is_interest_credit",
         "is_pension_fund",
         "is_business",
