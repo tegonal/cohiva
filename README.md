@@ -230,12 +230,12 @@
 | reservation/tests/base.py                                                                              |        9 |        0 |    100% |           |
 | reservation/tests/data.py                                                                              |       42 |        0 |    100% |           |
 | reservation/tests/test\_api.py                                                                         |      374 |       10 |     97% |28-29, 785-802 |
-| reservation/tests/test\_models.py                                                                      |       64 |        0 |    100% |           |
+| reservation/tests/test\_models.py                                                                      |       64 |        1 |     98% |       122 |
 | reservation/tests/test\_reservations.py                                                                |        6 |        0 |    100% |           |
 | reservation/tests/test\_views.py                                                                       |       10 |        2 |     80% |     21-22 |
 | reservation/urls.py                                                                                    |        4 |        0 |    100% |           |
 | reservation/views.py                                                                                   |      136 |      112 |     18% |22-201, 240-263 |
-| **TOTAL**                                                                                              | **23996** | **5916** | **75%** |           |
+| **TOTAL**                                                                                              | **23996** | **5917** | **75%** |           |
 
 
 ## Setup coverage badge
