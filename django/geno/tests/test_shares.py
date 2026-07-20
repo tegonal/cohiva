@@ -90,6 +90,7 @@ class ShareTest(GenoAdminTestCase):
             value=1000,
         )
         share.save()  # save() enforces the "beendet" state
+        # TODO: change the state back because it is subsequently read in test_import_simple_person_with_extra_data()
         self.assertIn("beendet", str(share))
         self.assertNotIn("bezahlt", str(share))
 
