@@ -89,6 +89,7 @@ class ShareTest(GenoAdminTestCase):
             date_end=datetime.date(2021, 12, 31),
             value=1000,
         )
+        share.save()  # save() enforces the "beendet" state
         self.assertIn("beendet", str(share))
         self.assertNotIn("bezahlt", str(share))
 

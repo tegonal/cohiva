@@ -938,7 +938,6 @@ class Share(GenoBase):
     STATE_CHOICES = (
         ("gefordert", "gefordert"),
         ("bezahlt", "bezahlt"),
-        # TODO: should we be able to add Shares that have "beendet" status?
         ("beendet", "beendet")
     )
     state = models.CharField("Status", max_length=50, choices=STATE_CHOICES, blank=True)
@@ -1029,8 +1028,6 @@ class Share(GenoBase):
         extra_info = self.share_type
         if self.state:
             state = self.state
-            if state == "bezahlt" and self.date_end and self.date_end < datetime.date.today():
-                state = "beendet"
             extra_info = "%s, %s" % (extra_info, state)
         if self.is_pension_fund:
             extra_info = "%s, BVG-GUTHABEN!!" % (extra_info)
@@ -1070,6 +1067,13 @@ class Share(GenoBase):
             self.active = self.is_active()
             if kwargs.get("update_fields") and "active" not in kwargs["update_fields"]:
                 kwargs["update_fields"].append("active")
+        # Perform a check on the state field, to ensure that Shares with an end
+        # date in the past are stored as "beendet" in the database.
+        # TODO: should the opposite be true -- "beendet" is not valid for active Shares?
+        if self.state == "bezahlt" and self.date_end and self.date_end < datetime.date.today():
+            self.state = "beendet"
+            if kwargs.get("update_field") and "state" not in kwargs["update_fields"]:
+                kwargs["update_fields"].append("state")
         super().save(*args, **kwargs)
 
     def is_active(self):
