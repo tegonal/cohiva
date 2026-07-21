@@ -10,6 +10,7 @@ from django.contrib import admin, messages
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, User
+from django.db.models import Case, IntegerField, Q, Value, When
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -421,6 +422,28 @@ class AddressAdmin(GenoBaseAdmin):
             # "variant": ActionVariant.PRIMARY,
         },
     ]
+
+    def get_search_results(self, request, queryset, search_term):
+        # Remove commas from the search term to allow hits for terms in the
+        # form "Last Name, First Name".
+        search_term = search_term.replace(",", " ")
+        queryset, use_distinct = super().get_search_results(request, queryset, search_term)
+        if search_term:
+            # Add an integer search "ranking" according to the field that the
+            # search term matches on.
+            queryset = queryset.annotate(
+                _search_rank = Case(
+                    When(
+                        Q(name__icontains=search_term)
+                        | Q(first_name__icontains=search_term)
+                        | Q(organization__icontains=search_term),
+                        then=Value(0),
+                    ),
+                    default=Value(1),
+                    output_field=IntegerField(),
+                )
+            ).order_by("_search_rank", "name", "first_name", "organization")
+        return queryset, use_distinct
 
     @action(
         description=_("Export"),
