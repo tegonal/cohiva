@@ -12,6 +12,8 @@ from zipfile import ZipFile
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
+from django.core.serializers.json import DjangoJSONEncoder
+from django.db.models import Model
 from django.http import HttpResponse
 from django.template import Context, Template, loader
 from django.utils.html import escape
@@ -41,6 +43,13 @@ from geno.utils import fill_template_pod, nformat, odt2pdf, remove_temp_files, s
 logger = logging.getLogger("geno")
 
 
+class _ContextEncoder(DjangoJSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Model):
+            return str(obj)
+        return super().default(obj)
+
+
 class MailTemplate:
     def __init__(self, template, subject, sender):
         self.is_html = False
@@ -68,6 +77,9 @@ class RenderedDocument:
         self.file = None
         self.filename = None
         self.linked_invoice = None
+        self.context = None
+        self.doctype = None
+        self.content_template = None
 
 
 class SkipRecipient(Exception):
@@ -396,6 +408,9 @@ class DocumentTemplate:
                 raise ValueError(f"Unsupported output format: {self.output_format}")
             if not output.file:
                 raise RuntimeError("Could not fill template")
+            output.context = ctx
+            output.doctype = self.doctype
+            output.content_template = self.content_template
         else:
             ## Just append
             logger.info(" > appending file without rendering: %s" % (output.file))
@@ -485,12 +500,16 @@ class ProcessDocuments:
                 doctype = DocumentType.objects.get(id=att_id)
                 content_template = doctype.templates.filter(active=True).first()
                 if not content_template:
-                    raise ValueError(f"Dokumenttyp {doctype} hat keine Vorlagen-Datei")
+                    raise ValueError(f"Dokumenttyp {doctype} hat keine aktive Vorlage")
+                if not content_template.file:
+                    raise ValueError(f"Dokumenttyp {doctype}: Vorlage hat keine Datei hinterlegt")
             except DocumentType.DoesNotExist:
                 raise ValueError(f"Dokumenttyp mit ID {att_id} nicht gefunden.")
         elif att_type == "ContentTemplate":
             try:
                 content_template = ContentTemplate.objects.get(id=att_id)
+                if not content_template.file:
+                    raise ValueError(f"Vorlage '{content_template.name}' hat keine Datei hinterlegt")
             except ContentTemplate.DoesNotExist:
                 raise ValueError(f"Vorlage mit ID {att_id} nicht gefunden.")
         else:
@@ -559,6 +578,8 @@ class ProcessDocuments:
         for recipient in self.recipients:
             for doc in recipient.documents:
                 self.zipfile_ob.write(doc.file, doc.filename)
+            if not self.dry_run:
+                self._save_documents(recipient)
 
     def send_output_mails(self):
         logger.info("Start sending mails")
@@ -585,7 +606,28 @@ class ProcessDocuments:
                 if not recipient.failure:
                     logger.info(f" > Email an {mail_recipient} geschickt.")
                     recipient.log.append(f"Email an {escape(mail_recipient)} geschickt.")
+                    if not self.dry_run:
+                        self._save_documents(recipient)
                 self.throttle()
+
+    def _save_documents(self, recipient):
+        if recipient.content_object is None:
+            return
+        if recipient.content_object == "address":
+            content_obj = recipient.address
+        else:
+            logger.warning(f"Unknown content_object type '{recipient.content_object}' for {recipient}, skipping Document creation.")
+            return
+        for doc in recipient.documents:
+            if doc.doctype is None or doc.context is None:
+                continue
+            Document.objects.create(
+                name=doc.filename,
+                doctype=doc.doctype,
+                template=doc.content_template,
+                data=json.dumps(doc.context, cls=_ContextEncoder),
+                content_object=content_obj,
+            )
 
     def throttle(self):
         if not getattr(settings, "IS_RUNNING_TESTS", False):
@@ -794,7 +836,6 @@ class ProcessDocuments:
             template.cleanup()
 
 
-## TODO: Add possibility to send a Document
 def send_member_mail_process(data):
     is_test = data["action"] == "mail_test"
     process = ProcessDocuments(dry_run=is_test)
