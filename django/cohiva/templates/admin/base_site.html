@@ -1,4 +1,5 @@
 {% extends "admin/base_site.html" %}
+{% load static %}
 {% block extrahead %}
     <style>
         .select2-container {
@@ -55,4 +56,5 @@
         }
 
     </style>
+    <script src="{% static 'admin/js/unsaved_changes.js' %}"></script>
 {% endblock %}
