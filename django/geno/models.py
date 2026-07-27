@@ -1539,6 +1539,7 @@ class RentalUnit(GenoBase):
 
 
 class Contract(GenoBase):
+    active = models.BooleanField("Aktiv", default=True)
     main_contract = models.ForeignKey(
         "self",
         verbose_name="Hauptvertrag",
@@ -1665,6 +1666,21 @@ class Contract(GenoBase):
             contractors_str = contractors_str[0:80] + "..."
 
         return "%s [%s]" % (self.list_rental_units(), contractors_str)
+
+    def is_active(self):
+        today = datetime.date.today()
+        if self.date > today:
+            return False
+        if self.date_end:
+            return self.date_end >= today
+        return True
+
+    def save(self, *args, **kwargs):
+        if self.is_active() != self.active:
+            self.active = self.is_active()
+            if kwargs.get("update_fields") and "active" not in kwargs["update_fields"]:
+                kwargs["update_fields"].append("active")
+        super().save(*args, **kwargs)
 
     def get_contact_address(self):
         if self.main_contact:

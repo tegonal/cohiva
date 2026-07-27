@@ -1432,6 +1432,7 @@ class VertragstypFilter(admin.SimpleListFilter):
 class ContractAdmin(GenoBaseAdmin):
     form = ContractAdminModelForm
     fields = [
+        "active",
         "main_contract",
         "contractors",
         "main_contact",
@@ -1481,6 +1482,7 @@ class ContractAdmin(GenoBaseAdmin):
         "billing_date_start",
         "billing_date_end",
         "send_qrbill",
+        ("active", BooleanFieldDefaultTrueListFilter),
     ]
     autocomplete_fields = [
         "contractors",
