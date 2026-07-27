@@ -1669,8 +1669,6 @@ class Contract(GenoBase):
 
     def is_active(self):
         today = datetime.date.today()
-        if self.date > today:
-            return False
         if self.date_end:
             return self.date_end >= today
         return True
