@@ -9,6 +9,7 @@ class SelectiveMigrationRunner(DiscoverRunner):
 
     migrations = {
         ("geno", "0006_tenantsview"),
+        ("geno", "0030_tenantsview_active"),
     }
 
     def setup_databases(self, **kwargs):
