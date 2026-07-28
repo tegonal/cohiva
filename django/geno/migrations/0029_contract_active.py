@@ -2,6 +2,17 @@
 
 from django.db import migrations, models
 
+from geno.models import Contract
+
+def update_active_members_and_shares(apps, schema_editor):
+    def _update_active(model):
+        for obj in model.objects.all():
+            if obj.is_active() != obj.active:
+                obj.active = obj.is_active()
+                obj.save()
+
+    _update_active(Contract)
+
 
 class Migration(migrations.Migration):
 
@@ -15,4 +26,5 @@ class Migration(migrations.Migration):
             name='active',
             field=models.BooleanField(default=True, verbose_name='Aktiv'),
         ),
+        migrations.RunPython(update_active_members_and_shares, migrations.RunPython.noop),
     ]
