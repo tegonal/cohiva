@@ -91,7 +91,7 @@ class ImporterPropertySharesVFNTest(TestCase):
         share = Share.objects.get(name=address101)
         self.assertEqual(share.name.name, "Test 101")
         self.assertEqual(share.share_type.name, "Wohnungsanteilskapital")
-        self.assertEqual(share.state, "bezahlt")
+        self.assertEqual(share.payment_state, "bezahlt")
         self.assertEqual(share.payment_date, date(2020, 5, 1))
         self.assertEqual(share.quantity, 1)
         self.assertEqual(share.value, Decimal("123.50"))

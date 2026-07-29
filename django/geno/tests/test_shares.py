@@ -29,8 +29,8 @@ class ShareTest(GenoAdminTestCase):
         self.assertInHTML("CHF 40&#x27;500.00", response.content.decode())
 
     def test_share_detail_selectedContractAndBuilding(self):
-        now = timezone.now()
-        contract = Contract.objects.create(date=now)
+        today = datetime.date.today()
+        contract = Contract.objects.create(date=today)
         building = Building.objects.create()
         address = Address.objects.create()
         sharetype = ShareType.objects.create()
@@ -40,7 +40,7 @@ class ShareTest(GenoAdminTestCase):
         with self.assertRaisesMessage(IntegrityError, constraint_name):
             Share.objects.create(
                 name=address,
-                date=now,
+                payment_date=today,
                 share_type=sharetype,
                 value=200,
                 attached_to_contract=contract,
@@ -51,7 +51,7 @@ class ShareTest(GenoAdminTestCase):
         with self.assertRaises(ValidationError):
             share = Share(
                 name=address,
-                date=now,
+                payment_date=today,
                 share_type=sharetype,
                 value=200,
                 attached_to_contract=contract,
@@ -63,8 +63,8 @@ class ShareTest(GenoAdminTestCase):
         share = Share(
             name=self.addresses[0],
             share_type=self.loan,
-            state="bezahlt",
-            date=datetime.date(2020, 1, 1),
+            payment_state="bezahlt",
+            payment_date=datetime.date(2020, 1, 1),
             value=1000,
         )
         self.assertIn("bezahlt", str(share))
@@ -73,9 +73,9 @@ class ShareTest(GenoAdminTestCase):
         share = Share(
             name=self.addresses[0],
             share_type=self.loan,
-            state="bezahlt",
-            date=datetime.date(2020, 1, 1),
-            date_end=datetime.date(2099, 12, 31),
+            payment_state="bezahlt",
+            payment_date=datetime.date(2020, 1, 1),
+            repayment_date=datetime.date(2099, 12, 31),
             value=1000,
         )
         self.assertIn("bezahlt", str(share))
@@ -84,9 +84,9 @@ class ShareTest(GenoAdminTestCase):
         share = Share(
             name=self.addresses[0],
             share_type=self.loan,
-            state="bezahlt",
-            date=datetime.date(2020, 1, 1),
-            date_end=datetime.date(2021, 12, 31),
+            payment_state="bezahlt",
+            payment_date=datetime.date(2020, 1, 1),
+            repayment_date=datetime.date(2021, 12, 31),
             value=1000,
         )
         share.save()  # save() enforces the "beendet" state
@@ -98,9 +98,9 @@ class ShareTest(GenoAdminTestCase):
         share = Share(
             name=self.addresses[0],
             share_type=self.loan,
-            state="gefordert",
-            date=datetime.date(2020, 1, 1),
-            date_end=datetime.date(2021, 12, 31),
+            payment_state="gefordert",
+            payment_date=datetime.date(2020, 1, 1),
+            repayment_date=datetime.date(2021, 12, 31),
             value=1000,
         )
         self.assertIn("gefordert", str(share))
@@ -115,7 +115,7 @@ class ShareTest(GenoAdminTestCase):
     def test_create_interest_transactions_with_warning(self, mock_execute):
         Share.objects.create(
             name=self.addresses[1],
-            date=self.end_of_prev_year,
+            payment_date=self.end_of_prev_year,
             is_interest_credit=True,
             value=100,
             share_type=self.loan,
@@ -136,7 +136,7 @@ class ShareTest(GenoAdminTestCase):
 
     @patch("geno.shares.add_interest_transaction")
     def test_interest_transactions_execute_none(self, mock_add_transaction):
-        Share.objects.all().update(date_end=datetime.date(2000, 1, 1))
+        Share.objects.all().update(repayment_date=datetime.date(2000, 1, 1))
         ret = geno.shares.create_interest_transactions_execute(self.end_of_prev_year)
         mock_add_transaction.assert_not_called()
         self.assertEqual(
@@ -149,29 +149,29 @@ class ShareTest(GenoAdminTestCase):
 
     @patch("geno.shares.add_interest_transaction")
     def test_interest_transactions_execute_one_of_each_type(self, mock_add_transaction):
-        Share.objects.all().update(date_end=datetime.date(2000, 1, 1))
+        Share.objects.all().update(repayment_date=datetime.date(2000, 1, 1))
         share_date = datetime.date(datetime.datetime.now().year - 1, 1, 1)
         adr = self.addresses[0]
         Share.objects.create(
             name=adr,
             share_type=self.loan,
-            date=share_date,
+            payment_date=share_date,
             value=10000,
-            state="bezahlt",
+            payment_state="bezahlt",
         )
         Share.objects.create(
             name=adr,
             share_type=self.loan_special,
-            date=share_date,
+            payment_date=share_date,
+            payment_state="bezahlt",
             value=20000,
-            state="bezahlt",
         )
         Share.objects.create(
             name=adr,
             share_type=self.deposit,
-            date=share_date,
+            payment_date=share_date,
+            payment_state="bezahlt",
             value=5000,
-            state="bezahlt",
         )
         ret = geno.shares.create_interest_transactions_execute(self.end_of_prev_year)
         self.assertEqual(mock_add_transaction.call_count, 3)

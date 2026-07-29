@@ -1134,8 +1134,8 @@ class DocumentProcessTest(GenoAdminTestCase):
         Share.objects.create(
             name=adr_noskip,
             share_type=self.sharetypes[0],
-            state="bezahlt",
-            date=datetime.date(2000, 2, 15),
+            payment_state="bezahlt",
+            payment_date=datetime.date(2000, 2, 15),
             value=1000,
         )
         self.setup_addresses([adr_noskip, adr_skip])
@@ -1158,8 +1158,8 @@ class DocumentProcessTest(GenoAdminTestCase):
         Share.objects.create(
             name=adr_noskip,
             share_type=self.sharetypes[0],
-            state="bezahlt",
-            date=datetime.date(2000, 2, 15),
+            payment_state="bezahlt",
+            payment_date=datetime.date(2000, 2, 15),
             value=1000,
         )
         self.setup_addresses([adr_noskip])

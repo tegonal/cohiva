@@ -505,8 +505,8 @@ def create_shares(cls: type[GenoAdminTestCase]):
                 Share.objects.create(
                     name=adr,
                     share_type=st,
-                    state="bezahlt",
-                    date=datetime.date(2000, 2, 15),
+                    payment_state="bezahlt",
+                    payment_date=datetime.date(2000, 2, 15),
                     value=1000,
                     duration=duration,
                 )
@@ -517,8 +517,8 @@ def create_shares(cls: type[GenoAdminTestCase]):
         Share.objects.create(
             name=cls.addresses[0],
             share_type=cls.sharetypes[8],
-            state="bezahlt",
-            date=datetime.date(2011, 11, 11),
+            payment_state="bezahlt",
+            payment_date=datetime.date(2011, 11, 11),
             value=500,
         )
     )

@@ -219,9 +219,9 @@ class ImporterMemberAddressSharesVFN(ExcelImporter):
 
         state_raw = str(row_data.get("Status [Beteiligungen]") or "").strip().lower()
         if state_raw in ("bezahlt", "paid", "einbezahlt", "eingezahlt", "zurückbezahlt"):
-            share.state = "bezahlt"
+            share.payment_state = "bezahlt"
         else:
-            share.state = "gefordert"
+            share.payment_state = "gefordert"
 
         share_date = parse_date(row_data.get("Datum Beginn [Beteiligungen]"))
         if share_date:
