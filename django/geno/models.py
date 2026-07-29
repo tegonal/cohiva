@@ -1027,7 +1027,7 @@ class Share(GenoBase):
             return self.manual_interest
 
     @property
-    @admin.display(description="")
+    @admin.display(description="Datum Beginn")
     def date(self):
         if self.effective_from:
             return self.effective_from
@@ -1035,6 +1035,7 @@ class Share(GenoBase):
             return self.payment_date
 
     @property
+    @admin.display(description="Datum Ende")
     def date_end(self):
         if self.effective_until:
             return self.effective_until
@@ -1082,7 +1083,7 @@ class Share(GenoBase):
 
         # TODO: return German error messages
         # At least one of payment date or effective from date must be provided
-        if not self.payment_date or self.effective_from:
+        if not self.payment_date and not self.effective_from:
             raise ValidationError("At least one of payment date or effective from date must be provided")
         # Repayment date cannot be before payment date
         if self.payment_date and self.repayment_date:
@@ -1099,26 +1100,23 @@ class Share(GenoBase):
             self.active = self.is_active()
             if kwargs.get("update_fields") and "active" not in kwargs["update_fields"]:
                 kwargs["update_fields"].append("active")
-        # Perform a check on the state field, to ensure that Shares with an end
-        # date in the past are stored as "beendet" in the database.
+
         # TODO: calculate the payment state here
         today = datetime.date.today()
         if self.repayment_date and self.repayment_date <= today:
-            self.payment_state = "zurückgezhlt"
+            self.payment_state = "zurückbezahlt"
         elif self.payment_date <= today:
             self.payment_state = "bezahlt"
         else:
             self.payment_state = "gefordert"
 
-        if self.payment_state == "bezahlt" and self.repayment_date and self.repayment_date < datetime.date.today():
-            self.payment_state = "beendet"
-            if kwargs.get("update_field") and "state" not in kwargs["update_fields"]:
-                kwargs["update_fields"].append("state")
+        if kwargs.get("update_fields") and "payment_state" not in kwargs["update_fields"]:
+                kwargs["update_fields"].append("payment_state")
         super().save(*args, **kwargs)
 
     def is_active(self):
-        if self.date_end():
-            return self.date_end() >= datetime.date.today()
+        if self.date_end:
+            return self.date_end >= datetime.date.today()
         return True
 
     class Meta:
@@ -1142,11 +1140,11 @@ class Share(GenoBase):
 def get_active_shares(interest=True, date=None):
     if date is None:
         date = datetime.datetime.today()
-    select = Share.objects.filter(Q(date_end=None) | Q(date_end__gt=date)).filter(date__lte=date)
+    select = Share.objects.filter(Q(repayment_date=None) | Q(repayment_date__gt=date)).filter(payment_date__lte=date)
     if not interest:
-        return select.filter(is_interest_credit=False).filter(state="bezahlt")
+        return select.filter(is_interest_credit=False).filter(payment_state="bezahlt")
     else:
-        return select.filter(state="bezahlt")
+        return select.filter(payment_state="bezahlt")
 
 
 DOCUMENTTYPE_NAME_CHOICES = (
