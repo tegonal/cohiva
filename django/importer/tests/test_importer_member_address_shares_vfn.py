@@ -151,7 +151,7 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
         self.assertEqual(share.quantity, 3)
         self.assertEqual(share.value, Decimal("1000"))
         self.assertEqual(share.state, "bezahlt")
-        self.assertEqual(share.date, date(2020, 5, 15))
+        self.assertEqual(share.payment_date, date(2020, 5, 15))
         self.assertEqual(share.identifier, "99")
         self.assertEqual(share.identifier_external, "99ex")
         self.assertEqual(share.note, "Test")
@@ -234,8 +234,8 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
         self.assertEqual(share.quantity, 1)
         self.assertEqual(share.value, Decimal("100"))
         self.assertEqual(share.state, "bezahlt")
-        self.assertEqual(share.date, date(2020, 5, 15))
-        self.assertEqual(share.date_end, date(2021, 5, 15))
+        self.assertEqual(share.payment_date, date(2020, 5, 15))
+        self.assertEqual(share.repayment_date, date(2021, 5, 15))
 
     def test_import_organization(self):
         """Import a Firma with contact person."""

@@ -1033,7 +1033,7 @@ def get_context_data(doctype, obj_id, extra_context):
         if obj.date_due:
             duedate = obj.date_due
         elif obj.duration:
-            duedate = obj.date + relativedelta(years=obj.duration)
+            duedate = obj.payment_date + relativedelta(years=obj.duration)
         else:
             duedate = None
         if duedate:
@@ -1102,7 +1102,7 @@ def get_context_data(doctype, obj_id, extra_context):
                 nformat(obj.value, 2),
             )
 
-        c["datum_zahlung"] = obj.date.strftime("%d.%m.%Y")
+        c["datum_zahlung"] = obj.payment_date.strftime("%d.%m.%Y")
     elif doctype == "statement" or doctype == "mailing" or doctype == "loanreminder":
         obj = Address.objects.get(pk=obj_id)
         adr = obj

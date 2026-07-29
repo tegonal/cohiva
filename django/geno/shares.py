@@ -433,13 +433,13 @@ def share_interest_calc(address, year, enddate=None):
             .order_by("date")
         ):
             amount = share.quantity * share.value
-            if share.date < period_start:
+            if share.payment_date < period_start:
                 start = period_start
                 start_amount += amount
                 start_quantity += share.quantity
             else:
-                start = share.date
-            if share.date_end is None or share.date_end >= period_end:
+                start = share.payment_date
+            if share.repayment_date is None or share.repayment_date >= period_end:
                 end = period_end
                 end_quantity += share.quantity
                 end_amount += amount
@@ -449,7 +449,7 @@ def share_interest_calc(address, year, enddate=None):
                 if share.date_due:
                     duedate = share.date_due
                 elif share.duration:
-                    duedate = share.date + relativedelta(years=share.duration)
+                    duedate = share.payment_date + relativedelta(years=share.duration)
                 else:
                     duedate = None
                 if duedate:
@@ -458,7 +458,7 @@ def share_interest_calc(address, year, enddate=None):
                     if not due_date_max or duedate > due_date_max:
                         due_date_max = duedate
             else:
-                end = share.date_end + datetime.timedelta(days=1)
+                end = share.repayment_date + datetime.timedelta(days=1)
             if start not in dates:
                 dates.append(start)
             if end not in dates:
@@ -770,7 +770,7 @@ def check_rental_shares_report():
         if share.date_due:
             duedate = share.date_due
         elif share.duration:
-            duedate = share.date + relativedelta(years=share.duration)
+            duedate = share.payment_date + relativedelta(years=share.duration)
         else:
             duedate = None
             if (

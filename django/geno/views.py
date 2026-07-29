@@ -306,8 +306,8 @@ class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
             for s in get_active_shares(date=reference_date).filter(share_type=share_type):
                 stat["quantity"] += s.quantity
                 stat["value"] += s.quantity * s.value
-                if stat["last_date"] is None or s.date > stat["last_date"]:
-                    stat["last_date"] = s.date
+                if stat["last_date"] is None or s.payment_date > stat["last_date"]:
+                    stat["last_date"] = s.payment_date
 
             share_stats.append(
                 {
@@ -823,7 +823,7 @@ def address_export(request, show_wohnung=True):
         if stype01:
             share = get_active_shares().filter(share_type=stype01).filter(name=a).first()
             if share:
-                share01_paid = share.date.strftime("%d.%m.%Y")
+                share01_paid = share.payment_date.strftime("%d.%m.%Y")
 
         if show_wohnung:
             for c in get_active_contracts().filter(contractors__pk=a.pk):
@@ -942,7 +942,7 @@ def share_export(request):
             if a.date_due:
                 duedate = a.date_due
             elif a.duration:
-                duedate = a.date + relativedelta(years=a.duration)
+                duedate = a.payment_date + relativedelta(years=a.duration)
             else:
                 duedate = ""
 
@@ -989,7 +989,7 @@ def share_export(request):
             row.append(str(a.name))
             row.append(a.name.pk)
             row.append(str(a.share_type))
-            row.append(a.date)
+            row.append(a.payment_date)
             row.append(a.quantity)
             row.append(a.value)
             row.append(a.quantity * a.value)
@@ -1415,7 +1415,7 @@ class ShareConfirmationLetterView(DocumentGeneratorView):
             .exclude(share_type=stype_hypo)
             .order_by("-date")
         ):
-            obj_data = {"obj": s, "info": "%s %dx %s" % (s.date, s.quantity, s.value)}
+            obj_data = {"obj": s, "info": "%s %dx %s" % (s.payment_date, s.quantity, s.value)}
             if s.share_type == stype_share:
                 obj_data["doctype"] = "shareconfirm"
                 obj_data["info"] = "%s [Best. Anteilschein]" % obj_data["info"]
@@ -1511,13 +1511,13 @@ class ShareReminderLetterView(DocumentGeneratorView):
                 .filter(date_end=None)
                 .filter(is_interest_credit=False)
             ):
-                startdate = share.date
+                startdate = share.payment_date
                 if share.date_due:
                     duedate = share.date_due
                     if share.duration:
                         startdate = share.date_due - relativedelta(years=share.duration)
                 elif share.duration:
-                    duedate = share.date + relativedelta(years=share.duration)
+                    duedate = share.payment_date + relativedelta(years=share.duration)
                 else:
                     duedate = None
                     info.append("WARNUNG: %s hat KEIN FÄLLIGKEITSDATUM!" % (share))
@@ -1878,8 +1878,8 @@ def share_mailing(request):
                 .filter(is_interest_credit=False)
             ):
                 # loan_values.append(nformat(d.value))
-                duedate = d.date + relativedelta(years=d.duration)
-                duedate_new = d.date + relativedelta(years=(d.duration + 5))
+                duedate = d.payment_date + relativedelta(years=d.duration)
+                duedate_new = d.payment_date + relativedelta(years=(d.duration + 5))
                 # loan_due.append(duedate.strftime("%d.%m.%Y"))
                 # loan_duenew.append(duedate_new.strftime("%d.%m.%Y"))
                 loan_info.append(

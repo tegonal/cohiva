@@ -217,7 +217,7 @@ class ShareTest(GenoAdminTestCase):
         deposit_interest_share = Share.objects.get(
             name=adr, share_type=self.deposit, is_interest_credit=True, state="bezahlt"
         )
-        self.assertEqual(deposit_interest_share.date, self.end_of_prev_year)
+        self.assertEqual(deposit_interest_share.payment_date, self.end_of_prev_year)
         self.assertEqual(deposit_interest_share.quantity, 1)
         interest = 5000 * 0.0075
         tax = Decimal(self.tax_rate * interest)

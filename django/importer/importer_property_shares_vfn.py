@@ -142,12 +142,12 @@ class ImporterPropertySharesVFN(ExcelImporter):
 
         share_date = parse_date(row_data.get("Datum Beginn"))
         if share_date:
-            share.date = share_date
+            share.payment_date = share_date
         elif not share.pk:
             # Fallback: use today
-            share.date = datetime.date.today()
+            share.payment_date = datetime.date.today()
 
-        share.date_end = parse_date(row_data.get("Datum Ende"))
+        share.repayment_date = parse_date(row_data.get("Datum Ende"))
         share.is_pension_fund = parse_bool(row_data.get("WEF-Guthaben (BVG/3. Säule)")) or False
 
         linked_contract_id = row_data.get("Fixe Zuteilung zu Vertrag")

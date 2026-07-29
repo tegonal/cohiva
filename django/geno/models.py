@@ -935,14 +935,16 @@ class Share(GenoBase):
     share_type = models.ForeignKey(
         ShareType, verbose_name="Beteiligungstyp", on_delete=models.CASCADE
     )
-    STATE_CHOICES = (
+    PAYMENT_STATE_CHOICES = (
         ("gefordert", "gefordert"),
         ("bezahlt", "bezahlt"),
-        ("beendet", "beendet")
+        ("zurückbezahlt", "zurückbezahlt")
     )
-    state = models.CharField("Status", max_length=50, choices=STATE_CHOICES, blank=True)
-    date = models.DateField("Datum Beginn")
-    date_end = models.DateField("Datum Ende", null=True, blank=True, default=None)
+    payment_state = models.CharField("Zahlungszustand", max_length=50, choices=PAYMENT_STATE_CHOICES, blank=True)
+    payment_date = models.DateField("Zahlungsdatum", default=datetime.date.today())
+    repayment_date = models.DateField("Rückzahlungsdatum", null=True, blank=True, default=None)
+    effective_from = models.DateField("Wirksam ab", null=True, blank=True, default=None)
+    effective_until = models.DateField("Wirksam bis", null=True, blank=True, default=None)
     duration = models.PositiveIntegerField(
         "Laufzeit", null=True, blank=True, help_text="Jahre (bei Darlehen)"
     )
@@ -1024,10 +1026,27 @@ class Share(GenoBase):
         else:
             return self.manual_interest
 
+    @property
+    @admin.display(description="")
+    def date(self):
+        if self.effective_from:
+            return self.effective_from
+        else:
+            return self.payment_date
+
+    @property
+    def date_end(self):
+        if self.effective_until:
+            return self.effective_until
+        elif self.repayment_date:
+            return self.repayment_date
+        return None
+
+
     def __str__(self):
         extra_info = self.share_type
-        if self.state:
-            state = self.state
+        if self.payment_state:
+            state = self.payment_state
             extra_info = "%s, %s" % (extra_info, state)
         if self.is_pension_fund:
             extra_info = "%s, BVG-GUTHABEN!!" % (extra_info)
@@ -1060,6 +1079,19 @@ class Share(GenoBase):
         # contract and building relations may not both be present
         if self.attached_to_building is not None and self.attached_to_contract is not None:
             raise ValidationError("Vertrag und Liegeneschaft dürfen nicht beide ausgewählt sein.")
+
+        # TODO: return German error messages
+        # At least one of payment date or effective from date must be provided
+        if not self.payment_date or self.effective_from:
+            raise ValidationError("At least one of payment date or effective from date must be provided")
+        # Repayment date cannot be before payment date
+        if self.payment_date and self.repayment_date:
+            if self.payment_date > self.repayment_date:
+                raise ValidationError("Repayment date cannot be before payment date")
+        # Effective until date cannot be before effective from date
+        if self.effective_from and self.effective_until:
+            if self.effective_from > self.effective_until:
+                raise ValidationError("Effective until date cannot be before effective from date")
         super().clean(*args, **kwargs)
 
     def save(self, *args, **kwargs):
@@ -1069,16 +1101,24 @@ class Share(GenoBase):
                 kwargs["update_fields"].append("active")
         # Perform a check on the state field, to ensure that Shares with an end
         # date in the past are stored as "beendet" in the database.
-        # TODO: should the opposite be true -- "beendet" is not valid for active Shares?
-        if self.state == "bezahlt" and self.date_end and self.date_end < datetime.date.today():
-            self.state = "beendet"
+        # TODO: calculate the payment state here
+        today = datetime.date.today()
+        if self.repayment_date and self.repayment_date <= today:
+            self.payment_state = "zurückgezhlt"
+        elif self.payment_date <= today:
+            self.payment_state = "bezahlt"
+        else:
+            self.payment_state = "gefordert"
+
+        if self.payment_state == "bezahlt" and self.repayment_date and self.repayment_date < datetime.date.today():
+            self.payment_state = "beendet"
             if kwargs.get("update_field") and "state" not in kwargs["update_fields"]:
                 kwargs["update_fields"].append("state")
         super().save(*args, **kwargs)
 
     def is_active(self):
-        if self.date_end:
-            return self.date_end >= datetime.date.today()
+        if self.date_end():
+            return self.date_end() >= datetime.date.today()
         return True
 
     class Meta:

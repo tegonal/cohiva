@@ -71,10 +71,10 @@ def copy_objects(modeladmin, request, queryset):
 
 class ShareStateFilter(admin.SimpleListFilter):
     title = "Status"
-    parameter_name = "state"
+    parameter_name = "payment_state"
 
     def __init__(self, request, params, model, model_admin):
-        self.state = model._meta.get_field("state")
+        self.state = model._meta.get_field("payment_state")
         super().__init__(request, params, model, model_admin)
 
     def lookups(self, request, model_admin):
@@ -803,12 +803,12 @@ def share_set_duration10(modeladmin, request, queryset):
 
 @admin.display(description=("Datum Ende auf 31.12. des Vorjahres (=Jahresende) setzen"))
 def share_set_end_endofyear(modeladmin, request, queryset):
-    queryset.update(date_end=datetime.date(datetime.datetime.now().year - 1, 12, 31))
+    queryset.update(repayment_date=datetime.date(datetime.datetime.now().year - 1, 12, 31))
 
 
 @admin.display(description=("Datum Ende auf 31.12. vor ZWEI Jahren (=Jahresende) setzen"))
 def share_set_end_endofyear2(modeladmin, request, queryset):
-    queryset.update(date_end=datetime.date(datetime.datetime.now().year - 2, 12, 31))
+    queryset.update(repayment_date=datetime.date(datetime.datetime.now().year - 2, 12, 31))
 
 
 @admin.display(description="Zinsatz-Modus auf «Standard» setzen.")
@@ -851,8 +851,8 @@ class ShareAdmin(GenoBaseAdmin):
     fields = [
         "name",
         "share_type",
-        "state",
-        ("date", "date_end"),
+        "payment_state",
+        ("payment_date", "repayment_date"),
         ("duration", "date_due"),
         "quantity",
         ("value", "value_total", "is_interest_credit", "is_pension_fund", "is_business"),
@@ -882,9 +882,9 @@ class ShareAdmin(GenoBaseAdmin):
     list_display = [
         "name",
         "share_type",
-        "state",
-        "date",
-        "date_end",
+        "payment_state",
+        "payment_date",
+        "repayment_date",
         "duration",
         "date_due",
         "quantity",
@@ -903,8 +903,8 @@ class ShareAdmin(GenoBaseAdmin):
         "is_interest_credit",
         "is_pension_fund",
         "is_business",
-        "date",
-        "date_end",
+        "payment_date",
+        "repayment_date",
         "duration",
         "date_due",
         "quantity",
@@ -1459,7 +1459,7 @@ class ContractAdmin(GenoBaseAdmin):
         "main_contact",
         "rental_units",
         "children",
-        "state",
+        "payment_state",
         ("date", "date_end", "date_since"),
         ("billing_date_start", "billing_date_end"),
         ("rent_reduction", "rent_reservation"),

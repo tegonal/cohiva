@@ -92,7 +92,7 @@ class ImporterPropertySharesVFNTest(TestCase):
         self.assertEqual(share.name.name, "Test 101")
         self.assertEqual(share.share_type.name, "Wohnungsanteilskapital")
         self.assertEqual(share.state, "bezahlt")
-        self.assertEqual(share.date, date(2020, 5, 1))
+        self.assertEqual(share.payment_date, date(2020, 5, 1))
         self.assertEqual(share.quantity, 1)
         self.assertEqual(share.value, Decimal("123.50"))
         self.assertEqual(share.is_pension_fund, False)
@@ -128,8 +128,8 @@ class ImporterPropertySharesVFNTest(TestCase):
 
         share = Share.objects.get(name=address101)
         self.assertEqual(share.share_type.name, "Wohnungsanteilskapital")
-        self.assertEqual(share.date, date(2020, 5, 1))
-        self.assertEqual(share.date_end, date(2020, 12, 23))
+        self.assertEqual(share.payment_date, date(2020, 5, 1))
+        self.assertEqual(share.repayment_date, date(2020, 12, 23))
         self.assertEqual(share.quantity, 2)
         self.assertEqual(share.value, Decimal("500.00"))
         self.assertEqual(share.is_pension_fund, True)
@@ -158,7 +158,7 @@ class ImporterPropertySharesVFNTest(TestCase):
         self.assertEqual(results["error_count"], 0)
 
         share1 = Share.objects.get(name=address101)
-        self.assertEqual(share1.date, date.today())
+        self.assertEqual(share1.payment_date, date.today())
 
     def test_prevent_duplicate_without_override(self):
         """Second import of same ID raises error when override_existing=False."""
@@ -218,7 +218,7 @@ class ImporterPropertySharesVFNTest(TestCase):
 
         self.assertEqual(results["success_count"], 1)
         share = Share.objects.get(name=address101)
-        self.assertEqual(share.date_end, date(2021, 11, 18))
+        self.assertEqual(share.repayment_date, date(2021, 11, 18))
 
     def test_import_type_registered_in_model(self):
         """The import type 'member_address_shares_vfn' is a valid ImportJob choice."""
