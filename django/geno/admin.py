@@ -898,7 +898,6 @@ class ShareAdmin(GenoBaseAdmin):
         ("active", BooleanFieldDefaultTrueListFilter),
         "share_type",
         "interest_mode",
-        # TODO: allow filtering for "beendet" status regardless of whether it is a state option
         ShareStateFilter,
         "is_interest_credit",
         "is_pension_fund",
@@ -1459,7 +1458,7 @@ class ContractAdmin(GenoBaseAdmin):
         "main_contact",
         "rental_units",
         "children",
-        "payment_state",
+        "state",
         ("date", "date_end", "date_since"),
         ("billing_date_start", "billing_date_end"),
         ("rent_reduction", "rent_reservation"),
