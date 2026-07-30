@@ -152,7 +152,7 @@ class DocumentTemplate:
 
         ## Geforderte Beteiligungen
         shares = (
-            Share.objects.filter(state="gefordert")
+            Share.objects.filter(payment_date__gt=datetime.date.today())
             .filter(name=recipient.address)
             .order_by("share_type")
         )
