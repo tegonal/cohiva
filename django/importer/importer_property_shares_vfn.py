@@ -134,12 +134,6 @@ class ImporterPropertySharesVFN(ExcelImporter):
 
         share.value = amount
 
-        # state_raw = str(row_data.get("Status") or "").strip().lower()
-        # if state_raw in ("bezahlt", "paid", "einbezahlt", "eingezahlt", "zurückgezahlt"):
-        #     share.state = "bezahlt"
-        # else:
-        #     share.state = "gefordert"
-
         share_date = parse_date(row_data.get("Datum Beginn"))
         if share_date:
             share.payment_date = share_date
