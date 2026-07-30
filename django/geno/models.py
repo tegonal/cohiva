@@ -935,12 +935,6 @@ class Share(GenoBase):
     share_type = models.ForeignKey(
         ShareType, verbose_name="Beteiligungstyp", on_delete=models.CASCADE
     )
-    PAYMENT_STATE_CHOICES = (
-        ("gefordert", "gefordert"),
-        ("bezahlt", "bezahlt"),
-        ("zurückbezahlt", "zurückbezahlt")
-    )
-    payment_state = models.CharField("Zahlungszustand", max_length=50, choices=PAYMENT_STATE_CHOICES, blank=True)
     payment_date = models.DateField("Zahlungsdatum", default=datetime.date.today())
     repayment_date = models.DateField("Rückzahlungsdatum", null=True, blank=True, default=None)
     effective_from = models.DateField("Wirksam ab", null=True, blank=True, default=None)
@@ -1027,6 +1021,17 @@ class Share(GenoBase):
             return self.manual_interest
 
     @property
+    @admin.display(description="Zahlungszustand")
+    def payment_state(self):
+        today = datetime.date.today()
+        if self.repayment_date and self.repayment_date <= today:
+            return "zurückgezahlt"
+        elif self.payment_date <= today:
+            return "bezahlt"
+        else:
+            return "gefordert"
+
+    @property
     @admin.display(description="Datum Beginn")
     def date(self):
         if self.effective_from:
@@ -1100,18 +1105,6 @@ class Share(GenoBase):
             self.active = self.is_active()
             if kwargs.get("update_fields") and "active" not in kwargs["update_fields"]:
                 kwargs["update_fields"].append("active")
-
-        # TODO: calculate the payment state here
-        today = datetime.date.today()
-        if self.repayment_date and self.repayment_date <= today:
-            self.payment_state = "zurückbezahlt"
-        elif self.payment_date <= today:
-            self.payment_state = "bezahlt"
-        else:
-            self.payment_state = "gefordert"
-
-        if kwargs.get("update_fields") and "payment_state" not in kwargs["update_fields"]:
-                kwargs["update_fields"].append("payment_state")
         super().save(*args, **kwargs)
 
     def is_active(self):
@@ -1142,9 +1135,9 @@ def get_active_shares(interest=True, date=None):
         date = datetime.datetime.today()
     select = Share.objects.filter(Q(repayment_date=None) | Q(repayment_date__gt=date)).filter(payment_date__lte=date)
     if not interest:
-        return select.filter(is_interest_credit=False).filter(payment_state="bezahlt")
+        return select.filter(is_interest_credit=False)
     else:
-        return select.filter(payment_state="bezahlt")
+        return select
 
 
 DOCUMENTTYPE_NAME_CHOICES = (

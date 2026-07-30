@@ -423,7 +423,6 @@ def share_interest_calc(address, year, enddate=None):
         for share in (
             Share.objects.filter(name=address)
             .filter(share_type__in=stype)
-            .filter(payment_state="bezahlt")
             .filter(payment_date__lt=period_end)
             .filter(Q(repayment_date=None) | Q(repayment_date__gte=period_start))
             .exclude(
@@ -666,7 +665,6 @@ def create_interest_transactions_execute(book_date):
                             quantity=1,
                             value=interest["pay"][3],
                             is_interest_credit=True,
-                            payment_state="bezahlt",
                             note="Bruttozinsen %s%% Depositenkasse %d"
                             % (nformat(interest_rate), book_date.year),
                         )
@@ -737,7 +735,7 @@ def share_get_donations(address, year, enddate=None):
     for share in (
         Share.objects.filter(name=address)
         .filter(share_type=stype_donation)
-        .filter(payment_state="bezahlt")
+        .filter(Q(repayment_date__isnull=True) | Q(repayment_date__gt=datetime.date.today()))
         .filter(payment_date__gte=period_start)
         .filter(payment_date__lt=period_end)
     ):

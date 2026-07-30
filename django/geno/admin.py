@@ -14,6 +14,7 @@ from django.db.models import Case, IntegerField, Q, Value, When
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse
+from django.db.models import Q
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from stdnum import iban as iban_util
@@ -73,20 +74,24 @@ class ShareStateFilter(admin.SimpleListFilter):
     title = "Status"
     parameter_name = "payment_state"
 
-    def __init__(self, request, params, model, model_admin):
-        self.state = model._meta.get_field("payment_state")
-        super().__init__(request, params, model, model_admin)
-
     def lookups(self, request, model_admin):
-        states = [("gefordert", "gefordert"),
-                  ("bezahlt", "bezahlt"),
-                  ("beendet", "beendet")]
-        return states
+        return [
+            ("gefordert", "gefordert"),
+            ("bezahlt", "bezahlt"),
+            ("zurückgezahlt", "zurückgezahlt"),
+        ]
 
     def queryset(self, request, queryset):
         value = self.value()
-        if value:
-            return queryset.filter(state=value)
+        today = datetime.date.today()
+        if value == "zurückgezahlt":
+            return queryset.filter(repayment_date__lte=today)
+        elif value == "bezahlt":
+            return queryset.filter(payment_date__lte=today).filter(
+                Q(repayment_date__isnull=True) | Q(repayment_date__gt=today)
+            )
+        elif value == "gefordert":
+            return queryset.filter(payment_date__gt=today)
         return queryset
 
 
@@ -869,6 +874,7 @@ class ShareAdmin(GenoBaseAdmin):
         "backlinks",
     ]
     readonly_fields = [
+        "payment_state",
         "value_total",
         "interest",
         "import_id",
