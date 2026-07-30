@@ -289,7 +289,7 @@ class TestBilling(GenoAdminTestCase):
             adr = self.addresses[0]
             book._db = {}
             geno.billing.add_transaction_shares(book, date, 200, adr)
-            share = Share.objects.get(name=adr, payment_date=date, payment_state="bezahlt", value=200)
+            share = Share.objects.get(name=adr, payment_date=date, value=200)
             self.assertEqual(share.share_type, self.share_type_member_share)
             self.assertEqual(share.quantity, 1)
             book.save()
@@ -310,7 +310,7 @@ class TestBilling(GenoAdminTestCase):
             adr = self.addresses[0]
             book._db = {}
             geno.billing.add_transaction_shares(book, date, 400, adr)
-            share = Share.objects.get(name=adr, payment_date=date, payment_state="bezahlt", value=200)
+            share = Share.objects.get(name=adr, payment_date=date, value=200)
             self.assertEqual(share.share_type, self.share_type_member_share)
             self.assertEqual(share.quantity, 2)
             book.save()
@@ -353,7 +353,7 @@ class TestBilling(GenoAdminTestCase):
             book._db = {}
             geno.billing.add_transaction_shares_entry(book, date, 200, adr)
             with self.assertRaises(Share.DoesNotExist):
-                Share.objects.get(name=adr, payment_date=date, payment_state="bezahlt", value=200)
+                Share.objects.get(name=adr, payment_date=date, value=200)
             attr = MemberAttribute.objects.get(
                 member=Member.objects.get(name=adr),
                 date=date,
@@ -378,7 +378,7 @@ class TestBilling(GenoAdminTestCase):
             adr = self.addresses[0]
             book._db = {}
             geno.billing.add_transaction_shares_entry(book, date, 400, adr)
-            share = Share.objects.get(name=adr, payment_date=date, payment_state="bezahlt", value=200)
+            share = Share.objects.get(name=adr, payment_date=date, value=200)
             self.assertEqual(share.share_type, self.share_type_member_share)
             self.assertEqual(share.quantity, 1)
             book.save()
@@ -427,7 +427,7 @@ class TestBilling(GenoAdminTestCase):
             geno.billing.add_transaction_interest(book, date, 50, adr, book_to="loan")
             book.save()
             share = Share.objects.get(
-                name=adr, payment_date=date, payment_state="bezahlt", value=50, is_interest_credit=True, quantity=1
+                name=adr, payment_date=date, value=50, is_interest_credit=True, quantity=1
             )
             self.assertEqual(share.share_type, self.share_type_loan)
             self.assertEqual(share.note, "Anrechnung Darlehenszins an Darlehen")
@@ -449,7 +449,7 @@ class TestBilling(GenoAdminTestCase):
             geno.billing.add_transaction_interest(book, date, 50, adr, book_to="deposit")
             book.save()
             share = Share.objects.get(
-                name=adr, payment_date=date, payment_state="bezahlt", value=50, is_interest_credit=True, quantity=1
+                name=adr, payment_date=date, value=50, is_interest_credit=True, quantity=1
             )
             self.assertEqual(share.share_type, self.share_type_deposit)
             self.assertEqual(share.note, "Anrechnung Darlehenszins an Depositenkasse")

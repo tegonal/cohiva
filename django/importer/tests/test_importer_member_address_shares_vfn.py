@@ -195,7 +195,7 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
                 "Eintritt [Mitglied]": "2020-05-01",
                 "Austritt [Mitglied]": "2021-05-01",
                 "Bemerkungen [Mitglied]": "Test-Bemerkung",
-                "Zahlungszustand [Beteiligungen]": "zurückbezahlt",
+                "Zahlungszustand [Beteiligungen]": "zurückgezahlt",
                 "Datum Beginn [Beteiligungen]": "2020-05-15",
                 "Datum Ende [Beteiligungen]": "2021-05-15",
                 "Anzahl [Beteiligungen]": "1",
@@ -233,7 +233,7 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
         share = Share.objects.get(name=address)
         self.assertEqual(share.quantity, 1)
         self.assertEqual(share.value, Decimal("100"))
-        self.assertEqual(share.payment_state, "zurückbezahlt")
+        self.assertEqual(share.payment_state, "zurückgezahlt")
         self.assertEqual(share.payment_date, date(2020, 5, 15))
         self.assertEqual(share.repayment_date, date(2021, 5, 15))
 
@@ -398,11 +398,11 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
             Vorname="Pending",
             Nachname="Share",
             Email="pending@example.com",
-            Eintrittsdatum="2023-01-01",
             **{
                 "Anzahl [Beteiligungen]": 2,
                 "Betrag pro Stück [Beteiligungen]": 500,
                 "Status [Beteiligungen]": "offen",
+                "Datum Beginn [Beteiligungen]": "2030-01-01",
             },
         )
         excel_file = self.create_test_excel([row])

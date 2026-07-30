@@ -1376,7 +1376,6 @@ def add_transaction_shares(book: AccountingBook, date, amount, address, use_clea
     share = Share(
         name=address,
         share_type=ShareType.objects.get(name="Anteilschein"),
-        payment_state="bezahlt",
         payment_date=date,
         quantity=count,
         value=200,
@@ -1413,7 +1412,6 @@ def add_transaction_shares_entry(book: AccountingBook, date, amount, address, us
         share = Share(
             name=address,
             share_type=ShareType.objects.get(name="Anteilschein"),
-            payment_state="bezahlt",
             payment_date=date,
             quantity=count,
             value=200,
@@ -1459,7 +1457,6 @@ def add_transaction_interest(book: AccountingBook, date, amount, address, book_t
     share = Share(
         name=address,
         share_type=stype,
-        payment_state="bezahlt",
         payment_date=date,
         quantity=1,
         value=amount,

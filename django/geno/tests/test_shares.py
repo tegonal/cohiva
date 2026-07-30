@@ -63,7 +63,6 @@ class ShareTest(GenoAdminTestCase):
         share = Share(
             name=self.addresses[0],
             share_type=self.loan,
-            payment_state="bezahlt",
             payment_date=datetime.date(2020, 1, 1),
             value=1000,
         )
@@ -73,7 +72,6 @@ class ShareTest(GenoAdminTestCase):
         share = Share(
             name=self.addresses[0],
             share_type=self.loan,
-            payment_state="bezahlt",
             payment_date=datetime.date(2020, 1, 1),
             repayment_date=datetime.date(2099, 12, 31),
             value=1000,
@@ -84,7 +82,6 @@ class ShareTest(GenoAdminTestCase):
         share = Share(
             name=self.addresses[0],
             share_type=self.loan,
-            payment_state="bezahlt",
             payment_date=datetime.date(2020, 1, 1),
             repayment_date=datetime.date(2021, 12, 31),
             value=1000,
@@ -98,7 +95,6 @@ class ShareTest(GenoAdminTestCase):
         share = Share(
             name=self.addresses[0],
             share_type=self.loan,
-            payment_state="gefordert",
             payment_date=datetime.date(2020, 1, 1),
             repayment_date=datetime.date(2021, 12, 31),
             value=1000,
@@ -157,20 +153,17 @@ class ShareTest(GenoAdminTestCase):
             share_type=self.loan,
             payment_date=share_date,
             value=10000,
-            payment_state="bezahlt",
         )
         Share.objects.create(
             name=adr,
             share_type=self.loan_special,
             payment_date=share_date,
-            payment_state="bezahlt",
             value=20000,
         )
         Share.objects.create(
             name=adr,
             share_type=self.deposit,
             payment_date=share_date,
-            payment_state="bezahlt",
             value=5000,
         )
         ret = geno.shares.create_interest_transactions_execute(self.end_of_prev_year)

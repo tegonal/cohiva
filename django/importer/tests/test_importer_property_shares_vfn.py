@@ -69,7 +69,7 @@ class ImporterPropertySharesVFNTest(TestCase):
 
         row = self.make_row(
             Typ="Wohnungsanteilskapital",
-            Status="einbezahlt",
+            # Status="einbezahlt",
             **{
                 "Person": "101",
                 "Datum Beginn": "2020-05-01",

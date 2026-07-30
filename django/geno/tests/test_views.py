@@ -414,7 +414,6 @@ class ShareStatementViewTest(GenoAdminTestCase):
             share_type=stype_as,
             payment_date=datetime.date(2020, 1, 1),
             name=cls.addresses[0],
-            payment_state="bezahlt",
         )
         Share.objects.create(
             value=200,
@@ -422,7 +421,6 @@ class ShareStatementViewTest(GenoAdminTestCase):
             share_type=stype_as,
             payment_date=datetime.date(2020, 1, 1),
             name=cls.addresses[1],
-            payment_state="bezahlt",
         )
         Share.objects.create(
             value=200,
@@ -430,7 +428,6 @@ class ShareStatementViewTest(GenoAdminTestCase):
             share_type=stype_as,
             payment_date=datetime.date(2020, 1, 1),
             name=cls.addresses[2],
-            payment_state="bezahlt",
         )
         Share.objects.create(
             value=200,
@@ -438,7 +435,6 @@ class ShareStatementViewTest(GenoAdminTestCase):
             share_type=stype_as,
             payment_date=datetime.date(2020, 1, 1),
             name=cls.addresses[3],
-            payment_state="bezahlt",
         )
 
     def test_get_object_skips(self):
