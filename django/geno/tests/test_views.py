@@ -454,9 +454,8 @@ class ShareStatementViewTest(GenoAdminTestCase):
                 value=500,
                 quantity=1,
                 share_type=ShareType.objects.get(name="Depositenkasse"),
-                date=datetime.date(2020, 1, 1),
+                payment_date=datetime.date(2020, 1, 1),
                 name=self.addresses[1],
-                state="bezahlt",
             )
             obj = view.get_objects()
             self.assertEqual(len(obj), 3)

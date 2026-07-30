@@ -59,7 +59,7 @@ class ShareTest(GenoAdminTestCase):
             )
             share.clean()
 
-    def test_share_bezahlt_no_end_date(self):
+    def test_share_bezahlt_no_repayment_date(self):
         share = Share(
             name=self.addresses[0],
             share_type=self.loan,
@@ -68,7 +68,7 @@ class ShareTest(GenoAdminTestCase):
         )
         self.assertIn("bezahlt", str(share))
 
-    def test_share_bezahlt_future_end_date(self):
+    def test_share_bezahlt_future_repayment_date(self):
         share = Share(
             name=self.addresses[0],
             share_type=self.loan,
@@ -78,7 +78,7 @@ class ShareTest(GenoAdminTestCase):
         )
         self.assertIn("bezahlt", str(share))
 
-    def test_share_bezahlt_past_end_date_shows_beendet(self):
+    def test_share_past_repayment_date(self):
         share = Share(
             name=self.addresses[0],
             share_type=self.loan,
@@ -86,17 +86,14 @@ class ShareTest(GenoAdminTestCase):
             repayment_date=datetime.date(2021, 12, 31),
             value=1000,
         )
-        share.save()  # save() enforces the "beendet" state
-        # TODO: change the state back because it is subsequently read in test_import_simple_person_with_extra_data()
-        self.assertIn("beendet", str(share))
+        self.assertIn("zurückgezahlt", str(share))
         self.assertNotIn("bezahlt", str(share))
 
-    def test_share_gefordert_with_past_end_date_unchanged(self):
+    def test_share_future_payment_date(self):
         share = Share(
             name=self.addresses[0],
             share_type=self.loan,
-            payment_date=datetime.date(2020, 1, 1),
-            repayment_date=datetime.date(2021, 12, 31),
+            payment_date=datetime.date(2030, 1, 1),
             value=1000,
         )
         self.assertIn("gefordert", str(share))

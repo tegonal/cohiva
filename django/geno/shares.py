@@ -429,7 +429,7 @@ def share_interest_calc(address, year, enddate=None):
                 Q(payment_date=datetime.date(year, 12, 31))
                 & Q(is_interest_credit=True)  ## Exclude already booked interest of this period
             )
-            .order_by("date")
+            .order_by("effective_from", "payment_date")
         ):
             amount = share.quantity * share.value
             if share.payment_date < period_start:
