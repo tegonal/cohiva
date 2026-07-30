@@ -938,7 +938,7 @@ def share_export(request):
     if request.GET.get("aggregate", "") == "yes":
         last = None
         row = []
-        for a in get_active_shares(date=valuta_date).order_by("share_type", "name", "date"):
+        for a in get_active_shares(date=valuta_date).order_by("share_type", "name", "payment_date"):
             if a.date_due:
                 duedate = a.date_due
             elif a.duration:
@@ -983,7 +983,7 @@ def share_export(request):
                 c = ws.cell(row=row_num + 1, column=col_num + 1)
                 c.value = row[col_num]
     else:
-        for a in get_active_shares(date=valuta_date).order_by("-date"):
+        for a in get_active_shares(date=valuta_date).order_by("-payment_date"):
             row = []
             row.append(a.pk)
             row.append(str(a.name))
@@ -1411,9 +1411,9 @@ class ShareConfirmationLetterView(DocumentGeneratorView):
         objects = []
         for s in (
             get_active_shares(interest=False)
-            .filter(date__gt=settings.GENO_SHARE_LETTER_CUTOFF_DATE)
+            .filter(payment_date__gt=settings.GENO_SHARE_LETTER_CUTOFF_DATE)
             .exclude(share_type=stype_hypo)
-            .order_by("-date")
+            .order_by("-payment_date")
         ):
             obj_data = {"obj": s, "info": "%s %dx %s" % (s.payment_date, s.quantity, s.value)}
             if s.share_type == stype_share:
@@ -1508,7 +1508,7 @@ class ShareReminderLetterView(DocumentGeneratorView):
                 get_active_shares()
                 .filter(name=adr)
                 .filter(share_type__name__startswith="Darlehen")
-                .filter(date_end=None)
+                .filter(repayment_date=None)
                 .filter(is_interest_credit=False)
             ):
                 startdate = share.payment_date

@@ -205,7 +205,7 @@ class ShareTest(GenoAdminTestCase):
             Account.from_settings(AccountKey.SHARES_INTEREST_TAX),
         )
         deposit_interest_share = Share.objects.get(
-            name=adr, share_type=self.deposit, is_interest_credit=True, state="bezahlt"
+            name=adr, share_type=self.deposit, is_interest_credit=True,
         )
         self.assertEqual(deposit_interest_share.payment_date, self.end_of_prev_year)
         self.assertEqual(deposit_interest_share.quantity, 1)
