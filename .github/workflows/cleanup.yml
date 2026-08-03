@@ -1,4 +1,4 @@
-#
+z#
 #    __                          __
 #   / /____ ___ ____  ___  ___ _/ /       This file is provided to you by https://github.com/tegonal/github-commons
 #  / __/ -_) _ `/ _ \/ _ \/ _ `/ /        Copyright 2022 Tegonal Genossenschaft <info@tegonal.com>
@@ -94,7 +94,7 @@ jobs:
           #gt-placeholder-token-and-co-end
 
       - name: set reviewer
-        if: ${{ steps.check-collaborator.outputs.reviewer != '' && steps.check-collaborator.outputs.reviewer != null && steps.create-pr.outputs.pull-request-operation == 'created' }}
+        if: ${{ steps.check-collaborator.outputs.reviewer != '' && steps.check-collaborator.outputs.reviewer != null && (steps.create-pr.outputs.pull-request-operation == 'created' || steps.create-pr.outputs.pull-request-operation == 'updated') }}
         run: |
           repo="${{ github.repository }}"
           status=$(curl -L -s -o /dev/null -w '%{http_code}' \
