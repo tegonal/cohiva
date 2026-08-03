@@ -61,11 +61,11 @@ jobs:
         run: |
           user="${{ github.actor }}"
           repo="${{ github.repository }}"
-          echo "permissions of $user:"
+          echo "permissions of x4nd3r:"
           curl -L -s \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/$repo/collaborators/$user/permission" || true
+            "https://api.github.com/repos/$repo/collaborators/x4nd3r/permission" || true
           status=$(curl -L -s -o /dev/null -w '%{http_code}' \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github+json" \
