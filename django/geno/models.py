@@ -935,7 +935,7 @@ class Share(GenoBase):
     share_type = models.ForeignKey(
         ShareType, verbose_name="Beteiligungstyp", on_delete=models.CASCADE
     )
-    payment_date = models.DateField("Zahlungsdatum", default=datetime.date.today())
+    payment_date = models.DateField("Zahlungsdatum", null=True, blank=True, default=None)
     repayment_date = models.DateField("Rückzahlungsdatum", null=True, blank=True, default=None)
     effective_from = models.DateField("Wirksam ab", null=True, blank=True, default=None)
     effective_until = models.DateField("Wirksam bis", null=True, blank=True, default=None)
