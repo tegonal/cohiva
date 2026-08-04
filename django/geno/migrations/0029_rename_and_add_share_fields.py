@@ -35,7 +35,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='share',
             name='payment_date',
-            field=models.DateField(default=datetime.date.today(), verbose_name='Zahlungsdatum'),
+            field=models.DateField(blank=True, default=None, null=True, verbose_name='Zahlungsdatum'),
         ),
         migrations.AlterField(
             model_name='share',
