@@ -1517,7 +1517,7 @@ class ShareReminderLetterView(DocumentGeneratorView):
                     if share.duration:
                         startdate = share.date_due - relativedelta(years=share.duration)
                 elif share.duration:
-                    duedate = share.date_end() + relativedelta(years=share.duration)
+                    duedate = share.date_end + relativedelta(years=share.duration)
                 else:
                     duedate = None
                     info.append("WARNUNG: %s hat KEIN FÄLLIGKEITSDATUM!" % (share))
