@@ -1026,7 +1026,7 @@ class Share(GenoBase):
         today = datetime.date.today()
         if self.repayment_date and self.repayment_date <= today:
             return "zurückgezahlt"
-        elif self.payment_date <= today:
+        elif self.payment_date and self.payment_date <= today:
             return "bezahlt"
         else:
             return "gefordert"
@@ -1133,7 +1133,11 @@ class Share(GenoBase):
 def get_active_shares(interest=True, date=None):
     if date is None:
         date = datetime.datetime.today()
-    select = Share.objects.filter(Q(repayment_date=None) | Q(repayment_date__gt=date)).filter(payment_date__lte=date)
+    select = Share.objects.filter(
+            (Q(repayment_date = None) & Q(effective_until=None)) | Q(repayment_date__gt=date) | Q(effective_until__gt=date)
+        ).filter(
+            Q(payment_date__lte=date) | Q(effective_from__lte=date)
+        )
     if not interest:
         return select.filter(is_interest_credit=False)
     else:
