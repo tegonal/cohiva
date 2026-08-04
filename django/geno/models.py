@@ -1134,12 +1134,9 @@ def get_active_shares(interest=True, date=None):
     if date is None:
         date = datetime.datetime.today()
     select = Share.objects.filter(
-            Q(repayment_date = None, effective_until=None)
-            | Q(repayment_date__gt=date)
-            | Q(effective_until__gt=date)
+            (Q(repayment_date = None) & Q(effective_until=None)) | Q(repayment_date__gt=date) | Q(effective_until__gt=date)
         ).filter(
-            Q(payment_date__lte=date)
-            | Q(effective_from__lte=date)
+            Q(payment_date__lte=date) | Q(effective_from__lte=date)
         )
     if not interest:
         return select.filter(is_interest_credit=False)

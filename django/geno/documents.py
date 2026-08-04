@@ -12,7 +12,6 @@ from zipfile import ZipFile
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
-from django.db.models import Q
 from django.http import HttpResponse
 from django.template import Context, Template, loader
 from django.utils.html import escape
@@ -152,15 +151,9 @@ class DocumentTemplate:
         c = {}
 
         ## Geforderte Beteiligungen
-        today = datetime.date.today()
         shares = (
-            Share.objects.filter(name=recipient.address)
-            .filter(
-                Q(effective_from__lte=today)
-                | Q(effective_from=None, payment_date__lte=today)
-                | Q(effective_from=None, payment_date=None)
-            )
-            .exclude(repayment_date__lte=today)
+            Share.objects.filter(payment_date__gt=datetime.date.today())
+            .filter(name=recipient.address)
             .order_by("share_type")
         )
         c["bill"] = []
