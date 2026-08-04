@@ -14,7 +14,7 @@ def update_active_members_and_shares(apps, schema_editor):
 
     for obj in Contract.objects.all():
         active = _is_active(obj)
-        if obj.is_active() != active:
+        if obj.active != active:
             obj.active = active
             obj.save(update_fields=["active"])
 
