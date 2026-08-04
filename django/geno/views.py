@@ -306,8 +306,8 @@ class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
             for s in get_active_shares(date=reference_date).filter(share_type=share_type):
                 stat["quantity"] += s.quantity
                 stat["value"] += s.quantity * s.value
-                if stat["last_date"] is None or s.payment_date > stat["last_date"]:
-                    stat["last_date"] = s.payment_date
+                if stat["last_date"] is None or s.date > stat["last_date"]:
+                    stat["last_date"] = s.date
 
             share_stats.append(
                 {
@@ -823,7 +823,7 @@ def address_export(request, show_wohnung=True):
         if stype01:
             share = get_active_shares().filter(share_type=stype01).filter(name=a).first()
             if share:
-                share01_paid = share.payment_date.strftime("%d.%m.%Y")
+                share01_paid = share.date.strftime("%d.%m.%Y")
 
         if show_wohnung:
             for c in get_active_contracts().filter(contractors__pk=a.pk):
@@ -938,7 +938,7 @@ def share_export(request):
     if request.GET.get("aggregate", "") == "yes":
         last = None
         row = []
-        for a in get_active_shares(date=valuta_date).order_by("share_type", "name", "payment_date"):
+        for a in get_active_shares(date=valuta_date).order_by("share_type", "name", "payment_date", "effective_from"):
             if a.date_due:
                 duedate = a.date_due
             elif a.duration:
@@ -983,13 +983,13 @@ def share_export(request):
                 c = ws.cell(row=row_num + 1, column=col_num + 1)
                 c.value = row[col_num]
     else:
-        for a in get_active_shares(date=valuta_date).order_by("-payment_date"):
+        for a in get_active_shares(date=valuta_date).order_by("-payment_date", "-effective_from"):
             row = []
             row.append(a.pk)
             row.append(str(a.name))
             row.append(a.name.pk)
             row.append(str(a.share_type))
-            row.append(a.payment_date)
+            row.append(a.date)
             row.append(a.quantity)
             row.append(a.value)
             row.append(a.quantity * a.value)
@@ -1508,16 +1508,16 @@ class ShareReminderLetterView(DocumentGeneratorView):
                 get_active_shares()
                 .filter(name=adr)
                 .filter(share_type__name__startswith="Darlehen")
-                .filter(repayment_date=None)
+                .filter(Q(repayment_date=None) & Q(effective_until=None))
                 .filter(is_interest_credit=False)
             ):
-                startdate = share.payment_date
+                startdate = share.date
                 if share.date_due:
                     duedate = share.date_due
                     if share.duration:
                         startdate = share.date_due - relativedelta(years=share.duration)
                 elif share.duration:
-                    duedate = share.payment_date + relativedelta(years=share.duration)
+                    duedate = share.date_end() + relativedelta(years=share.duration)
                 else:
                     duedate = None
                     info.append("WARNUNG: %s hat KEIN FÄLLIGKEITSDATUM!" % (share))
