@@ -1,6 +1,7 @@
 from importlib import import_module
 
 from django.db import DEFAULT_DB_ALIAS, connections
+from django.db.migrations import RunSQL
 from django.test.runner import DiscoverRunner
 
 
@@ -20,6 +21,7 @@ class SelectiveMigrationRunner(DiscoverRunner):
             migration_class = module.Migration
             schema_editor = connections[DEFAULT_DB_ALIAS].schema_editor()
             for op in migration_class.operations:
-                op.database_forwards(app_label, schema_editor, from_state=None, to_state=None)
+                if isinstance(op, RunSQL):
+                    op.database_forwards(app_label, schema_editor, from_state=None, to_state=None)
 
         return old_config
