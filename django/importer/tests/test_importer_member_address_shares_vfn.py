@@ -402,7 +402,7 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
                 "Anzahl [Beteiligungen]": 2,
                 "Betrag pro Stück [Beteiligungen]": 500,
                 "Status [Beteiligungen]": "offen",
-                "Datum Beginn [Beteiligungen]": "2030-01-01",
+                "Datum Beginn [Beteiligungen]": "2050-01-01",
             },
         )
         excel_file = self.create_test_excel([row])
