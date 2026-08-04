@@ -438,7 +438,7 @@ def share_interest_calc(address, year, enddate=None):
                 start_quantity += share.quantity
             else:
                 start = share.date
-            if share.date_end() is None or share.date_end() >= period_end:
+            if share.date_end is None or share.date_end >= period_end:
                 end = period_end
                 end_quantity += share.quantity
                 end_amount += amount
@@ -457,7 +457,7 @@ def share_interest_calc(address, year, enddate=None):
                     if not due_date_max or duedate > due_date_max:
                         due_date_max = duedate
             else:
-                end = share.date_end() + datetime.timedelta(days=1)
+                end = share.date_end + datetime.timedelta(days=1)
             if start not in dates:
                 dates.append(start)
             if end not in dates:
