@@ -858,6 +858,7 @@ class ShareAdmin(GenoBaseAdmin):
         "share_type",
         "payment_state",
         ("payment_date", "repayment_date"),
+        ("effective_from", "effective_until"),
         ("duration", "date_due"),
         "quantity",
         ("value", "value_total", "is_interest_credit", "is_pension_fund", "is_business"),
