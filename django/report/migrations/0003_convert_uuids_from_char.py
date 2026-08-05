@@ -18,5 +18,8 @@ class Migration(migrations.Migration):
             sql="""
             ALTER TABLE report_report MODIFY task_id UUID NULL;
             """,
+            reverse_sql="""
+            ALTER TABLE report_report MODIFY task_id CHAR(36) NULL;
+            """,
         )
     ]
