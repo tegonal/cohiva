@@ -329,6 +329,8 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
             ru_list.append(",".join(ru_names) + "; " + building.name)
 
         if factor > 0.0:
+            if not dry_run:
+                logger.info(f"Creating invoices for contract {contract.id} / {invoice_date}")
             if factor != 1.0:
                 factor_txt = " (Faktor %.2f)" % factor
             else:
@@ -1764,6 +1766,7 @@ def create_qrbill(
         context["qr_account"] = settings.FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]["iban"]
         context["qr_ref_number"] = ref_number
         context["qr_debtor"] = address
+        context["preview"] = dry_run
         try:
             invoice_doctype = DocumentType.objects.get(name="invoice")
             render_qrbill(
@@ -1778,6 +1781,10 @@ def create_qrbill(
                 0,
                 None,
             )
+        logger.info(
+            f"Rendered QR-Bill for {address} (ref. {ref_number}, {output_filename}), "
+            f"dry_run/preview={dry_run}"
+        )
 
     messages = []
     mails_sent = 0
@@ -1821,23 +1828,35 @@ def create_qrbill(
                         mails_sent = 1
                     else:
                         mails_sent = mail.send()
+                        if mails_sent:
+                            logger.info(
+                                f"Sent QR-Bill to {mail_recipient} (ref. {ref_number}), "
+                                f"mails_sent={mails_sent}"
+                            )
+                        else:
+                            logger.error(
+                                f"Error while sending mail to {mail_recipient}: "
+                                f"mails_sent={mails_sent}"
+                            )
 
                 except SMTPException as e:
                     messages.append(
                         "Konnte mail an %s nicht schicken!!! SMTP-Fehler: %s"
                         % (escape(mail_recipient), e)
                     )
+                    logger.error(f"SMTP error while sending mail to {mail_recipient}: {e}")
                     mails_sent = 0
                 except Exception as e:
                     messages.append(
                         "Konnte mail an %s nicht schicken!!! Allgemeiner Fehler: %s"
                         % (escape(mail_recipient), e)
                     )
+                    logger.error(f"Error while sending mail to {mail_recipient}: {e}")
                     mails_sent = 0
             else:
                 mails_sent = 1
 
-    return (messages, mails_sent, mail_recipient)
+    return messages, mails_sent, mail_recipient
 
 
 def create_qrbill_rent(
@@ -1863,6 +1882,12 @@ def create_qrbill_rent(
         render = True
 
     address = contract.get_contact_address()
+    if not address.email:
+        # We don't need to continue if there is no email address, since we cannot send
+        # the document that would be created here.
+        messages = [f"KEIN EMAIL GESENDET! Grund: Keine E-Mail-Adresse für {address} vorhanden."]
+        output_filename = None
+        return messages, output_filename
 
     context = address.get_context()
     context["betreff"] = title
