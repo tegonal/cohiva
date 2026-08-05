@@ -3963,7 +3963,6 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
             context["s_generic_total"] = nformat(total_amount)
             context["qr_amount"] = total_amount
             context["qr_extra_info"] = "Rechnung %s" % context["invoice_nr"]
-            context["preview"] = dry_run
 
             email_subject = "%s Nr. %s/%s" % (
                 context["betreff"],
