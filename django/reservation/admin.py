@@ -185,6 +185,8 @@ class ReservationTypeAdmin(GenoBaseAdmin):
         "confirmation_email_template",
         "confirmation_email_sender",
         "color",
+        "show_contacts_in_calendar",
+        "show_rental_units_in_calendar",
         "active",
         "ts_created",
         "ts_modified",
@@ -196,6 +198,7 @@ class ReservationTypeAdmin(GenoBaseAdmin):
     list_filter = ["active", "required_role"]
     search_fields = ["name"]
     autocomplete_fields = ["confirmation_email_template"]
+    conditional_fields = {"show_rental_units_in_calendar": "show_contacts_in_calendar == true"}
 
 
 class ReservationPriceInline(admin.TabularInline):
