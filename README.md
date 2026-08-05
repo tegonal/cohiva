@@ -111,7 +111,7 @@
 | geno/migrations/0021\_address\_country\_iso\_codes.py                                                  |       24 |       12 |     50% |16-24, 27-35 |
 | geno/migrations/0022\_invoicecategory\_building\_based\_cost\_center.py                                |        4 |        0 |    100% |           |
 | geno/migrations/0023\_address\_ahv\_number\_rentalunit\_billing\_period\_and\_more.py                  |       14 |        3 |     79% |     12-14 |
-| geno/migrations/0024\_member\_name\_to\_fk\_and\_date\_constraint.py                                   |        5 |        0 |    100% |           |
+| geno/migrations/0024\_member\_name\_to\_fk\_and\_date\_constraint.py                                   |       13 |        5 |     62% |     10-14 |
 | geno/migrations/0025\_alter\_registration\_telephone.py                                                |        4 |        0 |    100% |           |
 | geno/migrations/0026\_convert\_uuids\_from\_char.py                                                    |        4 |        0 |    100% |           |
 | geno/migrations/0027\_alter\_documenttype\_template\_to\_m2m.py                                        |        5 |        0 |    100% |           |
@@ -216,26 +216,27 @@
 | report/urls.py                                                                                         |        3 |        0 |    100% |           |
 | report/views.py                                                                                        |      189 |      107 |     43% |31-44, 52-53, 89-99, 112-129, 132-133, 152-156, 163-180, 183-185, 192-198, 203, 206-212, 217-250, 254-285 |
 | reservation/\_\_init\_\_.py                                                                            |        5 |        0 |    100% |           |
-| reservation/admin.py                                                                                   |      155 |       34 |     78% |31, 42-72, 146-148, 310-312 |
+| reservation/admin.py                                                                                   |      156 |       34 |     78% |31, 42-72, 146-148, 313-315 |
 | reservation/api\_urls.py                                                                               |        7 |        0 |    100% |           |
 | reservation/api\_views.py                                                                              |      328 |       63 |     81% |104-106, 130-134, 138-139, 141-142, 147-149, 157-160, 164-165, 167-168, 170-174, 185-189, 194-199, 206, 208-212, 232-237, 255-260, 326, 350, 361, 377, 400-405, 422, 436, 442, 489-491, 519, 536, 569, 615, 637-639, 655-677, 681 |
 | reservation/apps.py                                                                                    |        3 |        0 |    100% |           |
 | reservation/forms.py                                                                                   |        8 |        5 |     38% |      6-12 |
 | reservation/migrations/0001\_initial.py                                                                |       11 |        0 |    100% |           |
 | reservation/migrations/0002\_alter\_report\_category\_alter\_report\_comment\_and\_more.py             |        6 |        0 |    100% |           |
+| reservation/migrations/0003\_reservationtype\_show\_contacts\_in\_calendar\_and\_more.py               |        4 |        0 |    100% |           |
 | reservation/migrations/\_\_init\_\_.py                                                                 |        0 |        0 |    100% |           |
-| reservation/models.py                                                                                  |      232 |       44 |     81% |68-113, 224, 236, 259, 301-303, 374-392, 398, 474, 484, 509-520 |
+| reservation/models.py                                                                                  |      239 |       48 |     80% |75-124, 235, 247, 270, 312-314, 385-403, 409, 485, 495, 520-531 |
 | reservation/serializers.py                                                                             |       12 |        0 |    100% |           |
 | reservation/tests/\_\_init\_\_.py                                                                      |        0 |        0 |    100% |           |
 | reservation/tests/base.py                                                                              |        9 |        0 |    100% |           |
 | reservation/tests/data.py                                                                              |       42 |        0 |    100% |           |
 | reservation/tests/test\_api.py                                                                         |      374 |       10 |     97% |28-29, 785-802 |
-| reservation/tests/test\_models.py                                                                      |       64 |        1 |     98% |       122 |
+| reservation/tests/test\_models.py                                                                      |       64 |        0 |    100% |           |
 | reservation/tests/test\_reservations.py                                                                |        6 |        0 |    100% |           |
 | reservation/tests/test\_views.py                                                                       |       10 |        2 |     80% |     21-22 |
 | reservation/urls.py                                                                                    |        4 |        0 |    100% |           |
 | reservation/views.py                                                                                   |      136 |      112 |     18% |22-201, 240-263 |
-| **TOTAL**                                                                                              | **24051** | **5917** | **75%** |           |
+| **TOTAL**                                                                                              | **24071** | **5925** | **75%** |           |
 
 
 ## Setup coverage badge
