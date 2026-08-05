@@ -18,5 +18,8 @@ class Migration(migrations.Migration):
             sql="""
             ALTER TABLE geno_address MODIFY random_id UUID NOT NULL;
             """,
+            reverse_sql="""
+            ALTER TABLE geno_address MODIFY random_id CHAR(36) NOT NULL;
+            """,
         )
     ]
