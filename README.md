@@ -14,7 +14,7 @@
 | cohiva/formats/de/\_\_init\_\_.py                                                                      |        0 |        0 |    100% |           |
 | cohiva/formats/de/formats.py                                                                           |        5 |        0 |    100% |           |
 | cohiva/oauth\_validators.py                                                                            |       13 |        2 |     85% |    14, 29 |
-| cohiva/settings\_defaults.py                                                                           |      173 |        4 |     98% |64, 287, 299, 951 |
+| cohiva/settings\_defaults.py                                                                           |      173 |        4 |     98% |64, 287, 299, 949 |
 | cohiva/settings\_for\_tests.py                                                                         |       37 |        4 |     89% |     39-43 |
 | cohiva/storage.py                                                                                      |       14 |        5 |     64% |     25-31 |
 | cohiva/templatetags/\_\_init\_\_.py                                                                    |        0 |        0 |    100% |           |
