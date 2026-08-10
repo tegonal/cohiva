@@ -432,7 +432,7 @@ class AddressAdmin(GenoBaseAdmin):
             # Add an integer search "ranking" according to the field that the
             # search term matches on.
             queryset = queryset.annotate(
-                _search_rank = Case(
+                _search_rank=Case(
                     When(
                         Q(name__icontains=search_term)
                         | Q(first_name__icontains=search_term)
