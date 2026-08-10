@@ -64,8 +64,8 @@
             <a id="indexLink" class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a id="nextFileLink" class="nav" href="z_c72caf3b1df8a720_0007_address_building_extension_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.15.2">coverage.py v7.15.2</a>,
-            created at 2026-08-05 14:35 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.15.4">coverage.py v7.15.4</a>,
+            created at 2026-08-10 17:40 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -87,15 +87,15 @@
     <p class="pln"><span class="n"><a id="t5" href="#t5">5</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t6" href="#t6">6</a></span><span class="t"><span class="key">class</span> <span class="nam">Migration</span><span class="op">(</span><span class="nam">migrations</span><span class="op">.</span><span class="nam">Migration</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t7" href="#t7">7</a></span><span class="t">    <span class="nam">dependencies</span> <span class="op">=</span> <span class="op">[</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t8" href="#t8">8</a></span><span class="t">        <span class="op">(</span><span class="str">"geno"</span><span class="op">,</span> <span class="str">"0005_contract_main_contract"</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t8" href="#t8">8</a></span><span class="t">        <span class="op">(</span><span class="str">&quot;geno&quot;</span><span class="op">,</span> <span class="str">&quot;0005_contract_main_contract&quot;</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t9" href="#t9">9</a></span><span class="t">    <span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t10" href="#t10">10</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t11" href="#t11">11</a></span><span class="t">    <span class="nam">operations</span> <span class="op">=</span> <span class="op">[</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t12" href="#t12">12</a></span><span class="t">        <span class="nam">migrations</span><span class="op">.</span><span class="nam">RunSQL</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t13" href="#t13">13</a></span><span class="t">            <span class="str">"""CREATE VIEW geno_TenantsView AS</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t13" href="#t13">13</a></span><span class="t">            <span class="str">&quot;&quot;&quot;CREATE VIEW geno_TenantsView AS</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t14" href="#t14">14</a></span><span class="t"><span class="str">SELECT DISTINCT</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t15" href="#t15">15</a></span><span class="t"><span class="str">        CONVERT(concat(LPAD(c.id, 4, 0), LPAD(bu.id, 4, 0), LPAD(ru.id, 4, 0), LPAD(ad.id, 4,0)), INTEGER) as id,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t16" href="#t16">16</a></span><span class="t"><span class="str">        '' as comment,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t16" href="#t16">16</a></span><span class="t"><span class="str">        &#x27;&#x27; as comment,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t17" href="#t17">17</a></span><span class="t"><span class="str">    bu.name as bu_name,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t18" href="#t18">18</a></span><span class="t"><span class="str">    ru.name as ru_name,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t19" href="#t19">19</a></span><span class="t"><span class="str">    ru.rental_type as ru_type,</span>&nbsp;</span><span class="r"></span></p>
@@ -112,8 +112,8 @@
     <p class="run run2"><span class="n"><a id="t30" href="#t30">30</a></span><span class="t"><span class="str">    NULL as c_age,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t31" href="#t31">31</a></span><span class="t"><span class="str">    NULL as presence,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t32" href="#t32">32</a></span><span class="t"><span class="str">    ad.date_birth as ad_date_birth,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t33" href="#t33">33</a></span><span class="t"><span class="str">    concat(ad.city_zipcode, ' ', ad.city_name) as ad_city,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t34" href="#t34">34</a></span><span class="t"><span class="str">    concat(ad.street_name, ' ', ad.house_number) as ad_street,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t33" href="#t33">33</a></span><span class="t"><span class="str">    concat(ad.city_zipcode, &#x27; &#x27;, ad.city_name) as ad_city,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t34" href="#t34">34</a></span><span class="t"><span class="str">    concat(ad.street_name, &#x27; &#x27;, ad.house_number) as ad_street,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t35" href="#t35">35</a></span><span class="t"><span class="str">    ad.telephone as ad_tel1,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t36" href="#t36">36</a></span><span class="t"><span class="str">    ad.mobile as ad_tel2,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t37" href="#t37">37</a></span><span class="t"><span class="str">    ad.hometown as p_hometown,</span>&nbsp;</span><span class="r"></span></p>
@@ -142,7 +142,7 @@
     <p class="run run2"><span class="n"><a id="t60" href="#t60">60</a></span><span class="t"><span class="str">UNION</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t61" href="#t61">61</a></span><span class="t"><span class="str">SELECT DISTINCT</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t62" href="#t62">62</a></span><span class="t"><span class="str">        CONVERT(concat(LPAD(c.id, 4, 0), LPAD(bu.id, 4, 0), LPAD(ru.id, 4, 0), LPAD(ad.id, 4,0)), INTEGER) as id,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t63" href="#t63">63</a></span><span class="t"><span class="str">        '' as comment,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t63" href="#t63">63</a></span><span class="t"><span class="str">        &#x27;&#x27; as comment,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t64" href="#t64">64</a></span><span class="t"><span class="str">    bu.name as bu_name,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t65" href="#t65">65</a></span><span class="t"><span class="str">    ru.name as ru_name,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t66" href="#t66">66</a></span><span class="t"><span class="str">    ru.rental_type as ru_type,</span>&nbsp;</span><span class="r"></span></p>
@@ -159,8 +159,8 @@
     <p class="run run2"><span class="n"><a id="t77" href="#t77">77</a></span><span class="t"><span class="str">    TIMESTAMPDIFF(YEAR, ad.date_birth, CURDATE()) as c_age,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t78" href="#t78">78</a></span><span class="t"><span class="str">    ch.presence as presence,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t79" href="#t79">79</a></span><span class="t"><span class="str">    ad.date_birth as ad_date_birth,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t80" href="#t80">80</a></span><span class="t"><span class="str">    concat(ad.city_zipcode, ' ', ad.city_name) as ad_city,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t81" href="#t81">81</a></span><span class="t"><span class="str">    concat(ad.street_name, ' ', ad.house_number) as ad_street,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t80" href="#t80">80</a></span><span class="t"><span class="str">    concat(ad.city_zipcode, &#x27; &#x27;, ad.city_name) as ad_city,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t81" href="#t81">81</a></span><span class="t"><span class="str">    concat(ad.street_name, &#x27; &#x27;, ad.house_number) as ad_street,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t82" href="#t82">82</a></span><span class="t"><span class="str">    ad.telephone as ad_tel1,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t83" href="#t83">83</a></span><span class="t"><span class="str">    ad.mobile as ad_tel2,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t84" href="#t84">84</a></span><span class="t"><span class="str">    ad.hometown as p_hometown,</span>&nbsp;</span><span class="r"></span></p>
@@ -187,8 +187,8 @@
     <p class="run run2"><span class="n"><a id="t105" href="#t105">105</a></span><span class="t"><span class="str">LEFT JOIN</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t106" href="#t106">106</a></span><span class="t"><span class="str">    geno_address ad ON ad.id = ch.name_id</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t107" href="#t107">107</a></span><span class="t"><span class="str">LEFT JOIN</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t108" href="#t108">108</a></span><span class="t"><span class="str">    geno_member m ON m.name_id = ad.id;"""</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t109" href="#t109">109</a></span><span class="t">            <span class="str">"""DROP VIEW geno_TenantsView;"""</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t108" href="#t108">108</a></span><span class="t"><span class="str">    geno_member m ON m.name_id = ad.id;&quot;&quot;&quot;</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t109" href="#t109">109</a></span><span class="t">            <span class="str">&quot;&quot;&quot;DROP VIEW geno_TenantsView;&quot;&quot;&quot;</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t110" href="#t110">110</a></span><span class="t">        <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t111" href="#t111">111</a></span><span class="t">    <span class="op">]</span>&nbsp;</span><span class="r"></span></p>
 </main>
@@ -199,8 +199,8 @@
             <a class="nav" href="index.html">&Hat; index</a> &nbsp; &nbsp;
             <a class="nav" href="z_c72caf3b1df8a720_0007_address_building_extension_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
-            <a class="nav" href="https://coverage.readthedocs.io/en/7.15.2">coverage.py v7.15.2</a>,
-            created at 2026-08-05 14:35 +0000
+            <a class="nav" href="https://coverage.readthedocs.io/en/7.15.4">coverage.py v7.15.4</a>,
+            created at 2026-08-10 17:40 +0000
         </p>
     </div>
 </footer>
