@@ -21,7 +21,6 @@ from django.utils import timezone
 from django.utils.html import format_html, format_html_join, mark_safe
 from django.utils.translation import gettext as _
 from filer.fields.file import FilerFileField
-from simple_history.models import HistoricalRecords
 
 import geno.settings as geno_settings
 from cohiva.fields import AHVNumberField
@@ -207,9 +206,6 @@ class BankAccount(GenoBase):
 
 
 class Address(GenoBase):
-    # Add history tracking
-    history = HistoricalRecords()
-
     TITLE_CHOICES = (
         ("Herr", "Herr"),
         ("Frau", "Frau"),
