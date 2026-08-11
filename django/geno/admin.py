@@ -128,11 +128,36 @@ class GenoBaseAdmin(AuditlogHistoryAdminMixin, ModelAdmin, ExportXlsMixin):
     view_on_site = False
     save_as = True
     save_on_top = True
+    change_form_template = "admin/geno/change_form.html"
     actions = ["export_as_xls", copy_objects]
 
     # Add custom admin JS (focus handling for select2 focus)
     class Media:
         js = ("geno/js/select2-focus.js",)
+
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        """
+        Render the changeform and include a link to the django-auditlog history
+        URL (i.e. /auditlog) when we are editing an existing record.
+
+        Args:
+            request: The current HTTP request.
+            object_id: The primary key of the object being edited, or ``None``
+                when adding a new object.
+            form_url: The URL of the form.
+            extra_context: Optional dictionary of extra template context.
+
+        Returns:
+            TemplateResponse: The rendered changeform response.
+        """
+        extra_context = extra_context or {}
+        if object_id:
+            opts = self.model._meta
+            extra_context["auditlog_url"] = reverse(
+                "admin:%s_%s_auditlog" % (opts.app_label, opts.model_name),
+                args=[object_id],
+            )
+        return super().changeform_view(request, object_id, form_url, extra_context)
 
     def __init__(self, model, admin_site):
         super().__init__(model, admin_site)
