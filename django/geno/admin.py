@@ -3,6 +3,7 @@ import gettext
 from collections.abc import Callable
 
 import pycountry
+from auditlog.mixins import AuditlogHistoryAdminMixin
 from dateutil.relativedelta import relativedelta
 from django import forms
 from django.conf import settings
@@ -122,7 +123,7 @@ class BooleanFieldDefaultTrueListFilter(admin.BooleanFieldListFilter):
 
 
 ## Base admin class
-class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
+class GenoBaseAdmin(AuditlogHistoryAdminMixin, ModelAdmin, ExportXlsMixin):
     model = None
     view_on_site = False
     save_as = True

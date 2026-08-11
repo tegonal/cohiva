@@ -233,6 +233,10 @@ INSTALLED_APPS = (
     "easy_thumbnails",
     "cohiva.apps.CohivaFilerConfig",
 )
+if "history" in cbc.FEATURES:
+    INSTALLED_APPS += (
+        "auditlog",
+    )
 if "api" in cbc.FEATURES:
     INSTALLED_APPS += (
         # For API
@@ -1507,3 +1511,10 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = ["unfold_crispy"]
 # Theme Customization
 COHIVA_TITLE_FONT = "Lato"
 COHIVA_TEXT_FONT = "Liberation Serif"
+
+# Auditlog history settings
+AUDITLOG_INCLUDE_ALL_MODELS=True
+AUDITLOG_EXCLUDE_TRACKING_FIELDS = (
+    "ts_created",
+    "ts_modified"
+)
