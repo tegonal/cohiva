@@ -424,5 +424,8 @@ zope-interface==7.2
 zope-proxy==6.1
     # via zope-deferredimport
 
+# TODO: add to requirements via dependency management
+django-auditlog==3.4.1
+
 # Packages added/managed by install.py:
 sepa==0.5.4+mst1
