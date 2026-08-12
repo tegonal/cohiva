@@ -808,12 +808,12 @@ def share_set_duration10(modeladmin, request, queryset):
     queryset.update(duration=10)
 
 
-@admin.display(description=("Datum Ende auf 31.12. des Vorjahres (=Jahresende) setzen"))
+@admin.display(description=("Rückzahlungsdatum auf 31.12. des Vorjahres (=Jahresende) setzen"))
 def share_set_end_endofyear(modeladmin, request, queryset):
     queryset.update(repayment_date=datetime.date(datetime.datetime.now().year - 1, 12, 31))
 
 
-@admin.display(description=("Datum Ende auf 31.12. vor ZWEI Jahren (=Jahresende) setzen"))
+@admin.display(description=("Rückzahlungsdatum auf 31.12. vor ZWEI Jahren (=Jahresende) setzen"))
 def share_set_end_endofyear2(modeladmin, request, queryset):
     queryset.update(repayment_date=datetime.date(datetime.datetime.now().year - 2, 12, 31))
 
