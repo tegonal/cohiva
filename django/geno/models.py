@@ -937,7 +937,13 @@ class Share(GenoBase):
     )
     payment_date = models.DateField("Zahlungsdatum", null=True, blank=True, default=None)
     repayment_date = models.DateField("Rückzahlungsdatum", null=True, blank=True, default=None)
-    effective_from = models.DateField("Wirksam ab", null=True, blank=True, default=None)
+    effective_from = models.DateField(
+        name="Wirksam ab",
+        null=True,
+        blank=True,
+        default=None,
+        help_text="Leer lassen, falls identisch mit Zahlungsdatum. Wird für Reporting/Zinsberechnung verwendet."
+    )
     effective_until = models.DateField("Wirksam bis", null=True, blank=True, default=None)
     duration = models.PositiveIntegerField(
         "Laufzeit", null=True, blank=True, help_text="Jahre (bei Darlehen)"
