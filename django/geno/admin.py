@@ -14,7 +14,6 @@ from django.db.models import Case, IntegerField, Q, Value, When
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.db.models import Q
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from stdnum import iban as iban_util
@@ -767,8 +766,6 @@ class MemberAttributeAdmin(GenoBaseAdmin):
     ]
     autocomplete_fields = ["member", "attribute_type"]
     actions = GenoBaseAdmin.actions + [
-        mark_billed,
-        mark_paid,
         mark_reminder,
         member_attribute_send_membermail,
     ]
@@ -781,16 +778,6 @@ class ShareTypeAdmin(GenoBaseAdmin):
     list_display = ["name", "description", "standard_interest"]
     list_filter = ["standard_interest"]
     search_fields = ["name", "description"]
-
-
-@admin.display(description='Als "bezahlt" markieren')
-def share_mark_paid(modeladmin, request, queryset):
-    queryset.update(state="bezahlt", date=datetime.date.today())
-
-
-@admin.display(description='Als "gefordert" markieren')
-def share_mark_billed(modeladmin, request, queryset):
-    queryset.update(state="gefordert", date=datetime.date.today())
 
 
 @admin.display(description="Laufzeit löschen")
@@ -930,8 +917,6 @@ class ShareAdmin(GenoBaseAdmin):
     ]
     autocomplete_fields = ["name", "share_type", "attached_to_contract", "attached_to_building"]
     actions = GenoBaseAdmin.actions + [
-        share_mark_paid,
-        share_mark_billed,
         share_set_duration5,
         share_set_duration10,
         share_delete_duration,
