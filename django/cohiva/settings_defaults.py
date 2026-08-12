@@ -232,11 +232,8 @@ INSTALLED_APPS = (
     "datetimewidget",
     "easy_thumbnails",
     "cohiva.apps.CohivaFilerConfig",
+    "auditlog",
 )
-if "history" in cbc.FEATURES:
-    INSTALLED_APPS += (
-        "auditlog",
-    )
 if "api" in cbc.FEATURES:
     INSTALLED_APPS += (
         # For API
