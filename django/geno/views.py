@@ -942,7 +942,7 @@ def share_export(request):
             if a.date_due:
                 duedate = a.date_due
             elif a.duration:
-                duedate = a.payment_date + relativedelta(years=a.duration)
+                duedate = a.date + relativedelta(years=a.duration)
             else:
                 duedate = ""
 
