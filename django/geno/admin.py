@@ -807,7 +807,7 @@ def share_set_end_endofyear(modeladmin, request, queryset):
 def share_set_end_endofyear2(modeladmin, request, queryset):
     repayment_date = datetime.date(datetime.datetime.now().year - 2, 12, 31)
     for share in queryset:
-        share.repayment_sate = repayment_date
+        share.repayment_date = repayment_date
         share.save()
 
 
