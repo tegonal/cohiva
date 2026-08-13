@@ -425,7 +425,7 @@ def share_interest_calc(address, year, enddate=None):
             .filter(share_type__in=stype)
             .filter(
                 (Q(effective_from__isnull=False) & Q(effective_from__lt=period_end))
-                | (Q(effective_from__isnull=True & Q(payment_date__lt=period_end)))
+                | (Q(effective_from__isnull=True) & Q(payment_date__lt=period_end))
             )
             .filter(
                 (Q(effective_until__isnull=False) & Q(effective_until__gte=period_start))
