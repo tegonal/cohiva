@@ -423,10 +423,17 @@ def share_interest_calc(address, year, enddate=None):
         for share in (
             Share.objects.filter(name=address)
             .filter(share_type__in=stype)
-            .filter(payment_date__lt=period_end)
-            .filter(Q(repayment_date=None) | Q(repayment_date__gte=period_start))
+            .filter(
+                (Q(effective_from__isnull=False) & Q(effective_from__lt=period_end))
+                | (Q(effective_from__isnull=True & Q(payment_date__lt=period_end)))
+            )
+            .filter(
+                (Q(effective_until__isnull=False) & Q(effective_until__gte=period_start))
+                | (Q(effective_until__isnull=True) & (Q(repayment_date=None) | Q(repayment_date__gte=period_start)))
+            )
             .exclude(
                 Q(payment_date=datetime.date(year, 12, 31))
+                | Q(effective_from=datetime.date(year, 12, 31))
                 & Q(is_interest_credit=True)  ## Exclude already booked interest of this period
             )
             .order_by("effective_from", "payment_date")
