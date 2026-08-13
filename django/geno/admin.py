@@ -797,12 +797,18 @@ def share_set_duration10(modeladmin, request, queryset):
 
 @admin.display(description=("Rückzahlungsdatum auf 31.12. des Vorjahres (=Jahresende) setzen"))
 def share_set_end_endofyear(modeladmin, request, queryset):
-    queryset.update(repayment_date=datetime.date(datetime.datetime.now().year - 1, 12, 31))
+    repayment_date = datetime.date(datetime.datetime.now().year - 1, 12, 31)
+    for share in queryset:
+        share.repayment_date = repayment_date
+        share.save()
 
 
 @admin.display(description=("Rückzahlungsdatum auf 31.12. vor ZWEI Jahren (=Jahresende) setzen"))
 def share_set_end_endofyear2(modeladmin, request, queryset):
-    queryset.update(repayment_date=datetime.date(datetime.datetime.now().year - 2, 12, 31))
+    repayment_date = datetime.date(datetime.datetime.now().year - 2, 12, 31)
+    for share in queryset:
+        share.repayment_sate = repayment_date
+        share.save()
 
 
 @admin.display(description="Zinsatz-Modus auf «Standard» setzen.")
