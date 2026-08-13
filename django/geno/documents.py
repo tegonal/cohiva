@@ -1036,7 +1036,7 @@ def get_context_data(doctype, obj_id, extra_context):
         if obj.date_due:
             duedate = obj.date_due
         elif obj.duration:
-            duedate = obj.payment_date + relativedelta(years=obj.duration)
+            duedate = obj.date + relativedelta(years=obj.duration)
         else:
             duedate = None
         if duedate:
