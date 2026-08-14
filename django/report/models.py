@@ -238,33 +238,43 @@ class ReportItemConfiguration(GenoBase):
             self.ensure_base_input_fields(old_item_category)
 
     def ensure_base_input_fields(self, old_item_category):
-        if old_item_category != self.item_category:
-            for existing_repot_input_field in ReportInputField.objects.filter(
-                item_configuration=self.id
-            ):
-                existing_repot_input_field.delete()
-        # create new ReportInputField based on config
-
+        configuration = None
+        old_fields = []
         for item in get_report_item_config():
-            if item.config and item.config["name"] == self.item_category and item.config["config"]:
-                configuration = item.config
+            if item.config and item.config["config"]:
+                if item.config["name"] == self.item_category:
+                    configuration = item.config
+                elif item.config["name"] == old_item_category:
+                    old_configuration = item.config
+                    if old_configuration.get("config"):
+                        for field in old_configuration.get("config").get_fields():
+                            if field.key not in ("class", "name", "bezeichnung"):
+                                old_fields.append(field.key)
 
-                if configuration.get("config"):
-                    for field in configuration.get("config").get_fields():
-                        if field.key not in ("class", "name", "bezeichnung"):
-                            default_val = configuration.get(field.key)
-                            if default_val is None:
-                                default_val = ""
-                            ReportInputField.objects.create(
-                                name=field.key,
-                                description=str(field),
-                                item_configuration=self,
-                                field_type=_match_CostConfigFieldTypes_with_REPORT_FIELDTYPE_CHOICES_values(
-                                    field.type
-                                ),
-                                active=True,
-                                value_default=default_val,
-                            )
+        if configuration and configuration.get("config"):
+            for field in configuration.get("config").get_fields():
+                if field.key not in ("class", "name", "bezeichnung"):
+                    if field.key in old_fields:
+                        old_fields.remove(field.key)
+                    else:
+                        default_val = configuration.get(field.key)
+                        if default_val is None:
+                            default_val = ""
+                        ReportInputField.objects.create(
+                            name=field.key,
+                            description=str(field),
+                            item_configuration=self,
+                            field_type=_match_CostConfigFieldTypes_with_REPORT_FIELDTYPE_CHOICES_values(
+                                field.type
+                            ),
+                            active=True,
+                            value_default=default_val,
+                        )
+
+        # Delete fields from old item category, that are not present in the new category
+        for old_field in old_fields:
+            old = ReportInputField.objects.filter(item_configuration=self, name=old_field)
+            old.delete()
 
     def save_as_copy(self):
         old_report_item_configuration_id = self.id

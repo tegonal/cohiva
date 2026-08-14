@@ -1,4 +1,5 @@
 import datetime
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -22,18 +23,20 @@ from geno.models import (
     ShareType,
     Tenant,
 )
-from geno.tests.base import GenoAdminTestCase
-from geno.tests.test_registration import TestRegistrationForm
-from reservation.tests.base import ReservationTestCase
+
+if TYPE_CHECKING:
+    from geno.tests.base import GenoAdminTestCase
+    from geno.tests.test_registration import TestRegistrationForm
+    from reservation.tests.base import ReservationTestCase
 
 
-def create_users(cls: type[GenoAdminTestCase]):
+def create_users(cls: "type[GenoAdminTestCase]"):
     cls.su = User.objects.create_superuser(
         username="superuser", password="secret", email="admin@example.com"
     )
 
 
-def create_prototype_users(cls: type[GenoAdminTestCase] | type[ReservationTestCase]):
+def create_prototype_users(cls: "type[GenoAdminTestCase] | type[ReservationTestCase]"):
     ## Prototype users for different roles
     cls.prototypes = {
         "external": {},
@@ -93,7 +96,7 @@ def create_prototype_users(cls: type[GenoAdminTestCase] | type[ReservationTestCa
     cls.prototypes["inactive"]["address"].save()
 
 
-def create_templates(cls: type[GenoAdminTestCase]):
+def create_templates(cls: "type[GenoAdminTestCase]"):
     create_templateoptions(cls)
     o = cls.contenttemplateoptions
 
@@ -200,7 +203,7 @@ def create_templates(cls: type[GenoAdminTestCase]):
     ]
 
 
-def create_templateoptions(cls: type[GenoAdminTestCase]):
+def create_templateoptions(cls: "type[GenoAdminTestCase]"):
     cls.contenttemplateoptions = {
         "statement": [
             ContentTemplateOption.objects.create(
@@ -346,7 +349,7 @@ def create_templateoptions(cls: type[GenoAdminTestCase]):
     }
 
 
-def create_documenttypes(cls: type[GenoAdminTestCase]):
+def create_documenttypes(cls: "type[GenoAdminTestCase]"):
     cls.documenttypes = [
         DocumentType.objects.create(
             name="invoice", description="QR-Rechnung", template=cls.contenttemplates[0]
@@ -354,7 +357,7 @@ def create_documenttypes(cls: type[GenoAdminTestCase]):
     ]
 
 
-def create_invoicecategories(cls: type[GenoAdminTestCase]):
+def create_invoicecategories(cls: "type[GenoAdminTestCase]"):
     cls.invoicecategories = [
         InvoiceCategory.objects.create(
             name="Member Invoice", reference_id=77, manual_allowed=True
@@ -382,7 +385,7 @@ def create_invoicecategories(cls: type[GenoAdminTestCase]):
     ]
 
 
-def create_members(cls: type[GenoAdminTestCase]):
+def create_members(cls: "type[GenoAdminTestCase]"):
     create_addresses(cls)
     cls.members = []
     cls.members.append(
@@ -417,7 +420,7 @@ def create_members(cls: type[GenoAdminTestCase]):
     )
 
 
-def create_addresses(cls: type[GenoAdminTestCase]):
+def create_addresses(cls: "type[GenoAdminTestCase]"):
     cls.addresses = []
     cls.addresses.append(
         Address.objects.create(
@@ -477,7 +480,7 @@ def create_addresses(cls: type[GenoAdminTestCase]):
     )
 
 
-def create_children(cls: type[GenoAdminTestCase]):
+def create_children(cls: "type[GenoAdminTestCase]"):
     cls.children = []
     adr = Address.objects.create(
         name="Muster", first_name="Anne", date_birth=datetime.date(2018, 9, 2)
@@ -489,7 +492,7 @@ def create_children(cls: type[GenoAdminTestCase]):
     cls.children.append(Child.objects.create(name=adr, presence=7.0))
 
 
-def create_shares(cls: type[GenoAdminTestCase]):
+def create_shares(cls: "type[GenoAdminTestCase]"):
     create_sharetypes(cls)
     cls.shares = []
     for st in cls.sharetypes[0:8]:
@@ -521,7 +524,7 @@ def create_shares(cls: type[GenoAdminTestCase]):
     )
 
 
-def create_sharetypes(cls: type[GenoAdminTestCase]):
+def create_sharetypes(cls: "type[GenoAdminTestCase]"):
     cls.sharetypes = []
     cls.sharetypes.append(ShareType.objects.create(name="Anteilschein"))
     cls.sharetypes.append(ShareType.objects.create(name="Darlehen zinslos"))
@@ -536,7 +539,7 @@ def create_sharetypes(cls: type[GenoAdminTestCase]):
     cls.sharetypes.append(ShareType.objects.create(name="Anteilschein freiwillig"))
 
 
-def create_registrationevents(cls: type[TestRegistrationForm]):
+def create_registrationevents(cls: "type[TestRegistrationForm]"):
     cls.registrationevents = []
     cls.registrationevents.append(
         RegistrationEvent.objects.create(
@@ -554,7 +557,7 @@ def create_registrationevents(cls: type[TestRegistrationForm]):
     )
 
 
-def create_buildings(cls: type[GenoAdminTestCase], count=2):
+def create_buildings(cls: "type[GenoAdminTestCase]", count=2):
     cls.buildings = []
     cls.buildings.append(
         Building.objects.create(
@@ -569,7 +572,7 @@ def create_buildings(cls: type[GenoAdminTestCase], count=2):
         cls.buildings.append(Building.objects.create(name=f"Musterweg {i + 1}"))
 
 
-def create_rentalunits(cls: type[GenoAdminTestCase], building_count=2):
+def create_rentalunits(cls: "type[GenoAdminTestCase]", building_count=2):
     create_buildings(cls, building_count)
 
     cls.rentalunits = []
@@ -657,7 +660,7 @@ def create_rentalunits(cls: type[GenoAdminTestCase], building_count=2):
     )
 
 
-def create_contracts(cls: type[GenoAdminTestCase]):
+def create_contracts(cls: "type[GenoAdminTestCase]"):
     create_rentalunits(cls)
 
     cls.contracts = []

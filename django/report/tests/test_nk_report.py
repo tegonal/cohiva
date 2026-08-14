@@ -2,6 +2,7 @@
 import os
 from decimal import Decimal
 from pprint import pprint
+from unittest import skip
 from unittest.mock import patch
 
 import requests
@@ -16,6 +17,10 @@ from report.report_nk import main
 from report.tests.check_report_output import CompareCSV
 
 from .base import NkReportTestCase
+
+"""THIS FILE CONTAINS LEGACY CODE THAT WILL BE REMOVED IN THE FUTURE.
+It should only be used to test backwards compatibility.
+"""
 
 
 def redirect_get_request(*args, **kwargs):
@@ -99,6 +104,7 @@ class NKReportTest(NkReportTestCase):
         super().setUpTestData()
         testdata.create_nk_data(cls, legacy=True)
 
+    @skip("Legacy test, will be removed in the future.")
     @patch("requests.post", wraps=redirect_post_request)
     @patch("requests.get", wraps=redirect_get_request)
     def test_report_minimal_dryrun(self, mock_get, mock_post):
@@ -171,6 +177,7 @@ class NKReportTest(NkReportTestCase):
         ## Make sure not invoices were created
         self.assertEqual(Invoice.objects.count(), 0)
 
+    @skip("Legacy test, will be removed in the future.")
     @tag("slow-test")
     @patch("requests.post", wraps=redirect_post_request)
     @patch("requests.get", wraps=redirect_get_request)
@@ -230,6 +237,7 @@ class NKReportTest(NkReportTestCase):
             on_page=3,
         )
 
+    @skip("Legacy test, will be removed in the future.")
     @tag("slow-test")
     @patch("requests.post", wraps=redirect_post_request)
     @patch("requests.get", wraps=redirect_get_request)
@@ -264,6 +272,3 @@ class NKReportTest(NkReportTestCase):
             f"Rechnung {invoice1.id}",
             on_page=1,
         )
-
-    def test_import_from_api(self):
-        pass

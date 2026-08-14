@@ -287,6 +287,9 @@ class NkReportTestCase(ReportTestCase):
         field.value = data
         field.save()
 
+    #####################################################################
+    ## Below is code for old tests, that will be removed in the future ##
+    #####################################################################
     def configure_test_report_minimal(self, legacy=False):
         self.rtype = ReportType.objects.create(name="Nebenkostenabrechnung")
         self.report = Report.objects.create(name="Test", report_type=self.rtype)

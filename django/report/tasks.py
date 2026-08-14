@@ -35,7 +35,7 @@ def generate_nk_report(report_id, dry_run=True):
         report.save()
     except Exception as e:
         report.state = "invalid"
-        report.state_info = f"Fehler beim erstellen des Reports: {e.__class__.__name__}: {e}"
+        report.state_info = f"Fehler beim Erstellen des Reports: {e.__class__.__name__}: {e}"
         report.save()
         if settings.DEBUG:
             raise
