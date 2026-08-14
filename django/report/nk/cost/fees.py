@@ -14,9 +14,7 @@ class NkAdminFeeCost(NkCost):
 
     def __init__(self, report_generator: "NkReportGenerator", cost_config: dict):
         super().__init__(report_generator, cost_config)
-        self.fee_percentage = float(
-            report_generator.config.get(cost_config.get("fee_percentage_key"), 0.0)
-        )
+        self.fee_percentage = float(cost_config.get("adminfee_percentage", 0.0))
 
     def update(self):
         super().update()

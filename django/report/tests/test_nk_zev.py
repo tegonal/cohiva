@@ -1,8 +1,7 @@
-import json
+from copy import deepcopy
 
 import report.tests.data as testdata
 from geno.utils import nformat
-from report.models import ReportInputData, ReportInputField
 from report.nk.cost import NkCostValueType, NkCostZEVStromallmend
 from report.nk.generator import NkReportGenerator
 from report.nk.measurement_data import NkMeasurementDataBase
@@ -69,19 +68,6 @@ class NkMeasurementTestDataRentalUnits(NkMeasurementDataBase):
 
 
 class NKCostZEVStromallmendTest(NkReportTestCase):
-    zev_cost_config = {
-        "class": NkCostZEVStromallmend,
-        "name": "Stromkosten",
-        "tarif_eigenstrom_key": "Strom:Tarif:Eigenstrom",
-        "tarif_einspeiseverguetung_key": "Strom:Tarif:Einspeisevergütung",
-        "tarif_hkn_key": "Strom:Tarif:HKN",
-        "tarif_korrektur_key": "Strom:Tarif:Korrekturen",
-        "korrekturen_key": "Strom:Korrekturen",
-        "measurement_data": {
-            "building": {"class": NkMeasurementTestDataBuilding},
-            "rental_units": {"class": NkMeasurementTestDataRentalUnits},
-        },
-    }
     tarif_hoch = 0.3  # 0.30 CHF/kWh
     tarif_nieder = 0.28  # 0.28 CHF/kWh
     tarif_eigenstrom = 0.1453
@@ -101,6 +87,40 @@ class NKCostZEVStromallmendTest(NkReportTestCase):
         0.136,
         0.136,
     ]
+    korrekturen = {
+        "allg": [
+            {
+                "desc": "Allgemeinstrom: Abzug separat verrechneter Strom",
+                "tarif": "mittel",
+                "kwh": 12 * [-2],
+            },
+            {
+                "desc": "Umbuchung: Allgemein verwendeter Strom von 001b",
+                "tarif": "mittel",
+                "kwh": 12 * [1],
+            },
+        ],
+        "001b": [
+            {
+                "desc": "Umbuchung: Allgemein verwendeter Strom von 001b",
+                "tarif": "mittel",
+                "kwh": 12 * [-1],
+            }
+        ],
+    }
+    zev_cost_config = {
+        "class": NkCostZEVStromallmend,
+        "name": "Stromkosten",
+        "tarif_eigenstrom": tarif_eigenstrom,
+        "tarif_einspeiseverguetung": tarif_einspeiseverguetung,
+        "tarif_hkn": tarif_hkn,
+        "tarif_korrekturen": {"mittel": tarif_korrektur, "nacht": 0.33},
+        "korrekturen": korrekturen,
+        "measurement_data": {
+            "building": {"class": NkMeasurementTestDataBuilding},
+            "rental_units": {"class": NkMeasurementTestDataRentalUnits},
+        },
+    }
 
     @classmethod
     def setUpTestData(cls):
@@ -109,7 +129,7 @@ class NKCostZEVStromallmendTest(NkReportTestCase):
 
     def _setup_report_with_strom_data(self):
         """Configure a minimal report and populate measurement data for ZEV strom."""
-        self.configure_test_report_minimal()
+        self.configure_test_report_empty()
         report_generator = NkReportGenerator(self.report, True, output_root="/tmp/")
         report_generator.load_rental_units()
         report_generator.load_contracts()
@@ -277,7 +297,7 @@ class NKCostZEVStromallmendTest(NkReportTestCase):
 
     def test_zev_no_measurement_data(self):
         """When no measurement data is present, all costs are zero."""
-        self.configure_test_report_minimal()
+        self.configure_test_report_empty()
         rg = NkReportGenerator(self.report, True, output_root="/tmp/")
         rg.load_rental_units()
 
@@ -297,47 +317,40 @@ class NKCostZEVStromallmendTest(NkReportTestCase):
             )
 
     def test_zev_invalid_correction_rental_unit(self):
-        self.configure_test_report_minimal()
-        inputdata = ReportInputData.objects.get(
-            name=ReportInputField.objects.get(name="Strom:Korrekturen"), report=self.report
-        )
-        inputdata.value = json.dumps(
-            {
-                "_INVALID_RU_": [
-                    {
-                        "desc": "Test",
-                        "tarif": "mittel",
-                        "kwh": 12 * [-1],
-                    }
-                ]
-            }
-        )
-        inputdata.save()
+        korrekturen_invalid = {
+            "_INVALID_RU_": [
+                {
+                    "desc": "Test",
+                    "tarif": "mittel",
+                    "kwh": 12 * [-1],
+                }
+            ]
+        }
+        self.configure_test_report_empty()
         rg = NkReportGenerator(self.report, True, output_root="/tmp/")
         rg.load_rental_units()
 
+        cost_config = deepcopy(self.zev_cost_config)
+        cost_config["korrekturen"] = korrekturen_invalid
         with self.assertRaises(ValueError):
-            NkCostZEVStromallmend(rg, self.zev_cost_config)
+            NkCostZEVStromallmend(rg, cost_config)
 
     def test_zev_invalid_correction_tarif(self):
-        self.configure_test_report_minimal()
-        inputdata = ReportInputData.objects.get(
-            name=ReportInputField.objects.get(name="Strom:Korrekturen"), report=self.report
-        )
-        inputdata.value = json.dumps(
-            {
-                "allg": [
-                    {
-                        "desc": "Test",
-                        "tarif": "_INVALID_TARIF_",
-                        "kwh": 12 * [-1],
-                    }
-                ]
-            }
-        )
-        inputdata.save()
+        korrekturen_invalid = {
+            "allg": [
+                {
+                    "desc": "Test",
+                    "tarif": "_INVALID_TARIF_",
+                    "kwh": 12 * [-1],
+                }
+            ]
+        }
+
+        self.configure_test_report_empty()
         rg = NkReportGenerator(self.report, True, output_root="/tmp/")
         rg.load_rental_units()
 
+        cost_config = deepcopy(self.zev_cost_config)
+        cost_config["korrekturen"] = korrekturen_invalid
         with self.assertRaises(ValueError):
-            NkCostZEVStromallmend(rg, self.zev_cost_config)
+            NkCostZEVStromallmend(rg, cost_config)

@@ -27,7 +27,7 @@ class NKReportCostTest(NkReportTestCase):
         testdata.create_nk_data(cls)
 
     def test_split_costs_unit_weights(self):
-        self.configure_test_report_minimal()
+        self.configure_test_report_empty()
         report = NkReportGenerator(self.report, True, output_root="/tmp/")
         report.load_rental_units()
         config = {
@@ -43,12 +43,14 @@ class NKReportCostTest(NkReportTestCase):
         )
 
     def test_split_costs_total_by_area(self):
-        self.configure_test_report_minimal()
+        self.configure_test_report_empty()
         report = NkReportGenerator(self.report, True, output_root="/tmp/")
         report.load_rental_units()
+        cost1 = 31915.00
         config = {
-            "name": "Wasser_Abwasser",  # Test data with costs CHF 31915.00
+            "name": "Test",
             "object_weights": "area",
+            "Betrag": cost1,
         }
         cost = NkTotalCost(report, config)
         cost.load_input_data()
@@ -56,12 +58,12 @@ class NKReportCostTest(NkReportTestCase):
         # pprint(cost.rental_unit_values)
         # pprint(cost.total_values)
         total_area = float(RentalUnit.objects.aggregate(Sum("area")).get("area__sum"))
-        self.assertAlmostEqual(cost.total_values[NkCostValueType.COST].amount, 31915.00)
+        self.assertAlmostEqual(cost.total_values[NkCostValueType.COST].amount, cost1)
         self.assertEqual(cost.total_values[NkCostValueType.USAGE].name, "Fläche")
         self.assertEqual(cost.total_values[NkCostValueType.USAGE].unit, "m2")
         self.assertAlmostEqual(cost.total_values[NkCostValueType.USAGE].amount, total_area)
         self.assertAlmostEqual(
-            31915 / total_area * self.rentalunits[0].area,
+            cost1 / total_area * self.rentalunits[0].area,
             cost.rental_unit_values[self.rentalunits[0].id][NkCostValueType.COST].amount,
         )
 
@@ -81,28 +83,32 @@ class NKReportCostTest(NkReportTestCase):
         - L001: Lager,   area=10   → lager section
         - L002: Lager,   area=30   → lager section
         """
-        self.configure_test_report_minimal()
+        self.configure_test_report_empty()
         report = NkReportGenerator(self.report, True, output_root="/tmp/")
         report.load_rental_units()
 
         # Cost 1: default section weights — all sections weighted equally
+        cost1 = 31915.00
         default_cost = NkTotalCost(
             report,
             {
                 "name": "Wasser_Abwasser",
                 "object_weights": "area",
+                "Betrag": cost1,
             },
         )
         default_cost.load_input_data()
         default_cost.split_costs()
 
         # Cost 2: "reinigung" section weights — Wohnen=0.7, Gewerbe=1.0, Lager=1.0, Allgemein=0.0
+        cost2 = 43875.95
         reinigung_cost = NkTotalCost(
             report,
             {
                 "name": "Reinigung",
                 "object_weights": "area",
                 "section_weights": "reinigung",
+                "Betrag": cost2,
             },
         )
         reinigung_cost.load_input_data()
@@ -119,7 +125,7 @@ class NKReportCostTest(NkReportTestCase):
         ru = self.rentalunits[0]  # 001a: Wohnung, area=100 → wohnen section
 
         # With default section weights, cost is proportional to area alone
-        expected_default_ru = 31915.0 * float(ru.area) / total_area_default
+        expected_default_ru = cost1 * float(ru.area) / total_area_default
         self.assertAlmostEqual(
             default_cost.rental_unit_values[ru.id][NkCostValueType.COST].amount,
             expected_default_ru,
@@ -127,7 +133,7 @@ class NKReportCostTest(NkReportTestCase):
         )
 
         # With "reinigung" section weights, the Wohnung unit's area is scaled by 0.7
-        expected_reinigung_ru = 43875.95 * (0.7 * float(ru.area)) / total_area_reinigung
+        expected_reinigung_ru = cost2 * (0.7 * float(ru.area)) / total_area_reinigung
         self.assertAlmostEqual(
             reinigung_cost.rental_unit_values[ru.id][NkCostValueType.COST].amount,
             expected_reinigung_ru,
@@ -135,14 +141,14 @@ class NKReportCostTest(NkReportTestCase):
         )
 
         # Verify section totals reflect the section weights
-        expected_default_wohnen = 31915.0 * (100 + 20) / total_area_default
+        expected_default_wohnen = cost1 * (100 + 20) / total_area_default
         self.assertAlmostEqual(
             default_cost.section_values["wohnen"][NkCostValueType.COST].amount,
             expected_default_wohnen,
             places=2,
         )
 
-        expected_reinigung_wohnen = 43875.95 * (0.7 * (100 + 20)) / total_area_reinigung
+        expected_reinigung_wohnen = cost2 * (0.7 * (100 + 20)) / total_area_reinigung
         self.assertAlmostEqual(
             reinigung_cost.section_values["wohnen"][NkCostValueType.COST].amount,
             expected_reinigung_wohnen,
@@ -159,31 +165,24 @@ class NKReportCostTest(NkReportTestCase):
            - 001b (min_occupancy=1): 5 + 1×4 =  9 CHF/month
         3. Zero — no min_occupancy, no fixed fee (G002, L001, L002 → 0 CHF/month)
 
-        configure_test_report_minimal() already sets:
-          Internet:Tarif:ProWohnung = 5.0
-          Internet:Tarif:ProPerson  = 4.0
-          Internet:Tarif:Fix        = "" (empty)
-        We update Fix to add a fixed fee for G001.
         """
-        self.configure_test_report_minimal()
-        self.update_field("Internet:Tarif:Fix", '{"G001": 100}')
-
-        report = NkReportGenerator(self.report, True, output_root="/tmp/")
-        report.load_rental_units()
+        self.configure_test_report_empty()
+        rg = NkReportGenerator(self.report, True, output_root="/tmp/")
+        rg.load_rental_units()
 
         cost = NkPerRentalUnitCost(
-            report,
+            rg,
             {
                 "name": "Internet/WLAN",
-                "fee_per_unit_key": "Internet:Tarif:ProWohnung",
-                "fee_per_person_key": "Internet:Tarif:ProPerson",
-                "fixed_fees_key": "Internet:Tarif:Fix",
+                "fee_per_unit": 5.0,
+                "fee_per_person": 4.0,
+                "fixed_fees": {"G001": 100},
             },
         )
         cost.load_input_data()
         cost.split_costs()
 
-        num_months = report.num_months
+        num_months = rg.num_months
         ru_001a = self.rentalunits[0]  # Wohnung, min_occupancy=3
         ru_001b = self.rentalunits[1]  # Wohnung, min_occupancy=1
         ru_G001 = self.rentalunits[2]  # Gewerbe, fixed fee = 100 CHF/month

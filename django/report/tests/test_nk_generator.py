@@ -17,7 +17,7 @@ class NKReportGeneratorTest(NkReportTestCase):
         testdata.create_nk_data(cls)
 
     def test_load_rental_units(self):
-        self.configure_test_report_minimal()
+        self.configure_test_report_empty()
         report = NkReportGenerator(self.report, True, output_root="/tmp/")
         report.load_rental_units()
         self.assertEqual(report.get_warnings(), [])
@@ -33,7 +33,7 @@ class NKReportGeneratorTest(NkReportTestCase):
         self.assertEqual(report.rental_units[2].is_virtual, True)
 
     def test_load_contracts(self):
-        self.configure_test_report_minimal()
+        self.configure_test_report_empty()
         report = NkReportGenerator(self.report, True, output_root="/tmp/")
         report.load_rental_units()
         report.load_contracts()
@@ -42,32 +42,8 @@ class NKReportGeneratorTest(NkReportTestCase):
             len(report.contracts), len(self.contracts) + len(report.virtual_contracts)
         )
 
-    def test_load_costs(self):
-        self.configure_test_report_minimal()
-        report = NkReportGenerator(self.report, True, output_root="/tmp/")
-        report.load_rental_units()
-        report.load_contracts()
-        report.load_costs()
-        self.assertEqual(report.get_warnings(), [])
-        self.assertEqual(len(report.costs), 16)
-        check_count = 0
-        for cost in report.costs:
-            check_count += 1
-            if cost.name == "Hauswartung_ServiceHeizungLüftung":
-                self.assertEqual(cost.billing_group, "Hauswartung, Service Heizung/Lüftung")
-                self.assertEqual(cost.cost_type_id, "simple_total")
-            elif cost.name == "Internet/WLAN":
-                self.assertEqual(cost.cost_type_id, "per_rental_unit")
-            elif cost.name == "Lift":
-                self.assertEqual(cost.cost_type_id, "simple_total")
-                self.assertEqual(cost.billing_group, "Lift")
-            else:
-                # print(f" - Not checked: {cost.name}")
-                check_count -= 1
-        self.assertEqual(check_count, 3)
-
     def test_assign_rental_units_to_contracts(self):
-        self.configure_test_report_minimal()
+        self.configure_test_report_empty()
         report = NkReportGenerator(self.report, True, output_root="/tmp/")
         report.load_rental_units()
         report.load_contracts()
@@ -79,7 +55,7 @@ class NKReportGeneratorTest(NkReportTestCase):
             )
 
     def test_assign_rental_units_to_contracts_with_change(self):
-        self.configure_test_report_minimal()
+        self.configure_test_report_empty()
         self.contracts[0].date_end = datetime.datetime(2023, 9, 30)
         self.contracts[0].save()
 
@@ -112,9 +88,38 @@ class NKReportGeneratorTest(NkReportTestCase):
     # - contract with a different billing_contract
     #
 
+    def test_wb_reference_load_costs(self):
+        self.configure_test_report_wb_reference()
+        report = NkReportGenerator(self.report, True, output_root="/tmp/")
+        report.load_rental_units()
+        report.load_contracts()
+        report.load_costs()
+        self.assertEqual(report.get_warnings(), [])
+        self.assertEqual(len(report.costs), 16)
+        check_count = 0
+        for cost in report.costs:
+            check_count += 1
+            if cost.name == "Hauswartung (Service, Heizung, Lüftung)":
+                self.assertEqual(cost.billing_group, "Hauswartung, Service Heizung/Lüftung")
+                self.assertEqual(cost.cost_type_id, "simple_total")
+            elif cost.name == "Internet/WLAN":
+                self.assertEqual(cost.cost_type_id, "per_rental_unit")
+            elif cost.name == "Lift":
+                self.assertEqual(cost.cost_type_id, "simple_total")
+                self.assertEqual(cost.billing_group, "Lift")
+            else:
+                # print(f" - Not checked: {cost.name}")
+                check_count -= 1
+        self.assertEqual(check_count, 3)
+        ## Check order
+        self.assertEqual(report.costs[0].name, "Hauswartung (Service, Heizung, Lüftung)")
+        self.assertEqual(report.costs[1].name, "Reinigung")
+        self.assertEqual(report.costs[-2].name, "Internet/WLAN")
+        self.assertEqual(report.costs[-1].name, "Verwaltungsaufwand")
+
     @tag("slow-test")
-    def test_report_minimal_dryrun(self):
-        self.configure_test_report_minimal()
+    def test_report_wb_reference_dryrun(self):
+        self.configure_test_report_wb_reference()
 
         report_generator = NkReportGenerator(self.report, True, settings.SMEDIA_ROOT)
         report_generator.generate()

@@ -225,10 +225,10 @@ def generate_report(request, report_id=None, dry_run=True):
             f"Fehler: Erstellung des Reports wurde bereits gestartet (state={report.state}).",
         )
         return HttpResponseRedirect(f"/admin/report/report/{report.id}/change/")
-    if report.report_type.name != "Nebenkostenabrechnung":
+    if report.report_configuration.report_type != "NK":
         messages.error(
             request,
-            f"Fehler: Erstellung von Reports des Typs '{report.report_type.name}' ist (noch) nicht unterstützt.",
+            f"Fehler: Erstellung von Reports des Typs '{report.report_configuration.report_type}' ist (noch) nicht unterstützt.",
         )
         return HttpResponseRedirect(f"/admin/report/report/{report.id}/change/")
     # generate_nk_report.delay_on_commit(report_id,dry_run=dry_run)

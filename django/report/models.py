@@ -8,9 +8,11 @@ from filer.models.filemodels import File as FilerFile
 
 from geno.models import GenoBase
 from geno.utils import send_error_mail
+from report.generator import ReportGeneratorConfigItem
 from report.nk.cost_config import (
     REPORT_ITEM_CATEGORY,
     CostConfigFieldTypes,
+    get_enum_value,
     get_report_item_config,
 )
 
@@ -124,7 +126,7 @@ class Report(GenoBase):
                     report_item = ReportItem.objects.create(
                         name=report_item_configuration.name,
                         item_category=report_item_configuration.item_category,
-                        report_configuration=self,
+                        report=self,
                     )
                     for report_input_field in ReportInputField.objects.filter(
                         item_configuration=report_item_configuration
@@ -138,12 +140,21 @@ class Report(GenoBase):
                             value=report_input_field.value_default,
                         )
 
-    def get_report_config(self):
-        data = {}
-        ## Assemble import data from ReportInputField / ReportInputData
-        for inputdata in ReportInputData.objects.filter(report=self):
-            data[inputdata.name.name] = inputdata.get_value()
-        return data
+    def get_report_config(self) -> list[ReportGeneratorConfigItem]:
+        config = []
+        for report_item in ReportItem.objects.filter(report=self):
+            # print(f"{report_item.name} [{report_item.item_category}]")
+            for item in get_report_item_config():
+                if item.config["name"] == report_item.item_category:
+                    config_class = item.config["config"]
+                    config_obj = config_class.build(
+                        item.config, ReportInputData.objects.filter(item=report_item, report=self)
+                    )
+                    config_obj.set_name(report_item.name)
+                    config.append(ReportGeneratorConfigItem(report_item, config_obj))
+                    break
+        # pprint(config)
+        return config
 
     def get_object_actions(self):
         actions = []
@@ -196,7 +207,6 @@ class ReportItemConfiguration(GenoBase):
     report_configuration = models.ForeignKey(
         ReportConfiguration,
         verbose_name="Report-Konfiguration",
-        related_name="report_configuration",
         on_delete=models.CASCADE,
         default=1,
     )
@@ -222,9 +232,9 @@ class ReportItemConfiguration(GenoBase):
                 existing_repot_input_field.delete()
         # create new ReportInputField based on config
 
-        for cost in get_report_item_config():
-            if cost.config and cost.config["name"] == self.item_category and cost.config["config"]:
-                configuration = cost.config
+        for item in get_report_item_config():
+            if item.config and item.config["name"] == self.item_category and item.config["config"]:
+                configuration = item.config
 
                 if configuration.get("config"):
                     for field in configuration.get("config").get_fields():
@@ -259,7 +269,7 @@ class ReportItemConfiguration(GenoBase):
     class Meta:
         verbose_name = "Report-Element"
         verbose_name_plural = "Report-Elemente"
-        unique_together = ["name", "item_category"]
+        unique_together = ["name", "item_category", "report_configuration"]
         ordering = ["item_category", "name"]
 
 
@@ -268,10 +278,9 @@ class ReportItem(GenoBase):
     item_category = models.CharField(
         "Element-Kategorie", choices=REPORT_ITEM_CATEGORY, max_length=60
     )
-    report_configuration = models.ForeignKey(
+    report = models.ForeignKey(
         Report,
-        verbose_name="Report-Konfiguration",
-        related_name="report",
+        verbose_name="Report",
         on_delete=models.CASCADE,
         default=1,
     )
@@ -279,7 +288,7 @@ class ReportItem(GenoBase):
     class Meta:
         verbose_name = "Report-Element"
         verbose_name_plural = "Report-Elemente"
-        unique_together = ["name", "item_category"]
+        unique_together = ["name", "item_category", "report"]
         ordering = ["item_category", "name"]
 
 
@@ -289,7 +298,6 @@ class ReportInputField(GenoBase):
     item_configuration = models.ForeignKey(
         ReportItemConfiguration,
         verbose_name="Report-Element",
-        related_name="report_item_configuration",
         on_delete=models.CASCADE,
         default=1,
     )
@@ -314,7 +322,6 @@ class ReportInputData(GenoBase):
     item = models.ForeignKey(
         ReportItem,
         verbose_name="Report-Element",
-        related_name="report_item",
         on_delete=models.CASCADE,
         default=1,
     )
@@ -353,6 +360,8 @@ class ReportInputData(GenoBase):
             if self.value == "":
                 return []
             return jsonc.loads(self.value)
+        if self.name.field_type.startswith("enum_"):
+            return get_enum_value(self.name.field_type, self.value)
         return self.value
 
 

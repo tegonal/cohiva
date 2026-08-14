@@ -21,6 +21,7 @@ class NkTotalCost(NkCost):
             self.add_value_type(NkCostValueType.USAGE, "Volumen", "m3")
         else:
             self.add_value_type(NkCostValueType.USAGE, "Faktor", "")
+        self._total_amount = cost_config.get("Betrag", 0)
 
     def load_input_data(self):
         super().load_input_data()
@@ -32,7 +33,7 @@ class NkTotalCost(NkCost):
         self.total_values[NkCostValueType.COST].amount = self.get_total_costs()
 
     def get_total_costs(self):
-        return self.generator.config.get(f"Kosten:{self.name}")
+        return self._total_amount
 
     def load_rental_unit_usage(self):
         # We use the weights as usage
@@ -80,32 +81,25 @@ class NkPerRentalUnitCost(NkCost):
         fee_per_unit + min_occupancy * fee_per_person
     - Monthly amounts are scaled by the monthly weights.
 
-    Config keys are passed via cost_config:
-      fee_per_unit_key   – report config key for the per-unit fee (CHF/month)
-      fee_per_person_key – report config key for the per-person fee (CHF/month × min_occupancy)
-      fixed_fees_key     – report config key for a dict {rental_unit_name: CHF/month}
+    Config is passed via cost_config:
+      fee_per_unit   – the per-unit fee (CHF/month)
+      fee_per_person – the per-person fee (CHF/month × min_occupancy)
+      fixed_fees     – a dict {rental_unit_name: CHF/month}
     """
 
     cost_type_id = "per_rental_unit"
 
     def __init__(self, report_generator: "NkReportGenerator", cost_config: dict):
         super().__init__(report_generator, cost_config)
-        self.fee_per_unit_key = cost_config.get("fee_per_unit_key")
-        self.fee_per_person_key = cost_config.get("fee_per_person_key")
-        self.fixed_fees_key = cost_config.get("fixed_fees_key")
-        self.fixed_fees = {}
+        self.fee_per_unit = cost_config.get("fee_per_unit")
+        self.fee_per_person = cost_config.get("fee_per_person")
+        self.fixed_fees = cost_config.get("fixed_fees")
 
     def load_input_data(self):
         super().load_input_data()
-        fee_per_unit = (
-            self.generator.config.get(self.fee_per_unit_key, 0) if self.fee_per_unit_key else 0
-        )
-        fee_per_person = (
-            self.generator.config.get(self.fee_per_person_key, 0) if self.fee_per_person_key else 0
-        )
-        fixed_fees = (
-            self.generator.config.get(self.fixed_fees_key, {}) if self.fixed_fees_key else {}
-        )
+        fee_per_unit = self.fee_per_unit or 0
+        fee_per_person = self.fee_per_person or 0
+        fixed_fees = self.fixed_fees or {}
 
         monthly_weights = self.get_monthly_weights()
 

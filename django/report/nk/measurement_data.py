@@ -8,10 +8,14 @@ from typing import TYPE_CHECKING
 from django.utils.translation import gettext as _
 
 if TYPE_CHECKING:
+    from report.models import ReportInputData
     from report.nk.generator import NkReportGenerator
 
 
 class NkMeasurementDataBase:
+    usage_key = "Verbrauch"
+    costs_key = "Kosten"
+
     def __init__(self, report_generator: "NkReportGenerator", measurements_config):
         self.data = {}
         self.imported_rental_unit_names = {}
@@ -20,8 +24,16 @@ class NkMeasurementDataBase:
     def load(self):
         pass
 
-    def get(self, key="verbrauch", default=None):
+    def get(self, key="Verbrauch", default=None):
         return self.data.get(key, default)
+
+    @staticmethod
+    def _create_config_field(*args, **kwargs):
+        from report.nk.cost_config import CostConfigField
+
+        if "is_measurement" not in kwargs:
+            kwargs["is_measurement"] = True
+        return CostConfigField(*args, **kwargs)
 
 
 class NkMeasurementDataMonthly(NkMeasurementDataBase):
@@ -38,28 +50,40 @@ class NkMeasurementDataAnnual(NkMeasurementDataBase):
 
     def __init__(self, report_generator: "NkReportGenerator", measurements_config):
         super().__init__(report_generator, measurements_config)
-        self.annual_value = report_generator.config.get(measurements_config.get("value_key"))
+        self.annual_value = measurements_config.get("value")
 
     def load(self):
-        self.data["usage"] = self.annual_value
+        self.data[self.usage_key] = self.annual_value
 
     @classmethod
     def get_config_fields(cls, name):
-        from report.nk.cost_config import CostConfigField, CostConfigFieldTypes
+        from report.nk.cost_config import CostConfigFieldTypes
 
         return [
-            CostConfigField(
+            cls._create_config_field(
                 f"{name}_usage_value",
                 CostConfigFieldTypes.FLOAT,
                 verbose_name=f"Gesamtverbrauch {name}",
             ),
         ]
 
+    @classmethod
+    def get_config(cls, fields: "list[ReportInputData]", name: str, headers: list[str]):
+        config = {
+            "class": cls,
+            "value": None,
+        }
+        for field in fields:
+            field_name = field.name.name
+            if field_name == f"{name}_usage_value":
+                config["value"] = field.get_value()
+        return config
+
 
 class NkMeasurementDataCSVFile(NkMeasurementDataBase):
     def __init__(self, report_generator: "NkReportGenerator", measurements_config):
         super().__init__(report_generator, measurements_config)
-        self.file = report_generator.config.get(measurements_config.get("file_key"))
+        self.file = measurements_config.get("file")
         self.headers = measurements_config.get("headers")
 
     def _read_csv_data(self, csvfile):
@@ -199,14 +223,14 @@ class NkMeasurementDataMonthlyCSVFile(NkMeasurementDataMonthly, NkMeasurementDat
 
     @classmethod
     def get_config_fields(cls, name: str, headers: list[str]):
-        from report.nk.cost_config import CostConfigField, CostConfigFieldTypes
+        from report.nk.cost_config import CostConfigFieldTypes
 
         fields = [
-            CostConfigField(
+            cls._create_config_field(
                 f"{name}_file", CostConfigFieldTypes.FILE, verbose_name=f"CSV-Datei für {name}"
             ),
             # TODO: Add default value "Monat"?
-            CostConfigField(
+            cls._create_config_field(
                 f"{name}_file_headers_month",
                 CostConfigFieldTypes.STRING,
                 verbose_name=f"Spalte mit Monat in Datei für {name}",
@@ -215,13 +239,35 @@ class NkMeasurementDataMonthlyCSVFile(NkMeasurementDataMonthly, NkMeasurementDat
         for field in headers:
             # TODO: Add default value {field}?
             fields.append(
-                CostConfigField(
+                cls._create_config_field(
                     f"{name}_file_headers_{field}",
                     CostConfigFieldTypes.STRING,
                     verbose_name=f"Spalte mit {field} in Datei für {name}",
                 )
             )
         return fields
+
+    @classmethod
+    ## TODO: get_config() could implemented more generically in the superclass with config the subclass.
+    def get_config(cls, fields: "list[ReportInputData]", name: str, headers: list[str]):
+        config = {
+            "class": cls,
+            "file": None,
+            "headers": {
+                "month": None,
+            },
+        }
+        for field in fields:
+            field_name = field.name.name
+            if field_name == f"{name}_file":
+                config["file"] = field.get_value()
+            elif field_name == f"{name}_file_headers_month":
+                config["headers"]["month"] = field.get_value()
+            else:
+                for header in headers:
+                    if field_name == f"{name}_file_headers_{header}":
+                        config["headers"][header] = field.get_value()
+        return config
 
 
 class NkMeasurementDataEgon(NkMeasurementDataZippedMonthly):
@@ -327,25 +373,25 @@ class NkMeasurementDataEgon(NkMeasurementDataZippedMonthly):
 
     @classmethod
     def get_config_fields(cls, name: str, headers: list[str]):
-        from report.nk.cost_config import CostConfigField, CostConfigFieldTypes
+        from report.nk.cost_config import CostConfigFieldTypes
 
         fields = [
-            CostConfigField(
+            cls._create_config_field(
                 f"{name}_file", CostConfigFieldTypes.FILE, verbose_name=f"ZIP-Datei für {name}"
             ),
-            CostConfigField(
+            cls._create_config_field(
                 f"{name}_file_prefix",
                 CostConfigFieldTypes.STRING,
                 verbose_name=f"Prefix für CSV-Datei für {name}",
             ),
             # TODO: Add default value "Gebäudeeinheit"?
-            CostConfigField(
+            cls._create_config_field(
                 f"{name}_file_headers_rental_unit",
                 CostConfigFieldTypes.STRING,
                 verbose_name=f"Spalte mit Mietobjekt in Datei für {name}",
             ),
             # TODO: Add default value "Mieter Abrechnungsperiode"?
-            CostConfigField(
+            cls._create_config_field(
                 f"{name}_file_headers_time_period",
                 CostConfigFieldTypes.STRING,
                 verbose_name=f"Spalte mit Abrechnungsperiode in Datei für {name}",
@@ -354,10 +400,38 @@ class NkMeasurementDataEgon(NkMeasurementDataZippedMonthly):
         for field in headers:
             # TODO: Add default value {field}?
             fields.append(
-                CostConfigField(
+                cls._create_config_field(
                     f"{name}_file_headers_{field}",
                     CostConfigFieldTypes.STRING,
                     verbose_name=f"Spalte mit {field} in Datei für {name}",
                 )
             )
         return fields
+
+    @classmethod
+    ## TODO: get_config() could implemented more generically in the superclass with config the subclass.
+    def get_config(cls, fields: "list[ReportInputData]", name: str, headers: list[str]):
+        config = {
+            "class": cls,
+            "file": None,
+            "file_prefix": None,
+            "headers": {
+                "rental_unit": None,
+                "time_period": None,
+            },
+        }
+        for field in fields:
+            field_name = field.name.name
+            if field_name == f"{name}_file":
+                config["file"] = field.get_value()
+            elif field_name == f"{name}_file_prefix":
+                config["file_prefix"] = field.get_value()
+            elif field_name == f"{name}_file_headers_rental_unit":
+                config["headers"]["rental_unit"] = field.get_value()
+            elif field_name == f"{name}_file_headers_time_period":
+                config["headers"]["time_period"] = field.get_value()
+            else:
+                for header in headers:
+                    if field_name == f"{name}_file_headers_{header}":
+                        config["headers"][header] = field.get_value()
+        return config

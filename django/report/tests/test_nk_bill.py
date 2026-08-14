@@ -124,7 +124,7 @@ class NKBillTest(NkReportTestCase):
 
     def test_contract_bill_context(self):
         """Test context variables used for the QR-Bill invoice (1st page of the billing document)"""
-        self.configure_test_report_minimal()
+        self.configure_test_report_wb_reference()
         rg = NkReportGenerator(self.report, True, output_root="/tmp/")
 
         ## Create akonto payments for the first two contracts, with an extra payment for the second contract
@@ -209,7 +209,7 @@ class NKBillTest(NkReportTestCase):
 
     def test_rental_unit_bill_context(self):
         """Test context variables used in nk_template_qrbill.odt (2nd and following pages of the billing document)"""
-        self.configure_test_report_minimal()
+        self.configure_test_report_wb_reference()
         rg = NkReportGenerator(self.report, True, output_root="/tmp/")
 
         ## Create akonto payments for the first two contracts, with an extra payment for the second contract
@@ -283,7 +283,7 @@ class NKBillTest(NkReportTestCase):
 
     def test_rental_unit_bill_context_partial_period(self):
         """Test context variables used in nk_template_qrbill.odt with partial billing period"""
-        self.configure_test_report_minimal()
+        self.configure_test_report_wb_reference()
         rg = NkReportGenerator(self.report, True, output_root="/tmp/")
 
         ## Make the first contract end inside the billing period

@@ -1,13 +1,14 @@
-import copy
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from report.models import Report, ReportItem
 
 
 class ReportGenerator:
-    default_config = {}
-
-    def __init__(self, report, *args, **kwargs):
-        self.config = copy.deepcopy(self.default_config)
-        self.config.update(report.get_report_config())
-
+    def __init__(self, report: "Report", *args, **kwargs):
+        self.report = report
+        self.config: list[ReportGeneratorConfigItem] = report.get_report_config()
         self._warnings = {}
 
     def add_warning(self, text, obj):
@@ -30,3 +31,9 @@ class ReportGenerator:
 
     def generate(self):
         raise NotImplementedError()
+
+
+@dataclass
+class ReportGeneratorConfigItem:
+    report_item: "ReportItem"
+    item_config: object

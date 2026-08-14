@@ -41,15 +41,15 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
     """
 
     cost_type_id = "vewa"
+    measurement_data_usage_key = "Verbrauch"
+    measurement_data_costs_key = "Kosten"
 
     def __init__(self, report_generator: "NkReportGenerator", cost_config: dict):
         super().__init__(report_generator, cost_config)
         self.add_value_type(NkCostValueType.USAGE_COST, "Verbrauchsabhängige Kosten", "CHF")
         self.add_value_type(NkCostValueType.USAGE_USAGE, "Verbrauch", "kWh")
         self.add_value_type(NkCostValueType.COMMON_USAGE, "Allgemeinverbrauch", "kWh")
-
-        config = self.generator.config
-        self.base_cost_factor = float(config.get(cost_config.get("base_cost_factor_key"), 0.3))
+        self.base_cost_factor = float(cost_config.get("base_cost_factor", 0.3))
         self.vewa_category = cost_config.get("vewa_category")
         self.exclude_zero_usage_units = cost_config.get("exclude_zero_usage_units", False)
         self._validate_config()
@@ -78,7 +78,7 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
             )
 
         # Building-level usage
-        building_total = self.measurements["building"].get("usage")
+        building_total = self.measurements["building"].get(self.measurement_data_usage_key)
         if not building_total:
             building_total = self._get_missing_building_usage()
         elif not isinstance(building_total, list):
@@ -88,7 +88,7 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
 
     def get_total_costs(self):
         # Try to get the costs from the building measurements
-        total_costs = self.measurements["building"].get("costs")
+        total_costs = self.measurements["building"].get(self.measurement_data_costs_key)
         if isinstance(total_costs, list):
             return total_costs
         return super().get_total_costs()
@@ -99,7 +99,11 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
         if "rental_units" not in self.measurements:
             return building_usage
         for ru in self.generator.rental_units:
-            usage = self.measurements["rental_units"].get(ru.name, {}).get("usage")
+            usage = (
+                self.measurements["rental_units"]
+                .get(ru.name, {})
+                .get(self.measurement_data_usage_key)
+            )
             if usage:
                 building_usage = list(map(add, building_usage, usage))
         return building_usage
@@ -112,6 +116,12 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
                 map(add, monthly_weights, self.get_rental_unit_usage_weights(ru))
             )
         total_weight = sum(monthly_weights)
+        if total_weight == 0:
+            self.add_warning(
+                "Building usage is zero, can't split the annual value "
+                f"{annual_value} into monthly values"
+            )
+            return [0] * self.generator.num_months
         monthly_values = []
         for i in range(self.generator.num_months):
             monthly_values.append(annual_value * monthly_weights[i] / total_weight)
@@ -120,7 +130,7 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
     def get_rental_unit_usage_weights(self, ru):
         """Use rental unit measurements as weights to distribute the building totals."""
         ru_messung = self.measurements.get("rental_units", {}).get(ru.name, {})
-        return ru_messung.get("usage", self.generator.num_months * [0.0])
+        return ru_messung.get(self.measurement_data_usage_key, self.generator.num_months * [0.0])
 
     def get_rental_unit_weights(self, ru):
         if self.exclude_zero_usage_units and self._has_zero_usage(ru):
@@ -129,7 +139,14 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
         return super().get_rental_unit_weights(ru)
 
     def _has_zero_usage(self, ru):
-        return sum(self.measurements["rental_units"].get(ru.name, {}).get("usage", [0])) == 0
+        return (
+            sum(
+                self.measurements["rental_units"]
+                .get(ru.name, {})
+                .get(self.measurement_data_usage_key, [0])
+            )
+            == 0
+        )
 
     def split_costs(self):
         # Base costs are handled by the super class
@@ -227,11 +244,11 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
             context_key = "vewa_warmwasser"
             legacy_prefix = "ww"
         elif self.vewa_category == NkCostVEWACategories.HEAT_HEATING:
-            if self.name == "Fernwaerme_Fussboden":
+            if "Fussboden" in self.name:
                 legacy_prefix = "hf"
-            elif self.name == "Fernwaerme_Radiatoren":
+            elif "Radiator" in self.name:
                 legacy_prefix = "hr"
-            elif self.name == "Fernwaerme_Lueftung":
+            elif "Lueftung" in self.name or "Lüftung" in self.name:
                 legacy_prefix = "hl"
             else:
                 legacy_prefix = "h"
@@ -418,12 +435,12 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
         row = self._get_export_row([NkCostValueType.USAGE_USAGE], include_percent)
         return row
 
-    @staticmethod
-    def _zero_data(num_months: int) -> dict:
-        zeros = num_months * [0.0]
-        return {
-            "usage": list(zeros),
-        }
+    # @staticmethod
+    # def _zero_data(num_months: int) -> dict:
+    #     zeros = num_months * [0.0]
+    #     return {
+    #         "usage": list(zeros),
+    #     }
 
     def _validate_config(self):
         if self.base_cost_factor < 0.0 or self.base_cost_factor > 1.0:

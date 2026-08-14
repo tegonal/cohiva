@@ -12,7 +12,8 @@ from report.generator import ReportGenerator
 from report.models import ReportOutput
 from report.nk.bill import NkBill
 from report.nk.contract import NkContract
-from report.nk.cost_config import get_costs_from_config
+from report.nk.cost import NkCost
+from report.nk.cost_config import BaseSettingsConfig, CostConfig
 from report.nk.export_csv import ExportCSV
 from report.nk.rental_unit import NkRentalUnit, NkVirtualRentalUnitId
 from report.nk.section import NK_SECTIONS, get_section_by_id
@@ -83,27 +84,30 @@ NK_MONTHLY_WEIGHTS = {
 
 
 class NkReportGenerator(ReportGenerator):
-    default_config = {
-        "Ausgabe:Plots": False,
-        "Ausgabe:QR-Rechnungen": False,
-        "Strom:Korrekturen": {},
-        "Strom:Tarif:Korrekturen": {},
-        "Liegenschaften": [],
-    }
+    # default_settings = {
+    #    "Ausgabe:Plots": False,
+    #    "Ausgabe:QR-Rechnungen": False,
+    #    "Strom:Korrekturen": {},
+    #    "Strom:Tarif:Korrekturen": {},
+    #    "Liegenschaften": [],
+    # }
 
     def __init__(self, report, dry_run, output_root, *args, **kwargs):
         super().__init__(report, *args, **kwargs)
-        self.start_year = int(self.config["Startjahr"])
+        # self.settings = deepcopy(self.default_settings)
+        # self.settings.update(self.get_base_settings())
+        self.settings = self.get_base_settings()
+
+        self.start_year = self._get_settings_int("Startjahr")
         self.start_month = 7
         self.num_months = 12
         self.num_months_passed = 0
         self.period_start_index = 0
         self.dry_run = dry_run
-        self.report = report
 
         self.dates: list[dict[str, datetime.date]] = self.init_dates()
 
-        self.costs = []
+        self.costs: list[NkCost] = []
         self.rental_units = []
         self.building = None
         self.contracts = []
@@ -134,7 +138,7 @@ class NkReportGenerator(ReportGenerator):
             "total_sect": {},
         }
 
-        self.admin_fee_factor = float(self.config["Verwaltungsaufwand:Faktor"]) / 100.0
+        # self.admin_fee_factor = float(self.config["Verwaltungsaufwand:Faktor"]) / 100.0
 
         self.section_weights = NK_SECTION_WEIGHTS
         self.monthly_weights = NK_MONTHLY_WEIGHTS
@@ -179,7 +183,7 @@ class NkReportGenerator(ReportGenerator):
         self.categories["verwaltung"] = {"i": 6, "label": "Verwaltungsaufwand"}
 
         self.limit_bills_to_contract_ids = list(
-            map(int, self.config.get("Ausgabe:LimitiereVertragsIDs"))
+            map(int, self.settings.get("Ausgabe:LimitiereVertragsIDs"))
         )
 
         ## Logging
@@ -192,6 +196,12 @@ class NkReportGenerator(ReportGenerator):
 
         self.init_output(output_root)
         self.init_costs()
+
+    def get_base_settings(self):
+        for conf in self.config:
+            if isinstance(conf.item_config, BaseSettingsConfig):
+                return conf.item_config.config
+        return {}
 
     def init_output(self, output_root):
         ## Output dir
@@ -213,7 +223,7 @@ class NkReportGenerator(ReportGenerator):
 
     def init_costs(self):
         self.set_costs_defaults()
-        self.set_costs_from_config()
+        # self.set_costs_from_config()
 
     def generate(self):
         self.load_rental_units()
@@ -245,8 +255,8 @@ class NkReportGenerator(ReportGenerator):
                 continue
             bill = NkBill(contract, self.period_end, self.output_dir, self.dry_run)
             bill.set_templates(
-                self.config["Vorlage:Abrechnung"],
-                self.config["Vorlage:EmpfehlungAkonto"],
+                self.settings["Vorlage:Abrechnung"],
+                self.settings["Vorlage:EmpfehlungAkonto"],
             )
             filename = f"Nebenkosten-{contract.get_ru_list_string()}-{contract}.pdf"
             bill.set_output_filename(
@@ -312,19 +322,17 @@ class NkReportGenerator(ReportGenerator):
 
     def load_rental_units(self):
         self._init_virtual_rental_units()
-        units = RentalUnit.objects.filter(active=True).order_by("name")
-        if self.config["Liegenschaften"]:
-            value = json.loads(self.config["Liegenschaften"].replace("'", '"'))
-            if isinstance(value, list):
-                building_ids = [int(x) for x in value]
-            else:
-                building_ids = [int(value)]
-            units = units.filter(building__in=building_ids)
-            buildings = units.order_by("building").values_list("building", flat=True).distinct()
-            if buildings.count() != 1:
-                raise RuntimeError(
-                    "Die Nebenkostenabrechung benötigt derzeit genau eine Liegenschaft."
-                )
+        building_ids = self.report.report_configuration.buildings.values_list("id", flat=True)
+        units = (
+            RentalUnit.objects.filter(active=True)
+            .filter(building__in=building_ids)
+            .order_by("name")
+        )
+        buildings_check = units.order_by("building").values_list("building", flat=True).distinct()
+        if buildings_check.count() != 1:
+            raise RuntimeError(
+                "Die Nebenkostenabrechung benötigt derzeit genau eine Liegenschaft."
+            )
         building = units.first().building
         for unit in units:
             try:
@@ -460,9 +468,10 @@ class NkReportGenerator(ReportGenerator):
 
     def load_costs(self):
         """Create cost objects from report config and load input data"""
-        for cost_config in get_costs_from_config():
-            cost_obj = cost_config.cost_class(self, cost_config.config)
-            self.costs.append(cost_obj)
+        for conf in self.config:
+            if isinstance(conf.item_config, CostConfig):
+                cost_obj = conf.item_config.cost_class(self, conf.item_config.config)
+                self.costs.append(cost_obj)
         # pprint(self.costs)
         for cost in self.costs:
             cost.load_input_data()
@@ -514,32 +523,6 @@ class NkReportGenerator(ReportGenerator):
                 if name not in cost:
                     cost[name] = value
             cost["cost_split"] = {"total": {}, "sections": {}, "objects": {}}
-
-    def set_costs_from_config(self):
-        remove_costs = []
-        for i, cost in enumerate(self.costs):
-            if (
-                cost.get("amount_data")
-                or cost.get("amount_meta")
-                or cost.get("amount_from_objects")
-            ):
-                continue
-            if cost["name"].endswith("_Grundkosten"):
-                opt_name = cost["name"][:-12]
-            elif cost["name"].endswith("_Verbrauch"):
-                opt_name = cost["name"][:-10]
-            else:
-                opt_name = cost["name"]
-            amount = self.config.get(f"Kosten:{opt_name}")
-            if amount:
-                cost["amount"] = amount
-            else:
-                self.add_warning("Ignoriere Kostenstelle, da keine Kosten definiert", opt_name)
-                remove_costs.append(i)
-            if cost["name"] == "Wasser_Abwasser_Verbrauch":
-                cost["scale_to_total_usage"] = self.config["Messdaten:Wasserverbrauch"]
-        for i in remove_costs:
-            del self.costs[i]
 
     def delete_temp_files(self):
         try:
@@ -711,9 +694,9 @@ class NkReportGenerator(ReportGenerator):
             self.active_contracts = list(map(str, self.active_contracts))
 
     def load_previous_data(self):
-        period_name = self.config.get("Vorperiode:Bezeichnung", None)
+        period_name = self.settings.get("Vorperiode:Bezeichnung", None)
         if period_name:
-            with open(self.config["Vorperiode:Datei"]) as f:
+            with open(self.settings["Vorperiode:Datei"]) as f:
                 self.previous_data[period_name] = json.load(f, cls=JSONDecoderDatetime)
             if not isinstance(self.previous_data[period_name]["active_contracts"][0], str):
                 self.previous_data[period_name]["active_contracts"] = list(
@@ -724,3 +707,9 @@ class NkReportGenerator(ReportGenerator):
         log = f"== Letzte {lines} Zeilen des Logs: ==\n"
         log += "\n".join(self.log[-lines:])
         return log
+
+    def _get_settings_int(self, name: str) -> int:
+        val = self.settings.get(name)
+        if isinstance(val, (int, str)):
+            return int(val)
+        raise ValueError(f"Setting {name} needs to be an integer")

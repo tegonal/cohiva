@@ -46,16 +46,16 @@ class NkCost:
 
     def __init__(self, report_generator: "NkReportGenerator", cost_config: dict):
         self.generator = report_generator
-        self.name = cost_config.get("name")
-        self.billing_group = cost_config.get("billing_group", self.name)
         self.total_values: dict[NkCostValueType, NkCostValue] = {}
         self.section_values: dict[int, dict[NkCostValueType, NkCostValue]] = {}
         self.rental_unit_values: dict[int, dict[NkCostValueType, NkCostValue]] = {}
-        self.monthly_weights_key = cost_config.get("monthly_weights", "default")
-        self.section_weights_key = cost_config.get("section_weights", "default")
         self.add_value_type(NkCostValueType.COST, "Kosten", "CHF")
         self.add_value_type(NkCostValueType.WEIGHT, "Gewichtung", "")
         self.warnings = []
+        self.name = cost_config.get("name")
+        self.billing_group = cost_config.get("billing_group", self.name)
+        self.monthly_weights_key = cost_config.get("monthly_weights", "default")
+        self.section_weights_key = cost_config.get("section_weights", "default")
 
     def add_value_type(self, kind: NkCostValueType, name: str, unit: str):
         self._add_value_type_to_dict(self.total_values, kind, name, unit)

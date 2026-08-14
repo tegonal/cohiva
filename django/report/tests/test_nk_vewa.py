@@ -19,7 +19,7 @@ class NkMeasurementTestDataBuildingAnnual(NkMeasurementDataBase):
     def load(self):
         # Building-level data: Just one annual value
         self.data = {
-            "usage": 10000,
+            self.usage_key: 10000,
         }
 
 
@@ -31,7 +31,7 @@ class NkMeasurementTestDataBuildingMonthly(NkMeasurementDataBase):
     def load(self):
         # Building-level data: Monthly costs
         self.data = {
-            "costs": 6 * [600] + 6 * [200],  # total = 3600 + 1200 = 4800
+            self.costs_key: 6 * [600] + 6 * [200],  # total = 3600 + 1200 = 4800
         }
 
 
@@ -50,15 +50,15 @@ class NkMeasurementTestDataRentalUnits(NkMeasurementDataBase):
         self.data = {
             "001a": {
                 # 100 + 100 + 10*10 = 300
-                "usage": [100, 100] + equal_months * [10.0],
+                self.usage_key: [100, 100] + equal_months * [10.0],
             },
             "001b": {
                 # 50 + 50 + 10*5 = 150
-                "usage": [50, 50] + equal_months * [5.0],
+                self.usage_key: [50, 50] + equal_months * [5.0],
             },
             "allg": {
                 # 12*1 = 12
-                "usage": self.num_months * [1]
+                self.usage_key: self.num_months * [1]
             },
         }
 
@@ -69,8 +69,9 @@ class NKCostVEWATest(NkReportTestCase):
         "name": "Wasser_Abwasser",
         "billing_group": "Wasserkosten",
         "vewa_category": NkCostVEWACategories.WATER_GENERAL,
-        "base_cost_factor_key": "Wasserkosten:Grundkostenanteil",
+        "base_cost_factor": 0.3,
         "exclude_zero_usage_units": False,
+        "Betrag": 31915.0,
         "measurement_data": {
             "building": {"class": NkMeasurementTestDataBuildingAnnual},
             "rental_units": {"class": NkMeasurementTestDataRentalUnits},
@@ -81,7 +82,7 @@ class NKCostVEWATest(NkReportTestCase):
         "name": "Fernwaerme_Warmwasser",
         "billing_group": "Wärmekosten",
         "vewa_category": NkCostVEWACategories.HEAT_WATER,
-        "base_cost_factor_key": "Warmwasser:Grundkostenanteil",
+        "base_cost_factor_key": 0.3,
         "exclude_zero_usage_units": True,
         "measurement_data": {
             "building": {"class": NkMeasurementTestDataBuildingMonthly},
@@ -101,8 +102,8 @@ class NKCostVEWATest(NkReportTestCase):
         testdata.create_nk_data(cls)
 
     def _setup_report(self):
-        """Configure a minimal report and populate measurement data for ZEV strom."""
-        self.configure_test_report_minimal()
+        """Configure a minimal report and populate measurement data."""
+        self.configure_test_report_empty()
         report_generator = NkReportGenerator(self.report, True, output_root="/tmp/")
         report_generator.load_rental_units()
         report_generator.load_contracts()

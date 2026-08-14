@@ -57,16 +57,11 @@ class NkCostZEVStromallmend(NkCommonCostMixin, NkMeasurementDataMixin, NkCost):
         # Building-level totals (populated in load_input_data)
         self._building_totals: dict = {}
 
-        config = self.generator.config
-        self.tarif_eigenstrom = config.get(cost_config.get("tarif_eigenstrom_key"), 0)
-        self.tarif_einspeiseverguetung = config.get(
-            cost_config.get("tarif_einspeiseverguetung_key"), 12 * [0]
-        )
-        self.tarif_hkn = config.get(cost_config.get("tarif_hkn_key"), 0)
-        self.tarif_korrektur = config.get(
-            cost_config.get("tarif_korrektur_key"), {"mittel": 0, "nacht": 0}
-        )
-        self.korrekturen = config.get(cost_config.get("korrekturen_key"), {})
+        self.tarif_eigenstrom = cost_config.get("tarif_eigenstrom", 0)
+        self.tarif_einspeiseverguetung = cost_config.get("tarif_einspeiseverguetung", 12 * [0])
+        self.tarif_hkn = cost_config.get("tarif_hkn", 0)
+        self.tarif_korrektur = cost_config.get("tarif_korrekturen", {"mittel": 0, "nacht": 0})
+        self.korrekturen = cost_config.get("korrekturen", {})
         self._validate_config()
 
     def load_input_data(self):

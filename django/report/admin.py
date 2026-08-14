@@ -13,6 +13,8 @@ from report.models import (
     ReportConfiguration,
     ReportInputData,
     ReportInputField,
+    ReportItem,
+    ReportItemConfiguration,
     ReportOutput,
 )
 
@@ -146,7 +148,7 @@ class ReportInputFieldForm(ReportInputAdminForm):
 
 
 class ReportInputDataInline(TabularInline):  # oder admin.StackedInline
-    model = Report.report.rel.related_model.report_item.rel.related_model
+    model = ReportInputData
     fields = ["field_type", "description", "value"]
     readonly_fields = ["field_type"]
     form = ReportInputDataAdminForm
@@ -159,7 +161,7 @@ class ReportInputDataInline(TabularInline):  # oder admin.StackedInline
 
 
 class ReportItemsInline(TabularInline):  # oder admin.StackedInline
-    model = Report.report.rel.related_model
+    model = ReportItem
     fields = ["name", "item_category"]
     inlines = [ReportInputDataInline]
     extra = 0
@@ -193,7 +195,7 @@ class ReportAdmin(GenoBaseAdmin):
 
 
 class ReportInputFieldInline(TabularInline):  # oder admin.StackedInline
-    model = ReportConfiguration.report_configuration.rel.related_model.report_item_configuration.rel.related_model
+    model = ReportInputField
     fields = ["field_type", "description", "value_default", "active"]
     readonly_fields = ["name", "field_type"]
     form = ReportInputFieldForm
@@ -206,7 +208,7 @@ class ReportInputFieldInline(TabularInline):  # oder admin.StackedInline
 
 
 class ReportItemConfigurationsInline(TabularInline):  # oder admin.StackedInline
-    model = ReportConfiguration.report_configuration.rel.related_model
+    model = ReportItemConfiguration
     fields = ["name", "item_category"]
     inlines = [ReportInputFieldInline]
     extra = 0
