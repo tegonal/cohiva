@@ -149,7 +149,7 @@ class ReportInputFieldForm(ReportInputAdminForm):
 
 class ReportInputDataInline(TabularInline):  # oder admin.StackedInline
     model = ReportInputData
-    fields = ["field_type", "description", "value"]
+    fields = ["description", "value"]
     readonly_fields = ["field_type"]
     form = ReportInputDataAdminForm
     can_delete = False
@@ -162,7 +162,7 @@ class ReportInputDataInline(TabularInline):  # oder admin.StackedInline
 
 class ReportItemsInline(TabularInline):  # oder admin.StackedInline
     model = ReportItem
-    fields = ["name", "item_category"]
+    fields = ["order", "name", "item_category"]
     inlines = [ReportInputDataInline]
     extra = 0
 
@@ -196,7 +196,7 @@ class ReportAdmin(GenoBaseAdmin):
 
 class ReportInputFieldInline(TabularInline):  # oder admin.StackedInline
     model = ReportInputField
-    fields = ["field_type", "description", "value_default", "active"]
+    fields = ["description", "value_default", "active"]
     readonly_fields = ["name", "field_type"]
     form = ReportInputFieldForm
     can_delete = False
@@ -209,7 +209,7 @@ class ReportInputFieldInline(TabularInline):  # oder admin.StackedInline
 
 class ReportItemConfigurationsInline(TabularInline):  # oder admin.StackedInline
     model = ReportItemConfiguration
-    fields = ["name", "item_category"]
+    fields = ["order", "name", "item_category"]
     inlines = [ReportInputFieldInline]
     extra = 0
 

@@ -3,9 +3,12 @@ import os
 import jsonc
 from django.conf import settings
 from django.db import models
+from django.db.models import UniqueConstraint
 from django.dispatch.dispatcher import receiver
+from django.utils.translation import gettext_lazy as _
 from filer.models.filemodels import File as FilerFile
 
+from cohiva.utils.models import get_next_number
 from geno.models import GenoBase
 from geno.utils import send_error_mail
 from report.generator import ReportGeneratorConfigItem
@@ -126,6 +129,7 @@ class Report(GenoBase):
                     report_item = ReportItem.objects.create(
                         name=report_item_configuration.name,
                         item_category=report_item_configuration.item_category,
+                        order=report_item_configuration.order,
                         report=self,
                     )
                     for report_input_field in ReportInputField.objects.filter(
@@ -199,6 +203,10 @@ class Report(GenoBase):
 # )
 
 
+def get_next_report_item_configuration_order_number():
+    return get_next_number("report", "ReportItemConfiguration", "order", 10)
+
+
 class ReportItemConfiguration(GenoBase):
     name = models.CharField("Element-Bezeichnung", max_length=80)
     item_category = models.CharField(
@@ -210,22 +218,27 @@ class ReportItemConfiguration(GenoBase):
         on_delete=models.CASCADE,
         default=1,
     )
+    order = models.IntegerField(
+        _("Order"),
+        help_text=_("Order of the item in the report."),
+        default=get_next_report_item_configuration_order_number,
+    )
 
     def save(self, *args, **kwargs):
         is_new = self._state.adding
-        previous_item_category = None
+        old_item_category = None
         if not is_new and self.pk:
-            previous_item_category = (
+            old_item_category = (
                 ReportItemConfiguration.objects.filter(pk=self.pk)
                 .values_list("item_category", flat=True)
                 .first()
             )
         super().save(*args, **kwargs)
-        if is_new or previous_item_category != self.item_category:
-            self.ensure_base_input_fields(previous_item_category)
+        if is_new or old_item_category != self.item_category:
+            self.ensure_base_input_fields(old_item_category)
 
-    def ensure_base_input_fields(self, previous_item_category):
-        if previous_item_category != self.item_category:
+    def ensure_base_input_fields(self, old_item_category):
+        if old_item_category != self.item_category:
             for existing_repot_input_field in ReportInputField.objects.filter(
                 item_configuration=self.id
             ):
@@ -267,10 +280,24 @@ class ReportItemConfiguration(GenoBase):
             report_input_field.save()
 
     class Meta:
-        verbose_name = "Report-Element"
-        verbose_name_plural = "Report-Elemente"
-        unique_together = ["name", "item_category", "report_configuration"]
-        ordering = ["item_category", "name"]
+        verbose_name = "Report-Element-Konfiguration"
+        verbose_name_plural = "Report-Element-Konfigurationen"
+        ordering = ["report_configuration", "order", "item_category", "name"]
+        constraints = [
+            UniqueConstraint(
+                fields=["name", "item_category", "report_configuration"],
+                name="unique_report_configuration_item",
+            ),
+            ## Don't enforce a unique order, at least until we have a better UI for changing it.
+            # UniqueConstraint(
+            #    fields=["name", "item_category", "report_configuration", "order"],
+            #    name="unique_report_configuration_item_order",
+            # ),
+        ]
+
+
+def get_next_report_item_order_number():
+    return get_next_number("report", "ReportItem", "order", 10)
 
 
 class ReportItem(GenoBase):
@@ -284,12 +311,26 @@ class ReportItem(GenoBase):
         on_delete=models.CASCADE,
         default=1,
     )
+    order = models.IntegerField(
+        _("Order"),
+        help_text=_("Order of the item in the report."),
+        default=get_next_report_item_order_number,
+    )
 
     class Meta:
         verbose_name = "Report-Element"
         verbose_name_plural = "Report-Elemente"
-        unique_together = ["name", "item_category", "report"]
-        ordering = ["item_category", "name"]
+        ordering = ["report", "order", "item_category", "name"]
+        constraints = [
+            UniqueConstraint(
+                fields=["name", "item_category", "report"], name="unique_report_item"
+            ),
+            ## Don't enforce a unique order, at least until we have a better UI for changing it.
+            # UniqueConstraint(
+            #    fields=["name", "item_category", "report", "order"],
+            #    name="unique_report_item_order",
+            # ),
+        ]
 
 
 class ReportInputField(GenoBase):
@@ -304,6 +345,9 @@ class ReportInputField(GenoBase):
     field_type = models.CharField("Feldtyp", choices=REPORT_FIELDTYPE_CHOICES, max_length=60)
     active = models.BooleanField("Aktiv", default=True)
     value_default = models.CharField("Standardwert", blank=True, max_length=6000)
+
+    def __str__(self):
+        return f"{self.name} [{self.get_field_type_display()}]"
 
     class Meta:
         verbose_name = "Eingabefeld"
@@ -339,7 +383,7 @@ class ReportInputData(GenoBase):
         if self.name:
             return f"{self.name}"
         else:
-            return "[Unbekannt]"
+            return "(Unbekannt)"
 
     def get_value(self):
         if self.name.field_type == "file" and self.value.startswith("filer:"):
