@@ -113,6 +113,7 @@ class Report(GenoBase):
         on_delete=models.CASCADE,
         default=1,
     )
+    show_full_config = models.BooleanField("Expert:innen-Konfiguration anzeigen", default=False)
     task_id = models.UUIDField("Task-ID", editable=False, blank=True, null=True)
     state = models.CharField("Status", default="new", choices=REPORT_STATE_CHOICES, max_length=30)
     state_info = models.TextField("Statusinfo", blank=True)
@@ -142,6 +143,8 @@ class Report(GenoBase):
                             report=self,
                             item=report_item,
                             value=report_input_field.value_default,
+                            order=report_input_field.order,
+                            show=report_input_field.show,
                         )
 
     def get_report_config(self) -> list[ReportGeneratorConfigItem]:
@@ -190,7 +193,9 @@ class Report(GenoBase):
     class Meta:
         verbose_name = "Report"
         verbose_name_plural = "Reports"
-        unique_together = ["name", "report_configuration"]
+        constraints = [
+            UniqueConstraint(fields=["name", "report_configuration"], name="unique_report"),
+        ]
 
 
 # REPORT_ITEM_CATEGORY = (
@@ -267,7 +272,7 @@ class ReportItemConfiguration(GenoBase):
                             field_type=_match_CostConfigFieldTypes_with_REPORT_FIELDTYPE_CHOICES_values(
                                 field.type
                             ),
-                            active=True,
+                            show=False,
                             value_default=default_val,
                         )
 
@@ -343,6 +348,10 @@ class ReportItem(GenoBase):
         ]
 
 
+def get_next_report_input_field_order_number():
+    return get_next_number("report", "ReportInputField", "order", 10)
+
+
 class ReportInputField(GenoBase):
     name = models.CharField("Name", max_length=80)
     description = models.CharField("Beschreibung", max_length=200, blank=True)
@@ -353,8 +362,20 @@ class ReportInputField(GenoBase):
         default=1,
     )
     field_type = models.CharField("Feldtyp", choices=REPORT_FIELDTYPE_CHOICES, max_length=60)
-    active = models.BooleanField("Aktiv", default=True)
+    show = models.BooleanField(
+        "Anzeigen",
+        default=False,
+        help_text=(
+            "Falls aktiv, wird das Eingabefeld für die Erstellung des Reports angezeigt, "
+            "andernfalls wird der Standardwert von hier verwendet."
+        ),
+    )
     value_default = models.CharField("Standardwert", blank=True, max_length=6000)
+    order = models.IntegerField(
+        _("Order"),
+        help_text=_("Order of the field."),
+        default=get_next_report_input_field_order_number,
+    )
 
     def __str__(self):
         return f"{self.name} [{self.get_field_type_display()}]"
@@ -362,8 +383,12 @@ class ReportInputField(GenoBase):
     class Meta:
         verbose_name = "Eingabefeld"
         verbose_name_plural = "Eingabefelder"
-        unique_together = ["name", "item_configuration"]
-        ordering = ["item_configuration", "name"]
+        ordering = ["item_configuration", "order", "name"]
+        constraints = [
+            UniqueConstraint(
+                fields=["name", "item_configuration"], name="unique_report_input_field"
+            ),
+        ]
 
 
 class ReportInputData(GenoBase):
@@ -383,11 +408,22 @@ class ReportInputData(GenoBase):
         "Wert", blank=True, max_length=6000
     )  ## store lists in value?  Should be able to copy list values from spreadsheet in UI!
     # index/date/key instead of storing lists in value?
+    order = models.IntegerField(
+        _("Order"),
+        help_text=_("Order of the field."),
+        default=50,
+    )
+    show = models.BooleanField(
+        "Anzeigen", default=False, help_text="Falls aktiv, wird das Eingabefeld angezeigt."
+    )
 
     class Meta:
         verbose_name = "Eingabewert"
         verbose_name_plural = "Eingabewerte"
-        unique_together = ["name", "report"]
+        ordering = ["report", "name__item_configuration", "order", "description"]
+        constraints = [
+            UniqueConstraint(fields=["name", "report"], name="unique_report_input_data"),
+        ]
 
     def __str__(self):
         if self.name:
@@ -446,7 +482,9 @@ class ReportOutput(GenoBase):
     class Meta:
         verbose_name = "Reportoutput"
         verbose_name_plural = "Reportoutputs"
-        unique_together = ["name", "report"]
+        constraints = [
+            UniqueConstraint(fields=["name", "report"], name="unique_report_output"),
+        ]
 
 
 @receiver(models.signals.post_delete, sender=ReportOutput)

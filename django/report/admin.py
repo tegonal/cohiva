@@ -21,6 +21,7 @@ from report.models import (
 
 class ReportInputAdminForm(forms.ModelForm):
     value_field_name = "value"
+    value_field_label = "Wert"
 
     class Meta:
         model = None
@@ -38,9 +39,13 @@ class ReportInputAdminForm(forms.ModelForm):
         # expected by the form field
         self.initial[field_name] = self._deserialize_value(input_field)
         self.fields[field_name] = _make_report_input_field(input_field)
+        self.fields[field_name].label = self.get_value_field_label()
 
     def get_value_field_name(self):
         return self.value_field_name
+
+    def get_value_field_label(self):
+        return self.value_field_label
 
     def _get_input_field(self) -> ReportInputField | None:
         name_id = self._get_name_id()
@@ -138,6 +143,7 @@ class ReportInputDataAdminForm(ReportInputAdminForm):
 
 class ReportInputFieldForm(ReportInputAdminForm):
     value_field_name = "value_default"
+    value_field_label = "Standardwert"
 
     class Meta:
         model = ReportInputField
@@ -153,16 +159,32 @@ class ReportInputDataInline(TabularInline):  # oder admin.StackedInline
     readonly_fields = ["field_type"]
     form = ReportInputDataAdminForm
     can_delete = False
+    extra = 0
+
+    def __init__(self, parent_model, admin_site):
+        super().__init__(parent_model, admin_site)
+        self.parent_instance = None
 
     def has_add_permission(self, request, obj):
         return False
 
-    extra = 0
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        if self.parent_instance.id and self.parent_instance.report_id:
+            report = Report.objects.get(id=self.parent_instance.report_id)
+            if report.show_full_config:
+                return queryset
+        return queryset.filter(show=True)
+
+    def get_formset(self, request, obj=None, **kwargs):
+        self.parent_instance = obj
+        return super().get_formset(request, obj, **kwargs)
 
 
 class ReportItemsInline(TabularInline):  # oder admin.StackedInline
     model = ReportItem
-    fields = ["order", "name", "item_category"]
+    fields = ["name", "item_category"]
+    readonly_fields = ["item_category"]
     inlines = [ReportInputDataInline]
     extra = 0
 
@@ -173,6 +195,7 @@ class ReportAdmin(GenoBaseAdmin):
     fields = [
         "name",
         "report_configuration",
+        "show_full_config",
         "state",
         "state_info",
         "comment",
@@ -196,10 +219,12 @@ class ReportAdmin(GenoBaseAdmin):
 
 class ReportInputFieldInline(TabularInline):  # oder admin.StackedInline
     model = ReportInputField
-    fields = ["description", "value_default", "active"]
+    fields = ["description", "value_default", "order", "show"]
     readonly_fields = ["name", "field_type"]
     form = ReportInputFieldForm
     can_delete = False
+    ordering_field = "order"
+    # collapsible = True  ## TODO: This does not seem to work, why?
 
     def has_add_permission(self, request, obj):
         return False
@@ -212,6 +237,8 @@ class ReportItemConfigurationsInline(TabularInline):  # oder admin.StackedInline
     fields = ["order", "name", "item_category"]
     inlines = [ReportInputFieldInline]
     extra = 0
+    ordering_field = "order"
+    # collapsible = True  ## TODO: This does not seem to work, why?
 
 
 @admin.register(ReportConfiguration)
@@ -238,15 +265,15 @@ class ReportInputFieldAdmin(GenoBaseAdmin):
         "description",
         "item_configuration",
         "field_type",
-        "active",
+        "show",
         "comment",
         ("ts_created", "ts_modified"),
         "links",
         "backlinks",
     ]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
-    list_display = ["name", "item_configuration", "field_type", "active"]
-    list_filter = ["item_configuration", "field_type", "active"]
+    list_display = ["name", "item_configuration", "field_type", "show"]
+    list_filter = ["item_configuration", "field_type", "show"]
     search_fields = ["name", "description", "comment"]
 
 
@@ -258,6 +285,8 @@ class ReportInputDataAdmin(GenoBaseAdmin):
         "name",
         "report",
         "value",
+        "show",
+        "order",
         "comment",
         ("ts_created", "ts_modified"),
         "links",
@@ -265,7 +294,7 @@ class ReportInputDataAdmin(GenoBaseAdmin):
     ]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "report", "value"]
-    list_filter = ["report"]
+    list_filter = ["report", "show"]
     search_fields = ["name__name", "report__name", "value", "comment"]
     autocomplete_fields = ["name", "report"]
 
