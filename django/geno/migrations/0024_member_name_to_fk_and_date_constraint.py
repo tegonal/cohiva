@@ -4,12 +4,23 @@ import django.db.models.deletion
 from django.db import migrations, models
 
 
+def fix_date_leave(apps, schema_editor):
+    member_model = apps.get_model("geno", "member")
+    for member in member_model.objects.filter(date_leave__lt=models.F("date_join")):
+        info = f"Ungültiges Austrittsdatum {member.date_leave} mit Beitrittsdatum ersetzt."
+        member.notes = f"{info}\n{member.notes}"
+        member.date_leave = member.date_join
+        member.save()
+        print(f"Member {member.id}: {info}")
+
+
 class Migration(migrations.Migration):
     dependencies = [
         ("geno", "0023_address_ahv_number_rentalunit_billing_period_and_more"),
     ]
 
     operations = [
+        migrations.RunPython(fix_date_leave, reverse_code=migrations.RunPython.noop),
         migrations.AlterField(
             model_name="member",
             name="name",

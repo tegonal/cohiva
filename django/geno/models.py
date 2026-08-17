@@ -472,6 +472,12 @@ class Address(GenoBase):
         c["organisation"] = self.organization
         c["vorname"] = self.first_name
         c["name"] = self.name
+        if self.organization:
+            c["organisation_oder_name"] = self.organization
+        else:
+            c["organisation_oder_name"] = (
+                f"{self.first_name} {self.name}" if self.first_name else self.name
+            )
         if self.extra:
             c["strasse"] = "%s\n%s" % (self.extra, self.street)
         else:
@@ -850,13 +856,16 @@ class Member(GenoBase):
 
     def get_object_actions(self):
         actions = []
-        for dt in DocumentType.objects.filter(active=True).filter(name__startswith="member"):
-            actions.append(
-                (
-                    "/geno/documents/%s/%s/create/" % (dt.name, self.pk),
-                    "%s erzeugen" % (dt.description),
+        for dt in DocumentType.objects.filter(
+            active=True, name__startswith="member"
+        ).prefetch_related("templates"):
+            for tmpl in dt.templates.filter(active=True):
+                actions.append(
+                    (
+                        f"/geno/documents/{dt.name}/{self.pk}/create/?template={tmpl.pk}",
+                        f"{dt.description}: {tmpl.name}",
+                    )
                 )
-            )
         return actions
 
     class Meta:
@@ -1041,13 +1050,16 @@ class Share(GenoBase):
 
     def get_object_actions(self):
         actions = []
-        for dt in DocumentType.objects.filter(active=True).filter(name__startswith="share"):
-            actions.append(
-                (
-                    "/geno/documents/%s/%s/create/" % (dt.name, self.pk),
-                    "%s erzeugen" % (dt.description),
+        for dt in DocumentType.objects.filter(
+            active=True, name__startswith="share"
+        ).prefetch_related("templates"):
+            for tmpl in dt.templates.filter(active=True):
+                actions.append(
+                    (
+                        f"/geno/documents/{dt.name}/{self.pk}/create/?template={tmpl.pk}",
+                        f"{dt.description}: {tmpl.name}",
+                    )
                 )
-            )
         return actions
 
     @admin.display(description="Total")
@@ -1123,28 +1135,15 @@ DOCUMENTTYPE_NAME_CHOICES = (
 class DocumentType(GenoBase):
     name = models.CharField("Name", max_length=50, unique=True, choices=DOCUMENTTYPE_NAME_CHOICES)
     description = models.CharField("Beschreibung", max_length=200)
-    template = models.ForeignKey(
-        "ContentTemplate",
-        verbose_name="Vorlage",
-        on_delete=models.CASCADE,
-        help_text="OpenDocument Dokumentvorlage",
-        blank=True,
-        null=True,
-    )
-    template_file = models.CharField(
-        "Dateiname Vorlage (alte Methode)", max_length=200, blank=True
-    )
     active = models.BooleanField("Aktiv", default=True)
-
-    def clean(self, *args, **kwargs):
-        if not self.template_file and not self.template:
-            raise ValidationError(
-                "Es muss entweder eine Vorlage ausgewählt (neue Methode) "
-                "oder ein Dateiname angegeben weden (alte Methode)."
-            )
-        if self.template and self.template.template_type != "OpenDocument":
-            raise ValidationError("Es muss eine OpenDocument Dokument-Vorlage ausgewählt werden.")
-        super().clean(*args, **kwargs)
+    templates = models.ManyToManyField(
+        "ContentTemplate",
+        verbose_name="Vorlagen",
+        help_text="Verfügbar OpenDocument Dokumentvorlagen",
+        blank=True,
+        limit_choices_to={"template_type": "OpenDocument"},
+        related_name="document_types",
+    )
 
     class Meta:
         verbose_name = "Dokumenttyp"
@@ -1162,6 +1161,14 @@ class Document(GenoBase):
     )
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey("content_type", "object_id")
+    # Store which template was used to create a given document, if any
+    template = models.ForeignKey(
+        "ContentTemplate",
+        verbose_name="Vorlage",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
 
     def __str__(self):
         date = timezone.localtime(self.ts_created).strftime("%d.%m.%Y %H:%M")
@@ -1490,14 +1497,53 @@ class RentalUnit(GenoBase):
             return Decimal(0.0)
         return round(self.nk_electricity / self.billing_period, 2)
 
-    def str_short(self):
+    def get_context(self):
+        context_variables = [
+            ("Mietobjektnummer", "name"),
+            ("Mietobjektnummer_und_Bezeichnung", "name_with_label"),
+            ("Bezeichnung", "label"),
+            ("Kurzbezeichnung", "label_short"),
+            ("Typ", "rental_type"),
+            ("Liegenschaft", "building"),
+            ("Stockwerk", "floor"),
+            ("Fläche", "area"),
+            ("Balkonfläche", "area_balcony"),
+            ("Zusatzfläche", "area_add"),
+            ("Raumhöhe", "height"),
+            ("Volumen", "volume"),
+            ("Anzahl_Zimmer", "rooms"),
+            ("Mindestbelegung", "min_occupancy"),
+            ("Rechnungsperiode", "billing_period"),
+            ("NK_akonto", "nk"),
+            ("NK_pauschal", "nk_flat"),
+            ("Strompauschale", "nk_electricity"),
+            ("Nettomiete", "rent_netto"),
+            ("Depot", "depot"),
+            ("Anteilskapital", "share"),
+            ("Bruttomiete", "rent_total"),
+            ("Bruttomiete_pro_Monat", "rent_total_per_month"),
+            ("Nettomiete_pro_Monat", "rent_netto_per_month"),
+            ("NK_akonto_pro_Monat", "nk_per_month"),
+            ("NK_pauschal_pro_Monat", "nk_flat_per_month"),
+            ("Strompauschale_pro_Monat", "nk_electricity_per_month"),
+        ]
+        ctx = {}
+        for key, name in context_variables:
+            prop = getattr(self, name)
+            if callable(prop):
+                prop = prop()
+            ctx[key] = str(prop) if prop else ""
+        return ctx
+
+    @property
+    def name_with_label(self):
         if self.label:
             return "%s %s" % (self.name, self.label)
         else:
             return "%s %s" % (self.name, self.rental_type)
 
     def __str__(self):
-        return "%s (%s)" % (self.str_short(), self.building)
+        return "%s (%s)" % (self.name_with_label, self.building)
 
     def get_absolute_url(self):
         return "/admin/geno/rental_unit/%i/" % self.id
@@ -1679,6 +1725,62 @@ class Contract(GenoBase):
         else:
             return "/".join(units)
 
+    def get_context(self):
+        rental_units = self.rental_units.all()
+        c: dict[str, str | list] = {
+            "Vertragsbeginn": self.date.strftime("%d.%m.%Y"),
+            "Vertragsende": self.date_end.strftime("%d.%m.%Y") if self.date_end else "",
+            "Sollstellung_ab": (
+                self.billing_date_start.strftime("%d.%m.%Y") if self.billing_date_start else ""
+            ),
+            "Sollstellung_bis": (
+                self.billing_date_end.strftime("%d.%m.%Y") if self.billing_date_end else ""
+            ),
+            "Mietobjekt": ", ".join([str(ru) for ru in rental_units]),
+        }
+        ru: RentalUnit
+        for ru in rental_units:
+            for key, value in ru.get_context().items():
+                list_key = f"{key}_list"
+                if list_key not in c:
+                    c[list_key] = []
+                c[list_key].append(value)
+                if c.get(key):
+                    if value:
+                        c[key] += f" + {value}"
+                else:
+                    c[key] = value
+        c["Bewohnende"] = []
+        c["Mieter_Namen_list"] = []
+        c["Mieter_Adressen_list"] = []
+        c["Mieter_Adressen_Mehrzeilig_list"] = []
+        duplicate_check = []
+        for tenant in self.contractors.exclude(ignore_in_lists=True):
+            dup_id = f"{tenant.name}{tenant.first_name}"
+            if dup_id not in duplicate_check:
+                c["Bewohnende"].append({"name": tenant.name, "vorname": tenant.first_name})
+                c["Mieter_Namen_list"].append(tenant.get_full_name())
+                c["Mieter_Adressen_list"].append(
+                    f"{tenant.get_full_name()}, {tenant.street}, {tenant.city}"
+                )
+                c["Mieter_Adressen_Mehrzeilig_list"].append(
+                    f"{tenant.get_full_name()}\n{tenant.street}\n{tenant.city}"
+                )
+                duplicate_check.append(dup_id)
+        c["Mieter_Namen"] = ", ".join(c["Mieter_Namen_list"])
+        c["Mieter_Namen_Mehrzeilig"] = "\n".join(c["Mieter_Namen_list"])
+        c["Mieter_Adressen"] = "\n".join(c["Mieter_Adressen_list"])
+        for child in self.children.exclude(name__ignore_in_lists=True):
+            dup_id = f"{child.name.name}{child.name.first_name}"
+            if dup_id not in duplicate_check:
+                c["Bewohnende"].append({"name": child.name.name, "vorname": child.name.first_name})
+                duplicate_check.append(dup_id)
+        # Lowercase versions for backward compatibility
+        c["mietobjekt"] = c.get("Mietobjekt", "")
+        c["mindestbelegung"] = c.get("Mindestbelegung", "")
+        c["bewohnende"] = c.get("Bewohnende", "")
+        return c
+
     def get_object_actions(self):
         actions = []
         if not self.main_contract:
@@ -1704,13 +1806,16 @@ class Contract(GenoBase):
                     "Es wird nur das PDF erzeugt, nicht gebucht!",
                 )
             )
-        for dt in DocumentType.objects.filter(active=True).filter(name__startswith="contract"):
-            actions.append(
-                (
-                    "/geno/documents/%s/%s/create/" % (dt.name, self.pk),
-                    "%s erzeugen" % (dt.description),
+        for dt in DocumentType.objects.filter(
+            active=True, name__startswith="contract"
+        ).prefetch_related("templates"):
+            for tmpl in dt.templates.filter(active=True):
+                actions.append(
+                    (
+                        f"/geno/documents/{dt.name}/{self.pk}/create/?template={tmpl.pk}",
+                        f"{tmpl.name}: {dt.description}",
+                    )
                 )
-            )
         return actions
 
     def save_as_copy(self):

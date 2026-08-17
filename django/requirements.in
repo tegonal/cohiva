@@ -19,23 +19,24 @@
 ## TODO: Change this list based on features/enabled apps in setup process (along with settings e.g. INSTALLED_APPS list)
 
 ## Django and core dependencies
-Django >= 4.2, < 5.0
+Django >= 5.2.0
 mysqlclient
 
 ## Misc Django admin/UI enhancements and tools
 django-tables2
 ## django-select2-form v3.1.0 has issues with django forms
-django-select2-forms < 3.1.0
+django-select2-forms >= 3.1.0
 django-datetime-widget
 django-email-obfuscator
 django-unfold
 django-crispy-forms
+django-altcha
 
 ## File manager app
 django-filer
 
 ## Authentication providers
-django-oauth-toolkit
+django-oauth-toolkit >= 3.3.0
 requests-oauthlib
 djangosaml2idp  # currently requires cryptography<44 through pysaml2 and pyopenssl. As soon as that is fixed,
                 # cryptography should be upgraded!

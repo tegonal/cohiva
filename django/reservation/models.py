@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 from cohiva.utils.settings import get_default_app_sender
 from geno.models import Address, ContentTemplate, GenoBase, RentalUnit
@@ -62,6 +63,12 @@ class ReservationType(GenoBase):
     color = models.CharField(
         "Kalender-Farbe", max_length=7, default="#7d7d78", help_text='Format: "#rrggbb"'
     )
+    show_contacts_in_calendar = models.BooleanField(
+        _("Show name of the person in the calendar"), default=True
+    )
+    show_rental_units_in_calendar = models.BooleanField(
+        _("Show rental units of the person in the calendar"), default=False
+    )
     active = models.BooleanField("Aktiv", default=True)
 
     def get_calendar_events(self, start, end):
@@ -86,13 +93,17 @@ class ReservationType(GenoBase):
             )
 
             extra_info = []
-            if res.contact:
+            if self.show_contacts_in_calendar and res.contact:
                 if res.contact.organization:
                     contact_txt = res.contact.organization
                     if res.contact.name:
                         contact_txt += " %s %s" % (res.contact.first_name, res.contact.name)
                 else:
                     contact_txt = "%s %s" % (res.contact.first_name, res.contact.name)
+                if self.show_rental_units_in_calendar:
+                    rental_units = res.contact.list_rental_units()
+                    if rental_units:
+                        contact_txt += f" ({rental_units})"
                 extra_info.append(contact_txt)
             if res.summary:
                 extra_info.append(res.summary)

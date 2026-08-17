@@ -2,18 +2,18 @@ import datetime
 import io
 import zipfile
 from decimal import Decimal
-from unittest.mock import DEFAULT, patch
+from unittest.mock import DEFAULT, Mock, patch
 
 import openpyxl
 from django.apps import apps as django_apps
 from django.conf import settings
 from django.http import FileResponse
-from django.test import tag
+from django.test import RequestFactory, tag
 from django.urls import reverse
 
 import geno.tests.data as geno_testdata
 from geno.models import Invoice, InvoiceCategory, Share, ShareType
-from geno.views import ShareStatementView
+from geno.views import InvoiceBatchGenerateView, ShareStatementView
 
 from .base import GenoAdminTestCase
 
@@ -347,6 +347,33 @@ class GenoViewsTest(GenoAdminTestCase):
         self.assertNotInHTMLResponse('<select name="address"', response, raw=True)
 
 
+class InvoiceBatchGenerateViewTest(GenoAdminTestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    @patch("geno.views.create_invoices")
+    def test_invoice_batch_generate_view_item_count(self, mock_create_qrbill: Mock):
+        view = InvoiceBatchGenerateView()
+        view.kwargs = {"action": "create"}
+        view.request = self.factory.post(reverse("geno:invoice-batch-generate"))
+        view.request.user = self.su
+
+        mock_create_qrbill.return_value = [{"info": "1 Rechnung für 1 Vertrag"}]
+        view.result = view.process_action(dry_run=True)
+        context = view.get_context_data()
+        self.assertEqual(context["item_count"], 1)
+
+        mock_create_qrbill.return_value = [{"info": "99 Rechnungen für 1 Vertrag"}]
+        view.result = view.process_action(dry_run=True)
+        context = view.get_context_data()
+        self.assertEqual(context["item_count"], 99)
+
+        mock_create_qrbill.return_value = [{"info": "10 Rechnungen für 9 Verträge"}]
+        view.result = view.process_action(dry_run=True)
+        context = view.get_context_data()
+        self.assertEqual(context["item_count"], 10)
+
+
 class Odt2PdfViewTest(GenoAdminTestCase):
     @tag("slow-test")
     def test_odt2pdf_view_singlefile(self):
@@ -418,22 +445,28 @@ class ShareStatementViewTest(GenoAdminTestCase):
         view = ShareStatementView()
         view.enddate = datetime.date(2020, 12, 31)
         obj = view.get_objects()
-        self.assertEqual(len(obj), 2)
-        self.assertIn("Anzahl ignoriert=2", view.extra_description_info)
-
-        Share.objects.create(
-            value=500,
-            quantity=1,
-            share_type=ShareType.objects.get(name="Depositenkasse"),
-            date=datetime.date(2020, 1, 1),
-            name=self.addresses[1],
-            state="bezahlt",
-        )
-        obj = view.get_objects()
-        self.assertEqual(len(obj), 3)
-        self.assertIn("Anzahl ignoriert=1", view.extra_description_info)
-
-        view.address_id = self.addresses[0].pk
-        obj = view.get_objects()
-        self.assertEqual(len(obj), 1)
+        # Default is no cutoff => no skips
+        self.assertEqual(len(obj), 4)
         self.assertIn("Anzahl ignoriert=0", view.extra_description_info)
+
+        with self.settings(GENO_SMALL_NUMBER_OF_SHARES_CUTOFF=5):
+            obj = view.get_objects()
+            self.assertEqual(len(obj), 2)
+            self.assertIn("Anzahl ignoriert=2", view.extra_description_info)
+
+            Share.objects.create(
+                value=500,
+                quantity=1,
+                share_type=ShareType.objects.get(name="Depositenkasse"),
+                date=datetime.date(2020, 1, 1),
+                name=self.addresses[1],
+                state="bezahlt",
+            )
+            obj = view.get_objects()
+            self.assertEqual(len(obj), 3)
+            self.assertIn("Anzahl ignoriert=1", view.extra_description_info)
+
+            view.address_id = self.addresses[0].pk
+            obj = view.get_objects()
+            self.assertEqual(len(obj), 1)
+            self.assertIn("Anzahl ignoriert=0", view.extra_description_info)

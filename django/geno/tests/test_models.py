@@ -1,17 +1,11 @@
 from datetime import date
 from unittest.mock import patch
 
-import django
 from django.conf import settings
-from django.test import TestCase
-from django.urls import NoReverseMatch, reverse
-
-if django.VERSION < (3, 0):
-    from django.db import OperationalError as IntegrityError
-else:
-    from django.db.utils import IntegrityError
 from django.core.exceptions import ValidationError
-from django.test import override_settings
+from django.db.utils import IntegrityError
+from django.test import TestCase, override_settings
+from django.urls import NoReverseMatch, reverse
 
 from geno.models import Address, InvoiceCategory, Member, RegistrationEvent
 

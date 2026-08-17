@@ -137,7 +137,7 @@ class PortalAuthTest(PortalTestCase):
 
         ## Use token and check profile information
         response = self.client.get(
-            "/portal/me/", HTTP_AUTHORIZATION=f"Bearer {token['access_token']}"
+            "/portal/me/", headers={"authorization": f"Bearer {token['access_token']}"}
         )
         self.assertEqual(response.status_code, 200)
         profile = response.json()
@@ -214,7 +214,7 @@ class PortalAuthTest(PortalTestCase):
         ## Use token and check profile information
         response = self.client.get(
             reverse("oauth2_provider:user-info"),
-            HTTP_AUTHORIZATION=f"Bearer {token['access_token']}",
+            headers={"authorization": f"Bearer {token['access_token']}"},
         )
         self.assertEqual(response.status_code, 200)
         profile = response.json()

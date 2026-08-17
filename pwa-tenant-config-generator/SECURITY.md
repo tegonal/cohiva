@@ -1,22 +1,40 @@
-## Dependency Resolutions (Yarn)
+# How to do security updates?
+
+0. Show dependency and installed version(s)
+
+   yarn why -R <package>
+
+1. Try to update direct dependency
+
+   yarn up <direct dependency>
+
+2. Check if package has been updated to the required version. If not, add it to `resolutions` in `package.json` and add it to the list below for later removal.
+
+3. Install new resolutions with
+
+   yarn install
+
+# Dependency Resolutions (Yarn)
 
 We use Yarn `resolutions` to patch transitive dependency vulnerabilities
 when upstream packages have not yet released fixes.
 
-### Current overrides
+## Current overrides
 
-- **flatted → ^3.4.2**
-  - CVE: CVE-2026-33228
-  - Try removing when: eslint>9.39.4
+Try to remove the listed packages from `resolutions` in `package.json`
+when the following packages have been updated:
 
-- **tar → ^7.5.11**
-  - CVE: CVE-2026-31802
-  - Try removing when: tsx > 4.21.0
+### eslint > 9.39.4
 
-- **ip-address → ^10.1.1**
-  - CVE: CVE-2026-42338
-  - Remove when: pwa-asset-generator > 8.1.2
+- "flatted": "^3.4.2",
 
-- **minimatch → ^10.2.3**
-  - CVE: CVE-2026-27903
-  - Remove when: pwa-asset-generator > 8.1.4
+### tsx > 4.23.0
+
+- tar ^7.5.16
+
+### pwa-asset-generator > 8.1.5
+
+- minimatch ^10.2.3
+- "ws": "^8.21.0"
+- "undici": "^7.28.0"
+- "js-cookie": "^3.0.7"

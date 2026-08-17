@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "fs-extra": "^11.3.2",
-    "pwa-asset-generator": "^8.1.4",
+    "pwa-asset-generator": "^8.1.5",
     "sharp": "^0.34.4",
     "svgo": "^4.0.1",
     "zod": "^4.1.12"
@@ -43,14 +43,16 @@
     "eslint-plugin-perfectionist": "^4.15.1",
     "globals": "^15.15.0",
     "prettier": "^3.6.2",
-    "tsx": "^4.21.0",
+    "tsx": "^4.23.0",
     "typescript": "~5.9.3"
   },
   "packageManager": "yarn@4.10.3",
   "resolutions": {
-    "minimatch": "^10.2.3",
-    "tar": "^7.5.11",
+    "tar": "^7.5.16",
     "flatted": "^3.4.2",
-    "ip-address": "^10.1.1"
+    "minimatch": "^10.2.3",
+    "ws": "^8.21.0",
+    "undici": "^7.28.0",
+    "js-cookie": "^3.0.7"
   }
 }

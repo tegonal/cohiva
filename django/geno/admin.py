@@ -10,6 +10,7 @@ from django.contrib import admin, messages
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, User
+from django.db.models import Case, IntegerField, Q, Value, When
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -77,7 +78,10 @@ class BooleanFieldDefaultTrueListFilter(admin.BooleanFieldListFilter):
 
     def __init__(self, field, request, params, model, model_admin, field_path):
         super().__init__(field, request, params, model, model_admin, field_path)
-        self.lookup_val = self.used_parameters.get(self.lookup_kwarg, True)
+        if self.lookup_val is None:
+            self.lookup_val = True
+        elif self.lookup_val in ("1", "0"):
+            self.lookup_val = bool(int(self.lookup_val))
         # Add the model name to the label if the filter uses a boolean field of a related object.
         if field.model and field.model != model:
             self.title = f"{self.title} ({field.model._meta.verbose_name.title()})"
@@ -427,6 +431,28 @@ class AddressAdmin(GenoBaseAdmin):
             # "variant": ActionVariant.PRIMARY,
         },
     ]
+
+    def get_search_results(self, request, queryset, search_term):
+        # Remove commas from the search term to allow hits for terms in the
+        # form "Last Name, First Name".
+        search_term = search_term.replace(",", " ")
+        queryset, use_distinct = super().get_search_results(request, queryset, search_term)
+        if search_term:
+            # Add an integer search "ranking" according to the field that the
+            # search term matches on.
+            queryset = queryset.annotate(
+                _search_rank=Case(
+                    When(
+                        Q(name__icontains=search_term)
+                        | Q(first_name__icontains=search_term)
+                        | Q(organization__icontains=search_term),
+                        then=Value(0),
+                    ),
+                    default=Value(1),
+                    output_field=IntegerField(),
+                )
+            ).order_by("_search_rank", "name", "first_name", "organization")
+        return queryset, use_distinct
 
     @action(
         description=_("Export"),
@@ -923,8 +949,7 @@ class DocumentTypeAdmin(GenoBaseAdmin):
     fields = [
         "name",
         "description",
-        "template",
-        "template_file",
+        "templates",
         "active",
         "comment",
         ("ts_created", "ts_modified"),
@@ -932,18 +957,29 @@ class DocumentTypeAdmin(GenoBaseAdmin):
         "backlinks",
     ]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
-    list_display = ["name", "description", "template", "template_file", "active"]
+    list_display = ["name", "description", "active"]
     list_filter = [
         ("active", BooleanFieldDefaultTrueListFilter),
     ]
     search_fields = [
         "name",
         "description",
-        "template__name",
-        "template__description",
-        "template_file",
+        "templates__name",
     ]
-    autocomplete_fields = ["template"]
+    filter_horizontal = ["templates"]
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        obj = form.instance
+        invalid = obj.templates.exclude(template_type="OpenDocument")
+        if invalid.exists():
+            names = ", ".join(invalid.values_list("name", flat=True))
+            obj.templates.remove(*invalid)
+            self.message_user(
+                request,
+                f"Folgende Vorlagen sind kein OpenDocument-Typ und wurden entfernt: {names}",
+                level=messages.WARNING,
+            )
 
 
 @admin.register(Document)
@@ -1422,7 +1458,6 @@ class ContractAdmin(GenoBaseAdmin):
         "comment",
         ("ts_created", "ts_modified"),
         "import_id",
-        "object_actions",
         "links",
         "backlinks",
     ]
@@ -1430,7 +1465,6 @@ class ContractAdmin(GenoBaseAdmin):
         "import_id",
         "ts_created",
         "ts_modified",
-        "object_actions",
         "links",
         "backlinks",
     ]
@@ -1486,9 +1520,52 @@ class ContractAdmin(GenoBaseAdmin):
     actions_list = [
         "contract_report",
     ]
-    actions_detail = [
-        "add_subcontract",
-    ]
+    actions_detail = []
+
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        response = super().changeform_view(request, object_id, form_url, extra_context)
+
+        if object_id and hasattr(response, "context_data"):
+            try:
+                contract = self.model.objects.get(pk=object_id)
+            except self.model.DoesNotExist:
+                return response
+
+            dropdown_items = []
+
+            if request.user.has_perm("geno.add_contract"):
+                dropdown_items.append(
+                    {
+                        "title": str(_("Untervertrag hinzufügen")),
+                        "path": reverse("admin:geno_contract_add") + f"?main_contract={object_id}",
+                        "icon": "splitscreen_add",
+                        "attrs": {},
+                    }
+                )
+
+            for action_tuple in contract.get_object_actions():
+                dropdown_items.append(
+                    {
+                        "title": action_tuple[1],
+                        "path": action_tuple[0],
+                        "icon": "file_save",
+                        "attrs": {},
+                    }
+                )
+
+            if dropdown_items:
+                response.context_data["actions_detail"] = [
+                    {
+                        "title": str(_("Aktionen")),
+                        "path": None,
+                        "icon": None,
+                        "variant": ActionVariant.PRIMARY,
+                        "method_name": "contract_actions",
+                        "items": dropdown_items,
+                    }
+                ]
+
+        return response
 
     @display(
         description="Vertrag",
@@ -1514,18 +1591,6 @@ class ContractAdmin(GenoBaseAdmin):
     )
     def contract_report(self, request):
         return redirect(reverse("geno:contract-report"))
-
-    @action(
-        description=_("Untervertrag hinzufügen"),
-        icon="splitscreen_add",
-        url_path="add-subcontract",
-        permissions=["geno.add_contract"],
-        variant=ActionVariant.PRIMARY,
-    )
-    def add_subcontract(self, request, object_id):
-        return HttpResponseRedirect(
-            reverse("admin:geno_contract_add") + f"?main_contract={object_id}"
-        )
 
 
 # class ResidentListAdmin(GenoBaseAdmin):
@@ -1816,7 +1881,7 @@ class TenantsViewAdmin(GenoBaseAdmin):
     ]
 
     @action(
-        description=_("Mietobjektespiegel"),
+        description=_("Mietobjektspiegel"),
         permissions=["geno.rental_objects"],
         icon="download",
     )

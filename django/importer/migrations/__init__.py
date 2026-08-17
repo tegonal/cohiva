@@ -2,5 +2,3 @@
 """
 Importer app for handling Excel document imports.
 """
-
-default_app_config = "importer.apps.ImporterConfig"

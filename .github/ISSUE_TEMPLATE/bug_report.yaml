@@ -2,10 +2,6 @@ name: 🐛 Bug oder Fehler
 description: Bug oder Fehler melden
 labels: []
 type: Bug
-name: 🐛 Bug oder Fehler
-description: Bug oder Fehler melden
-labels: []
-type: Bug
 body:
   - type: markdown
     attributes:

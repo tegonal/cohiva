@@ -350,11 +350,9 @@ def create_templateoptions(cls: "type[GenoAdminTestCase]"):
 
 
 def create_documenttypes(cls: "type[GenoAdminTestCase]"):
-    cls.documenttypes = [
-        DocumentType.objects.create(
-            name="invoice", description="QR-Rechnung", template=cls.contenttemplates[0]
-        ),
-    ]
+    dt = DocumentType.objects.create(name="invoice", description="QR-Rechnung")
+    dt.templates.set([cls.contenttemplates[0]])
+    cls.documenttypes = [dt]
 
 
 def create_invoicecategories(cls: "type[GenoAdminTestCase]"):

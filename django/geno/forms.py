@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
+from django_altcha import AltchaField
 from unfold.widgets import (
     UnfoldAdminDateWidget,
     UnfoldAdminDecimalFieldWidget,
@@ -814,6 +815,8 @@ class RegistrationFormSlotField(forms.ModelChoiceField):
 
 
 class RegistrationForm(forms.ModelForm):
+    captcha = AltchaField(debug=False, hidelogo=True, hidefooter=True, auto="onload")
+
     class Meta:
         model = Registration
         fields = (

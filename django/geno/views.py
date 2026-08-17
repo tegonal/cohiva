@@ -110,6 +110,7 @@ from .importer import (
 from .models import (
     Address,
     Building,
+    ContentTemplate,
     Contract,
     Document,
     DocumentType,
@@ -221,28 +222,33 @@ def documents(request, doctype, obj_id, action):
     try:
         doctype_obj = DocumentType.objects.get(name=doctype)
         if action == "create":
-            ## Create new document and attach to content_object
             if not request.user.has_perm("geno.add_document"):
                 return unauthorized(request)
+            template_pk = request.GET.get("template")
+            if not template_pk:
+                raise RuntimeError("Keine Vorlage angegeben.")
+            template = doctype_obj.templates.get(pk=template_pk)
             data = get_context_data(doctype, obj_id, {})
         elif action == "download":
-            ## Regenerate document
             if not request.user.has_perm("geno.regenerate_document"):
                 return unauthorized(request)
-            doc = Document.objects.get(pk=obj_id)
+            doc = Document.objects.select_related("template").get(pk=obj_id)
+            template = doc.template or doctype_obj.templates.filter(active=True).first()
+            if not template:
+                raise RuntimeError("Vorlage nicht gefunden.")
             data = {"visible_filename": doc.name, "context": json.loads(doc.data)}
         else:
             raise RuntimeError("Action '%s' is not implemented." % action)
         filename = fill_template_pod(
-            doctype_obj.template.file.path, context_format(data["context"]), output_format="odt"
+            template.file.path, context_format(data["context"]), output_format="odt"
         )
         if not filename:
             raise RuntimeError("Could not fill template")
         if "content_object" in data:
-            ## Attach document data to object
             d = Document(
                 name=data["visible_filename"],
                 doctype=doctype_obj,
+                template=template,
                 data=json.dumps(data["context"]),
                 content_object=data["content_object"],
             )
@@ -252,7 +258,7 @@ def documents(request, doctype, obj_id, action):
         )  # content_type = "application/pdf")
         os.remove(filename)
         return resp
-    except (RuntimeError, DocumentType.DoesNotExist) as e:
+    except (RuntimeError, DocumentType.DoesNotExist, ContentTemplate.DoesNotExist) as e:
         error = "Fehler beim Erzeugen des Dokuments: %s" % e
     ret = [
         {"info": "ERROR: %s" % error},
@@ -1269,6 +1275,9 @@ class DryRunActionView(CohivaAdminViewMixin, TemplateView):
         """
         return None
 
+    def get_item_label_plural(self):
+        return None
+
     def build_execute_url(self):
         """Build the URL for executing the action (dry_run=False)."""
         params = self.get_action_params()
@@ -1307,6 +1316,10 @@ class DryRunActionView(CohivaAdminViewMixin, TemplateView):
         item_label = self.get_item_label()
         if item_label is not None:
             context["item_label"] = item_label
+
+        item_label_plural = self.get_item_label_plural()
+        if item_label_plural is not None:
+            context["item_label_plural"] = item_label_plural
 
         return context
 
@@ -2400,8 +2413,11 @@ def create_documents_deprecated(request, default_doctype, objects=None, options=
                 data = get_context_data(doctype, o["obj"].pk, o["extra_context"])
             else:
                 data = get_context_data(doctype, o["obj"].pk, {})
+            template: ContentTemplate | None = doctype_obj.templates.filter(active=True).first()
+            if not template or not template.file:
+                raise RuntimeError("Documenttype has no template file")
             filename = fill_template_pod(
-                doctype_obj.template.file.path,
+                template.file.path,
                 context_format(data["context"]),
                 output_format="odt",
             )
@@ -4062,17 +4078,19 @@ class InvoiceBatchGenerateView(DryRunActionView):
         """Extract invoice count from the results."""
         if self.result and len(self.result) > 0:
             last_section = self.result[-1]
-            if isinstance(last_section, dict) and last_section.get("objects"):
-                objects = last_section["objects"]
-                if objects and isinstance(objects[-1], str) and "Rechnungen" in objects[-1]:
-                    invoice_count_text = objects[-1]
-                    last_section["objects"] = objects[:-1]
-                    return int(invoice_count_text.split()[0])
+            if isinstance(last_section, dict):
+                info = last_section.get("info")
+                if isinstance(info, str):
+                    match = re.match(r"^(\d+) Rechnung(en)?\b", info)
+                    if match:
+                        return int(match.group(1))
         return None
 
     def get_item_label(self):
-        """Return 'Rechnung' as the item label."""
         return _("Rechnung")
+
+    def get_item_label_plural(self):
+        return _("Rechnungen")
 
     def process_action(self, dry_run):
         """Process invoice generation with given dry_run mode."""
@@ -4117,7 +4135,7 @@ class InvoiceBatchGenerateView(DryRunActionView):
                 "info": _("Optionen"),
                 "objects": [
                     _("Probelauf: %s") % (_("Ja") if dry_run else _("Nein")),
-                    _("Rechungen bis: %s") % reference_date,
+                    _("Rechnungen bis: %s") % reference_date,
                 ],
             }
         )
@@ -4312,9 +4330,19 @@ def rental_unit_list_create_documents(request, doc="mailbox"):
         raise RuntimeError("Unknown doc in rental_unit_list_create_documents '%s'." % doc)
     try:
         doctype = DocumentType.objects.get(name=doc)
-        template = doctype.template.file.path
     except DocumentType.DoesNotExist:
         ret.append({"info": f"FEHLER: Dokumenttyp {doc} nicht gefunden."})
+        return render(
+            request,
+            "geno/default.html",
+            {
+                "response": ret,
+                "title": "Mietobjekt-Dokumente erzeugen - %s" % options["beschreibung"],
+            },
+        )
+    template: ContentTemplate | None = doctype.templates.filter(active=True).first()
+    if not template or not template.file:
+        ret.append({"info": f"FEHLER: Dokumenttyp {doc} hat keine Vorlage."})
         return render(
             request,
             "geno/default.html",
@@ -4396,7 +4424,7 @@ def rental_unit_list_create_documents(request, doc="mailbox"):
         zipcount += 1
         ret.append({"info": context["title"], "objects": context["mietpartei"]})
         if makezip:
-            filename = fill_template_pod(template, context, output_format="odt")
+            filename = fill_template_pod(template.file.path, context, output_format="odt")
             if not filename:
                 raise RuntimeError("Could not fill template")
             zipfile_content.append(
@@ -4406,7 +4434,7 @@ def rental_unit_list_create_documents(request, doc="mailbox"):
                 }
             )
 
-    if makezip:
+    if zipcount and makezip:
         ## Build ZIP-file from list of files
         file_like_object = io.BytesIO()
         zipfile_ob = zipfile.ZipFile(file_like_object, "w")

@@ -1,6 +1,6 @@
 {
   "name": "musterweg-app",
-  "version": "1.5.0-SNAPSHOT",
+  "version": "1.6.0-SNAPSHOT",
   "description": "App der Genossenschaft Musterweg",
   "productName": "Musterweg App",
   "author": "Marco Steinacher <marco.steinacher@tegonal.com>",
@@ -36,9 +36,7 @@
     "@fullcalendar/vue3": "^6.1.19",
     "@khmyznikov/pwa-install": "^0.5.8",
     "@quasar/extras": "^1.17.0",
-    "@types/browser-lang": "^0.1.2",
     "axios": "^1.16.0",
-    "browser-lang": "^0.2.1",
     "lit": "^3.3.1",
     "oidc-client-ts": "^3.3.0",
     "pinia": "^3.0.4",
@@ -53,14 +51,14 @@
     "@eslint/js": "^9.39.4",
     "@intlify/unplugin-vue-i18n": "^11.0.1",
     "@quasar/app-vite": "^2.6.0",
-    "@quasar/cli": "^4.0.0",
+    "@quasar/cli": "^5.0.2",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^25.0.8",
     "@typescript-eslint/eslint-plugin": "^8.53.0",
     "@typescript-eslint/parser": "^8.53.0",
     "autoprefixer": "^10.4.21",
     "chokidar": "^4.0.3",
-    "concurrently": "^9.2.1",
+    "concurrently": "^10.0.3",
     "eslint": "^9.39.4",
     "eslint-plugin-perfectionist": "^4.15.1",
     "eslint-plugin-vue": "^10.6.2",
@@ -89,12 +87,14 @@
   "resolutions": {
     "minimatch": "^10.2.3",
     "flatted": "^3.4.2",
-    "tar": "^7.5.11",
+    "tar": "^7.5.16",
     "@babel/plugin-transform-modules-systemjs": "^7.29.4",
     "lodash": "^4.18.0",
     "fast-uri": "^3.1.2",
     "follow-redirects": "^1.16.0",
     "picomatch": "^4.0.4",
-    "ip-address": "^10.1.1"
+    "ip-address": "^10.1.1",
+    "vite": "^8.0.16",
+    "form-data": "^4.0.6"
   }
 }

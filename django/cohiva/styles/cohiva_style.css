@@ -1,3 +1,11 @@
+/*!
+Custom styles for Cohvia.
+
+Please edit the source file at `django/cohiva/styles/cohiva_style.css` and then
+re-compile it with `compile_styles.sh`.
+
+DO NOT edit the output file `django/geno/static/css/cohiva_style.css` directly!
+ */
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
 
@@ -56,6 +64,20 @@
 
 :root {
   --default-button-bg: var(--color-primary-600);
+}
+
+/* Vertically resizable selector — browser-native resize handle at bottom-right */
+.selector {
+  resize: vertical;
+  overflow: hidden;
+  min-height: 13em; /* ~4 visible options + title/filter/button chrome */
+}
+
+/* Select boxes fill remaining column height instead of using a fixed em value */
+.selector select.filtered {
+  flex: 1 1 0;
+  height: 0;
+  min-height: 0;
 }
 
 @layer components {

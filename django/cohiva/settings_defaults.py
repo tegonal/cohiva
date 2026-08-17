@@ -13,6 +13,8 @@ NOTE: Settings are cascaded in the following order (settings in the later files 
 """
 
 import datetime
+import hashlib
+import hmac
 import locale
 from pathlib import Path
 from urllib.parse import quote
@@ -80,6 +82,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:9000",
     "http://localhost:9001",
     "http://127.0.0.1:9001",
+    "http://localhost:4000",
+    "http://127.0.0.1:4000",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -99,6 +103,10 @@ OAUTH2_PROVIDER = {
     "REQUEST_APPROVAL_PROMPT": "auto",  ## auto / force
     "PKCE_REQUIRED": False,  ## Rocket.Chat does not support PKCE
 }
+OAUTH2_PROVIDER_APPLICATION_MODEL = "oauth2_provider.Application"
+OAUTH2_PROVIDER_ACCESS_TOKEN_MODEL = "oauth2_provider.AccessToken"
+OAUTH2_PROVIDER_REFRESH_TOKEN_MODEL = "oauth2_provider.RefreshToken"
+OAUTH2_PROVIDER_ID_TOKEN_MODEL = "oauth2_provider.IDToken"
 
 ## Enable OIDC
 OAUTH2_PROVIDER["OIDC_ENABLED"] = True
@@ -218,6 +226,7 @@ INSTALLED_APPS = (
     "django.contrib.staticfiles",
     "crispy_forms",  # For Unfold forms
     "email_obfuscator",
+    "django_altcha",
     "django_tables2",
     "select2",
     "datetimewidget",
@@ -445,9 +454,7 @@ STORAGES = {
 }
 
 # Additional locations of static files
-# STATICFILES_DIRS = (
-#    BASE_DIR / 'static',
-# )
+STATICFILES_DIRS = (BASE_DIR / "cohiva/static",)
 
 ## List of finder classes that know how to find static files in
 ## various locations.
@@ -626,6 +633,14 @@ CELERY_BROKER_URL = "redis://localhost:6379/0"
 # CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS = {
 #   'global_keyprefix': 'cohiva_'
 # }
+
+## Use redis as default cache
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": "redis://localhost:6379/2",
+    }
+}
 
 ## Cohiva specific config
 COHIVA_FEATURES = cbc.FEATURES
@@ -906,7 +921,7 @@ GENO_SHARE_LETTER_CUTOFF_DATE = datetime.date(2018, 7, 1)
 
 # When creating statements, treat persons differently if they own only up to this
 # number of shares (and they have no loans etc).
-GENO_SMALL_NUMBER_OF_SHARES_CUTOFF = 5
+# GENO_SMALL_NUMBER_OF_SHARES_CUTOFF = 5
 
 GENO_MEMBER_FLAGS = {
     1: "Wohnen",
@@ -1035,6 +1050,16 @@ WAGTAILADMIN_BASE_URL = BASE_URL
 WAGTAIL_FRONTEND_LOGIN_URL = LOGIN_URL
 WAGTAILDOCS_EXTENSIONS = ["csv", "docx", "key", "odt", "pdf", "pptx", "rtf", "txt", "xlsx", "zip"]
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10_000
+
+# For django-altcha CAPTCHA fields (https://github.com/aboutcode-org/django-altcha#usage)
+# By default we derive the key from SITE_SECRET, you can override it in settings.py if you
+# want to specify an independent secret.
+ALTCHA_HMAC_KEY = hmac.new(
+    key=SECRET_KEY.encode("utf-8"),
+    msg=b"django-altcha-key-v1",  # Fixed context string for domain separation
+    digestmod=hashlib.sha256,
+).hexdigest()
+ALTCHA_INCLUDE_TRANSLATIONS = True
 
 ## Silence warning about MySQL constraints
 SILENCED_SYSTEM_CHECKS = [
@@ -1326,6 +1351,8 @@ COHIVA_ADMIN_NAVIGATION = [
                         "value": "oauth2_provider.Application",
                         "icon": "identity_platform",
                     },
+                    {"type": "model", "value": "portal.OAuthAppSettings"},
+                    {"type": "model", "value": "portal.OAuthUserStats"},
                     {"type": "model", "value": "oauth2_provider.AccessToken"},
                     {"type": "model", "value": "oauth2_provider.RefreshToken"},
                     {"type": "model", "value": "oauth2_provider.IdToken"},
@@ -1424,9 +1451,9 @@ UNFOLD = {
     "STYLES": [
         lambda request: static("css/cohiva_style.css"),
     ],
-    #    "SCRIPTS": [
-    #        lambda request: static("js/script.js"),
-    #    ],
+    "SCRIPTS": [
+        lambda request: static("geno/js/selector_resize.js"),
+    ],
     #    "BORDER_RADIUS": "6px",
     #    "COLORS": {
     #        "base": {

@@ -105,4 +105,4 @@ echo ""
 # Serve the PWA
 echo "[startup] Starting server on port 4000..."
 echo ""
-exec quasar serve dist/pwa/ --port 4000 --hostname 0.0.0.0 --gzip --history --cors
+exec quasar serve dist/pwa/ --port 4000 --hostname 0.0.0.0 --history --cors
