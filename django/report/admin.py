@@ -153,7 +153,7 @@ class ReportInputFieldForm(ReportInputAdminForm):
         return self.instance
 
 
-class ReportInputDataInline(TabularInline):  # oder admin.StackedInline
+class ReportInputDataInline(TabularInline):  # oder StackedInline
     model = ReportInputData
     fields = ["description", "value"]
     readonly_fields = ["field_type"]
@@ -181,12 +181,13 @@ class ReportInputDataInline(TabularInline):  # oder admin.StackedInline
         return super().get_formset(request, obj, **kwargs)
 
 
-class ReportItemsInline(TabularInline):  # oder admin.StackedInline
+class ReportItemsInline(StackedInline):  # oder StackedInline
     model = ReportItem
     fields = ["name", "item_category"]
     readonly_fields = ["item_category"]
     inlines = [ReportInputDataInline]
     extra = 0
+    collapsible = True  ## This currently only works for StackedInline from unfold
     tab = True
 
 
@@ -224,22 +225,21 @@ class ReportInputFieldInline(StackedInline):  # oder TabularInline):
     readonly_fields = ["name", "field_type"]
     form = ReportInputFieldForm
     can_delete = False
+    extra = 0
     ordering_field = "order"
     collapsible = True  ## This currently only works for StackedInline from unfold
 
     def has_add_permission(self, request, obj):
         return False
 
-    extra = 0
 
-
-class ReportItemConfigurationsInline(TabularInline):  # oder admin.StackedInline
+class ReportItemConfigurationsInline(StackedInline):  # oder StackedInline
     model = ReportItemConfiguration
     fields = ["order", "name", "item_category"]
     inlines = [ReportInputFieldInline]
     extra = 0
     ordering_field = "order"
-    # collapsible = True  ## This only works for StackedInline from unfold
+    collapsible = True  ## This only works for StackedInline from unfold
     tab = True
 
 
