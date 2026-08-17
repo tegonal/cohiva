@@ -205,9 +205,9 @@ find_python_binaries() {
     if [ ${#PYTHON_BINARIES[@]} -eq 0 ]; then
         print_error "No Python 3.x installation found"
         if [ "$OS" = "macos" ]; then
-            echo "Install with: brew install python@3.11"
+            echo "Install with: brew install python@3.13"
         else
-            echo "Install with: sudo apt install python3.11 python3.11-venv python3.11-dev"
+            echo "Install with: sudo apt install python3.13 python3.13-venv python3.13-dev"
         fi
         exit 1
     fi
@@ -243,7 +243,7 @@ select_python() {
                 status="${GREEN}✓ Recommended${NC}"
             fi
         else
-            status="${YELLOW}⚠ Too old (Python 3.11+ required)${NC}"
+            status="${YELLOW}⚠ Too old (Python 3.12+ required)${NC}"
         fi
 
         local num=$((i + 1))
@@ -254,11 +254,11 @@ select_python() {
     done
 
     if [ ${#valid_options[@]} -eq 0 ]; then
-        print_error "No Python 3.11+ installation found"
+        print_error "No Python 3.12+ installation found"
         if [ "$OS" = "macos" ]; then
-            echo "Install with: brew install python@3.11"
+            echo "Install with: brew install python@3.13"
         else
-            echo "Install with: sudo apt install python3.11 python3.11-venv python3.11-dev"
+            echo "Install with: sudo apt install python3.13 python3.13-venv python3.13-dev"
         fi
         exit 1
     fi
@@ -295,7 +295,7 @@ select_python() {
     local minor=$(echo "$selected_version" | cut -d. -f2)
 
     if [ "$major" -lt 3 ] || { [ "$major" -eq 3 ] && [ "$minor" -lt 11 ]; }; then
-        print_error "Python 3.11+ is required, but you selected $selected_version"
+        print_error "Python 3.12+ is required, but you selected $selected_version"
         exit 1
     fi
 

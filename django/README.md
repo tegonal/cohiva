@@ -6,11 +6,11 @@
 
 ### Prerequisites
 
-Install Docker and Python 3.11, 3.12, or 3.13:
+Install Docker and Python 3.12 or 3.13:
 
 **macOS:**
 ```bash
-brew install python@3.11
+brew install python@3.12
 brew install --cask docker  # Or download Docker Desktop from docker.com
 ```
 
@@ -76,7 +76,7 @@ If you need to set up step-by-step or are preparing a production deployment, fol
 
 ## Install required system packages
 
-Supported Python versions: 3.11 – 3.13
+Supported Python versions: 3.12 – 3.13
 Supported MariaDB version: 10.7+
 Supported Redis version: 6+
 
@@ -110,20 +110,20 @@ Cohiva currently expects the `de_CH.UTF-8` locale to be installed. On a Debian/U
 
 ### macOS with Homebrew
 
-If you're using macOS with Homebrew, you can install Python 3.11:
+If you're using macOS with Homebrew, you can install Python 3.12:
 
-    # Install Python 3.11
-    brew install python@3.11
+    # Install Python 3.12
+    brew install python@3.12
 
-    # Create virtual environment using Python 3.11
-    /opt/homebrew/opt/python@3.11/bin/python3.11 -m venv ~/.venv/cohiva-demo-prod
-    # For Intel Macs, use: /usr/local/opt/python@3.11/bin/python3.11 -m venv ~/.venv/cohiva-demo-prod
+    # Create virtual environment using Python 3.12
+    /opt/homebrew/opt/python@3.12/bin/python3.12 -m venv ~/.venv/cohiva-demo-prod
+    # For Intel Macs, use: /usr/local/opt/python@3.12/bin/python3.12 -m venv ~/.venv/cohiva-demo-prod
 
     # Activate the virtual environment
     source ~/.venv/cohiva-demo-prod/bin/activate
 
     # Verify Python version
-    python --version  # Should show Python 3.11.x
+    python --version  # Should show Python 3.12.x
 
 ### Linux / Standard Setup
 
