@@ -396,7 +396,9 @@ class ReportInputData(GenoBase):
         ReportInputField, verbose_name="Eingabefeld", on_delete=models.CASCADE
     )
     description = models.CharField("Beschreibung", max_length=200, blank=True)
-    field_type = models.CharField("Feldtyp", choices=REPORT_FIELDTYPE_CHOICES, max_length=60)
+    field_type = models.CharField(
+        "Feldtyp", choices=REPORT_FIELDTYPE_CHOICES, max_length=60, default="char"
+    )
     report = models.ForeignKey(Report, verbose_name="Report", on_delete=models.CASCADE)
     item = models.ForeignKey(
         ReportItem,
