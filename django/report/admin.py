@@ -4,7 +4,7 @@ from datetime import date
 import jsonc
 from django import forms
 from django.contrib import admin
-from unfold.admin import TabularInline
+from unfold.admin import StackedInline, TabularInline
 
 from geno.admin import GenoBaseAdmin
 from report.forms import _make_report_input_field
@@ -187,6 +187,7 @@ class ReportItemsInline(TabularInline):  # oder admin.StackedInline
     readonly_fields = ["item_category"]
     inlines = [ReportInputDataInline]
     extra = 0
+    tab = True
 
 
 @admin.register(Report)
@@ -217,14 +218,14 @@ class ReportAdmin(GenoBaseAdmin):
     search_fields = ["name", "state_info", "task_id", "comment"]
 
 
-class ReportInputFieldInline(TabularInline):  # oder admin.StackedInline
+class ReportInputFieldInline(StackedInline):  # oder TabularInline):
     model = ReportInputField
-    fields = ["description", "value_default", "order", "show"]
+    fields = ["description", "value_default", "show"]
     readonly_fields = ["name", "field_type"]
     form = ReportInputFieldForm
     can_delete = False
     ordering_field = "order"
-    # collapsible = True  ## TODO: This does not seem to work, why?
+    collapsible = True  ## This currently only works for StackedInline from unfold
 
     def has_add_permission(self, request, obj):
         return False
@@ -238,7 +239,8 @@ class ReportItemConfigurationsInline(TabularInline):  # oder admin.StackedInline
     inlines = [ReportInputFieldInline]
     extra = 0
     ordering_field = "order"
-    # collapsible = True  ## TODO: This does not seem to work, why?
+    # collapsible = True  ## This only works for StackedInline from unfold
+    tab = True
 
 
 @admin.register(ReportConfiguration)

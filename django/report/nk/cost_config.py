@@ -50,6 +50,9 @@ class CostConfigField:
     subfields: list["CostConfigField | CostConfigMeasurementSourceField"] | None = None
     verbose_name: str | None = None
     is_measurement: bool = False
+    show: bool = (
+        False  # Set to true for input fields that are meant to be filled for each report run.
+    )
 
     def __str__(self):
         if self.verbose_name:
@@ -74,7 +77,10 @@ class BaseSettingsConfig:
             CostConfigField("name", CostConfigFieldTypes.STRING),
             CostConfigField("bezeichnung", CostConfigFieldTypes.STRING),
             CostConfigField(
-                "Startjahr", CostConfigFieldTypes.INT, verbose_name="Startjahr der Abrechnung"
+                "Startjahr",
+                CostConfigFieldTypes.INT,
+                verbose_name="Startjahr der Abrechnung",
+                show=True,
             ),
             CostConfigField(
                 "Vorlage:Abrechnung",
@@ -90,24 +96,31 @@ class BaseSettingsConfig:
                 "Ausgabe:LimitiereVertragsIDs",
                 CostConfigFieldTypes.JSON,
                 verbose_name="Ausgabe auf diese Vertrags IDs limitieren",
+                show=True,
             ),
             CostConfigField(
                 "Ausgabe:QR-Rechnungen",
                 CostConfigFieldTypes.BOOL,
                 verbose_name="PDFs/QR-Rechnungen erstellen und buchen?",
+                show=True,
             ),
             CostConfigField(
-                "Ausgabe:Plots", CostConfigFieldTypes.BOOL, verbose_name="Analyse-Plots erstellen?"
+                "Ausgabe:Plots",
+                CostConfigFieldTypes.BOOL,
+                verbose_name="Analyse-Plots erstellen?",
+                show=True,
             ),
             CostConfigField(
                 "Vorperiode:Bezeichnung",
                 CostConfigFieldTypes.STRING,
                 verbose_name='Bezeichnung der Vorperiode z.B. "2022/2023"',
+                show=True,
             ),  # z.B. "2022/2023"
             CostConfigField(
                 "Vorperiode:Datei",
                 CostConfigFieldTypes.FILE,
                 verbose_name="Datei der Vorperiode (json)",
+                show=True,
             ),
         ]
 
@@ -187,7 +200,9 @@ class NkTotalCostConfig(CostConfig):
                 CostConfigFieldTypes.OBJECT_WEIGHTS,
                 verbose_name="Verteilschlüssel nach Mietobjekt",
             ),
-            CostConfigField("Betrag", CostConfigFieldTypes.FLOAT, verbose_name="Gesamtkosten CHF"),
+            CostConfigField(
+                "Betrag", CostConfigFieldTypes.FLOAT, verbose_name="Gesamtkosten CHF", show=True
+            ),
         ]
 
 
@@ -253,22 +268,31 @@ class NkZEVStromallmendCostConfig(CostConfig):
                     "tarif_eigenstrom",
                     CostConfigFieldTypes.FLOAT,
                     verbose_name="Tarif Eigenstrom (CHF/kWh)",
+                    show=True,
                 ),
                 CostConfigField(
                     "tarif_einspeiseverguetung",
                     CostConfigFieldTypes.JSON,
                     verbose_name="Tarif Einspeisevergütung (CHF/kWh für jeden Monat)",
+                    show=True,
                 ),
                 CostConfigField(
-                    "tarif_hkn", CostConfigFieldTypes.FLOAT, verbose_name="Tarif HKN (CHF/kWh)"
+                    "tarif_hkn",
+                    CostConfigFieldTypes.FLOAT,
+                    verbose_name="Tarif HKN (CHF/kWh)",
+                    show=True,
                 ),
                 CostConfigField(
                     "tarif_korrekturen",
                     CostConfigFieldTypes.JSON,
                     verbose_name="Tarif für Korrekturen (CHF/kWh)",
+                    show=True,
                 ),
                 CostConfigField(
-                    "korrekturen", CostConfigFieldTypes.JSON, verbose_name="Korrekturen (optional)"
+                    "korrekturen",
+                    CostConfigFieldTypes.JSON,
+                    verbose_name="Korrekturen (optional)",
+                    show=True,
                 ),
             ]
             + NkMeasurementDataMonthlyCSVFile.get_config_fields(

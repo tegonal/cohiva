@@ -64,6 +64,7 @@ class NkMeasurementDataAnnual(NkMeasurementDataBase):
                 f"{name}_usage_value",
                 CostConfigFieldTypes.FLOAT,
                 verbose_name=f"Gesamtverbrauch {name}",
+                show=True,
             ),
         ]
 
@@ -227,7 +228,10 @@ class NkMeasurementDataMonthlyCSVFile(NkMeasurementDataMonthly, NkMeasurementDat
 
         fields = [
             cls._create_config_field(
-                f"{name}_file", CostConfigFieldTypes.FILE, verbose_name=f"CSV-Datei für {name}"
+                f"{name}_file",
+                CostConfigFieldTypes.FILE,
+                verbose_name=f"CSV-Datei für {name}",
+                show=True,
             ),
             # TODO: Add default value "Monat"?
             cls._create_config_field(
@@ -377,7 +381,10 @@ class NkMeasurementDataEgon(NkMeasurementDataZippedMonthly):
 
         fields = [
             cls._create_config_field(
-                f"{name}_file", CostConfigFieldTypes.FILE, verbose_name=f"ZIP-Datei für {name}"
+                f"{name}_file",
+                CostConfigFieldTypes.FILE,
+                verbose_name=f"ZIP-Datei für {name}",
+                show=True,
             ),
             cls._create_config_field(
                 f"{name}_file_prefix",

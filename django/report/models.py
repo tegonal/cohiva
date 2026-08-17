@@ -272,7 +272,7 @@ class ReportItemConfiguration(GenoBase):
                             field_type=_match_CostConfigFieldTypes_with_REPORT_FIELDTYPE_CHOICES_values(
                                 field.type
                             ),
-                            show=False,
+                            show=field.show,
                             value_default=default_val,
                         )
 
