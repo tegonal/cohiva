@@ -1674,10 +1674,12 @@ class Contract(GenoBase):
         return True
 
     def save(self, *args, **kwargs):
-        if self.is_active() != self.active:
-            self.active = self.is_active()
-            if kwargs.get("update_fields") and "active" not in kwargs["update_fields"]:
-                kwargs["update_fields"].append("active")
+        is_active = self.is_active()
+        if is_active != self.active:
+            self.active = is_active
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None and "active" not in update_fields:
+                kwargs["update_fields"] = list(update_fields) + ["active"]
         super().save(*args, **kwargs)
 
     def get_contact_address(self):
