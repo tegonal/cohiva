@@ -27,7 +27,7 @@ body:
     id: PRIO
     attributes:
       label: Label
-      description: Wähle das entsprechende Label PRIO_AUSFALL, PRIO_DRINGEND, PRIO_PROBLEM
+      description: Wähle das entsprechende Label PRIO_AUSFALL, PRIO_DRINGEND, PRIO_PROBLEM. [Guide](https://wiki.cohiva.ch/de/home/support/guideline-github#:~:text=hinein%2E-,Dringlichkeit%20feststellen)
       options:
         - PRIO_PROBLEM (Default)
         - PRIO_DRINGEND (Edge)
