@@ -24,7 +24,7 @@ body:
     validations:
       required: true
   - type: dropdown
-    id: version
+    id: PRIO
     attributes:
       label: Label
       description: Wähle das entsprechende Label PRIO_AUSFALL, PRIO_DRINGEND, PRIO_PROBLEM
