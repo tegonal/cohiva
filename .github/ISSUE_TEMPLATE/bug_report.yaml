@@ -23,6 +23,18 @@ body:
       placeholder: "v1.4.3"
     validations:
       required: true
+  type: dropdown
+    id: version
+    attributes:
+      label: Label
+      description: Wähle das entsprechende Label PRIO_AUSFALL, PRIO_DRINGEND, PRIO_PROBLEM
+      options:
+        - PRIO_PROBLEM (Default)
+        - PRIO_DRINGEND (Edge)
+        - PRIO_AUSFALL (Edge)
+      default: 0
+    validations:
+      required: true
   - type: textarea
     id: reproduce
     attributes:
