@@ -23,7 +23,7 @@ body:
       placeholder: "v1.4.3"
     validations:
       required: true
-  type: dropdown
+  - type: dropdown
     id: version
     attributes:
       label: Label
