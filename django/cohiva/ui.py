@@ -94,7 +94,7 @@ class NavGroup:
             return ret
         ret = {
             "title": self._name,
-            "link": None,
+            "link": "#",  # Must not evaluate to false, otherwise unfold will not show it
             "collapsible": True,
             "is_subgroup": True,
             "items": [i.generate_unfold_menuitem(request) for i in self._items],
