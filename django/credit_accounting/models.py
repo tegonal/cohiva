@@ -311,9 +311,9 @@ class Transaction(GenoBase):
         self.__original_amount = self.amount
         self.__original_account = self.account
 
-    def save_as_copy(self):
+    def save_as_copy(self, label_as_copy=True, commit=True):
         self.transaction_id = ""
-        super().save_as_copy()
+        super().save_as_copy(label_as_copy, commit)
 
 
 class UserAccountSetting(GenoBase):

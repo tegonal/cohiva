@@ -233,7 +233,7 @@ class ReportInputFieldInline(StackedInline):  # oder TabularInline):
         return False
 
 
-class ReportItemConfigurationsInline(StackedInline):  # oder StackedInline
+class ReportItemConfigurationsInline(TabularInline):  # oder StackedInline
     model = ReportItemConfiguration
     fields = ["order", "name", "item_category"]
     inlines = [ReportInputFieldInline]
@@ -259,6 +259,48 @@ class ReportConfigurationAdmin(GenoBaseAdmin):
     prevent_add_permission = ["buildings"]
 
 
+## The following admin views are for debugging or maintenance access and not intended to be used
+## by the user to configure the reports.
+
+
+@admin.register(ReportItemConfiguration)
+class ReportItemConfigurationAdmin(GenoBaseAdmin):
+    model = ReportItemConfiguration
+    fields = [
+        "name",
+        "item_category",
+        "report_configuration",
+        "order",
+        "comment",
+        ("ts_created", "ts_modified"),
+        "links",
+        "backlinks",
+    ]
+    readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
+    list_display = ["name", "report_configuration", "item_category", "order"]
+    list_filter = ["item_category", "report_configuration"]
+    search_fields = ["name", "comment"]
+
+
+@admin.register(ReportItem)
+class ReportItemAdmin(GenoBaseAdmin):
+    model = ReportItem
+    fields = [
+        "name",
+        "item_category",
+        "report",
+        "order",
+        "comment",
+        ("ts_created", "ts_modified"),
+        "links",
+        "backlinks",
+    ]
+    readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
+    list_display = ["name", "report", "item_category", "order"]
+    list_filter = ["item_category", "report"]
+    search_fields = ["name", "comment"]
+
+
 @admin.register(ReportInputField)
 class ReportInputFieldAdmin(GenoBaseAdmin):
     model = ReportInputField
@@ -268,7 +310,8 @@ class ReportInputFieldAdmin(GenoBaseAdmin):
         "item_configuration",
         "field_type",
         "show",
-        "comment",
+        "value_default",
+        "order",
         ("ts_created", "ts_modified"),
         "links",
         "backlinks",
@@ -285,7 +328,9 @@ class ReportInputDataAdmin(GenoBaseAdmin):
     form = ReportInputDataAdminForm
     fields = [
         "name",
-        "report",
+        "description",
+        "field_type",
+        "item",
         "value",
         "show",
         "order",
@@ -295,10 +340,10 @@ class ReportInputDataAdmin(GenoBaseAdmin):
         "backlinks",
     ]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
-    list_display = ["name", "report", "value"]
-    list_filter = ["report", "show"]
-    search_fields = ["name__name", "report__name", "value", "comment"]
-    autocomplete_fields = ["name", "report"]
+    list_display = ["name", "report", "item", "value"]
+    list_filter = ["report", "field_type", "item", "show"]
+    search_fields = ["name__name", "report__name", "description", "item__name", "value", "comment"]
+    autocomplete_fields = ["name", "report", "item"]
 
 
 @admin.register(ReportOutput)

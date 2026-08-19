@@ -164,13 +164,14 @@ class GenoBase(models.Model):
         action_list = "\n".join(action_buttons)
         return mark_safe(f'<ul class="cohiva_object-actions">{action_list}</ul>')
 
-    def save_as_copy(self):
-        if hasattr(self, "name") and isinstance(self.name, str):
+    def save_as_copy(self, label_as_copy=True, commit=True):
+        if label_as_copy and hasattr(self, "name") and isinstance(self.name, str):
             self.name = "%s [KOPIE]" % self.name
         self.pk = None
         self.id = None
         self._state.adding = True
-        self.save()
+        if commit:
+            self.save()
 
     def __str__(self):
         if hasattr(self, "name") and self.name:
@@ -611,11 +612,11 @@ class Address(GenoBase):
             ),
         ]
 
-    def save_as_copy(self):
+    def save_as_copy(self, label_as_copy=True, commit=True):
         self.user = None
         self.import_id = None
         self.random_id = uuid.uuid4()
-        super().save_as_copy()
+        super().save_as_copy(label_as_copy, commit)
 
     class Meta:
         unique_together = ["organization", "name", "first_name", "email"]
@@ -1818,12 +1819,12 @@ class Contract(GenoBase):
                 )
         return actions
 
-    def save_as_copy(self):
+    def save_as_copy(self, label_as_copy=True, commit=True):
         old_contractors = self.contractors.all()
         old_children = self.children.all()
         old_rental_units = self.rental_units.all()
         self.import_id = None
-        super().save_as_copy()
+        super().save_as_copy(label_as_copy, commit)
         self.contractors.set(old_contractors)
         self.children.set(old_children)
         self.rental_units.set(old_rental_units)
@@ -2137,9 +2138,9 @@ class ContentTemplate(GenoBase):
         else:
             return None
 
-    def save_as_copy(self):
+    def save_as_copy(self, label_as_copy=True, commit=True):
         old_template_context = self.template_context.all()
-        super().save_as_copy()
+        super().save_as_copy(label_as_copy, commit)
         self.template_context.set(old_template_context)
 
     class Meta:

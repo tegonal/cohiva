@@ -308,9 +308,9 @@ class ReservationObject(GenoBase):
                     )
                 )
 
-    def save_as_copy(self):
+    def save_as_copy(self, label_as_copy=True, commit=True):
         old_usage_types = self.usage_types.all()
-        super().save_as_copy()
+        super().save_as_copy(label_as_copy, commit)
         self.usage_types.set(old_usage_types)
 
     class Meta:

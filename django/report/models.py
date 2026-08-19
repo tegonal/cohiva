@@ -48,16 +48,10 @@ REPORT_FIELDTYPE_CHOICES = (
 
 def _match_CostConfigFieldTypes_with_REPORT_FIELDTYPE_CHOICES_values(ccft: CostConfigFieldTypes):
     match ccft:
-        # case CostConfigFieldTypes.INPUT_KEY:
-        #    return "char"
         case CostConfigFieldTypes.STRING:
             return "char"
-        # case CostConfigFieldTypes.STRING_LIST:
-        #    return "char"
         case CostConfigFieldTypes.BOOL:
             return "bool"
-        # case CostConfigFieldTypes.MEASUREMENT_SOURCES:  # to be refactored, set of fields
-        #    return "char"
         case CostConfigFieldTypes.VEWA_CATEGORY:  # enum dropdown
             return "enum_vewa_category"
         case CostConfigFieldTypes.MONTHLY_WEIGHTS:  # enum dropdown
@@ -72,14 +66,10 @@ def _match_CostConfigFieldTypes_with_REPORT_FIELDTYPE_CHOICES_values(ccft: CostC
             return "int"
         case CostConfigFieldTypes.DATE:
             return "date"
-        # case CostConfigFieldTypes.LIST_12MONTHS_FLOAT: # don't implement for now, json type used
-        #     return "list_12months_float"
         case CostConfigFieldTypes.FILE:
             return "file"
         case CostConfigFieldTypes.JSON:
             return "json"
-        # case CostConfigFieldTypes.BUILDINGIDS: # unused since configured on report
-        #     return "buildingIds"
         case _:
             raise ValueError(f"Unbekannter CostConfigFieldTypes-Wert: {ccft}")
 
@@ -89,16 +79,15 @@ class ReportConfiguration(GenoBase):
     report_type = models.CharField("Reporttyp", choices=REPORT_TYPE_CHOICES, max_length=30)
     buildings = models.ManyToManyField("geno.Building", verbose_name="Liegenschaften", blank=True)
 
-    def save_as_copy(self):
+    def save_as_copy(self, label_as_copy=True, commit=True):
         old_report_configuration_id = self.id
-        super().save_as_copy()
+        super().save_as_copy(label_as_copy, commit)
         old_report_configuration = ReportConfiguration.objects.get(id=old_report_configuration_id)
         for report_item_configuration in ReportItemConfiguration.objects.filter(
             report_configuration=old_report_configuration
         ):
-            report_item_configuration.save_as_copy()
             report_item_configuration.report_configuration = self
-            report_item_configuration.save()
+            report_item_configuration.save_as_copy(label_as_copy=False)
 
     class Meta:
         verbose_name = "Report-Konfiguration"
@@ -119,9 +108,10 @@ class Report(GenoBase):
     state_info = models.TextField("Statusinfo", blank=True)
 
     def save(self, *args, **kwargs):
+        skip_config_copy = kwargs.pop("skip_config_copy", False)
         is_new = self._state.adding
         super().save(*args, **kwargs)
-        if is_new and self.pk:
+        if not skip_config_copy and is_new and self.pk:
             # copy configuration from ReportConfiguration
             if self.report_configuration:
                 for report_item_configuration in ReportItemConfiguration.objects.filter(
@@ -173,16 +163,17 @@ class Report(GenoBase):
             actions.append((f"/report/delete_output/{self.pk}/?init=1", "Alle Resultate LÖSCHEN!"))
         return actions
 
-    def save_as_copy(self):
+    def save_as_copy(self, label_as_copy=True, commit=True):
         self.task_id = None
         self.state = "new"
         self.state_info = ""
         old_report_id = self.id
-        super().save_as_copy()
+        super().save_as_copy(label_as_copy, commit=False)
+        self.save(skip_config_copy=True)
         old_report = Report.objects.get(id=old_report_id)
-        for input_data in ReportInputData.objects.filter(report=old_report):
-            input_data.report = self
-            input_data.save_as_copy()
+        for report_item in ReportItem.objects.filter(report=old_report):
+            report_item.report = self
+            report_item.save_as_copy(label_as_copy=False)
 
     def reset(self):
         self.state = "new"
@@ -196,16 +187,6 @@ class Report(GenoBase):
         constraints = [
             UniqueConstraint(fields=["name", "report_configuration"], name="unique_report"),
         ]
-
-
-# REPORT_ITEM_CATEGORY = (
-# ("NkTotalCost", "Gesamtkosten mit einfacher Verteilung (Fläche, Volumen, Faktor)"),
-# ("NkMonthlyCost", "Monatliche Kosten mit einfacher Verteilung (Fläche, Volumen, Faktor)"),
-# ("NkTotalEnergyCost", "Gesamtkosten mit einfacher Verteilung (Verbrauch)"),
-# ("NkPerRentalUnitCost", "Kosten pro Mietobjekt mit Verteilung (pro Mieteinheit, Peson, Fixum)"),
-# ("NkCostZEVStromallmend", "Stromallmend: ZEV-Kosten"),
-# ("NkCostVEWA", "VEWA: Verbrauchsabhängige Energie- und Wasserkostenabrechnung"),
-# )
 
 
 def get_next_report_item_configuration_order_number():
@@ -230,6 +211,7 @@ class ReportItemConfiguration(GenoBase):
     )
 
     def save(self, *args, **kwargs):
+        skip_ensure_base_input_fields = kwargs.pop("skip_ensure_base_input_fields", False)
         is_new = self._state.adding
         old_item_category = None
         if not is_new and self.pk:
@@ -239,7 +221,9 @@ class ReportItemConfiguration(GenoBase):
                 .first()
             )
         super().save(*args, **kwargs)
-        if is_new or old_item_category != self.item_category:
+        if not skip_ensure_base_input_fields and (
+            is_new or old_item_category != self.item_category
+        ):
             self.ensure_base_input_fields(old_item_category)
 
     def ensure_base_input_fields(self, old_item_category):
@@ -281,18 +265,18 @@ class ReportItemConfiguration(GenoBase):
             old = ReportInputField.objects.filter(item_configuration=self, name=old_field)
             old.delete()
 
-    def save_as_copy(self):
+    def save_as_copy(self, label_as_copy=False, commit=True):
         old_report_item_configuration_id = self.id
-        super().save_as_copy()
+        super().save_as_copy(label_as_copy=label_as_copy, commit=False)
+        self.save(skip_ensure_base_input_fields=True)
         old_report_item_configuration = ReportItemConfiguration.objects.get(
             id=old_report_item_configuration_id
         )
         for report_input_field in ReportInputField.objects.filter(
             item_configuration=old_report_item_configuration
         ):
-            report_input_field.save_as_copy()
-            report_input_field.report_configuration = self
-            report_input_field.save()
+            report_input_field.item_configuration = self
+            report_input_field.save_as_copy(label_as_copy=label_as_copy)
 
     class Meta:
         verbose_name = "Report-Element-Konfiguration"
@@ -331,6 +315,15 @@ class ReportItem(GenoBase):
         help_text=_("Order of the item in the report."),
         default=get_next_report_item_order_number,
     )
+
+    def save_as_copy(self, label_as_copy=False, commit=True):
+        old_report_item_id = self.id
+        super().save_as_copy(label_as_copy=label_as_copy)
+        old_report_item = ReportItem.objects.get(id=old_report_item_id)
+        for report_input_data in ReportInputData.objects.filter(item=old_report_item):
+            report_input_data.item = self
+            report_input_data.report = self.report
+            report_input_data.save_as_copy(label_as_copy=False)
 
     class Meta:
         verbose_name = "Report-Element"
