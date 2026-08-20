@@ -1418,6 +1418,7 @@ class DocumentProcessTest(GenoAdminTestCase):
     def test_context_encoder_serializes_model_instance(self):
         """_ContextEncoder converts Django Model instances to their string representation."""
         import json
+
         from geno.documents import _ContextEncoder
         from geno.models import Address
 
@@ -1431,8 +1432,9 @@ class DocumentProcessTest(GenoAdminTestCase):
 
     def test_context_encoder_falls_back_for_non_models(self):
         """_ContextEncoder falls back to DjangoJSONEncoder for non-Model objects."""
-        import json
         import decimal
+        import json
+
         from geno.documents import _ContextEncoder
 
         context = {"amount": decimal.Decimal("9.95"), "date": datetime.date(2024, 1, 15)}
@@ -1444,6 +1446,7 @@ class DocumentProcessTest(GenoAdminTestCase):
     def test_context_encoder_nested_context_with_models(self):
         """_ContextEncoder handles nested contexts containing model instances."""
         import json
+
         from geno.documents import _ContextEncoder
 
         context = {
@@ -1460,8 +1463,49 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.assertIn(f'"inner_model": "{str(self.members[0])}"', result)
         self.assertIn('["1 Anteilschein", "Fr. 1000"]', result)
 
-    # def test_mail_sending_failure(self):
-    #    pass
+    def test_mail_sending_failure(self):
+        """Recipients are marked as failed when email sending raises an exception."""
+        self.setup_members()
+        self.data["action"] = "mail"
+        self.data["template_mail"] = f"template_id_{self.email_templates[0].pk}"
+        with patch("geno.documents.ProcessDocuments.send_email") as mock_send_email:
+            mock_send_email.side_effect = RuntimeError("SMTP connection refused")
+            ret = send_member_mail_process(self.data)
+        # 4 recipients with email fail; Harry is skipped for no email
+        self.assertResultCount(ret, 0, 1, 4)
+        self.assertEmailSent(0)
+        self.assertInResults(
+            ret["errors"],
+            "Muster, Hans - EXTRA_INFO_TEST (hans.muster@example.com)",
+            logs=[
+                "Konnte mail an Muster, Hans (member) nicht schicken!!! Fehler: SMTP connection refused"
+            ],
+        )
+        self.assertInResults(
+            ret["warnings"],
+            "Noaddress, Harry - EXTRA_INFO_TEST ()",
+            logs=["KEIN EMAIL GESENDET! Grund: Keine Email-Adresse vorhanden."],
+        )
 
-    # def test_mail_sending_failure_with_invoice_rollback(self):
-    #    pass
+    def test_mail_sending_failure_with_invoice_rollback(self):
+        """Invoices created during rendering are deleted when mail sending fails."""
+        self.setup_members()
+
+        def mock_add_invoice(*args, **kwargs):
+            return Invoice.objects.create(
+                name="Mock Invoice",
+                invoice_category=self.invoicecategories[0],
+                date=datetime.date.today(),
+                amount=Decimal("9.95"),
+                person=self.addresses[0],
+            )
+
+        with patch("geno.documents.add_invoice", side_effect=mock_add_invoice):
+            with patch("geno.documents.ProcessDocuments.send_email") as mock_send_email:
+                mock_send_email.side_effect = RuntimeError("SMTP connection refused")
+                ret = self.send_with_templates("QR-Bill Ref")
+        # 4 recipients with email fail; Harry is skipped for no email
+        self.assertResultCount(ret, 0, 1, 4)
+        self.assertEmailSent(0)
+        # The mocked invoices were created during rendering but rolled back afterwards
+        self.assertEqual(Invoice.objects.count(), 0)
