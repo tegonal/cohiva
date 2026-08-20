@@ -574,6 +574,22 @@ msgstr ""
 msgid "Membership durations cannot overlap"
 msgstr "Die Laufzeiten der Mitgliedschaften dürfen sich nicht überschneiden"
 
+#: geno/models.py:1098
+msgid "Contract and building may not both be selected."
+msgstr "Vertrag und Liegenschaft dürfen nicht beide ausgewählt sein."
+
+#: geno/models.py:1103
+msgid "At least one of payment date or effective from date must be provided."
+msgstr "Mindestens eines von Zahlungsdatum oder Wirksam ab muss angegeben werden."
+
+#: geno/models.py:1109
+msgid "Repayment date cannot be before payment date."
+msgstr "Rückzahlungsdatum darf nicht vor dem Zahlungsdatum liegen."
+
+#: geno/models.py:1113
+msgid "Effective until date cannot be before effective from date."
+msgstr "Wirksam bis darf nicht vor dem Wirksam ab liegen."
+
 #: geno/tables.py:110
 #, python-format
 msgid "%(count)d Eintrag"

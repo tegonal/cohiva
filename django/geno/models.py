@@ -1095,22 +1095,21 @@ class Share(GenoBase):
 
         # contract and building relations may not both be present
         if self.attached_to_building is not None and self.attached_to_contract is not None:
-            raise ValidationError("Vertrag und Liegeneschaft dürfen nicht beide ausgewählt sein.")
+            raise ValidationError(_("Contract and building can not both be selected."))
 
-        # TODO: return German error messages
         # At least one of payment date or effective from date must be provided
         if not self.payment_date and not self.effective_from:
             raise ValidationError(
-                "At least one of payment date or effective from date must be provided"
+                _("At least one of payment date or effective from date must be provided.")
             )
         # Repayment date cannot be before payment date
         if self.payment_date and self.repayment_date:
             if self.payment_date > self.repayment_date:
-                raise ValidationError("Repayment date cannot be before payment date")
+                raise ValidationError(_("Repayment date cannot be before payment date."))
         # Effective until date cannot be before effective from date
         if self.effective_from and self.effective_until:
             if self.effective_from > self.effective_until:
-                raise ValidationError("Effective until date cannot be before effective from date")
+                raise ValidationError(_("Effective until date cannot be before effective from date."))
         super().clean(*args, **kwargs)
 
     def save(self, *args, **kwargs):
