@@ -1206,7 +1206,7 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.documenttypes[0].templates.add(ct_statement)
 
         self.setup_members()
-        ret = self.send_with_templates("Statement", action="mail")
+        self.send_with_templates("Statement", action="mail")
         self.assertEmailSent(4)
         # 4 successful recipients get their documents saved
         self.assertEqual(Document.objects.count(), 4)
@@ -1224,7 +1224,7 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.documenttypes[0].templates.add(ct_statement)
 
         self.setup_members()
-        ret = self.send_with_templates("Statement", action="mail_test")
+        self.send_with_templates("Statement", action="mail_test")
         self.assertEmailSent(4)
         self.assertEqual(Document.objects.count(), 0)
 
@@ -1249,7 +1249,7 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.documenttypes[0].templates.add(ct_bill)
 
         self.setup_members()
-        ret = self.send_with_templates("Bill", action="mail")
+        self.send_with_templates("Bill", action="mail")
         self.assertEmailSent(4)
         # Bill renders but never sets content_object, so _save_documents returns early
         self.assertEqual(Document.objects.count(), 0)
