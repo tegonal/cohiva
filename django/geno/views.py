@@ -124,7 +124,6 @@ from .models import (
     Share,
     ShareType,
     get_active_contracts,
-    get_active_shares,
 )
 from .shares import (
     check_rental_shares_report,
@@ -303,7 +302,7 @@ class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
 
         for share_type in ShareType.objects.all():
             stat = {"quantity": 0, "value": 0, "last_date": None}
-            for s in get_active_shares(date=reference_date).filter(share_type=share_type):
+            for s in Share.get_active(date=reference_date).filter(share_type=share_type):
                 stat["quantity"] += s.quantity
                 stat["value"] += s.quantity * s.value
                 if stat["last_date"] is None or s.date > stat["last_date"]:
@@ -325,7 +324,7 @@ class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
         # Check for non-members with shares (warning)
         non_members = []
         if not reference_date and self.request.user.has_perm("geno.canview_share") and stype_AS:
-            for s in get_active_shares(date=reference_date).filter(share_type=stype_AS):
+            for s in Share.get_active(date=reference_date).filter(share_type=stype_AS):
                 try:
                     m = Member.objects.get(name=s.name)
                     if m.date_leave:
@@ -453,7 +452,7 @@ def share_overview_boxplot(request):
         stat_share = []
         for m in Member.objects.filter(Q(date_leave=None) | Q(date_leave__gt=today)):
             total = 0
-            for s in get_active_shares().filter(name=m.name).filter(share_type=share_type):
+            for s in Share.get_active().filter(name=m.name).filter(share_type=share_type):
                 total += s.quantity * float(s.value)
             if total >= 1000:
                 stat_share.append(total / 1000.0)
@@ -466,7 +465,7 @@ def share_overview_boxplot(request):
     for m in Member.objects.filter(Q(date_leave=None) | Q(date_leave__gt=today)):
         total = 0
         for s in (
-            get_active_shares()
+            Share.get_active()
             .filter(name=m.name)
             .exclude(share_type=stype_DarlehenSpezial)
             .exclude(share_type=stype_Hypothek)
@@ -487,7 +486,7 @@ def share_overview_boxplot(request):
         except Member.DoesNotExist:
             total = 0
             for s in (
-                get_active_shares()
+                Share.get_active()
                 .filter(name=a.id)
                 .exclude(share_type=stype_DarlehenSpezial)
                 .exclude(share_type=stype_Hypothek)
@@ -821,7 +820,7 @@ def address_export(request, show_wohnung=True):
             pass
 
         if stype01:
-            share = get_active_shares().filter(share_type=stype01).filter(name=a).first()
+            share = Share.get_active().filter(share_type=stype01).filter(name=a).first()
             if share:
                 share01_paid = share.date.strftime("%d.%m.%Y")
 
@@ -938,7 +937,9 @@ def share_export(request):
     if request.GET.get("aggregate", "") == "yes":
         last = None
         row = []
-        for a in get_active_shares(date=valuta_date).order_by("share_type", "name", "payment_date", "effective_from"):
+        for a in Share.get_active(date=valuta_date).order_by(
+            "share_type", "name", "payment_date", "effective_from"
+        ):
             if a.date_due:
                 duedate = a.date_due
             elif a.duration:
@@ -983,7 +984,7 @@ def share_export(request):
                 c = ws.cell(row=row_num + 1, column=col_num + 1)
                 c.value = row[col_num]
     else:
-        for a in get_active_shares(date=valuta_date).order_by("-payment_date", "-effective_from"):
+        for a in Share.get_active(date=valuta_date).order_by("-payment_date", "-effective_from"):
             row = []
             row.append(a.pk)
             row.append(str(a.name))
@@ -1129,7 +1130,7 @@ def check_payments(request):
         warn = []
         ## Check if member has at least one share:
         if (
-            get_active_shares()
+            Share.get_active()
             .filter(name=member.name)
             .filter(share_type=ShareType.objects.get(name="Anteilschein"))
             .count()
@@ -1410,7 +1411,7 @@ class ShareConfirmationLetterView(DocumentGeneratorView):
             stype_hypo = None
         objects = []
         for s in (
-            get_active_shares(interest=False)
+            Share.get_active(interest=False)
             .filter(payment_date__gt=settings.GENO_SHARE_LETTER_CUTOFF_DATE)
             .exclude(share_type=stype_hypo)
             .order_by("-payment_date")
@@ -1505,7 +1506,7 @@ class ShareReminderLetterView(DocumentGeneratorView):
             info = []
             ## Get active loans that have no end date
             for share in (
-                get_active_shares()
+                Share.get_active()
                 .filter(name=adr)
                 .filter(share_type__name__startswith="Darlehen")
                 .filter(Q(repayment_date=None) & Q(effective_until=None))
@@ -1869,7 +1870,7 @@ def share_mailing(request):
         if loan:
             letter = "mitDarlehen"
             for d in (
-                get_active_shares()
+                Share.get_active()
                 .filter(name=adr)
                 .filter(
                     Q(share_type=ShareType.objects.get(name="Darlehen zinslos"))
@@ -2995,7 +2996,7 @@ def send_member_mail_filter_shares(form, member_list):
 
     # print(stype_filter)
 
-    shares = get_active_shares()
+    shares = Share.get_active()
     if stype_filter:
         shares = shares.filter(share_type__in=stype_filter)
     if stype_exclude:
@@ -3065,13 +3066,13 @@ def send_member_mail_filter_members(form, member_list, only_active=True):
             continue
         ## Filter out members without shares
         if "share_paid_01" in form.cleaned_data and form.cleaned_data["share_paid_01"]:
-            share = get_active_shares().filter(share_type=stype01).filter(name=member.name).first()
+            share = Share.get_active().filter(share_type=stype01).filter(name=member.name).first()
             if not share:
                 continue
         ## Filter out members with shares
         if "share_unpaid" in form.cleaned_data and form.cleaned_data["share_unpaid"]:
             share = (
-                get_active_shares()
+                Share.get_active()
                 .filter(Q(share_type=stype01) | Q(share_type=stype02))
                 .filter(name=member.name)
                 .first()

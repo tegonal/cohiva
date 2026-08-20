@@ -537,7 +537,7 @@ def create_sharetypes(cls: type[GenoAdminTestCase]):
     cls.sharetypes.append(ShareType.objects.create(name="Anteilschein freiwillig"))
 
 
-def create_registrationevents(cls: "type[TestRegistrationForm]"):
+def create_registrationevents(cls: type[TestRegistrationForm]):
     cls.registrationevents = []
     cls.registrationevents.append(
         RegistrationEvent.objects.create(

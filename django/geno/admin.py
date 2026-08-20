@@ -90,9 +90,7 @@ class ShareStateFilter(admin.SimpleListFilter):
                 Q(repayment_date__isnull=True) | Q(repayment_date__gt=today)
             )
         elif value == "gefordert":
-            return queryset.filter(
-                Q(payment_date__gt=today) | Q(payment_date__isnull=True)
-            )
+            return queryset.filter(Q(payment_date__gt=today) | Q(payment_date__isnull=True))
         return queryset
 
 

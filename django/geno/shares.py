@@ -17,7 +17,7 @@ from finance.accounting import (
     Transaction,
 )
 
-from .models import Address, RentalUnit, Share, ShareType, get_active_contracts, get_active_shares
+from .models import Address, RentalUnit, Share, ShareType, get_active_contracts
 from .utils import is_member, nformat
 
 
@@ -421,16 +421,11 @@ def share_interest_calc(address, year, enddate=None):
         bvg_amount = 0
         stype_str = "/".join(map(str, stype))
         for share in (
-            Share.objects.filter(name=address)
+            Share.get_active_in_period(
+                period_start=period_start, period_end=period_end, exclude_period_end=True
+            )
+            .filter(name=address)
             .filter(share_type__in=stype)
-            .filter(
-                (Q(effective_from__isnull=False) & Q(effective_from__lt=period_end))
-                | (Q(effective_from__isnull=True) & Q(payment_date__lt=period_end))
-            )
-            .filter(
-                (Q(effective_until__isnull=False) & Q(effective_until__gte=period_start))
-                | (Q(effective_until__isnull=True) & (Q(repayment_date=None) | Q(repayment_date__gte=period_start)))
-            )
             .exclude(
                 Q(payment_date=datetime.date(year, 12, 31))
                 | Q(effective_from=datetime.date(year, 12, 31))
@@ -762,7 +757,7 @@ def check_rental_shares_report():
     shares_contract = {}
     stype_share = ShareType.objects.filter(name="Anteilschein").first()
     for share in (
-        get_active_shares()
+        Share.get_active()
     ):  # .filter(attached_to_contract=None): #.filter(share_type=stype_share):
         amount = 0
         amount_loan = 0

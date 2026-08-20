@@ -942,14 +942,14 @@ class Share(GenoBase):
         null=True,
         blank=True,
         default=None,
-        help_text="Leer lassen, falls identisch mit Zahlungsdatum. Wird für Reporting/Zinsberechnung verwendet."
+        help_text="Leer lassen, falls identisch mit Zahlungsdatum. Wird für Reporting/Zinsberechnung verwendet.",
     )
     effective_until = models.DateField(
         verbose_name="Wirksam bis",
         null=True,
         blank=True,
         default=None,
-        help_text="Leer lassen, falls identisch mit Rückzahlungsdatum."
+        help_text="Leer lassen, falls identisch mit Rückzahlungsdatum.",
     )
     duration = models.PositiveIntegerField(
         "Laufzeit", null=True, blank=True, help_text="Jahre (bei Darlehen)"
@@ -1060,7 +1060,6 @@ class Share(GenoBase):
             return self.repayment_date
         return None
 
-
     def __str__(self):
         extra_info = self.share_type
         if self.payment_state:
@@ -1101,7 +1100,9 @@ class Share(GenoBase):
         # TODO: return German error messages
         # At least one of payment date or effective from date must be provided
         if not self.payment_date and not self.effective_from:
-            raise ValidationError("At least one of payment date or effective from date must be provided")
+            raise ValidationError(
+                "At least one of payment date or effective from date must be provided"
+            )
         # Repayment date cannot be before payment date
         if self.payment_date and self.repayment_date:
             if self.payment_date > self.repayment_date:
@@ -1141,19 +1142,50 @@ class Share(GenoBase):
             ("share_mailing", "Kann Mailing zu Beteiligungen erstellen"),
         )
 
+    @classmethod
+    def get_active(cls, interest=True, date=None):
+        """Get Shares that are active at the reference date 'date'. If the reference date is equal
+        to the repayment/effective_unil date, the share is NOT included.
+        The default date is the current day."""
+        if date is None:
+            date = datetime.date.today()
+        select = cls.objects.filter(
+            (Q(repayment_date=None) & Q(effective_until=None))
+            | Q(repayment_date__gt=date)
+            | Q(effective_until__gt=date)
+        ).filter(Q(payment_date__lte=date) | Q(effective_from__lte=date))
+        if not interest:
+            return select.filter(is_interest_credit=False)
+        else:
+            return select
 
-def get_active_shares(interest=True, date=None):
-    if date is None:
-        date = datetime.datetime.today()
-    select = Share.objects.filter(
-            (Q(repayment_date = None) & Q(effective_until=None)) | Q(repayment_date__gt=date) | Q(effective_until__gt=date)
+    @classmethod
+    def get_active_in_period(
+        cls, interest=True, period_start=None, period_end=None, exclude_period_end=False
+    ):
+        """Get Shares that have an overlap with the reference period [period_start, period_end].
+        The end date `period_end` is inclusive unless exclude_period_end is set to True.
+        The default period is the current year."""
+        if period_start is None:
+            period_start = datetime.date(datetime.date.today().year, 1, 1)
+        if period_end is None:
+            period_end = datetime.date(datetime.date.today().year, 12, 31)
+        elif exclude_period_end:
+            period_end = period_end - datetime.timedelta(days=1)
+        select = cls.objects.filter(
+            (Q(effective_from__isnull=False) & Q(effective_from__lte=period_end))
+            | (Q(effective_from__isnull=True) & Q(payment_date__lte=period_end))
         ).filter(
-            Q(payment_date__lte=date) | Q(effective_from__lte=date)
+            (Q(effective_until__isnull=False) & Q(effective_until__gte=period_start))
+            | (
+                Q(effective_until__isnull=True)
+                & (Q(repayment_date=None) | Q(repayment_date__gte=period_start))
+            )
         )
-    if not interest:
-        return select.filter(is_interest_credit=False)
-    else:
-        return select
+        if not interest:
+            return select.filter(is_interest_credit=False)
+        else:
+            return select
 
 
 DOCUMENTTYPE_NAME_CHOICES = (

@@ -34,7 +34,6 @@ from geno.models import (
     MemberAttributeType,
     Share,
     ShareType,
-    get_active_shares,
 )
 from geno.shares import get_share_statement_data
 from geno.utils import fill_template_pod, nformat, odt2pdf, remove_temp_files, sanitize_filename
@@ -1069,7 +1068,7 @@ def get_context_data(doctype, obj_id, extra_context):
                 c["bvg"] = False
             count = 0
             amount = 0
-            for s in get_active_shares().filter(name=obj.name).filter(share_type=stype_share):
+            for s in Share.get_active().filter(name=obj.name).filter(share_type=stype_share):
                 count += s.quantity
                 amount += s.quantity * s.value
             if count == 1:
