@@ -377,10 +377,10 @@ class Address(GenoBase):
 
     def get_contracts(self):
         if self.address_contracts.exists():
-            return get_active_contracts(pre_select=self.address_contracts.all())
+            return Contract.get_active().filter(contractors=self)
         elif hasattr(self, "address_child"):
             if self.address_child.child_contracts.exists():
-                return get_active_contracts(pre_select=self.address_child.child_contracts.all())
+                return Contract.get_active().filter(children=self.address_child)
         return []
 
     def is_tenant(self):
@@ -1934,19 +1934,40 @@ class Contract(GenoBase):
             ),
         )
 
+    @classmethod
+    def get_active(cls, date=None, include_subcontracts=False):
+        """Get Contracts that are active at the reference date 'date'.
+        The default date is the current day."""
+        if date is None:
+            date = datetime.date.today()
+            if date < datetime.date(2021, 12, 1):
+                date = datetime.date(2021, 12, 1)
+        select = cls.objects.filter(Q(date_end=None) | Q(date_end__gt=date)).filter(date__lte=date)
+        if include_subcontracts:
+            return select
+        else:
+            return select.filter(main_contract__isnull=True)
 
-def get_active_contracts(date=None, pre_select=None, include_subcontracts=False):
-    if date is None:
-        date = datetime.date.today()
-        if date < datetime.date(2021, 12, 1):
-            date = datetime.date(2021, 12, 1)
-    if not pre_select:
-        pre_select = Contract.objects.all()
-    select = pre_select.filter(Q(date_end=None) | Q(date_end__gt=date)).filter(date__lte=date)
-    if include_subcontracts:
-        return select
-    else:
-        return select.filter(main_contract__isnull=True)
+    @classmethod
+    def get_active_in_period(
+        cls, period_start=None, period_end=None, exclude_period_end=False, include_subcontracts=False
+    ):
+        """Get Contracts that have an overlap with the reference period [period_start, period_end].
+        The end date `period_end` is inclusive unless exclude_period_end is set to True.
+        The default period is the current year."""
+        if period_start is None:
+            period_start = datetime.date(datetime.date.today().year, 1, 1)
+        if period_end is None:
+            period_end = datetime.date(datetime.date.today().year, 12, 31)
+        elif exclude_period_end:
+            period_end = period_end - datetime.timedelta(days=1)
+        select = cls.objects.filter(Q(date__lte=period_end)).filter(
+            Q(date_end=None) | Q(date_end__gte=period_start)
+        )
+        if not include_subcontracts:
+            return select.filter(main_contract__isnull=True)
+        else:
+            return select
 
 
 INVOICE_OBJECT_TYPE_CHOICES = (

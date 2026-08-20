@@ -14,7 +14,7 @@ from openpyxl import load_workbook
 from vdirsyncer.storage.dav import CardDAVStorage
 
 from .billing import get_reference_nr
-from .models import Address, Invoice, RentalUnit, get_active_contracts
+from .models import Address, Contract, Invoice, RentalUnit
 
 
 def vcard_from_address(adr):
@@ -250,7 +250,7 @@ def export_adit_file():
             ru_name = "%s %s" % (ru.rental_type, ru.name)
         if ru.adit_serial:
             ## Get names
-            contracts = get_active_contracts().filter(rental_units__id__exact=ru.id)
+            contracts = Contract.get_active().filter(rental_units__id__exact=ru.id)
             n_contracts = contracts.count()
             name_found = False
             if n_contracts > 0:
@@ -387,7 +387,7 @@ def export_adit_file_xlsm():
             ru_name = "%s %s" % (ru.rental_type, ru.name)
         if ru.adit_serial:
             ## Get names
-            contracts = get_active_contracts().filter(rental_units__id__exact=ru.id)
+            contracts = Contract.get_active().filter(rental_units__id__exact=ru.id)
             n_contracts = contracts.count()
             name_found = False
             if n_contracts > 0:

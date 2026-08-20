@@ -17,7 +17,7 @@ from finance.accounting import (
     Transaction,
 )
 
-from .models import Address, RentalUnit, Share, ShareType, get_active_contracts
+from .models import Address, Contract, RentalUnit, Share, ShareType
 from .utils import is_member, nformat
 
 
@@ -940,7 +940,7 @@ def check_rental_shares_report():
         if ru.min_occupancy:
             min_occupancy = ru.min_occupancy
         no_contract = True
-        for contract in get_active_contracts().filter(rental_units__id=ru.id):
+        for contract in Contract.get_active().filter(rental_units__id=ru.id):
             # print(" - Contract: %s" % contract)
             no_contract = False
 

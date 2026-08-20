@@ -123,7 +123,6 @@ from .models import (
     RentalUnit,
     Share,
     ShareType,
-    get_active_contracts,
 )
 from .shares import (
     check_rental_shares_report,
@@ -825,7 +824,7 @@ def address_export(request, show_wohnung=True):
                 share01_paid = share.date.strftime("%d.%m.%Y")
 
         if show_wohnung:
-            for c in get_active_contracts().filter(contractors__pk=a.pk):
+            for c in Contract.get_active().filter(contractors__pk=a.pk):
                 for child in c.children.all():
                     if kinder == "":
                         kinder = "%s %s (%s)" % (
@@ -2173,7 +2172,7 @@ class ContractCheckFormsView(DocumentGeneratorView):
     def get_objects(self):
         """Build the list of contracts that need check forms."""
         objects = []
-        for c in get_active_contracts():
+        for c in Contract.get_active():
             for ru in c.rental_units.all():
                 if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
                     objects.append({"obj": c})
@@ -2192,7 +2191,7 @@ class ContractCheckFormsView(DocumentGeneratorView):
 
         # Always calculate the list of contracts for count
         contracts = []
-        for c in get_active_contracts():
+        for c in Contract.get_active():
             for ru in c.rental_units.all():
                 if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
                     contracts.append(c)
@@ -2378,7 +2377,7 @@ def create_documents_deprecated(request, default_doctype, objects=None, options=
     if not objects:
         if default_doctype == "contract_check":
             objects = []
-            for c in get_active_contracts():
+            for c in Contract.get_active():
                 for ru in c.rental_units.all():
                     if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
                         objects.append({"obj": c})
@@ -2583,7 +2582,7 @@ class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
                     else:
                         bewohnende_missing.append(person["email"])
         else:
-            for c in get_active_contracts():
+            for c in Contract.get_active():
                 include = False
                 for ru in c.rental_units.all():
                     if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
@@ -2876,7 +2875,7 @@ def run_maintenance_tasks(request):
 
 def send_member_mail_filter_rental(form, member_list):
     adr_list = []
-    contracts = get_active_contracts(
+    contracts = Contract.get_active(
         include_subcontracts=form.cleaned_data["include_subcontracts"]
         if form.cleaned_data["include_subcontracts"]
         else False
@@ -4238,7 +4237,7 @@ class ResidentUnitListView(CohivaAdminViewMixin, TemplateView):
             children = []
             comments = []
 
-            contracts = get_active_contracts().filter(rental_units__id__exact=ru.id)
+            contracts = Contract.get_active().filter(rental_units__id__exact=ru.id)
             n_contracts = contracts.count()
             if n_contracts > 0:
                 if n_contracts > 1:
@@ -4364,7 +4363,7 @@ def rental_unit_list_create_documents(request, doc="mailbox"):
         count_first_names = 0
         mietpartei = []
 
-        contracts = get_active_contracts().filter(rental_units__id__exact=ru.id)
+        contracts = Contract.get_active().filter(rental_units__id__exact=ru.id)
         n_contracts = contracts.count()
         if n_contracts > 0:
             if n_contracts > 1:
