@@ -1356,6 +1356,65 @@ class DocumentProcessTest(GenoAdminTestCase):
 
         self.assertIn("hat keine Datei hinterlegt", str(cm.exception))
 
+    def test_render_falls_back_to_template_document_type(self):
+        """When doctype is not set, render() falls back to the template's first active DocumentType."""
+        from geno.documents import DocumentTemplate, Recipient
+
+        ct_statement = ContentTemplate.objects.get(name="Statement")
+        # Link the 'invoice' DocumentType to the Statement template so it becomes the fallback
+        self.documenttypes[0].templates.add(ct_statement)
+        # Build a recipient that will have content_object set during rendering
+        recipient = Recipient(self.members[0].name, member=self.members[0])
+        recipient.content_object = "address"
+
+        template = DocumentTemplate(ct_statement, doctype=None, output_format="odt")
+        output = template.render(recipient)
+
+        self.assertEqual(output.doctype, self.documenttypes[0])
+        self.assertEqual(output.content_template, ct_statement)
+
+    def test_render_preserves_explicit_doctype(self):
+        """An explicitly passed doctype is preserved and not overridden by the fallback."""
+        from geno.documents import DocumentTemplate, Recipient
+        from geno.models import DocumentType
+
+        ct_statement = ContentTemplate.objects.get(name="Statement")
+        # Create an additional DocumentType which will be linked to the template
+        doctype_linked = DocumentType.objects.create(name="linked_doctype", description="Linked DocumentType")
+        doctype_linked.templates.add(ct_statement)
+
+        recipient = Recipient(self.members[0].name, member=self.members[0])
+        recipient.content_object = "address"
+
+        # Pass the first DocumentType explicitly
+        template = DocumentTemplate(ct_statement, doctype=self.documenttypes[0], output_format="odt")
+        output = template.render(recipient)
+
+        # Should keep the explicit doctype, not fall back to the linked DocumentType
+        self.assertEqual(output.doctype, self.documenttypes[0])
+
+    def test_render_fallback_no_active_document_type(self):
+        """If no doctype is set and the template has no active DocumentType, output.doctype stays None."""
+        from geno.documents import DocumentTemplate, ProcessDocuments, Recipient
+
+        ct_bill = ContentTemplate.objects.get(name="Bill")
+        # Ensure Bill has no document types linked
+        ct_bill.document_types.clear()
+
+        recipient = Recipient(self.members[0].name, member=self.members[0])
+        recipient.content_object = "address"
+
+        template = DocumentTemplate(ct_bill, doctype=None, output_format="odt")
+        output = template.render(recipient)
+
+        self.assertIsNone(output.doctype)
+
+        # Consequently _save_documents should skip this document
+        process = ProcessDocuments(dry_run=False)
+        recipient.documents = [output]
+        process._save_documents(recipient)
+        self.assertEqual(Document.objects.count(), 0)
+
     ## TODO
     # def test_mail_sending_failure(self):
     #    pass
