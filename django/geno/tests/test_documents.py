@@ -13,6 +13,7 @@ from geno.forms import MemberMailActionForm
 from geno.models import (
     Address,
     ContentTemplate,
+    Document,
     GenericAttribute,
     Invoice,
     InvoiceCategory,
@@ -1200,6 +1201,117 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.assertEqual(ret.status_code, 200)
         self.assertEqual(ret.headers["Content-Type"], "application/x-zip-compressed")
         self.assertInZIP(ret.content, 5, ["Muster_Hans_Simple.pdf"])
+
+    def test_documents_saved_after_mail_send(self):
+        """Documents are persisted when mail is sent (dry_run=False)."""
+        ct_statement = ContentTemplate.objects.get(name="Statement")
+        self.documenttypes[0].templates.add(ct_statement)
+
+        self.setup_members()
+        ret = self.send_with_templates("Statement", action="mail")
+        self.assertEmailSent(4)
+        # 4 successful recipients get their documents saved
+        self.assertEqual(Document.objects.count(), 4)
+        # Verify that at least one document contains data
+        doc = Document.objects.first()
+        self.assertIsNotNone(doc.name)
+        self.assertIsNotNone(doc.doctype)
+        self.assertIsNotNone(doc.template)
+        self.assertIsNotNone(doc.data)
+        self.assertEqual(doc.content_object, self.addresses[0])
+
+    def test_documents_not_saved_during_dry_run(self):
+        """Documents are not persisted during dry run (mail_test)."""
+        ct_statement = ContentTemplate.objects.get(name="Statement")
+        self.documenttypes[0].templates.add(ct_statement)
+
+        self.setup_members()
+        ret = self.send_with_templates("Statement", action="mail_test")
+        self.assertEmailSent(4)
+        self.assertEqual(Document.objects.count(), 0)
+
+    def test_documents_saved_in_zip_mode(self):
+        """Documents are persisted when creating ZIP files (dry_run=False)."""
+        ct_statement = ContentTemplate.objects.get(name="Statement")
+        self.documenttypes[0].templates.add(ct_statement)
+
+        self.setup_members()
+        self.data["action"] = "makezip"
+        self.data["template_files"] = [
+            f"ContentTemplate:{ct_statement.pk}"
+        ]
+        ret = send_member_mail_process(self.data)
+        self.assertTrue(isinstance(ret, HttpResponse))
+        # All 5 members get documents (zip mode does not skip missing emails)
+        self.assertEqual(Document.objects.count(), 5)
+
+    def test_documents_not_saved_without_content_object(self):
+        """Documents are not saved when recipient has no content_object set."""
+        ct_bill = ContentTemplate.objects.get(name="Bill")
+        self.documenttypes[0].templates.add(ct_bill)
+
+        self.setup_members()
+        ret = self.send_with_templates("Bill", action="mail")
+        self.assertEmailSent(4)
+        # Bill renders but never sets content_object, so _save_documents returns early
+        self.assertEqual(Document.objects.count(), 0)
+
+    def test_documents_not_saved_for_unknown_content_object(self):
+        """_save_documents skips unknown content_object types with a warning."""
+        from geno.documents import ProcessDocuments, Recipient, RenderedDocument
+
+        process = ProcessDocuments(dry_run=False)
+        recipient = Recipient(self.addresses[0])
+        recipient.content_object = "contract"
+
+        doc = RenderedDocument()
+        doc.filename = "test.pdf"
+        doc.doctype = self.documenttypes[0]
+        doc.context = {"test": "data"}
+        doc.content_template = self.contenttemplates[0]
+        recipient.documents = [doc]
+
+        self.assertEqual(Document.objects.count(), 0)
+        process._save_documents(recipient)
+        self.assertEqual(Document.objects.count(), 0)
+
+    def test_document_not_saved_if_doctype_missing(self):
+        """_save_documents skips individual documents without a doctype."""
+        from geno.documents import ProcessDocuments, Recipient, RenderedDocument
+
+        process = ProcessDocuments(dry_run=False)
+        recipient = Recipient(self.addresses[0])
+        recipient.content_object = "address"
+
+        doc = RenderedDocument()
+        doc.filename = "test.pdf"
+        doc.doctype = None  # Missing doctype
+        doc.context = {"test": "data"}
+        doc.content_template = self.contenttemplates[0]
+        recipient.documents = [doc]
+
+        self.assertEqual(Document.objects.count(), 0)
+        process._save_documents(recipient)
+        self.assertEqual(Document.objects.count(), 0)
+
+    def test_document_not_saved_if_context_missing(self):
+        """_save_documents skips individual documents without a context."""
+        from geno.documents import ProcessDocuments, Recipient, RenderedDocument
+
+        process = ProcessDocuments(dry_run=False)
+        recipient = Recipient(self.addresses[0])
+        recipient.content_object = "address"
+
+        doc = RenderedDocument()
+        doc.filename = "test.pdf"
+        doc.doctype = self.documenttypes[0]
+        doc.context = None  # Missing context
+        doc.content_template = self.contenttemplates[0]
+        recipient.documents = [doc]
+
+        self.assertEqual(Document.objects.count(), 0)
+        process._save_documents(recipient)
+        self.assertEqual(Document.objects.count(), 0)
 
     ## TODO
     # def test_mail_sending_failure(self):
