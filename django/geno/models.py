@@ -1150,10 +1150,15 @@ class Share(GenoBase):
         if date is None:
             date = datetime.date.today()
         select = cls.objects.filter(
-            (Q(repayment_date=None) & Q(effective_until=None))
-            | Q(repayment_date__gt=date)
-            | Q(effective_until__gt=date)
-        ).filter(Q(payment_date__lte=date) | Q(effective_from__lte=date))
+            (Q(effective_from__isnull=False) & Q(effective_from__lte=date))
+            | (Q(effective_from__isnull=True) & Q(payment_date__lte=date))
+        ).filter(
+            (Q(effective_until__isnull=False) & Q(effective_until__gt=date))
+            | (
+                Q(effective_until__isnull=True)
+                & (Q(repayment_date__isnull=True) | Q(repayment_date__gt=date))
+            )
+        )
         if not interest:
             return select.filter(is_interest_credit=False)
         else:
