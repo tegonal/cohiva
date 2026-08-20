@@ -1313,6 +1313,49 @@ class DocumentProcessTest(GenoAdminTestCase):
         process._save_documents(recipient)
         self.assertEqual(Document.objects.count(), 0)
 
+    def test_add_document_type_without_active_template_raises(self):
+        """A DocumentType with no active template raises ValueError."""
+        from geno.documents import ProcessDocuments
+
+        # Create a DocumentType with no templates at all
+        from geno.models import DocumentType
+        doctype_no_template = DocumentType.objects.create(name="no_template_test", description="Test")
+
+        process = ProcessDocuments()
+        with self.assertRaises(ValueError) as cm:
+            process.add_document_template(f"DocumentType:{doctype_no_template.pk}")
+
+        self.assertIn("hat keine aktive Vorlage", str(cm.exception))
+
+    def test_add_document_type_template_without_file_raises(self):
+        """A DocumentType whose active template lacks a file raises ValueError."""
+        from geno.documents import ProcessDocuments
+        from geno.models import ContentTemplate, DocumentType
+
+        # Create a template with no file attached
+        template_no_file = ContentTemplate.objects.create(name="NoFileTemplate", template_type="OpenDocument")
+        doctype_bad = DocumentType.objects.create(name="bad_template_test", description="Test")
+        doctype_bad.templates.add(template_no_file)
+
+        process = ProcessDocuments()
+        with self.assertRaises(ValueError) as cm:
+            process.add_document_template(f"DocumentType:{doctype_bad.pk}")
+
+        self.assertIn("Vorlage hat keine Datei hinterlegt", str(cm.exception))
+
+    def test_add_content_template_without_file_raises(self):
+        """A ContentTemplate with no file raises ValueError."""
+        from geno.documents import ProcessDocuments
+        from geno.models import ContentTemplate
+
+        template_no_file = ContentTemplate.objects.create(name="NoFileContentTemplate", template_type="OpenDocument")
+
+        process = ProcessDocuments()
+        with self.assertRaises(ValueError) as cm:
+            process.add_document_template(f"ContentTemplate:{template_no_file.pk}")
+
+        self.assertIn("hat keine Datei hinterlegt", str(cm.exception))
+
     ## TODO
     # def test_mail_sending_failure(self):
     #    pass
