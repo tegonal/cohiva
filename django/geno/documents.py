@@ -44,6 +44,8 @@ logger = logging.getLogger("geno")
 
 
 class _ContextEncoder(DjangoJSONEncoder):
+    """Custom JSON encoder that serializes Django Model instances to their string representation."""
+
     def default(self, obj):
         if isinstance(obj, Model):
             return str(obj)
@@ -803,7 +805,7 @@ class ProcessDocuments:
                 for doc in recipient.documents:
                     if doc.linked_invoice:
                         logger.warning(
-                            f"Rollback failed recipient {recipient}: Deleting invoice {doc.invoice}"
+                            f"Rollback failed recipient {recipient}: Deleting invoice {doc.linked_invoice}"
                         )
                         doc.linked_invoice.delete()
 
