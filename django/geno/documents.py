@@ -410,6 +410,9 @@ class DocumentTemplate:
                 raise RuntimeError("Could not fill template")
             output.context = ctx
             output.doctype = self.doctype
+            # Fallback if the doctype has not been set explicitly
+            if not output.doctype and self.content_template:
+                output.doctype = self.content_template.document_types.filter(active=True).first()
             output.content_template = self.content_template
         else:
             ## Just append
