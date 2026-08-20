@@ -1415,7 +1415,51 @@ class DocumentProcessTest(GenoAdminTestCase):
         process._save_documents(recipient)
         self.assertEqual(Document.objects.count(), 0)
 
-    ## TODO
+    def test_context_encoder_serializes_model_instance(self):
+        """_ContextEncoder converts Django Model instances to their string representation."""
+        import json
+        from geno.documents import _ContextEncoder
+        from geno.models import Address
+
+        address = Address.objects.create(name="Encoder", first_name="Test")
+        context = {"address": address, "plain": "value"}
+
+        result = json.dumps(context, cls=_ContextEncoder)
+        # address should be the string representation, not an object
+        self.assertIn(f'"address": "{str(address)}"', result)
+        self.assertIn('"plain": "value"', result)
+
+    def test_context_encoder_falls_back_for_non_models(self):
+        """_ContextEncoder falls back to DjangoJSONEncoder for non-Model objects."""
+        import json
+        import decimal
+        from geno.documents import _ContextEncoder
+
+        context = {"amount": decimal.Decimal("9.95"), "date": datetime.date(2024, 1, 15)}
+
+        result = json.dumps(context, cls=_ContextEncoder)
+        self.assertIn('"amount": "9.95"', result)
+        self.assertIn('"date": "2024-01-15"', result)
+
+    def test_context_encoder_nested_context_with_models(self):
+        """_ContextEncoder handles nested contexts containing model instances."""
+        import json
+        from geno.documents import _ContextEncoder
+
+        context = {
+            "bill": [
+                ("1 Anteilschein", "Fr. 1000"),
+                ("Zusatz", "Fr. 500"),
+            ],
+            "debtor": self.addresses[0],
+            "nested": {"inner_model": self.members[0]},
+        }
+
+        result = json.dumps(context, cls=_ContextEncoder)
+        self.assertIn(f'"debtor": "{str(self.addresses[0])}"', result)
+        self.assertIn(f'"inner_model": "{str(self.members[0])}"', result)
+        self.assertIn('["1 Anteilschein", "Fr. 1000"]', result)
+
     # def test_mail_sending_failure(self):
     #    pass
 
