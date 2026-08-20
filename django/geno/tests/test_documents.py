@@ -13,6 +13,7 @@ from geno.forms import MemberMailActionForm
 from geno.models import (
     Address,
     ContentTemplate,
+    Document,
     GenericAttribute,
     Invoice,
     InvoiceCategory,
@@ -1201,9 +1202,310 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.assertEqual(ret.headers["Content-Type"], "application/x-zip-compressed")
         self.assertInZIP(ret.content, 5, ["Muster_Hans_Simple.pdf"])
 
-    ## TODO
-    # def test_mail_sending_failure(self):
-    #    pass
+    def test_documents_saved_after_mail_send(self):
+        """Documents are persisted when mail is sent (dry_run=False)."""
+        ct_statement = ContentTemplate.objects.get(name="Statement")
+        self.documenttypes[0].templates.add(ct_statement)
 
-    # def test_mail_sending_failure_with_invoice_rollback(self):
-    #    pass
+        self.setup_members()
+        self.send_with_templates("Statement", action="mail")
+        self.assertEmailSent(4)
+        # 4 successful recipients get their documents saved
+        self.assertEqual(Document.objects.count(), 4)
+        # Verify that at least one document contains data
+        doc = Document.objects.first()
+        self.assertIsNotNone(doc.name)
+        self.assertIsNotNone(doc.doctype)
+        self.assertIsNotNone(doc.template)
+        self.assertIsNotNone(doc.data)
+        self.assertEqual(doc.content_object, self.addresses[0])
+
+    def test_documents_not_saved_during_dry_run(self):
+        """Documents are not persisted during dry run (mail_test)."""
+        ct_statement = ContentTemplate.objects.get(name="Statement")
+        self.documenttypes[0].templates.add(ct_statement)
+
+        self.setup_members()
+        self.send_with_templates("Statement", action="mail_test")
+        self.assertEmailSent(4)
+        self.assertEqual(Document.objects.count(), 0)
+
+    def test_documents_saved_in_zip_mode(self):
+        """Documents are persisted when creating ZIP files (dry_run=False)."""
+        ct_statement = ContentTemplate.objects.get(name="Statement")
+        self.documenttypes[0].templates.add(ct_statement)
+
+        self.setup_members()
+        self.data["action"] = "makezip"
+        self.data["template_files"] = [
+            f"ContentTemplate:{ct_statement.pk}"
+        ]
+        ret = send_member_mail_process(self.data)
+        self.assertTrue(isinstance(ret, HttpResponse))
+        # All 5 members get documents (zip mode does not skip missing emails)
+        self.assertEqual(Document.objects.count(), 5)
+
+    def test_documents_not_saved_without_content_object(self):
+        """Documents are not saved when recipient has no content_object set."""
+        ct_bill = ContentTemplate.objects.get(name="Bill")
+        self.documenttypes[0].templates.add(ct_bill)
+
+        self.setup_members()
+        self.send_with_templates("Bill", action="mail")
+        self.assertEmailSent(4)
+        # Bill renders but never sets content_object, so _save_documents returns early
+        self.assertEqual(Document.objects.count(), 0)
+
+    def test_documents_not_saved_for_unknown_content_object(self):
+        """_save_documents skips unknown content_object types with a warning."""
+        from geno.documents import ProcessDocuments, Recipient, RenderedDocument
+
+        process = ProcessDocuments(dry_run=False)
+        recipient = Recipient(self.addresses[0])
+        recipient.content_object = "contract"
+
+        doc = RenderedDocument()
+        doc.filename = "test.pdf"
+        doc.doctype = self.documenttypes[0]
+        doc.context = {"test": "data"}
+        doc.content_template = self.contenttemplates[0]
+        recipient.documents = [doc]
+
+        self.assertEqual(Document.objects.count(), 0)
+        process._save_documents(recipient)
+        self.assertEqual(Document.objects.count(), 0)
+
+    def test_document_not_saved_if_doctype_missing(self):
+        """_save_documents skips individual documents without a doctype."""
+        from geno.documents import ProcessDocuments, Recipient, RenderedDocument
+
+        process = ProcessDocuments(dry_run=False)
+        recipient = Recipient(self.addresses[0])
+        recipient.content_object = "address"
+
+        doc = RenderedDocument()
+        doc.filename = "test.pdf"
+        doc.doctype = None  # Missing doctype
+        doc.context = {"test": "data"}
+        doc.content_template = self.contenttemplates[0]
+        recipient.documents = [doc]
+
+        self.assertEqual(Document.objects.count(), 0)
+        process._save_documents(recipient)
+        self.assertEqual(Document.objects.count(), 0)
+
+    def test_document_not_saved_if_context_missing(self):
+        """_save_documents skips individual documents without a context."""
+        from geno.documents import ProcessDocuments, Recipient, RenderedDocument
+
+        process = ProcessDocuments(dry_run=False)
+        recipient = Recipient(self.addresses[0])
+        recipient.content_object = "address"
+
+        doc = RenderedDocument()
+        doc.filename = "test.pdf"
+        doc.doctype = self.documenttypes[0]
+        doc.context = None  # Missing context
+        doc.content_template = self.contenttemplates[0]
+        recipient.documents = [doc]
+
+        self.assertEqual(Document.objects.count(), 0)
+        process._save_documents(recipient)
+        self.assertEqual(Document.objects.count(), 0)
+
+    def test_add_document_type_without_active_template_raises(self):
+        """A DocumentType with no active template raises ValueError."""
+        from geno.documents import ProcessDocuments
+
+        # Create a DocumentType with no templates at all
+        from geno.models import DocumentType
+        doctype_no_template = DocumentType.objects.create(name="no_template_test", description="Test")
+
+        process = ProcessDocuments()
+        with self.assertRaises(ValueError) as cm:
+            process.add_document_template(f"DocumentType:{doctype_no_template.pk}")
+
+        self.assertIn("hat keine aktive Vorlage", str(cm.exception))
+
+    def test_add_document_type_template_without_file_raises(self):
+        """A DocumentType whose active template lacks a file raises ValueError."""
+        from geno.documents import ProcessDocuments
+        from geno.models import ContentTemplate, DocumentType
+
+        # Create a template with no file attached
+        template_no_file = ContentTemplate.objects.create(name="NoFileTemplate", template_type="OpenDocument")
+        doctype_bad = DocumentType.objects.create(name="bad_template_test", description="Test")
+        doctype_bad.templates.add(template_no_file)
+
+        process = ProcessDocuments()
+        with self.assertRaises(ValueError) as cm:
+            process.add_document_template(f"DocumentType:{doctype_bad.pk}")
+
+        self.assertIn("Vorlage hat keine Datei hinterlegt", str(cm.exception))
+
+    def test_add_content_template_without_file_raises(self):
+        """A ContentTemplate with no file raises ValueError."""
+        from geno.documents import ProcessDocuments
+        from geno.models import ContentTemplate
+
+        template_no_file = ContentTemplate.objects.create(name="NoFileContentTemplate", template_type="OpenDocument")
+
+        process = ProcessDocuments()
+        with self.assertRaises(ValueError) as cm:
+            process.add_document_template(f"ContentTemplate:{template_no_file.pk}")
+
+        self.assertIn("hat keine Datei hinterlegt", str(cm.exception))
+
+    def test_render_falls_back_to_template_document_type(self):
+        """When doctype is not set, render() falls back to the template's first active DocumentType."""
+        from geno.documents import DocumentTemplate, Recipient
+
+        ct_statement = ContentTemplate.objects.get(name="Statement")
+        # Link the 'invoice' DocumentType to the Statement template so it becomes the fallback
+        self.documenttypes[0].templates.add(ct_statement)
+        # Build a recipient that will have content_object set during rendering
+        recipient = Recipient(self.members[0].name, member=self.members[0])
+        recipient.content_object = "address"
+
+        template = DocumentTemplate(ct_statement, doctype=None, output_format="odt")
+        output = template.render(recipient)
+
+        self.assertEqual(output.doctype, self.documenttypes[0])
+        self.assertEqual(output.content_template, ct_statement)
+
+    def test_render_preserves_explicit_doctype(self):
+        """An explicitly passed doctype is preserved and not overridden by the fallback."""
+        from geno.documents import DocumentTemplate, Recipient
+        from geno.models import DocumentType
+
+        ct_statement = ContentTemplate.objects.get(name="Statement")
+        # Create an additional DocumentType which will be linked to the template
+        doctype_linked = DocumentType.objects.create(name="linked_doctype", description="Linked DocumentType")
+        doctype_linked.templates.add(ct_statement)
+
+        recipient = Recipient(self.members[0].name, member=self.members[0])
+        recipient.content_object = "address"
+
+        # Pass the first DocumentType explicitly
+        template = DocumentTemplate(ct_statement, doctype=self.documenttypes[0], output_format="odt")
+        output = template.render(recipient)
+
+        # Should keep the explicit doctype, not fall back to the linked DocumentType
+        self.assertEqual(output.doctype, self.documenttypes[0])
+
+    def test_render_fallback_no_active_document_type(self):
+        """If no doctype is set and the template has no active DocumentType, output.doctype stays None."""
+        from geno.documents import DocumentTemplate, ProcessDocuments, Recipient
+
+        ct_bill = ContentTemplate.objects.get(name="Bill")
+        # Ensure Bill has no document types linked
+        ct_bill.document_types.clear()
+
+        recipient = Recipient(self.members[0].name, member=self.members[0])
+        recipient.content_object = "address"
+
+        template = DocumentTemplate(ct_bill, doctype=None, output_format="odt")
+        output = template.render(recipient)
+
+        self.assertIsNone(output.doctype)
+
+        # Consequently _save_documents should skip this document
+        process = ProcessDocuments(dry_run=False)
+        recipient.documents = [output]
+        process._save_documents(recipient)
+        self.assertEqual(Document.objects.count(), 0)
+
+    def test_context_encoder_serializes_model_instance(self):
+        """_ContextEncoder converts Django Model instances to their string representation."""
+        import json
+
+        from geno.documents import _ContextEncoder
+        from geno.models import Address
+
+        address = Address.objects.create(name="Encoder", first_name="Test")
+        context = {"address": address, "plain": "value"}
+
+        result = json.dumps(context, cls=_ContextEncoder)
+        # address should be the string representation, not an object
+        self.assertIn(f'"address": "{str(address)}"', result)
+        self.assertIn('"plain": "value"', result)
+
+    def test_context_encoder_falls_back_for_non_models(self):
+        """_ContextEncoder falls back to DjangoJSONEncoder for non-Model objects."""
+        import decimal
+        import json
+
+        from geno.documents import _ContextEncoder
+
+        context = {"amount": decimal.Decimal("9.95"), "date": datetime.date(2024, 1, 15)}
+
+        result = json.dumps(context, cls=_ContextEncoder)
+        self.assertIn('"amount": "9.95"', result)
+        self.assertIn('"date": "2024-01-15"', result)
+
+    def test_context_encoder_nested_context_with_models(self):
+        """_ContextEncoder handles nested contexts containing model instances."""
+        import json
+
+        from geno.documents import _ContextEncoder
+
+        context = {
+            "bill": [
+                ("1 Anteilschein", "Fr. 1000"),
+                ("Zusatz", "Fr. 500"),
+            ],
+            "debtor": self.addresses[0],
+            "nested": {"inner_model": self.members[0]},
+        }
+
+        result = json.dumps(context, cls=_ContextEncoder)
+        self.assertIn(f'"debtor": "{str(self.addresses[0])}"', result)
+        self.assertIn(f'"inner_model": "{str(self.members[0])}"', result)
+        self.assertIn('["1 Anteilschein", "Fr. 1000"]', result)
+
+    def test_mail_sending_failure(self):
+        """Recipients are marked as failed when email sending raises an exception."""
+        self.setup_members()
+        self.data["action"] = "mail"
+        self.data["template_mail"] = f"template_id_{self.email_templates[0].pk}"
+        with patch("geno.documents.ProcessDocuments.send_email") as mock_send_email:
+            mock_send_email.side_effect = RuntimeError("SMTP connection refused")
+            ret = send_member_mail_process(self.data)
+        # 4 recipients with email fail; Harry is skipped for no email
+        self.assertResultCount(ret, 0, 1, 4)
+        self.assertEmailSent(0)
+        self.assertInResults(
+            ret["errors"],
+            "Muster, Hans - EXTRA_INFO_TEST (hans.muster@example.com)",
+            logs=[
+                "Konnte mail an Muster, Hans (member) nicht schicken!!! Fehler: SMTP connection refused"
+            ],
+        )
+        self.assertInResults(
+            ret["warnings"],
+            "Noaddress, Harry - EXTRA_INFO_TEST ()",
+            logs=["KEIN EMAIL GESENDET! Grund: Keine Email-Adresse vorhanden."],
+        )
+
+    def test_mail_sending_failure_with_invoice_rollback(self):
+        """Invoices created during rendering are deleted when mail sending fails."""
+        self.setup_members()
+
+        def mock_add_invoice(*args, **kwargs):
+            return Invoice.objects.create(
+                name="Mock Invoice",
+                invoice_category=self.invoicecategories[0],
+                date=datetime.date.today(),
+                amount=Decimal("9.95"),
+                person=self.addresses[0],
+            )
+
+        with patch("geno.documents.add_invoice", side_effect=mock_add_invoice):
+            with patch("geno.documents.ProcessDocuments.send_email") as mock_send_email:
+                mock_send_email.side_effect = RuntimeError("SMTP connection refused")
+                ret = self.send_with_templates("QR-Bill Ref")
+        # 4 recipients with email fail; Harry is skipped for no email
+        self.assertResultCount(ret, 0, 1, 4)
+        self.assertEmailSent(0)
+        # The mocked invoices were created during rendering but rolled back afterwards
+        self.assertEqual(Invoice.objects.count(), 0)
