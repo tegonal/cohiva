@@ -2100,6 +2100,7 @@ class Invoice(GenoBase):
 
     @property
     def content_template(self):
+        ## HACK!
         return "ContentTemplate:36"
 
     def get_object_actions(self):
@@ -2113,24 +2114,25 @@ class Invoice(GenoBase):
             ]
         return None
 
-    def regenerate_invoice_document(self):
+    def regenerate_invoice_document(self, template=None):
         from geno.documents import ProcessDocuments
 
-        # data["template_files"] = ...
-        template = self.content_template
+        ## HACK!
+        if not template:
+            template = self.content_template
 
         process = ProcessDocuments(dry_run=True)
         process.set_output_format("pdf")
-        process.add_document_template(template)
-        ## HACK!
-        process.templates[0].regenerate_from_invoice = self
+        process.set_regenerate_invoices_mode("all")
+        process.set_invoice_template(template)
         try:
             member = Member.objects.get(name=self.person)
             process.add_recipient(member, None, "")
         except Member.DoesNotExist:
-            process.add_recipient(self.person, self.contract, "")
+            recip = process.add_recipient(self.person, self.contract, "")
+            recip.add_invoice(self)
         try:
-            process.generate_documents()
+            process.regenerate_invoices()
         except Exception as e:
             logger.error(f"Fehler beim Erstellen der Dokumente: {e}")
             return None

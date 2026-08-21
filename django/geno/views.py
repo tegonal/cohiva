@@ -3171,6 +3171,8 @@ def send_member_mail_filter_by_invoice(form, member_list):
         if query.count():
             if form.cleaned_data["filter_invoice"] == "exclude":
                 member["id"] = None  # exclude
+            else:
+                member["invoice_ids"] = list(query.values_list("id", flat=True))
         else:
             if form.cleaned_data["filter_invoice"] == "include":
                 member["id"] = None  # exclude

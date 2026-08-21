@@ -28,6 +28,7 @@ from geno.models import (
     Document,
     DocumentType,
     GenericAttribute,
+    Invoice,
     InvoiceCategory,
     Member,
     MemberAttribute,
@@ -106,7 +107,6 @@ class DocumentTemplate:
         self.update_context_options()
         self.dry_run = dry_run
         self.temp_files = []
-        self.regenerate_from_invoice = None
 
     def __str__(self):
         return str(self.content_template)
@@ -122,13 +122,9 @@ class DocumentTemplate:
                 else:
                     self.context_options[opt_type.name] = opt.value
 
-    def get_context(self, recipient):
-        ctx = {"qr_account": None}
+    def get_context(self, recipient, regenerate_from_invoice):
+        ctx = {"qr_account": None, "regenerate_from_invoice": regenerate_from_invoice}
         ctx.update(recipient.address.get_context())
-        ## HACK!!
-        if self.regenerate_from_invoice:
-            ctx["datum"] = self.regenerate_from_invoice.date.strftime("%d.%m.%Y")
-            ctx["jahr"] = self.regenerate_from_invoice.date.strftime("%Y")
         if self.context_options["billing_context"]:
             ctx.update(self.get_billing_context(recipient))
         if self.context_options["share_statement_context"]:
@@ -270,8 +266,10 @@ class DocumentTemplate:
                     f"Rechnungs-Typ {self.context_options['qrbill_invoice_type_id']} nicht gefunden!"
                 )
             if ctx["bill_amount"]:
-                if self.regenerate_from_invoice:
-                    invoice_id = self.regenerate_from_invoice.id
+                if ctx["regenerate_from_invoice"]:
+                    invoice_id = ctx["regenerate_from_invoice"].id
+                    ctx["datum"] = ctx["regenerate_from_invoice"].date.strftime("%d.%m.%Y")
+                    ctx["jahr"] = ctx["regenerate_from_invoice"].date.strftime("%Y")
                 elif not self.dry_run:
                     ctx["invoice"] = self.do_invoice_accounting(recipient, ctx, invoice_category)
                     invoice_id = ctx["invoice"].id
@@ -351,14 +349,14 @@ class DocumentTemplate:
         logger.info(f"   > Added Invoice object: {invoice}")
         return invoice
 
-    def render(self, recipient):
+    def render(self, recipient, regenerate_from_invoice=None):
         output = RenderedDocument()
         output.file = self.content_template.file.path
         filename_tag = sanitize_filename(
             self.content_template.name
         )  # use template name as filename tag
         if self.content_template.template_type == "OpenDocument":
-            ctx = self.get_context(recipient)
+            ctx = self.get_context(recipient, regenerate_from_invoice)
             logger.info(
                 " > fill template %s with context: anrede=%s, name=%s, vorname=%s, org=%s"
                 % (
@@ -432,6 +430,7 @@ class Recipient:
         self.skip_reason = None
         self.content_object = None
         self.documents = []
+        self.invoices = []
         self.log = []
         self.warning = False
         self.failure = False
@@ -455,6 +454,22 @@ class Recipient:
                 self.warning = True
                 self.log.append("WARNUNG: Ungewöhnliche PLZ/Adressierung -> Adresse im Ausland?")
 
+    def add_invoices(self, regenerate_mode, invoice_ids):
+        if not regenerate_mode or not invoice_ids:
+            return
+        query = Invoice.objects.filter(id__in=invoice_ids)
+        if regenerate_mode == "latests":
+            query = query.order_by("-date").first()
+        elif regenerate_mode == "oldest":
+            query = query.order_by("date").first()
+        elif regenerate_mode != "all":
+            raise ValueError(f"Invalid regenerate_mode: {regenerate_mode}")
+        for invoice in query:
+            self.add_invoice(invoice)
+
+    def add_invoice(self, invoice):
+        self.invoices.append(invoice)
+
 
 class ProcessDocuments:
     def __init__(self, dry_run=False):
@@ -464,6 +479,8 @@ class ProcessDocuments:
         self.zipfile_ob = None
         self.output_format = None
         self.templates = []
+        self.invoice_template = None
+        self.regenerate_invoices_mode = None
         self.recipients = []
         self.contexts = {}
         self.test_email_address = None
@@ -479,6 +496,9 @@ class ProcessDocuments:
 
     def set_output_format(self, filetype):
         self.output_format = filetype
+
+    def set_regenerate_invoices_mode(self, mode):
+        self.regenerate_invoices_mode = mode
 
     def add_document_template(self, att):
         try:
@@ -513,6 +533,37 @@ class ProcessDocuments:
             )
         )
 
+    def set_invoice_template(self, att):
+        if not self.regenerate_invoices_mode:
+            return
+        try:
+            (att_type, att_id) = att.split(":", 1)
+        except ValueError:
+            att_type = None
+            att_id = None
+
+        content_template = None
+        doctype = None
+        if att_type == "DocumentType":
+            try:
+                doctype = DocumentType.objects.get(id=att_id)
+                content_template = doctype.template
+            except DocumentType.DoesNotExist:
+                raise ValueError(f"Dokumenttyp mit ID {att_id} nicht gefunden.")
+        elif att_type == "ContentTemplate":
+            try:
+                content_template = ContentTemplate.objects.get(id=att_id)
+            except ContentTemplate.DoesNotExist:
+                raise ValueError(f"Vorlage mit ID {att_id} nicht gefunden.")
+        else:
+            raise TypeError(f"Unbekannter Vorlagentyp: {att}")
+        self.invoice_template = DocumentTemplate(
+            content_template,
+            doctype=doctype,
+            output_format=self.output_format,
+            dry_run=self.dry_run,
+        )
+
     def add_recipient(self, member_or_address, contract=None, extra_info=None):
         if isinstance(member_or_address, Member):
             recip = Recipient(
@@ -527,6 +578,7 @@ class ProcessDocuments:
             raise TypeError(f"{member_or_address} must be Member or Address.")
         self.validate_recipient(recip)
         self.recipients.append(recip)
+        return recip
 
     def validate_recipient(self, recipient):
         if self.mail_template and not recipient.address.email:
@@ -557,6 +609,21 @@ class ProcessDocuments:
                     )
                     recipient.skip_reason = e
                     break
+
+    def regenerate_invoices(self):
+        if not self.regenerate_invoices_mode:
+            return
+        logger.info("Regenerating invoices.")
+        for recipient in self.recipients:
+            if recipient.skip_reason:
+                logger.info(f"Skipping {recipient}: {recipient.skip_reason}")
+                continue
+            logger.info(f"Regenerate invoices for {recipient}")
+            for invoice in recipient.invoices:
+                invoice_doc = self.invoice_template.render(recipient, invoice)
+                if not invoice_doc:
+                    raise RuntimeError(f"Konnte Rechnung nicht erstellen: {invoice}")
+                recipient.documents.append(invoice_doc)
 
     def send_output(self):
         if self.mail_template:
@@ -816,6 +883,7 @@ def send_member_mail_process(data):
         process.set_output_format("odt")
     elif data["template_files"]:
         process.set_output_format("pdf")
+    process.set_regenerate_invoices_mode(data.get("regenerate_invoices"))
 
     try:
         for template in data["template_files"]:
@@ -823,19 +891,29 @@ def send_member_mail_process(data):
     except Exception as e:
         return {"errors": [{"info": f"Fehler: Konte Dokumentvorlage nicht hinzufügen: {e}"}]}
 
+    try:
+        process.set_invoice_template(data.get("invoice_template"))
+    except Exception as e:
+        return {"errors": [{"info": f"Fehler: Konte Rechnungsvorlage nicht hinzufügen: {e}"}]}
+
     for m in data["members"]:
         if "contract_id" in m:
             contract = Contract.objects.get(id=m["contract_id"])
         else:
             contract = None
         if m["member_type"] == "member":
-            recip = Member.objects.get(pk=m["id"])
+            obj = Member.objects.get(pk=m["id"])
         else:
-            recip = Address.objects.get(pk=m["id"])
-        process.add_recipient(recip, contract, m["extra_info"])
+            obj = Address.objects.get(pk=m["id"])
+        recip = process.add_recipient(obj, contract, m["extra_info"])
+        try:
+            recip.add_invoices(process.regenerate_invoices_mode, m.get("invoice_ids"))
+        except Exception as e:
+            return {"errors": [{"info": f"Fehler: Konte Rechnungen nicht hinzufügen: {e}"}]}
 
     try:
         process.generate_documents()
+        process.regenerate_invoices()
     except Exception as e:
         logger.error(f"Fehler beim Erstellen der Dokumente: {e}")
         return {"errors": [{"info": f"Fehler beim Erstellen der Dokumente: {e}"}]}
