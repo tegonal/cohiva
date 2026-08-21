@@ -178,8 +178,13 @@ class TransactionUploadView(AccountInformationMixin, FormView):
                 ret = import_transactions(transaction_data["data"], self.vendor)
                 if len(ret):
                     logger.info(
-                        f"Transaction upload: Imported {len(ret)} records from {uploaded_file}."
+                        f"Transaction upload: Imported {len(ret['success'])} and skipped "
+                        f"{len(ret['skipped'])} records from {uploaded_file}."
                     )
+                    if ret["errors"]:
+                        logger.error(
+                            f"There were {len(ret['errors'])} errors: " + " / ".join(ret["errors"])
+                        )
             else:
                 messages.error(
                     request,

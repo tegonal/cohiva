@@ -34,20 +34,21 @@ def read_camt_transaction(data, tr, date_str, entry_ref=None):
                 total += float(charge.get("amount", {}).get("_value", 0))
             if total:
                 charges = f"{total:.2f}"
-    if "related_parties" not in tr or "debtor" not in tr["related_parties"]:
-        return [
-            "Ignoring transaction without debtor: %s" % tr["amount"]["_value"],
-        ]
-    else:
+    debtor_party = {}
+    if "debtor" in tr.get("related_parties", {}):
         debtor_party = tr["related_parties"]["debtor"].get(
             "party", tr["related_parties"]["debtor"]
         )
-        if "name" in debtor_party:
-            debtor = debtor_party["name"]
-        elif "postal_address" in debtor_party:
-            debtor = ", ".join(debtor_party["postal_address"].get("address", []))
-        else:
-            debtor = "<Unbekannt>"
+    elif "ultimate_debtor" in tr.get("related_parties", {}):
+        debtor_party = tr["related_parties"]["ultimate_debtor"].get(
+            "party", tr["related_parties"]["ultimate_debtor"]
+        )
+    if "name" in debtor_party:
+        debtor = debtor_party["name"]
+    elif "postal_address" in debtor_party:
+        debtor = ", ".join(debtor_party["postal_address"].get("address", []))
+    else:
+        debtor = "<Unbekannt>"
     try:
         account = tr["related_parties"]["creditor_account"]["id"]["iban"]
     except KeyError:
