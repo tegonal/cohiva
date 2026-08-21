@@ -206,7 +206,8 @@ class TransactionUploadView(AccountInformationMixin, FormView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["title"] = "%s Transaktionen importieren" % self.vendor
-        context["item_name"] = "Buchnungen"
+        context["item_name"] = "Buchnung"
+        context["item_name_plural"] = "Buchnungen"
         return context
 
 
