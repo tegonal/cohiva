@@ -183,7 +183,8 @@ class TransactionUploadView(AccountInformationMixin, FormView):
                     )
                     if ret["errors"]:
                         logger.error(
-                            f"There were {len(ret['errors'])} errors: " + " / ".join(ret["errors"])
+                            f"There were {len(ret['errors'])} errors while importing "
+                            f"transactions from {uploaded_file}."
                         )
             else:
                 messages.error(
@@ -206,8 +207,8 @@ class TransactionUploadView(AccountInformationMixin, FormView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["title"] = "%s Transaktionen importieren" % self.vendor
-        context["item_name"] = "Buchnung"
-        context["item_name_plural"] = "Buchnungen"
+        context["item_name"] = "Buchung"
+        context["item_name_plural"] = "Buchungen"
         return context
 
 
