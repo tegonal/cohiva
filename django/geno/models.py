@@ -510,6 +510,27 @@ class Address(GenoBase):
             c["email"] = self.email
         if self.date_birth:
             c["geburtsdatum"] = self.date_birth.strftime("%d.%m.%Y")
+        c["anrede"], words_select = self.get_salutation_person()
+        for word in list(words.keys()):
+            if words_select == 0:
+                c[word] = word.replace("_", " ")
+            else:
+                c[word] = words[word][words_select - 1]
+
+        today = datetime.date.today()
+        c["datum"] = today.strftime("%d.%m.%Y")
+        c["monat"] = today.strftime("%B")
+        c["jahr"] = today.year
+        today_plus30 = today + datetime.timedelta(days=30)
+        c["datum_plus30"] = today_plus30.strftime("%d.%m.%Y")
+        c["monat_plus30"] = today_plus30.strftime("%B")
+        c["jahr_plus30"] = today_plus30.year
+
+        c["org_info"] = settings.GENO_ORG_INFO
+
+        return c
+
+    def get_salutation_person(self):
         anrede_person = "Guten Tag"
         if self.formal == "Du":
             if self.title == "Herr" and len(self.first_name):
@@ -555,6 +576,9 @@ class Address(GenoBase):
                 if settings.GENO_FORMAL:
                     anrede_person = "Sehr geehrte Damen und Herren"
                 words_select = 1
+        return anrede_person, words_select
+
+    def get_salutation_organization(self):
         if len(self.organization):
             if (
                 self.organization.startswith("Verein ")
@@ -568,36 +592,26 @@ class Address(GenoBase):
                 or self.organization.endswith("Asylsozialdienst")
                 or self.organization.startswith("sgf Bern")
             ):
-                c["anrede"] = "Lieber %s" % self.organization
-            elif self.organization.startswith("Kollektiv ") or self.organization.endswith(
+                return "Lieber %s" % self.organization
+            if self.organization.startswith("Kollektiv ") or self.organization.endswith(
                 "kollektiv"
             ):
-                c["anrede"] = "Liebes %s" % self.organization
-            else:
-                c["anrede"] = "Liebe %s" % self.organization
-            if anrede_person != "Guten Tag":
-                c["anrede"] = "%s, %s" % (c["anrede"], anrede_person)
+                return "Liebes %s" % self.organization
+            return "Liebe %s" % self.organization
+        return None
+
+    def get_salutation(self):
+        anrede_person, words_select = self.get_salutation_person()
+        anrede_org = self.get_salutation_organization()
+        if anrede_org:
+            anrede = (
+                "%s, %s" % (anrede_org, anrede_person)
+                if anrede_person != "Guten Tag"
+                else anrede_org
+            )
         else:
-            c["anrede"] = anrede_person
-
-        for word in list(words.keys()):
-            if words_select == 0:
-                c[word] = word.replace("_", " ")
-            else:
-                c[word] = words[word][words_select - 1]
-
-        today = datetime.date.today()
-        c["datum"] = today.strftime("%d.%m.%Y")
-        c["monat"] = today.strftime("%B")
-        c["jahr"] = today.year
-        today_plus30 = today + datetime.timedelta(days=30)
-        c["datum_plus30"] = today_plus30.strftime("%d.%m.%Y")
-        c["monat_plus30"] = today_plus30.strftime("%B")
-        c["jahr_plus30"] = today_plus30.year
-
-        c["org_info"] = settings.GENO_ORG_INFO
-
-        return c
+            anrede = anrede_person
+        return anrede, words_select
 
     def get_object_actions(self):
         return [
