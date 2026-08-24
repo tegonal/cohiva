@@ -613,6 +613,22 @@ class Address(GenoBase):
             anrede = anrede_person
         return anrede, words_select
 
+    def get_attributes_dict(self):
+        include_types = (str, int, float, bool, Decimal)
+        ret = {"full_name": self.get_full_name(), "street": self.street, "city": self.city}
+        for name, value in vars(self).items():
+            if isinstance(value, include_types):
+                try:
+                    ret[name] = str(value)
+                except ValueError:
+                    pass
+            if isinstance(value, datetime.date):
+                try:
+                    ret[name] = value.strftime("%d.%m.%Y")
+                except ValueError:
+                    pass
+        return ret
+
     def get_object_actions(self):
         return [
             (
@@ -1767,6 +1783,7 @@ class Contract(GenoBase):
         c["Mieter_Namen_list"] = []
         c["Mieter_Adressen_list"] = []
         c["Mieter_Adressen_Mehrzeilig_list"] = []
+        c["Mieter_attr"] = []
         duplicate_check = []
         for tenant in self.contractors.exclude(ignore_in_lists=True):
             dup_id = f"{tenant.name}{tenant.first_name}"
@@ -1779,6 +1796,7 @@ class Contract(GenoBase):
                 c["Mieter_Adressen_Mehrzeilig_list"].append(
                     f"{tenant.get_full_name()}\n{tenant.street}\n{tenant.city}"
                 )
+                c["Mieter_attr"].append(tenant.get_attributes_dict())
                 duplicate_check.append(dup_id)
         c["Mieter_Namen"] = ", ".join(c["Mieter_Namen_list"])
         c["Mieter_Namen_Mehrzeilig"] = "\n".join(c["Mieter_Namen_list"])
