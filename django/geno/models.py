@@ -1109,6 +1109,14 @@ class Share(GenoBase):
             "duration": self.duration,
             "state": self.state,
             "note": self.note,
+            "identifier": self.identifier,
+            "identifier_external": self.identifier_external,
+            "related_building": str(self.attached_to_building)
+            if self.attached_to_building
+            else "",
+            "related_contract": self.attached_to_contract.get_context()
+            if self.attached_to_contract
+            else {},
         }
         if include_related_shares:
             ret["related_shares"] = self.get_related_shares()
@@ -1123,6 +1131,9 @@ class Share(GenoBase):
         for share_type in ShareType.objects.all():
             sum_quantity = 0
             sum_value = 0
+            related_buildings = []
+            related_contracts = []
+            related_rental_units = []
             shares_by_type[share_type.name] = []
             for share in (
                 get_active_shares()
@@ -1130,16 +1141,32 @@ class Share(GenoBase):
                 .filter(name=self.name)
                 .order_by("date")
             ):
-                shares_by_type[share_type.name].append(share.get_context())
+                share_context = share.get_context()
+                if (
+                    share_context["related_building"]
+                    and share_context["related_building"] not in related_buildings
+                ):
+                    related_buildings.append(share_context["related_building"])
+                if share_context["related_contract"]:
+                    if share_context["related_contract"] not in related_contracts:
+                        related_contracts.append(share_context["related_contract"])
+                    if "related_rental_units" in share_context["related_contract"]:
+                        for ru in share_context["related_contract"]["related_rental_units"]:
+                            if ru not in related_rental_units:
+                                related_rental_units.append(ru)
+                shares_by_type[share_type.name].append(share_context)
                 sum_quantity += share.quantity
-                sum_value += share.quantity + share.value
+                sum_value += share.quantity * share.value
                 if share.is_pension_fund:
                     shares_pension_fund.append(share.get_context())
                     sum_shares_pension_fund_quantity += share.quantity
-                    sum_shares_pension_fund_value += share.value
+                    sum_shares_pension_fund_value += share.quantity * share.value
             total_shares_by_type[share_type.name] = {
                 "quantity": sum_quantity,
                 "value": nformat(sum_value),
+                "related_buildings": related_buildings,
+                "related_contracts": related_contracts,
+                "related_rental_units": related_rental_units,
             }
         return {
             "shares_by_type": shares_by_type,
@@ -1815,6 +1842,7 @@ class Contract(GenoBase):
                 self.billing_date_end.strftime("%d.%m.%Y") if self.billing_date_end else ""
             ),
             "Mietobjekt": ", ".join([str(ru) for ru in rental_units]),
+            "related_rental_units": [ru.get_context() for ru in rental_units],
         }
         ru: RentalUnit
         for ru in rental_units:
