@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from geno.admin import GenoBaseAdmin
+from geno.admin import GenoBaseAdmin, ObjectActionsMixin
 from report.models import Report, ReportInputData, ReportInputField, ReportOutput, ReportType
 
 
@@ -23,7 +23,7 @@ class ReportTypeAdmin(GenoBaseAdmin):
 
 
 @admin.register(Report)
-class ReportAdmin(GenoBaseAdmin):
+class ReportAdmin(ObjectActionsMixin, GenoBaseAdmin):
     model = Report
     fields = [
         "name",
@@ -31,7 +31,6 @@ class ReportAdmin(GenoBaseAdmin):
         "state",
         "state_info",
         "comment",
-        "object_actions",
         "task_id",
         ("ts_created", "ts_modified"),
         "links",
@@ -39,7 +38,6 @@ class ReportAdmin(GenoBaseAdmin):
     ]
     readonly_fields = [
         "task_id",
-        "object_actions",
         "ts_created",
         "ts_modified",
         "links",
