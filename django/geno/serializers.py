@@ -90,4 +90,4 @@ class ContractSerializer(serializers.ModelSerializer):
             "contact_formal",
         ]
         ## exclude unused fields: 'children', 'children_old', 'import_id',
-        ## 'object_actions', 'links', 'backlinks'
+        ## 'links', 'backlinks'

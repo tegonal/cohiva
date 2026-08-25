@@ -238,12 +238,16 @@ def documents(request, doctype, obj_id, action):
                 raise RuntimeError("Vorlage nicht gefunden.")
             data = {"visible_filename": doc.name, "context": json.loads(doc.data)}
         else:
-            raise RuntimeError("Action '%s' is not implemented." % action)
+            raise RuntimeError(_("Action '{action}' is not implemented.".format(action=action)))
+        if not template.file:
+            raise RuntimeError(
+                _("The template '{template}' has no file linked to it.".format(template=template))
+            )
         filename = fill_template_pod(
             template.file.path, context_format(data["context"]), output_format="odt"
         )
         if not filename:
-            raise RuntimeError("Could not fill template")
+            raise RuntimeError(_("Could not fill the template"))
         if "content_object" in data:
             d = Document(
                 name=data["visible_filename"],

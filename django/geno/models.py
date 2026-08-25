@@ -143,27 +143,6 @@ class GenoBase(models.Model):
     def get_object_actions(self):
         return []
 
-    @admin.display(description="Aktionen")
-    def object_actions(self):
-        actions = self.get_object_actions()
-        if not actions:
-            return None
-        action_buttons = []
-        for action in actions:
-            if len(action) > 2:
-                button_html = format_html(
-                    '<a href="{}" title="{}">{}<span class="help help-tooltip help-icon">'
-                    "</span></a>",
-                    action[0],
-                    action[2],
-                    action[1],
-                )
-            else:
-                button_html = format_html('<a href="{}">{}</a>', *action[0:2])
-            action_buttons.append(f"<li>{button_html}</li>")
-        action_list = "\n".join(action_buttons)
-        return mark_safe(f'<ul class="cohiva_object-actions">{action_list}</ul>')
-
     def save_as_copy(self):
         if hasattr(self, "name") and isinstance(self.name, str):
             self.name = "%s [KOPIE]" % self.name
@@ -615,7 +594,14 @@ class Address(GenoBase):
 
     def get_attributes_dict(self):
         include_types = (str, int, float, bool, Decimal)
-        ret = {"full_name": self.get_full_name(), "street": self.street, "city": self.city}
+        ret = {
+            "full_name": self.get_full_name(),
+            "street": self.street,
+            "city": self.city,
+            "anrede": self.get_salutation()[0],
+            "anrede_person": self.get_salutation_person()[0],
+            "anrede_org": self.get_salutation_organization(),
+        }
         for name, value in vars(self).items():
             if isinstance(value, include_types):
                 try:
@@ -1101,6 +1087,69 @@ class Share(GenoBase):
         if self.date_end:
             return self.date_end >= datetime.date.today()
         return True
+
+    def get_context(self, include_related_shares=False):
+        value_total = self.value_total()
+        if isinstance(value_total, Decimal):
+            value_total = nformat(value_total)
+        ret = {
+            "share_type": self.share_type.name,
+            "quantity": self.quantity,
+            "value": nformat(self.value),
+            "value_total": value_total,
+            "is_pension_fund": self.is_pension_fund,
+            "is_business": self.is_business,
+            "date": self.date.strftime("%d.%m.%Y") if self.date else "",
+            "date_end": self.date_end.strftime("%d.%m.%Y") if self.date_end else "",
+            "date_due": self.date_due.strftime("%d.%m.%Y") if self.date_due else "",
+            "interest": nformat(self.interest()),
+            "interest_mode": self.interest_mode,
+            "manual_interest": nformat(self.manual_interest),
+            "is_interest_credit": self.is_interest_credit,
+            "duration": self.duration,
+            "state": self.state,
+            "note": self.note,
+        }
+        if include_related_shares:
+            ret["related_shares"] = self.get_related_shares()
+        return ret
+
+    def get_related_shares(self):
+        shares_by_type = {}
+        shares_pension_fund = []
+        total_shares_by_type = {}
+        sum_shares_pension_fund_quantity = 0
+        sum_shares_pension_fund_value = 0
+        for share_type in ShareType.objects.all():
+            sum_quantity = 0
+            sum_value = 0
+            shares_by_type[share_type.name] = []
+            for share in (
+                get_active_shares()
+                .filter(share_type=share_type)
+                .filter(name=self.name)
+                .order_by("date")
+            ):
+                shares_by_type[share_type.name].append(share.get_context())
+                sum_quantity += share.quantity
+                sum_value += share.quantity + share.value
+                if share.is_pension_fund:
+                    shares_pension_fund.append(share.get_context())
+                    sum_shares_pension_fund_quantity += share.quantity
+                    sum_shares_pension_fund_value += share.value
+            total_shares_by_type[share_type.name] = {
+                "quantity": sum_quantity,
+                "value": nformat(sum_value),
+            }
+        return {
+            "shares_by_type": shares_by_type,
+            "shares_pension_fund": shares_pension_fund,
+            "total_shares_by_type": total_shares_by_type,
+            "total_shares_pension_fund": {
+                "quantity": sum_shares_pension_fund_quantity,
+                "value": nformat(sum_shares_pension_fund_value),
+            },
+        }
 
     class Meta:
         verbose_name = "Beteiligung"
