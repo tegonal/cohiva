@@ -376,7 +376,7 @@ sqlalchemy==1.4.54
     #   sqlalchemy-utils
 sqlalchemy-utils==0.41.2
     # via piecash
-sqlparse==0.5.4
+sqlparse==0.6.0
     # via django
 svglib==1.5.1
     # via
