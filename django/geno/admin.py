@@ -273,7 +273,6 @@ class ObjectActionsMixin:
 
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
         response = super().changeform_view(request, object_id, form_url, extra_context)
-        print(f"adding {object_id}")
 
         if object_id and hasattr(response, "context_data"):
             try:
@@ -282,7 +281,6 @@ class ObjectActionsMixin:
                 return response
 
             dropdown_items = self.get_dropdown_actions(object, request)
-            print(f"adding object {object} items: {dropdown_items}")
 
             if dropdown_items:
                 response.context_data["actions_detail"].append(

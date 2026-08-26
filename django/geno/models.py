@@ -489,7 +489,7 @@ class Address(GenoBase):
             c["email"] = self.email
         if self.date_birth:
             c["geburtsdatum"] = self.date_birth.strftime("%d.%m.%Y")
-        c["anrede"], words_select = self.get_salutation_person()
+        c["anrede"], words_select = self.get_salutation()
         for word in list(words.keys()):
             if words_select == 0:
                 c[word] = word.replace("_", " ")
