@@ -46,4 +46,5 @@ dependencies = [
     "wagtail>=6.3,<7.1",
     "wagtailmenus>=4.0.4",
     "whitenoise>=6.6.0",
+    "sepa @ https://artifact-keeper.tegonal.com/api/v1/repositories/tgnl-pypi/download/sepa-0.5.4+mst1-py3-none-any.whl",
 ]

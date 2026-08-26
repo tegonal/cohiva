@@ -496,6 +496,7 @@ dependencies = [
     { name = "requests-oauthlib" },
     { name = "rocketchat-api" },
     { name = "ruff" },
+    { name = "sepa" },
     { name = "vdirsyncer" },
     { name = "wagtail" },
     { name = "wagtailmenus" },
@@ -541,6 +542,7 @@ requires-dist = [
     { name = "requests-oauthlib", specifier = ">=2.0.0" },
     { name = "rocketchat-api", specifier = ">=1.35.1" },
     { name = "ruff", specifier = ">=0.12.10" },
+    { name = "sepa", url = "https://artifact-keeper.tegonal.com/api/v1/repositories/tgnl-pypi/download/sepa-0.5.4+mst1-py3-none-any.whl" },
     { name = "vdirsyncer", specifier = ">=0.19.3" },
     { name = "wagtail", specifier = ">=6.3,<7.1" },
     { name = "wagtailmenus", specifier = ">=4.0.4" },
@@ -2439,6 +2441,20 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/ad/14/2ad38fd4037daab9e023456a4a40ed0154e9971f8d6aed41bdea390aabd9/ruff-0.12.10-py3-none-win_amd64.whl", hash = "sha256:7837eca8787f076f67aba2ca559cefd9c5cbc3a9852fd66186f4201b87c1563e", size = 13004616, upload-time = "2025-08-21T18:23:17.422Z" },
     { url = "https://files.pythonhosted.org/packages/24/3c/21cf283d67af33a8e6ed242396863af195a8a6134ec581524fd22b9811b6/ruff-0.12.10-py3-none-win_arm64.whl", hash = "sha256:cc138cc06ed9d4bfa9d667a65af7172b47840e1a98b02ce7011c391e54635ffc", size = 12074225, upload-time = "2025-08-21T18:23:20.137Z" },
 ]
+
+[[package]]
+name = "sepa"
+version = "0.5.4+mst1"
+source = { url = "https://artifact-keeper.tegonal.com/api/v1/repositories/tgnl-pypi/download/sepa-0.5.4+mst1-py3-none-any.whl" }
+dependencies = [
+    { name = "lxml" },
+]
+wheels = [
+    { url = "https://artifact-keeper.tegonal.com/api/v1/repositories/tgnl-pypi/download/sepa-0.5.4+mst1-py3-none-any.whl", hash = "sha256:572e941a254cf01bd383bcbc58f6ee8d815035ab9251bb5320776b3d5654db34" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "lxml" }]
 
 [[package]]
 name = "setuptools"
