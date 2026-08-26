@@ -9,7 +9,7 @@ class SelectiveMigrationRunner(DiscoverRunner):
     """A test runner that applies the migrations specified in migrations without checks"""
 
     migrations = {
-        ("geno", "0030_tenantsview_active"),
+        ("geno", "0031_tenantsview_active"),
     }
 
     def setup_databases(self, **kwargs):
