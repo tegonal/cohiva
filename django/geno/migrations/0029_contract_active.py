@@ -18,17 +18,17 @@ def update_active_members_and_shares(apps, schema_editor):
             obj.active = active
             obj.save(update_fields=["active"])
 
-class Migration(migrations.Migration):
 
+class Migration(migrations.Migration):
     dependencies = [
-        ('geno', '0028_remove_documenttype_template_file'),
+        ("geno", "0028_remove_documenttype_template_file"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='contract',
-            name='active',
-            field=models.BooleanField(default=True, verbose_name='Aktiv'),
+            model_name="contract",
+            name="active",
+            field=models.BooleanField(default=True, verbose_name="Aktiv"),
         ),
         migrations.RunPython(update_active_members_and_shares, migrations.RunPython.noop),
     ]
