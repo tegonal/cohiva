@@ -143,27 +143,6 @@ class GenoBase(models.Model):
     def get_object_actions(self):
         return []
 
-    @admin.display(description="Aktionen")
-    def object_actions(self):
-        actions = self.get_object_actions()
-        if not actions:
-            return None
-        action_buttons = []
-        for action in actions:
-            if len(action) > 2:
-                button_html = format_html(
-                    '<a href="{}" title="{}">{}<span class="help help-tooltip help-icon">'
-                    "</span></a>",
-                    action[0],
-                    action[2],
-                    action[1],
-                )
-            else:
-                button_html = format_html('<a href="{}">{}</a>', *action[0:2])
-            action_buttons.append(f"<li>{button_html}</li>")
-        action_list = "\n".join(action_buttons)
-        return mark_safe(f'<ul class="cohiva_object-actions">{action_list}</ul>')
-
     def save_as_copy(self):
         if hasattr(self, "name") and isinstance(self.name, str):
             self.name = "%s [KOPIE]" % self.name
@@ -512,6 +491,27 @@ class Address(GenoBase):
             c["email"] = self.email
         if self.date_birth:
             c["geburtsdatum"] = self.date_birth.strftime("%d.%m.%Y")
+        c["anrede"], words_select = self.get_salutation()
+        for word in list(words.keys()):
+            if words_select == 0:
+                c[word] = word.replace("_", " ")
+            else:
+                c[word] = words[word][words_select - 1]
+
+        today = datetime.date.today()
+        c["datum"] = today.strftime("%d.%m.%Y")
+        c["monat"] = today.strftime("%B")
+        c["jahr"] = today.year
+        today_plus30 = today + datetime.timedelta(days=30)
+        c["datum_plus30"] = today_plus30.strftime("%d.%m.%Y")
+        c["monat_plus30"] = today_plus30.strftime("%B")
+        c["jahr_plus30"] = today_plus30.year
+
+        c["org_info"] = settings.GENO_ORG_INFO
+
+        return c
+
+    def get_salutation_person(self):
         anrede_person = "Guten Tag"
         if self.formal == "Du":
             if self.title == "Herr" and len(self.first_name):
@@ -557,6 +557,9 @@ class Address(GenoBase):
                 if settings.GENO_FORMAL:
                     anrede_person = "Sehr geehrte Damen und Herren"
                 words_select = 1
+        return anrede_person, words_select
+
+    def get_salutation_organization(self):
         if len(self.organization):
             if (
                 self.organization.startswith("Verein ")
@@ -570,36 +573,49 @@ class Address(GenoBase):
                 or self.organization.endswith("Asylsozialdienst")
                 or self.organization.startswith("sgf Bern")
             ):
-                c["anrede"] = "Lieber %s" % self.organization
-            elif self.organization.startswith("Kollektiv ") or self.organization.endswith(
+                return "Lieber %s" % self.organization
+            if self.organization.startswith("Kollektiv ") or self.organization.endswith(
                 "kollektiv"
             ):
-                c["anrede"] = "Liebes %s" % self.organization
-            else:
-                c["anrede"] = "Liebe %s" % self.organization
-            if anrede_person != "Guten Tag":
-                c["anrede"] = "%s, %s" % (c["anrede"], anrede_person)
+                return "Liebes %s" % self.organization
+            return "Liebe %s" % self.organization
+        return None
+
+    def get_salutation(self):
+        anrede_person, words_select = self.get_salutation_person()
+        anrede_org = self.get_salutation_organization()
+        if anrede_org:
+            anrede = (
+                "%s, %s" % (anrede_org, anrede_person)
+                if anrede_person != "Guten Tag"
+                else anrede_org
+            )
         else:
-            c["anrede"] = anrede_person
+            anrede = anrede_person
+        return anrede, words_select
 
-        for word in list(words.keys()):
-            if words_select == 0:
-                c[word] = word.replace("_", " ")
-            else:
-                c[word] = words[word][words_select - 1]
-
-        today = datetime.date.today()
-        c["datum"] = today.strftime("%d.%m.%Y")
-        c["monat"] = today.strftime("%B")
-        c["jahr"] = today.year
-        today_plus30 = today + datetime.timedelta(days=30)
-        c["datum_plus30"] = today_plus30.strftime("%d.%m.%Y")
-        c["monat_plus30"] = today_plus30.strftime("%B")
-        c["jahr_plus30"] = today_plus30.year
-
-        c["org_info"] = settings.GENO_ORG_INFO
-
-        return c
+    def get_attributes_dict(self):
+        include_types = (str, int, float, bool, Decimal)
+        ret = {
+            "full_name": self.get_full_name(),
+            "street": self.street,
+            "city": self.city,
+            "anrede": self.get_salutation()[0],
+            "anrede_person": self.get_salutation_person()[0],
+            "anrede_org": self.get_salutation_organization(),
+        }
+        for name, value in vars(self).items():
+            if isinstance(value, include_types):
+                try:
+                    ret[name] = str(value)
+                except ValueError:
+                    pass
+            if isinstance(value, datetime.date):
+                try:
+                    ret[name] = value.strftime("%d.%m.%Y")
+                except ValueError:
+                    pass
+        return ret
 
     def get_object_actions(self):
         return [
@@ -1072,6 +1088,96 @@ class Share(GenoBase):
         if self.date_end:
             return self.date_end >= datetime.date.today()
         return True
+
+    def get_context(self, include_related_shares=False):
+        value_total = self.value_total()
+        if isinstance(value_total, Decimal):
+            value_total = nformat(value_total)
+        ret = {
+            "share_type": self.share_type.name,
+            "quantity": self.quantity,
+            "value": nformat(self.value),
+            "value_total": value_total,
+            "is_pension_fund": self.is_pension_fund,
+            "is_business": self.is_business,
+            "date": self.date.strftime("%d.%m.%Y") if self.date else "",
+            "date_end": self.date_end.strftime("%d.%m.%Y") if self.date_end else "",
+            "date_due": self.date_due.strftime("%d.%m.%Y") if self.date_due else "",
+            "interest": nformat(self.interest()),
+            "interest_mode": self.interest_mode,
+            "manual_interest": nformat(self.manual_interest),
+            "is_interest_credit": self.is_interest_credit,
+            "duration": self.duration,
+            "state": self.state,
+            "note": self.note,
+            "identifier": self.identifier,
+            "identifier_external": self.identifier_external,
+            "related_building": str(self.attached_to_building)
+            if self.attached_to_building
+            else "",
+            "related_contract": self.attached_to_contract.get_context()
+            if self.attached_to_contract
+            else {},
+        }
+        if include_related_shares:
+            ret["related_shares"] = self.get_related_shares()
+        return ret
+
+    def get_related_shares(self):
+        shares_by_type = {}
+        shares_pension_fund = []
+        total_shares_by_type = {}
+        sum_shares_pension_fund_quantity = 0
+        sum_shares_pension_fund_value = 0
+        for share_type in ShareType.objects.all():
+            sum_quantity = 0
+            sum_value = 0
+            related_buildings = []
+            related_contracts = []
+            related_rental_units = []
+            shares_by_type[share_type.name] = []
+            for share in (
+                get_active_shares()
+                .filter(share_type=share_type)
+                .filter(name=self.name)
+                .order_by("date")
+            ):
+                share_context = share.get_context()
+                if (
+                    share_context["related_building"]
+                    and share_context["related_building"] not in related_buildings
+                ):
+                    related_buildings.append(share_context["related_building"])
+                if share_context["related_contract"]:
+                    if share_context["related_contract"] not in related_contracts:
+                        related_contracts.append(share_context["related_contract"])
+                    if "related_rental_units" in share_context["related_contract"]:
+                        for ru in share_context["related_contract"]["related_rental_units"]:
+                            if ru not in related_rental_units:
+                                related_rental_units.append(ru)
+                shares_by_type[share_type.name].append(share_context)
+                sum_quantity += share.quantity
+                sum_value += share.quantity * share.value
+                if share.is_pension_fund:
+                    shares_pension_fund.append(share.get_context())
+                    sum_shares_pension_fund_quantity += share.quantity
+                    sum_shares_pension_fund_value += share.quantity * share.value
+            total_shares_by_type[share_type.name] = {
+                "quantity": sum_quantity,
+                "value": nformat(sum_value),
+                "related_buildings": related_buildings,
+                "related_contracts": related_contracts,
+                "related_rental_units": related_rental_units,
+            }
+        return {
+            "shares_by_type": shares_by_type,
+            "shares_pension_fund": shares_pension_fund,
+            "total_shares_by_type": total_shares_by_type,
+            "total_shares_pension_fund": {
+                "quantity": sum_shares_pension_fund_quantity,
+                "value": nformat(sum_shares_pension_fund_value),
+            },
+        }
 
     class Meta:
         verbose_name = "Beteiligung"
@@ -1737,6 +1843,7 @@ class Contract(GenoBase):
                 self.billing_date_end.strftime("%d.%m.%Y") if self.billing_date_end else ""
             ),
             "Mietobjekt": ", ".join([str(ru) for ru in rental_units]),
+            "related_rental_units": [ru.get_context() for ru in rental_units],
         }
         ru: RentalUnit
         for ru in rental_units:
@@ -1754,6 +1861,7 @@ class Contract(GenoBase):
         c["Mieter_Namen_list"] = []
         c["Mieter_Adressen_list"] = []
         c["Mieter_Adressen_Mehrzeilig_list"] = []
+        c["Mieter_attr"] = []
         duplicate_check = []
         for tenant in self.contractors.exclude(ignore_in_lists=True):
             dup_id = f"{tenant.name}{tenant.first_name}"
@@ -1766,6 +1874,7 @@ class Contract(GenoBase):
                 c["Mieter_Adressen_Mehrzeilig_list"].append(
                     f"{tenant.get_full_name()}\n{tenant.street}\n{tenant.city}"
                 )
+                c["Mieter_attr"].append(tenant.get_attributes_dict())
                 duplicate_check.append(dup_id)
         c["Mieter_Namen"] = ", ".join(c["Mieter_Namen_list"])
         c["Mieter_Namen_Mehrzeilig"] = "\n".join(c["Mieter_Namen_list"])

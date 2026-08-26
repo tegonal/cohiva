@@ -129,6 +129,7 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
     save_as = True
     save_on_top = True
     actions = ["export_as_xls", copy_objects]
+    actions_detail = []
 
     # Add custom admin JS (focus handling for select2 focus)
     class Media:
@@ -264,6 +265,59 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
                 setattr(cls, attr, filtered_fields)
 
 
+class ObjectActionsMixin:
+    """Mixin to add object actions to a dropdown menu of a model admin.
+    It will add the actions returned by the get_object_actions() method of the object to the
+    dropdown menu with a download icon. Override get_dropdown_actions() to add custom actions
+    before or after those returned by get_object_actions()."""
+
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        response = super().changeform_view(request, object_id, form_url, extra_context)
+
+        if object_id and hasattr(response, "context_data"):
+            try:
+                object = self.model.objects.get(pk=object_id)
+            except self.model.DoesNotExist:
+                return response
+
+            dropdown_items = self.get_dropdown_actions(object, request)
+
+            if dropdown_items:
+                response.context_data["actions_detail"].append(
+                    {
+                        "title": str(_("Aktionen")),
+                        "path": None,
+                        "icon": None,
+                        "variant": ActionVariant.PRIMARY,
+                        "method_name": f"{object._meta.model_name}_actions",
+                        "items": dropdown_items,
+                    }
+                )
+
+        return response
+
+    def get_dropdown_actions(self, object, request):
+        """List of object actions for the dropdown menu. Override this method in the model admin
+        to add custom actions."""
+        dropdown_items = []
+        for action_item in object.get_object_actions():
+            if isinstance(action_item, tuple) and len(action_item) > 1:
+                ## Handle old-style tuple actions (path, title) for backward compatibility
+                action_dict = {"title": action_item[1], "path": action_item[0]}
+            else:
+                action_dict = action_item
+            if isinstance(action_dict, dict) and "title" in action_dict and "path" in action_dict:
+                dropdown_items.append(
+                    {
+                        "title": action_dict.get("title"),
+                        "path": action_dict.get("path"),
+                        "icon": action_dict.get("icon", "file_save"),
+                        "attrs": action_dict.get("attrs", {}),
+                    }
+                )
+        return dropdown_items
+
+
 @admin.display(description="Anrede auf 'Herr' setzen")
 def set_title_mr(modeladmin, request, queryset):
     queryset.update(title="Herr")
@@ -330,7 +384,7 @@ class CountryFilter(admin.SimpleListFilter):
 
 
 @admin.register(Address)
-class AddressAdmin(GenoBaseAdmin):
+class AddressAdmin(ObjectActionsMixin, GenoBaseAdmin):
     model = Address
     fields = [
         "organization",
@@ -355,7 +409,6 @@ class AddressAdmin(GenoBaseAdmin):
         ("ts_created", "ts_modified"),
         ("import_id", "random_id"),
         "user",
-        "object_actions",
         "links",
         "backlinks",
     ]
@@ -364,7 +417,6 @@ class AddressAdmin(GenoBaseAdmin):
         "ts_modified",
         "import_id",
         "random_id",
-        "object_actions",
         "links",
         "backlinks",
         "carddav_href",
@@ -533,7 +585,7 @@ class MemberAttributeTabularInline(TabularInline):
 
 
 @admin.register(Member)
-class MemberAdmin(GenoBaseAdmin):
+class MemberAdmin(ObjectActionsMixin, GenoBaseAdmin):
     inlines = [MemberAttributeTabularInline]  # model = Member
     fieldsets = (
         (
@@ -555,13 +607,11 @@ class MemberAdmin(GenoBaseAdmin):
         ),
         ("Zusatzinfos", {"fields": ("notes", "ts_created", "ts_modified"), "classes": ["tab"]}),
         ("Verknüpfungen", {"fields": ("links", "backlinks"), "classes": ["tab"]}),
-        ("Aktionen", {"fields": ("object_actions",), "classes": ["tab"]}),
     )
     readonly_fields = [
         "active",
         "ts_created",
         "ts_modified",
-        "object_actions",
         "links",
         "backlinks",
     ]
@@ -825,7 +875,7 @@ def share_send_membermail(modeladmin, request, queryset):
 
 
 @admin.register(Share)
-class ShareAdmin(GenoBaseAdmin):
+class ShareAdmin(ObjectActionsMixin, GenoBaseAdmin):
     model = Share
     fields = [
         "name",
@@ -843,7 +893,6 @@ class ShareAdmin(GenoBaseAdmin):
         "comment",
         "import_id",
         ("ts_created", "ts_modified"),
-        "object_actions",
         "links",
         "backlinks",
     ]
@@ -854,7 +903,6 @@ class ShareAdmin(GenoBaseAdmin):
         "active",
         "ts_created",
         "ts_modified",
-        "object_actions",
         "links",
         "backlinks",
     ]
@@ -974,7 +1022,7 @@ class DocumentTypeAdmin(GenoBaseAdmin):
 
 
 @admin.register(Document)
-class DocumentAdmin(GenoBaseAdmin):
+class DocumentAdmin(ObjectActionsMixin, GenoBaseAdmin):
     model = Document
     fields = [
         "name",
@@ -983,7 +1031,6 @@ class DocumentAdmin(GenoBaseAdmin):
         "content_type",
         "comment",
         ("ts_created", "ts_modified"),
-        "object_actions",
         "links",
         "backlinks",
     ]
@@ -991,7 +1038,6 @@ class DocumentAdmin(GenoBaseAdmin):
         "content_type",
         "ts_created",
         "ts_modified",
-        "object_actions",
         "links",
         "backlinks",
     ]
@@ -1025,14 +1071,12 @@ class BankAccountAdmin(GenoBaseAdmin):
         "account_holders",
         "comment",
         ("ts_created", "ts_modified"),
-        "object_actions",
         "links",
         "backlinks",
     ]
     readonly_fields = [
         "ts_created",
         "ts_modified",
-        "object_actions",
         "links",
         "backlinks",
     ]
@@ -1429,7 +1473,7 @@ class VertragstypFilter(admin.SimpleListFilter):
 
 
 @admin.register(Contract)
-class ContractAdmin(GenoBaseAdmin):
+class ContractAdmin(ObjectActionsMixin, GenoBaseAdmin):
     form = ContractAdminModelForm
     fields = [
         "main_contract",
@@ -1513,52 +1557,20 @@ class ContractAdmin(GenoBaseAdmin):
     actions_list = [
         "contract_report",
     ]
-    actions_detail = []
 
-    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
-        response = super().changeform_view(request, object_id, form_url, extra_context)
-
-        if object_id and hasattr(response, "context_data"):
-            try:
-                contract = self.model.objects.get(pk=object_id)
-            except self.model.DoesNotExist:
-                return response
-
-            dropdown_items = []
-
-            if request.user.has_perm("geno.add_contract"):
-                dropdown_items.append(
-                    {
-                        "title": str(_("Untervertrag hinzufügen")),
-                        "path": reverse("admin:geno_contract_add") + f"?main_contract={object_id}",
-                        "icon": "splitscreen_add",
-                        "attrs": {},
-                    }
-                )
-
-            for action_tuple in contract.get_object_actions():
-                dropdown_items.append(
-                    {
-                        "title": action_tuple[1],
-                        "path": action_tuple[0],
-                        "icon": "file_save",
-                        "attrs": {},
-                    }
-                )
-
-            if dropdown_items:
-                response.context_data["actions_detail"] = [
-                    {
-                        "title": str(_("Aktionen")),
-                        "path": None,
-                        "icon": None,
-                        "variant": ActionVariant.PRIMARY,
-                        "method_name": "contract_actions",
-                        "items": dropdown_items,
-                    }
-                ]
-
-        return response
+    def get_dropdown_actions(self, object, request):
+        dropdown_items = super().get_dropdown_actions(object, request)
+        if request.user.has_perm("geno.add_contract"):
+            dropdown_items.insert(
+                0,
+                {
+                    "title": str(_("Untervertrag hinzufügen")),
+                    "path": reverse("admin:geno_contract_add") + f"?main_contract={object.id}",
+                    "icon": "splitscreen_add",
+                    "attrs": {},
+                },
+            )
+        return dropdown_items
 
     @display(
         description="Vertrag",
