@@ -3,7 +3,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("geno", "0028_remove_documenttype_template_file"),
+        ("geno", "0029_contract_active"),
     ]
 
     operations = [
