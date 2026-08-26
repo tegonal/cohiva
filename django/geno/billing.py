@@ -329,8 +329,6 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
             ru_list.append(",".join(ru_names) + "; " + building.name)
 
         if factor > 0.0:
-            if not dry_run:
-                logger.info(f"Creating invoices for contract {contract.id} / {invoice_date}")
             if factor != 1.0:
                 factor_txt = " (Faktor %.2f)" % factor
             else:
@@ -346,6 +344,8 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
             ):
                 if not contract.main_contract and not contract.contractors.first():
                     raise InvoiceCreationError("Vertrag hat keine Vertragspartner/Adresse.")
+                if not dry_run:
+                    logger.info(f"Creating invoices for contract {contract.id} / {invoice_date}")
                 billed_months_count += 1
                 if is_additional_invoice:
                     # Add a placeholder invoice for the contract that is billed through
@@ -1870,7 +1870,7 @@ def create_qrbill_rent(
         render = True
 
     address = contract.get_contact_address()
-    if not address.email:
+    if email_template and not address.email:
         # We don't need to continue if there is no email address, since we cannot send
         # the document that would be created here.
         messages = [f"KEIN EMAIL GESENDET! Grund: Keine E-Mail-Adresse für {address} vorhanden."]
