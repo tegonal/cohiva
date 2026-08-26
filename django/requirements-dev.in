@@ -1,0 +1,6 @@
+# Requirement definition of development dependencies
+ruff
+pylint
+djlint
+
+

@@ -94,9 +94,4 @@ whitenoise
 ## For tests
 coverage
 
-## For development
-ruff
-pylint
-djlint
-
 #EOF

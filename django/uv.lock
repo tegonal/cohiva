@@ -503,6 +503,13 @@ dependencies = [
     { name = "whitenoise" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "djlint" },
+    { name = "pylint" },
+    { name = "ruff" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "appy", specifier = ">=1.0.19" },
@@ -547,6 +554,13 @@ requires-dist = [
     { name = "wagtail", specifier = ">=6.3,<7.1" },
     { name = "wagtailmenus", specifier = ">=4.0.4" },
     { name = "whitenoise", specifier = ">=6.6.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "djlint", specifier = ">=1.36.4" },
+    { name = "pylint", specifier = ">=3.3.8" },
+    { name = "ruff", specifier = ">=0.12.10" },
 ]
 
 [[package]]
