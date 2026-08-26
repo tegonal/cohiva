@@ -167,6 +167,8 @@ class GenoBase(models.Model):
     def save_as_copy(self):
         if hasattr(self, "name") and isinstance(self.name, str):
             self.name = "%s [KOPIE]" % self.name
+        if hasattr(self, "import_id"):
+            self.import_id = None
         self.pk = None
         self.id = None
         self._state.adding = True
@@ -613,7 +615,6 @@ class Address(GenoBase):
 
     def save_as_copy(self):
         self.user = None
-        self.import_id = None
         self.random_id = uuid.uuid4()
         super().save_as_copy()
 
@@ -1821,7 +1822,6 @@ class Contract(GenoBase):
         old_contractors = self.contractors.all()
         old_children = self.children.all()
         old_rental_units = self.rental_units.all()
-        self.import_id = None
         super().save_as_copy()
         self.contractors.set(old_contractors)
         self.children.set(old_children)
