@@ -385,8 +385,8 @@ class AddressAdmin(GenoBaseAdmin):
         "comment",
     ]
     list_filter = [
-        "title",
         ("active", BooleanFieldDefaultTrueListFilter),
+        "title",
         "formal",
         "paymentslip",
         "interest_action",
@@ -608,7 +608,7 @@ class ChildAdmin(GenoBaseAdmin):
     ]
     readonly_fields = ["age", "import_id", "ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "presence", "parents", "age"]
-    list_filter = ["presence", ("name__active", BooleanFieldDefaultTrueListFilter)]
+    list_filter = [("name__active", BooleanFieldDefaultTrueListFilter), "presence"]
     search_fields = ["name__name", "name__first_name", "parents", "notes"]
     autocomplete_fields = ["name"]
 
@@ -654,9 +654,9 @@ class TenantAdmin(GenoBaseAdmin):
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "building", "key_number", "active"]
     list_filter = [
-        "building__name",
         ("active", BooleanFieldDefaultTrueListFilter),
         ("building__active", BooleanFieldDefaultTrueListFilter),
+        "building__name",
     ]
     search_fields = ["name__name", "name__first_name", "building__name", "key_number", "notes"]
     autocomplete_fields = ["name", "building"]
@@ -1279,13 +1279,13 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "rentalunit_contracts__contractors__first_name",
     ]
     list_filter = [
+        ("active", BooleanFieldDefaultTrueListFilter),
         "rental_type",
         "rooms",
         "building__name",
         "floor",
         "status",
         "billing_period",
-        ("active", BooleanFieldDefaultTrueListFilter),
     ]
     autocomplete_fields = ["building"]
 
@@ -1862,10 +1862,10 @@ class TenantsViewAdmin(GenoBaseAdmin):
         "p_membership_date",
     ]
     list_filter = [
+        "active",
         "bu_name",
         "ru_type",
         "ru_floor",
-        "active",
         "c_ischild",
         "c_issubcontract",
     ]
