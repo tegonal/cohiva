@@ -1453,6 +1453,7 @@ class ContractAdmin(GenoBaseAdmin):
         "backlinks",
     ]
     readonly_fields = [
+        "active",
         "import_id",
         "ts_created",
         "ts_modified",
@@ -1472,6 +1473,7 @@ class ContractAdmin(GenoBaseAdmin):
         "comment",
     ]
     list_filter = [
+        ("active", BooleanFieldDefaultTrueListFilter),
         VertragstypFilter,
         "state",
         "rental_units__building",
@@ -1764,6 +1766,7 @@ class TenantsViewAdmin(GenoBaseAdmin):
         "ad_first_name",
         "ad_title",
         "ad_email",
+        "active",
         "c_issubcontract",
         "c_ischild",
         "c_age",
@@ -1791,6 +1794,7 @@ class TenantsViewAdmin(GenoBaseAdmin):
         "ad_first_name",
         "ad_title",
         "ad_email",
+        "active",
         "c_issubcontract",
         "c_ischild",
         "c_age",
@@ -1818,6 +1822,7 @@ class TenantsViewAdmin(GenoBaseAdmin):
         "ad_first_name",
         "ad_title",
         "ad_email",
+        "active",
         "c_issubcontract",
         "c_ischild",
         "c_age",
@@ -1860,6 +1865,7 @@ class TenantsViewAdmin(GenoBaseAdmin):
         "bu_name",
         "ru_type",
         "ru_floor",
+        "active",
         "c_ischild",
         "c_issubcontract",
     ]
