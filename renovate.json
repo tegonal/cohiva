@@ -40,5 +40,11 @@
     "vulnerabilityAlerts": {
     "enabled": true
   },
-  "osvVulnerabilityAlerts": true
+  "osvVulnerabilityAlerts": true,
+  "timezone": "Europe/Zurich",
+  "schedule": [
+    "* 0-6 * * *"
+  ],
+  "updateNotScheduled": false,
+  "commitHourlyLimit": 4
 }
