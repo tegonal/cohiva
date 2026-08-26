@@ -101,6 +101,64 @@ class SepaReaderTest(GenoAdminTestCase):
                     "date": datetime.date(2025, 6, 28),
                 },
             },
+            {
+                "file": "camt.054_CH5600790016583351934_2025-06-27_00070_structured_address.xml",
+                "num_transactions": 1,
+                "data": {
+                    "amount": "60.00",
+                    "reference_nr": "360000000002000000003620253",
+                    "debtor": "Hans Muster",
+                    "extra_info": "Jahresbeitrag 2025",
+                    "date": datetime.date(2025, 6, 27),
+                },
+            },
+            {
+                "file": (
+                    "camt.054_CH5600790016583351934_2025-06-27_00070_structured_address_"
+                    "only_ultimate_debtor.xml"
+                ),
+                "num_transactions": 1,
+                "data": {
+                    "amount": "60.00",
+                    "reference_nr": "360000000002000000003620253",
+                    "debtor": "Wohnung 001",
+                    "extra_info": "Jahresbeitrag 2025",
+                    "date": datetime.date(2025, 6, 27),
+                },
+            },
+            {
+                "file": "camt.054_CH5600790016583351934_2025-06-27_00070_only_postal_address.xml",
+                "num_transactions": 1,
+                "data": {
+                    "amount": "60.00",
+                    "reference_nr": "360000000002000000003620253",
+                    "debtor": "Musterweg 9, CH-3004 Bern",
+                    "extra_info": "Jahresbeitrag 2025",
+                    "date": datetime.date(2025, 6, 27),
+                },
+            },
+            {
+                "file": "camt.054_CH5600790016583351934_2025-06-27_00070_no_debtor.xml",
+                "num_transactions": 1,
+                "data": {
+                    "amount": "60.00",
+                    "reference_nr": "360000000002000000003620253",
+                    "debtor": "<Unbekannt>",
+                    "extra_info": "Jahresbeitrag 2025",
+                    "date": datetime.date(2025, 6, 27),
+                },
+            },
+            {
+                "file": "camt.054_CH5600790016583351934_2025-06-27_00070_no_related_parties.xml",
+                "num_transactions": 1,
+                "data": {
+                    "amount": "60.00",
+                    "reference_nr": "360000000002000000003620253",
+                    "debtor": "<Unbekannt>",
+                    "extra_info": "Jahresbeitrag 2025",
+                    "date": datetime.date(2025, 6, 27),
+                },
+            },
         ]
 
         for testfile in testfiles:
@@ -110,17 +168,25 @@ class SepaReaderTest(GenoAdminTestCase):
             infile.close()
 
             camt_data = parser.parse_string(None, xml)
-            self.assertTrue("document_type" in camt_data)
+            self.assertTrue("document_type" in camt_data, msg=f"in {testfile['file']}")
 
             data = read_camt(camt_data)
-            self.assertTrue("log" in data)
-            self.assertTrue("transactions" in data)
+            self.assertTrue("log" in data, msg=f"in {testfile['file']}")
+            self.assertTrue("transactions" in data, msg=f"in {testfile['file']}")
             # for l in data['log']:
             #    print(" # %s" % l['info'])
             #    for o in l['objects']:
             #        print("   - %s" % o)
             # print(data['transactions'])
-            self.assertEqual(len(data["transactions"]), testfile["num_transactions"])
+            self.assertEqual(
+                len(data["transactions"]),
+                testfile["num_transactions"],
+                msg=f"in {testfile['file']}",
+            )
             if "data" in testfile:
                 for key, value in testfile["data"].items():
-                    self.assertEqual(data["transactions"][0][key], value)
+                    self.assertEqual(
+                        data["transactions"][0][key],
+                        value,
+                        msg=f"{key} in {testfile['file']}",
+                    )

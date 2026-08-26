@@ -130,6 +130,7 @@
             </RltdPties>
                                                 <RmtInf>
                                                   <Strd>
+                                                    {% if not payment.skip_creditor_reference %}
                                                     <CdtrRefInf>
                                                       <Tp>
                                                         <CdOrPrtry>
@@ -138,6 +139,7 @@
                                                       </Tp>
                                                       <Ref>{{ payment.refnr }}</Ref>
                                                     </CdtrRefInf>
+                                                    {% endif %}
                                                     <AddtlRmtInf>{{ payment.comment }}</AddtlRmtInf>
                                                   </Strd>
                                                 </RmtInf>

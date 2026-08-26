@@ -3311,7 +3311,8 @@ class TransactionUploadView(CohivaAdminViewMixin, FormView):
             {
                 "import_message": self.import_message,
                 "import_items": self.import_items,
-                "item_name": "Buchungen",
+                "item_name": "Buchung",
+                "item_name_plural": "Buchungen",
                 # "title": "Bankauszug verarbeiten",
             }
         )
