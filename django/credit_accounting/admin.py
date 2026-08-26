@@ -130,6 +130,6 @@ class UserAccountSettingAdmin(GenoBaseAdmin):
     ]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "account", "user", "value"]
-    list_filter = ["name", "active"]
+    list_filter = ["active", "name"]
     search_fields = ["name", "account__name", "comment"]
     autocomplete_fields = ["account", "user"]
