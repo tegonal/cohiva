@@ -427,7 +427,6 @@ class QRBill(APIView):
         self.context["generic_info"] = request.data["bill_lines"]
         self.context["s_generic_total"] = nformat(total_amount)
         self.context["qr_extra_info"] = "Rechnung %s" % self.context["invoice_nr"]
-        self.context["preview"] = self.dry_run
 
         (ret, mails_sent, mail_recipient) = create_qrbill(
             ref_number,
