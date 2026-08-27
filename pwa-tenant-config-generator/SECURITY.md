@@ -30,11 +30,17 @@ when the following packages have been updated:
 
 ### tsx > 4.23.0
 
-- tar ^7.5.16
+- tar ^7.5.21
+
+### eslint > 9.39.4
+
+- "brace-expansion": "^5.0.9"
+- "js-yaml": "^4.3.1"
 
 ### pwa-asset-generator > 8.1.5
 
 - minimatch ^10.2.3
 - "ws": "^8.21.0"
-- "undici": "^7.28.0"
+- "undici": "^7.29.0"
 - "js-cookie": "^3.0.7"
+- "ip-address": "^10.3.1"
