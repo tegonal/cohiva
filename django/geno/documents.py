@@ -349,12 +349,13 @@ class DocumentTemplate:
         logger.info(f"   > Added Invoice object: {invoice}")
         return invoice
 
-    def render(self, recipient, regenerate_from_invoice=None):
+    def render(self, recipient, regenerate_from_invoice=None, filename_tag=None):
         output = RenderedDocument()
         output.file = self.content_template.file.path
-        filename_tag = sanitize_filename(
-            self.content_template.name
-        )  # use template name as filename tag
+        if filename_tag is None:
+            filename_tag = sanitize_filename(
+                self.content_template.name
+            )  # use template name as filename tag
         if self.content_template.template_type == "OpenDocument":
             ctx = self.get_context(recipient, regenerate_from_invoice)
             logger.info(
@@ -458,14 +459,17 @@ class Recipient:
         if not regenerate_mode or not invoice_ids:
             return
         query = Invoice.objects.filter(id__in=invoice_ids)
-        if regenerate_mode == "latests":
-            query = query.order_by("-date").first()
+        if regenerate_mode == "latest":
+            self.add_invoice(query.order_by("-date").first())
+            return
         elif regenerate_mode == "oldest":
-            query = query.order_by("date").first()
-        elif regenerate_mode != "all":
-            raise ValueError(f"Invalid regenerate_mode: {regenerate_mode}")
-        for invoice in query:
-            self.add_invoice(invoice)
+            self.add_invoice(query.order_by("date").first())
+            return
+        elif regenerate_mode == "all":
+            for invoice in query:
+                self.add_invoice(invoice)
+            return
+        raise ValueError(f"Invalid regenerate_mode: {regenerate_mode}")
 
     def add_invoice(self, invoice):
         self.invoices.append(invoice)
@@ -560,7 +564,7 @@ class ProcessDocuments:
         self.invoice_template = DocumentTemplate(
             content_template,
             doctype=doctype,
-            output_format=self.output_format,
+            output_format="pdf",
             dry_run=self.dry_run,
         )
 
@@ -620,7 +624,8 @@ class ProcessDocuments:
                 continue
             logger.info(f"Regenerate invoices for {recipient}")
             for invoice in recipient.invoices:
-                invoice_doc = self.invoice_template.render(recipient, invoice)
+                filename_tag = f"Rechnung_{invoice.id}"
+                invoice_doc = self.invoice_template.render(recipient, invoice, filename_tag)
                 if not invoice_doc:
                     raise RuntimeError(f"Konnte Rechnung nicht erstellen: {invoice}")
                 recipient.documents.append(invoice_doc)
@@ -883,7 +888,8 @@ def send_member_mail_process(data):
         process.set_output_format("odt")
     elif data["template_files"]:
         process.set_output_format("pdf")
-    process.set_regenerate_invoices_mode(data.get("regenerate_invoices"))
+    if data.get("regenerate_invoices"):
+        process.set_regenerate_invoices_mode(data.get("regenerate_invoices_mode"))
 
     try:
         for template in data["template_files"]:

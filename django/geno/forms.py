@@ -715,7 +715,7 @@ class MemberMailActionForm(forms.Form):
         ("latest", _("Nur die letzte (jüngste) Rechnung der Person")),
         ("oldest", _("Nur die älteste Rechnung der Person")),
     )
-    regenerate_invoices_mode = forms.MultipleChoiceField(
+    regenerate_invoices_mode = forms.ChoiceField(
         choices=regenerate_invoices_mode_choices,
         label=_(
             "Welche der mit dem Filter in Schritt 1 ausgewählten Rechnungen "
