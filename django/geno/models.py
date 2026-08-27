@@ -165,6 +165,11 @@ class GenoBase(models.Model):
         return mark_safe(f'<ul class="cohiva_object-actions">{action_list}</ul>')
 
     def save_as_copy(self):
+        """
+        Prepare and save the instance as a new copy.
+        
+        If available, appends "[KOPIE]" to the name and clears the import identifier before saving the instance with a new primary key.
+        """
         if hasattr(self, "name") and isinstance(self.name, str):
             self.name = "%s [KOPIE]" % self.name
         if hasattr(self, "import_id"):
@@ -614,6 +619,9 @@ class Address(GenoBase):
         ]
 
     def save_as_copy(self):
+        """
+        Save the address as a new copy with a new random identifier and no linked user.
+        """
         self.user = None
         self.random_id = uuid.uuid4()
         super().save_as_copy()
@@ -1819,6 +1827,7 @@ class Contract(GenoBase):
         return actions
 
     def save_as_copy(self):
+        """Create a copy of the contract while preserving its related contractors, children, and rental units."""
         old_contractors = self.contractors.all()
         old_children = self.children.all()
         old_rental_units = self.rental_units.all()
