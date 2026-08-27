@@ -27,15 +27,12 @@ when the following packages have been updated:
 ### eslint > 9.39.4
 
 - "flatted": "^3.4.2",
+- "brace-expansion": "^5.0.9"
+- "js-yaml": "^4.3.1"
 
 ### tsx > 4.23.0
 
 - tar ^7.5.21
-
-### eslint > 9.39.4
-
-- "brace-expansion": "^5.0.9"
-- "js-yaml": "^4.3.1"
 
 ### pwa-asset-generator > 8.1.5
 
