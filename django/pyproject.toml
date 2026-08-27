@@ -1,63 +1,54 @@
-[tool.ruff]
-line-length = 99
-lint.select = [
-  "E",       # pycodestyle
-  "F",       # pyflakes
-  "UP",      # pyupgrade
-  "B",       # flake8-bugbear
-  "SIM",     # flake8-simplify
-  "I",       # isort
-  "FA100",   # add future annotations
-  "PGH004",  # pygrep-hooks - Use specific rule codes when using noqa
-  "PIE",     # flake8-pie
-  "PLE",     # pylint error
-  "T100",    # flake8-debugger
-  "W",       # pycodestyle
-## TODO: Activate more rules, e.g.
-#  "PLC",     # pylint convention
-#  "PLR",     # pylint refactor
-#  "PLR1714", # Consider merging multiple comparisons
-#  "PLW",     # pylint warning
-#  "PYI",     # flake8-pyi
-#  "RUF",     # ruff
-]
-lint.ignore = [
-  ## TODO: Fix these later:
-  "E501",    # Line too long
-  "E722",    # Do not use bare `except`
-  "E731",    # Do not assign a `lambda` expression, use a `def`
-  "UP031",   # Use format specifiers instead of percent format
-  "B904",    # raise-without-from-inside-except
-  "SIM108",  # if-else-block-instead-of-if-exp
-  "SIM115",  # open-file-with-context-handler
-  "SIM102",  # collapsible-if
-  "SIM113",  # enumerate-for-loop
-  "SIM105",  # suppressible-exception
-  "SIM117",  # multiple-with-statements
-]
-exclude = [
-   "NON_PUBLIC",
-   "geno/python-sepa",  ## third party code
-   "*.bak",
+[project]
+name = "cohiva"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "appy>=1.0.19",
+    "caldav>=1.4.0",
+    "celery[redis]>=5.5.3",
+    "coverage>=7.8.0",
+    "createsend>=9.1.4",
+    "dj-rest-auth>=7.0.1",
+    "django>=5.2.0",
+    "django-altcha>=1.0.0",
+    "django-cors-headers>=4.7.0",
+    "django-crispy-forms>=2.4",
+    "django-datetime-widget>=0.9.3",
+    "django-email-obfuscator>=0.1.5",
+    "django-filer>=3.4.4",
+    "django-oauth-toolkit>=3.3.0",
+    "django-select2-forms>=3.1.0",
+    "django-tables2>=2.7.5",
+    "django-unfold>=0.78.1",
+    "djangorestframework>=3.16.1",
+    "djangosaml2idp>=0.7.2",
+    "gunicorn>=22.0.0",
+    "html2text>=2025.4.15",
+    "json-with-comments>=1.2.10",
+    "kaleido>=0.2.1",
+    "mailmanclient>=3.3.5",
+    "matplotlib>=3.10.6",
+    "mysqlclient>=2.2.7",
+    "openpyxl>=3.1.5",
+    "piecash>=1.2.1",
+    "plotly<6.1",
+    "pycountry>=24.6.1",
+    "pypdf>=6.13.3",
+    "qrbill>=1.1.0",
+    "requests-oauthlib>=2.0.0",
+    "rocketchat-api>=1.35.1",
+    "vdirsyncer>=0.19.3",
+    "wagtail>=6.3,<7.1",
+    "wagtailmenus>=4.0.4",
+    "whitenoise>=6.6.0",
+    "sepa @ https://artifact-keeper.tegonal.com/api/v1/repositories/tgnl-pypi/download/sepa-0.5.4+mst1-py3-none-any.whl",
 ]
 
-[tool.pylint.main]
-disable = [
-  "missing-docstring",
-#  "too-many-branches",
-#  "too-many-return-statements",
-#  "too-many-ancestors",
-#  "too-few-public-methods",
-#  "fixme",
+[dependency-groups]
+dev = [
+    "djlint>=1.36.4",
+    "pylint>=3.3.8",
+    "ruff>=0.12.10",
 ]
-#ignore = "tests"
-max-line-length = 99
-
-[tool.djlint]
-profile = "django"
-indent = 2
-max_line_length = 99
-preserve_blank_lines = true
-format_css = true
-format_js = true
-

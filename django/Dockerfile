@@ -7,16 +7,17 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Install build dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends build-essential libmariadb-dev libfreetype-dev libjpeg-dev libheif-dev libffi-dev
+# Install uv
+RUN pip install uv
 
-# Install python dependencies in /usr/local/
+# Install dependencies
 WORKDIR /cohiva
-# Copy only the necessary files to improve build caching
-COPY requirements-docker.txt requirements.txt
-COPY install_dependencies.sh install.py ./
-COPY geno/python-sepa geno/python-sepa
-COPY cohiva/saml2/*.patch cohiva/saml2/
-RUN chmod +x ./install_dependencies.sh
-RUN ./install_dependencies.sh -e docker
+COPY pyproject.toml uv.lock /cohiva/
+# Disable development dependencies
+ENV UV_NO_DEV=1
+# Sync directly into the system python environment
+ENV UV_PROJECT_ENVIRONMENT=/usr/local
+RUN uv sync --locked
 
 # Remove unnecessary stuff from /usr/local/
 RUN find /usr/local/lib -type d -name '__pycache__' -exec rm -rf {} + && \
