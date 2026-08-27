@@ -12,7 +12,7 @@ RUN pip install uv
 
 # Install dependencies
 WORKDIR /cohiva
-COPY pyproject.toml uv.lock /cohiva
+COPY pyproject.toml uv.lock /cohiva/
 # Disable development dependencies
 ENV UV_NO_DEV=1
 # Sync directly into the system python environment
