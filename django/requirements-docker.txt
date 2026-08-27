@@ -8,7 +8,7 @@
 #
 aiohappyeyeballs==2.6.1
     # via aiohttp
-aiohttp==3.14.1
+aiohttp==3.14.3
     # via vdirsyncer
 aiosignal==1.4.0
     # via aiohttp
@@ -52,7 +52,7 @@ charset-normalizer==3.4.3
     # via
     #   reportlab
     #   requests
-click==8.1.8
+click==8.3.3
     # via
     #   celery
     #   click-didyoumean
@@ -93,7 +93,7 @@ defusedxml==0.7.1
     #   willow
 dj-rest-auth==7.0.1
     # via -r requirements.in
-django==5.2.16
+django==5.2.17
     # via
     #   -r requirements.in
     #   dj-rest-auth
@@ -275,7 +275,7 @@ pyopenssl==24.2.1
     # via pysaml2
 pyparsing==3.2.5
     # via matplotlib
-pypdf==6.13.3
+pypdf==6.15.0
     # via -r requirements.in
 pysaml2==7.5.2
     # via djangosaml2idp
@@ -336,7 +336,7 @@ sqlalchemy==1.4.54
     #   sqlalchemy-utils
 sqlalchemy-utils==0.41.2
     # via piecash
-sqlparse==0.5.4
+sqlparse==0.6.0
     # via django
 svglib==1.5.1
     # via
@@ -356,6 +356,7 @@ types-python-dateutil==2.9.0.20250822
     # via arrow
 typing-extensions==4.13.2
     # via
+    #   aiohttp
     #   aiosignal
     #   django-stubs-ext
     #   django-tasks
@@ -379,7 +380,7 @@ vine==5.1.0
     #   kombu
 vobject==0.9.9
     # via caldav
-wagtail==7.0.8
+wagtail==7.0.9
     # via
     #   -r requirements.in
     #   wagtailmenus

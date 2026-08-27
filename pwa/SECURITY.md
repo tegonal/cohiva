@@ -27,15 +27,18 @@ when the following packages have been updated:
 ### eslint > 9.39.4
 
 - "flatted": "^3.4.2",
+- "js-yaml": "^4.3.0"
 
 ### @quasar/app-vite > 2.6.0
 
-- tar ^7.5.16
+- tar ^7.5.22
 - lodash ^4.18.0
 - minimatch ^10.2.3
 - picomatch ^4.0.4
-- ip-address ^10.1.1
+- ip-address ^10.5.0
 - vite ^8.0.16
+- postcss ^8.5.23
+- immutable ^5.1.8
 
 ### @quasar/cli > 4.0.0
 
@@ -44,8 +47,8 @@ when the following packages have been updated:
 ### workbox-build > 7.4.1
 
 - @babel/helper-module-transforms ^7.29.4
-- fast-uri ^3.1.2
+- fast-uri ^3.1.5
 
-### axios > 1.18.1
+### @intlify/unplugin-vue-i18n > 11.2.5
 
-- "form-data": "^4.0.6"
+- "brace-expansion": "^5.0.9"
