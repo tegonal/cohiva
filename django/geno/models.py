@@ -617,14 +617,14 @@ class Address(GenoBase):
 
     def get_object_actions(self):
         return [
-            (
-                "/geno/share/statement/current_year/%s/" % self.pk,
-                "Kontoauszug erzeugen (aktuelles Jahr)",
-            ),
-            (
-                "/geno/share/statement/previous_year/%s/" % self.pk,
-                "Kontoauszug erzeugen (Vorjahr)",
-            ),
+            {
+                "path": f"/geno/share/statement/current_year/{self.pk}/",
+                "title": "Kontoauszug erzeugen (aktuelles Jahr)",
+            },
+            {
+                "path": f"/geno/share/statement/previous_year/{self.pk}/",
+                "title": "Kontoauszug erzeugen (Vorjahr)",
+            },
         ]
 
     def save_as_copy(self):
@@ -860,10 +860,10 @@ class Member(GenoBase):
         ).prefetch_related("templates"):
             for tmpl in dt.templates.filter(active=True):
                 actions.append(
-                    (
-                        f"/geno/documents/{dt.name}/{self.pk}/create/?template={tmpl.pk}",
-                        f"{dt.description}: {tmpl.name}",
-                    )
+                    {
+                        "path": f"/geno/documents/{dt.name}/{self.pk}/create/?template={tmpl.pk}",
+                        "title": f"{dt.description}: {tmpl.name}",
+                    }
                 )
         return actions
 
@@ -1054,10 +1054,10 @@ class Share(GenoBase):
         ).prefetch_related("templates"):
             for tmpl in dt.templates.filter(active=True):
                 actions.append(
-                    (
-                        f"/geno/documents/{dt.name}/{self.pk}/create/?template={tmpl.pk}",
-                        f"{dt.description}: {tmpl.name}",
-                    )
+                    {
+                        "path": f"/geno/documents/{dt.name}/{self.pk}/create/?template={tmpl.pk}",
+                        "title": f"{dt.description}: {tmpl.name}",
+                    }
                 )
         return actions
 
@@ -1269,7 +1269,10 @@ class Document(GenoBase):
 
     def get_object_actions(self):
         return [
-            (f"/geno/documents/{self.doctype.name}/{self.pk}/download/", "Dokument neu erzeugen")
+            {
+                "path": f"/geno/documents/{self.doctype.name}/{self.pk}/download/",
+                "title": "Dokument neu erzeugen",
+            }
         ]
 
     class Meta:
@@ -1894,35 +1897,32 @@ class Contract(GenoBase):
         if not self.main_contract:
             # No invoices for sub-contracts
             actions.append(
-                (
-                    "/geno/invoice/download/contract/%s/" % (self.pk),
-                    "Mietzinsrechnung herunterladen, aktueller Monat",
-                    "Es wird nur das PDF erzeugt, nicht gebucht!",
-                )
+                {
+                    "path": f"/geno/invoice/download/contract/{self.pk}/",
+                    "title": "Mietzinsrechnung herunterladen, aktueller Monat",
+                }
             )
             actions.append(
-                (
-                    "/geno/invoice/download/contract/%s/?date=last_month" % (self.pk),
-                    "Mietzinsrechnung herunterladen, letzter Monat",
-                    "Es wird nur das PDF erzeugt, nicht gebucht!",
-                )
+                {
+                    "path": f"/geno/invoice/download/contract/{self.pk}/?date=last_month",
+                    "title": "Mietzinsrechnung herunterladen, letzter Monat",
+                }
             )
             actions.append(
-                (
-                    "/geno/invoice/download/contract/%s/?date=next_month" % (self.pk),
-                    "Mietzinsrechnung herunterladen, nächster Monat",
-                    "Es wird nur das PDF erzeugt, nicht gebucht!",
-                )
+                {
+                    "path": f"/geno/invoice/download/contract/{self.pk}/?date=next_month",
+                    "title": "Mietzinsrechnung herunterladen, nächster Monat",
+                }
             )
         for dt in DocumentType.objects.filter(
             active=True, name__startswith="contract"
         ).prefetch_related("templates"):
             for tmpl in dt.templates.filter(active=True):
                 actions.append(
-                    (
-                        f"/geno/documents/{dt.name}/{self.pk}/create/?template={tmpl.pk}",
-                        f"{tmpl.name}: {dt.description}",
-                    )
+                    {
+                        "path": f"/geno/documents/{dt.name}/{self.pk}/create/?template={tmpl.pk}",
+                        "title": f"{tmpl.name}: {dt.description}",
+                    }
                 )
         return actions
 

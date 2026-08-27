@@ -301,18 +301,13 @@ class ObjectActionsMixin:
         to add custom actions."""
         dropdown_items = []
         for action_item in object.get_object_actions():
-            if isinstance(action_item, tuple) and len(action_item) > 1:
-                ## Handle old-style tuple actions (path, title) for backward compatibility
-                action_dict = {"title": action_item[1], "path": action_item[0]}
-            else:
-                action_dict = action_item
-            if isinstance(action_dict, dict) and "title" in action_dict and "path" in action_dict:
+            if isinstance(action_item, dict) and "title" in action_item and "path" in action_item:
                 dropdown_items.append(
                     {
-                        "title": action_dict.get("title"),
-                        "path": action_dict.get("path"),
-                        "icon": action_dict.get("icon", "file_save"),
-                        "attrs": action_dict.get("attrs", {}),
+                        "title": action_item.get("title"),
+                        "path": action_item.get("path"),
+                        "icon": action_item.get("icon", "file_save"),
+                        "attrs": action_item.get("attrs", {}),
                     }
                 )
         return dropdown_items
