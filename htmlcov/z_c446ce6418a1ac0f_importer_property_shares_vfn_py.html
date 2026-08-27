@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for importer/importer_property_shares_vfn.py: 92%</title>
+    <title>Coverage for importer/importer_property_shares_vfn.py: 93%</title>
     <link rel="icon" sizes="32x32" href="favicon_32_cb_c827f16f.png">
     <link rel="stylesheet" href="style_cb_4667309f.css" type="text/css">
     <script src="coverage_html_cb_dd2e7eb5.js" defer></script>
@@ -12,7 +12,7 @@
     <div class="content">
         <h1>
             <span class="text">Coverage for </span><b>importer<span class="sep">/</span>importer_property_shares_vfn.py</b>:
-            <span class="pc_cov">92%</span>
+            <span class="pc_cov">93%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -54,9 +54,9 @@
             </div>
         </aside>
         <h2>
-            <span class="text">89 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">82<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">7<span class="text"> missing</span></button>
+            <span class="text">85 statements &nbsp;</span>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">79<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">6<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">0<span class="text"> excluded</span></button>
         </h2>
         <p class="text">
@@ -65,7 +65,7 @@
             <a id="nextFileLink" class="nav" href="z_c446ce6418a1ac0f_importer_tenant_property_it_wgn_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.15.4">coverage.py v7.15.4</a>,
-            created at 2026-08-26 13:40 +0000
+            created at 2026-08-27 15:59 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -216,38 +216,32 @@
     <p class="pln"><span class="n"><a id="t134" href="#t134">134</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t135" href="#t135">135</a></span><span class="t">        <span class="nam">share</span><span class="op">.</span><span class="nam">value</span> <span class="op">=</span> <span class="nam">amount</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t136" href="#t136">136</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t137" href="#t137">137</a></span><span class="t">        <span class="nam">state_raw</span> <span class="op">=</span> <span class="nam">str</span><span class="op">(</span><span class="nam">row_data</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">&quot;Status&quot;</span><span class="op">)</span> <span class="key">or</span> <span class="str">&quot;&quot;</span><span class="op">)</span><span class="op">.</span><span class="nam">strip</span><span class="op">(</span><span class="op">)</span><span class="op">.</span><span class="nam">lower</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t138" href="#t138">138</a></span><span class="t">        <span class="key">if</span> <span class="nam">state_raw</span> <span class="key">in</span> <span class="op">(</span><span class="str">&quot;bezahlt&quot;</span><span class="op">,</span> <span class="str">&quot;paid&quot;</span><span class="op">,</span> <span class="str">&quot;einbezahlt&quot;</span><span class="op">,</span> <span class="str">&quot;eingezahlt&quot;</span><span class="op">,</span> <span class="str">&quot;zur&#252;ckbezahlt&quot;</span><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t139" href="#t139">139</a></span><span class="t">            <span class="nam">share</span><span class="op">.</span><span class="nam">state</span> <span class="op">=</span> <span class="str">&quot;bezahlt&quot;</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t140" href="#t140">140</a></span><span class="t">        <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t141" href="#t141">141</a></span><span class="t">            <span class="nam">share</span><span class="op">.</span><span class="nam">state</span> <span class="op">=</span> <span class="str">&quot;gefordert&quot;</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t142" href="#t142">142</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t143" href="#t143">143</a></span><span class="t">        <span class="nam">share_date</span> <span class="op">=</span> <span class="nam">parse_date</span><span class="op">(</span><span class="nam">row_data</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">&quot;Datum Beginn&quot;</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t144" href="#t144">144</a></span><span class="t">        <span class="key">if</span> <span class="nam">share_date</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t145" href="#t145">145</a></span><span class="t">            <span class="nam">share</span><span class="op">.</span><span class="nam">date</span> <span class="op">=</span> <span class="nam">share_date</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t146" href="#t146">146</a></span><span class="t">        <span class="key">elif</span> <span class="key">not</span> <span class="nam">share</span><span class="op">.</span><span class="nam">pk</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t147" href="#t147">147</a></span><span class="t">            <span class="com"># Fallback: use today</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t148" href="#t148">148</a></span><span class="t">            <span class="nam">share</span><span class="op">.</span><span class="nam">date</span> <span class="op">=</span> <span class="nam">datetime</span><span class="op">.</span><span class="nam">date</span><span class="op">.</span><span class="nam">today</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t149" href="#t149">149</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t150" href="#t150">150</a></span><span class="t">        <span class="nam">share</span><span class="op">.</span><span class="nam">date_end</span> <span class="op">=</span> <span class="nam">parse_date</span><span class="op">(</span><span class="nam">row_data</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">&quot;Datum Ende&quot;</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t151" href="#t151">151</a></span><span class="t">        <span class="nam">share</span><span class="op">.</span><span class="nam">is_pension_fund</span> <span class="op">=</span> <span class="nam">parse_bool</span><span class="op">(</span><span class="nam">row_data</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">&quot;WEF-Guthaben (BVG/3. S&#228;ule)&quot;</span><span class="op">)</span><span class="op">)</span> <span class="key">or</span> <span class="key">False</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t137" href="#t137">137</a></span><span class="t">        <span class="nam">share_date</span> <span class="op">=</span> <span class="nam">parse_date</span><span class="op">(</span><span class="nam">row_data</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">&quot;Datum Beginn&quot;</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t138" href="#t138">138</a></span><span class="t">        <span class="key">if</span> <span class="nam">share_date</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t139" href="#t139">139</a></span><span class="t">            <span class="nam">share</span><span class="op">.</span><span class="nam">payment_date</span> <span class="op">=</span> <span class="nam">share_date</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t140" href="#t140">140</a></span><span class="t">        <span class="key">elif</span> <span class="key">not</span> <span class="nam">share</span><span class="op">.</span><span class="nam">pk</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t141" href="#t141">141</a></span><span class="t">            <span class="com"># Fallback: use today</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t142" href="#t142">142</a></span><span class="t">            <span class="nam">share</span><span class="op">.</span><span class="nam">payment_date</span> <span class="op">=</span> <span class="nam">datetime</span><span class="op">.</span><span class="nam">date</span><span class="op">.</span><span class="nam">today</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t143" href="#t143">143</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t144" href="#t144">144</a></span><span class="t">        <span class="nam">share</span><span class="op">.</span><span class="nam">repayment_date</span> <span class="op">=</span> <span class="nam">parse_date</span><span class="op">(</span><span class="nam">row_data</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">&quot;Datum Ende&quot;</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t145" href="#t145">145</a></span><span class="t">        <span class="nam">share</span><span class="op">.</span><span class="nam">is_pension_fund</span> <span class="op">=</span> <span class="nam">parse_bool</span><span class="op">(</span><span class="nam">row_data</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">&quot;WEF-Guthaben (BVG/3. S&#228;ule)&quot;</span><span class="op">)</span><span class="op">)</span> <span class="key">or</span> <span class="key">False</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t146" href="#t146">146</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t147" href="#t147">147</a></span><span class="t">        <span class="nam">linked_contract_id</span> <span class="op">=</span> <span class="nam">row_data</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">&quot;Fixe Zuteilung zu Vertrag&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t148" href="#t148">148</a></span><span class="t">        <span class="key">if</span> <span class="nam">linked_contract_id</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t149" href="#t149">149</a></span><span class="t">            <span class="nam">share</span><span class="op">.</span><span class="nam">attached_to_contract</span> <span class="op">=</span> <span class="nam">Contract</span><span class="op">.</span><span class="nam">objects</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t150" href="#t150">150</a></span><span class="t">                <span class="nam">import_id</span><span class="op">=</span><span class="fst">f&quot;</span><span class="fst">vfn_</span><span class="op">{</span><span class="nam">linked_contract_id</span><span class="op">}</span><span class="fst">&quot;</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t151" href="#t151">151</a></span><span class="t">            <span class="op">)</span><span class="op">.</span><span class="nam">first</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t152" href="#t152">152</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t153" href="#t153">153</a></span><span class="t">        <span class="nam">linked_contract_id</span> <span class="op">=</span> <span class="nam">row_data</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">&quot;Fixe Zuteilung zu Vertrag&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t154" href="#t154">154</a></span><span class="t">        <span class="key">if</span> <span class="nam">linked_contract_id</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t155" href="#t155">155</a></span><span class="t">            <span class="nam">share</span><span class="op">.</span><span class="nam">attached_to_contract</span> <span class="op">=</span> <span class="nam">Contract</span><span class="op">.</span><span class="nam">objects</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t156" href="#t156">156</a></span><span class="t">                <span class="nam">import_id</span><span class="op">=</span><span class="fst">f&quot;</span><span class="fst">vfn_</span><span class="op">{</span><span class="nam">linked_contract_id</span><span class="op">}</span><span class="fst">&quot;</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t157" href="#t157">157</a></span><span class="t">            <span class="op">)</span><span class="op">.</span><span class="nam">first</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t153" href="#t153">153</a></span><span class="t">        <span class="nam">linked_building_name</span> <span class="op">=</span> <span class="nam">row_data</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">&quot;Zuordnung zu Liegenschaft&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t154" href="#t154">154</a></span><span class="t">        <span class="key">if</span> <span class="nam">linked_building_name</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t155" href="#t155">155</a></span><span class="t">            <span class="nam">share</span><span class="op">.</span><span class="nam">attached_to_building</span> <span class="op">=</span> <span class="nam">Building</span><span class="op">.</span><span class="nam">objects</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span><span class="nam">name</span><span class="op">=</span><span class="nam">linked_building_name</span><span class="op">)</span><span class="op">.</span><span class="nam">first</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t156" href="#t156">156</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t157" href="#t157">157</a></span><span class="t">        <span class="nam">share</span><span class="op">.</span><span class="nam">note</span> <span class="op">=</span> <span class="nam">row_data</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">&quot;Zusatzinfo&quot;</span><span class="op">)</span> <span class="key">or</span> <span class="str">&quot;&quot;</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t158" href="#t158">158</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t159" href="#t159">159</a></span><span class="t">        <span class="nam">linked_building_name</span> <span class="op">=</span> <span class="nam">row_data</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">&quot;Zuordnung zu Liegenschaft&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t160" href="#t160">160</a></span><span class="t">        <span class="key">if</span> <span class="nam">linked_building_name</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t161" href="#t161">161</a></span><span class="t">            <span class="nam">share</span><span class="op">.</span><span class="nam">attached_to_building</span> <span class="op">=</span> <span class="nam">Building</span><span class="op">.</span><span class="nam">objects</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span><span class="nam">name</span><span class="op">=</span><span class="nam">linked_building_name</span><span class="op">)</span><span class="op">.</span><span class="nam">first</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t162" href="#t162">162</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t163" href="#t163">163</a></span><span class="t">        <span class="nam">share</span><span class="op">.</span><span class="nam">note</span> <span class="op">=</span> <span class="nam">row_data</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">&quot;Zusatzinfo&quot;</span><span class="op">)</span> <span class="key">or</span> <span class="str">&quot;&quot;</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t164" href="#t164">164</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t165" href="#t165">165</a></span><span class="t">        <span class="key">if</span> <span class="nam">import_id</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t166" href="#t166">166</a></span><span class="t">            <span class="nam">share</span><span class="op">.</span><span class="nam">import_id</span> <span class="op">=</span> <span class="nam">import_id</span>&nbsp;</span><span class="r"></span></p>
-    <p class="pln"><span class="n"><a id="t167" href="#t167">167</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t168" href="#t168">168</a></span><span class="t">        <span class="nam">share</span><span class="op">.</span><span class="nam">save</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t159" href="#t159">159</a></span><span class="t">        <span class="key">if</span> <span class="nam">import_id</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t160" href="#t160">160</a></span><span class="t">            <span class="nam">share</span><span class="op">.</span><span class="nam">import_id</span> <span class="op">=</span> <span class="nam">import_id</span>&nbsp;</span><span class="r"></span></p>
+    <p class="pln"><span class="n"><a id="t161" href="#t161">161</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t162" href="#t162">162</a></span><span class="t">        <span class="nam">share</span><span class="op">.</span><span class="nam">save</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
 </main>
 <footer>
     <div class="content">
@@ -257,7 +251,7 @@
             <a class="nav" href="z_c446ce6418a1ac0f_importer_tenant_property_it_wgn_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.15.4">coverage.py v7.15.4</a>,
-            created at 2026-08-26 13:40 +0000
+            created at 2026-08-27 15:59 +0000
         </p>
     </div>
 </footer>

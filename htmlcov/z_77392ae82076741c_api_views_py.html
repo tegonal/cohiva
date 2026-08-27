@@ -65,7 +65,7 @@
             <a id="nextFileLink" class="nav" href="z_77392ae82076741c_apps_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.15.4">coverage.py v7.15.4</a>,
-            created at 2026-08-26 13:40 +0000
+            created at 2026-08-27 15:59 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -91,7 +91,7 @@
     <p class="run"><span class="n"><a id="t9" href="#t9">9</a></span><span class="t"><span class="key">from</span> <span class="nam">rest_framework</span><span class="op">.</span><span class="nam">response</span> <span class="key">import</span> <span class="nam">Response</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t10" href="#t10">10</a></span><span class="t"><span class="key">from</span> <span class="nam">rest_framework</span><span class="op">.</span><span class="nam">views</span> <span class="key">import</span> <span class="nam">APIView</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t11" href="#t11">11</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t12" href="#t12">12</a></span><span class="t"><span class="key">from</span> <span class="nam">geno</span><span class="op">.</span><span class="nam">models</span> <span class="key">import</span> <span class="nam">RentalUnit</span><span class="op">,</span> <span class="nam">get_active_contracts</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t12" href="#t12">12</a></span><span class="t"><span class="key">from</span> <span class="nam">geno</span><span class="op">.</span><span class="nam">models</span> <span class="key">import</span> <span class="nam">Contract</span><span class="op">,</span> <span class="nam">RentalUnit</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t13" href="#t13">13</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t14" href="#t14">14</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">accounts</span> <span class="key">import</span> <span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t15" href="#t15">15</a></span><span class="t">    <span class="nam">get_accounts_for_user</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
@@ -384,7 +384,7 @@
     <p class="mis show_mis"><span class="n"><a id="t302" href="#t302">302</a></span><span class="t">                <span class="nam">name</span> <span class="op">=</span> <span class="fst">f&quot;</span><span class="op">{</span><span class="nam">ru</span><span class="op">.</span><span class="nam">label</span><span class="op">}</span><span class="fst"> </span><span class="op">{</span><span class="nam">ru</span><span class="op">.</span><span class="nam">name</span><span class="op">}</span><span class="fst">&quot;</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t303" href="#t303">303</a></span><span class="t">            <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t304" href="#t304">304</a></span><span class="t">                <span class="nam">name</span> <span class="op">=</span> <span class="fst">f&quot;</span><span class="fst">Wohnung </span><span class="op">{</span><span class="nam">ru</span><span class="op">.</span><span class="nam">name</span><span class="op">}</span><span class="fst">&quot;</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t305" href="#t305">305</a></span><span class="t">            <span class="nam">contract</span> <span class="op">=</span> <span class="nam">get_active_contracts</span><span class="op">(</span><span class="op">)</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span><span class="nam">rental_units__id__exact</span><span class="op">=</span><span class="nam">ru</span><span class="op">.</span><span class="nam">id</span><span class="op">)</span><span class="op">.</span><span class="nam">first</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="mis show_mis"><span class="n"><a id="t305" href="#t305">305</a></span><span class="t">            <span class="nam">contract</span> <span class="op">=</span> <span class="nam">Contract</span><span class="op">.</span><span class="nam">get_active</span><span class="op">(</span><span class="op">)</span><span class="op">.</span><span class="nam">filter</span><span class="op">(</span><span class="nam">rental_units__id__exact</span><span class="op">=</span><span class="nam">ru</span><span class="op">.</span><span class="nam">id</span><span class="op">)</span><span class="op">.</span><span class="nam">first</span><span class="op">(</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t306" href="#t306">306</a></span><span class="t">        <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t307" href="#t307">307</a></span><span class="t">            <span class="nam">name</span> <span class="op">=</span> <span class="fst">f&quot;</span><span class="fst">Konto </span><span class="op">{</span><span class="nam">request</span><span class="op">.</span><span class="nam">data</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="str">&#x27;name&#x27;</span><span class="op">)</span><span class="op">}</span><span class="fst">&quot;</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t308" href="#t308">308</a></span><span class="t">            <span class="nam">contract</span> <span class="op">=</span> <span class="key">None</span>&nbsp;</span><span class="r"></span></p>
@@ -490,7 +490,7 @@
             <a class="nav" href="z_77392ae82076741c_apps_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.15.4">coverage.py v7.15.4</a>,
-            created at 2026-08-26 13:40 +0000
+            created at 2026-08-27 15:59 +0000
         </p>
     </div>
 </footer>
