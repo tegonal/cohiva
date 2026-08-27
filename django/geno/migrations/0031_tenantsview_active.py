@@ -3,7 +3,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("geno", "0029_contract_active"),
+        ("geno", "0030_rename_and_add_share_fields"),
     ]
 
     operations = [

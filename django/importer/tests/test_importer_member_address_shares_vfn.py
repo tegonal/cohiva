@@ -150,8 +150,8 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
         share = Share.objects.get(name=address)
         self.assertEqual(share.quantity, 3)
         self.assertEqual(share.value, Decimal("1000"))
-        self.assertEqual(share.state, "bezahlt")
-        self.assertEqual(share.date, date(2020, 5, 15))
+        self.assertEqual(share.payment_state, "bezahlt")
+        self.assertEqual(share.payment_date, date(2020, 5, 15))
         self.assertEqual(share.identifier, "99")
         self.assertEqual(share.identifier_external, "99ex")
         self.assertEqual(share.note, "Test")
@@ -195,7 +195,7 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
                 "Eintritt [Mitglied]": "2020-05-01",
                 "Austritt [Mitglied]": "2021-05-01",
                 "Bemerkungen [Mitglied]": "Test-Bemerkung",
-                "Status [Beteiligungen]": "zurückbezahlt",
+                "Zahlungszustand [Beteiligungen]": "zurückgezahlt",
                 "Datum Beginn [Beteiligungen]": "2020-05-15",
                 "Datum Ende [Beteiligungen]": "2021-05-15",
                 "Anzahl [Beteiligungen]": "1",
@@ -233,9 +233,9 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
         share = Share.objects.get(name=address)
         self.assertEqual(share.quantity, 1)
         self.assertEqual(share.value, Decimal("100"))
-        self.assertEqual(share.state, "bezahlt")
-        self.assertEqual(share.date, date(2020, 5, 15))
-        self.assertEqual(share.date_end, date(2021, 5, 15))
+        self.assertEqual(share.payment_state, "zurückgezahlt")
+        self.assertEqual(share.payment_date, date(2020, 5, 15))
+        self.assertEqual(share.repayment_date, date(2021, 5, 15))
 
     def test_import_organization(self):
         """Import a Firma with contact person."""
@@ -398,12 +398,11 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
             Vorname="Pending",
             Nachname="Share",
             Email="pending@example.com",
-            Eintrittsdatum="2023-01-01",
             **{
                 "Anzahl [Beteiligungen]": 2,
                 "Betrag pro Stück [Beteiligungen]": 500,
-                "Datum Beginn [Beteiligungen]": "2022-06-01",
                 "Status [Beteiligungen]": "offen",
+                "Datum Beginn [Beteiligungen]": "2050-01-01",
             },
         )
         excel_file = self.create_test_excel([row])
@@ -411,7 +410,7 @@ class ImporterMemberAddressSharesVFNTest(TestCase):
         ImporterMemberAddressSharesVFN(import_job).process()
 
         share = Share.objects.get(name__email="pending@example.com")
-        self.assertEqual(share.state, "gefordert")
+        self.assertEqual(share.payment_state, "gefordert")
 
     def test_import_type_registered_in_model(self):
         """The import type 'member_address_shares_vfn' is a valid ImportJob choice."""

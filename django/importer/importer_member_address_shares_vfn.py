@@ -217,20 +217,14 @@ class ImporterMemberAddressSharesVFN(ExcelImporter):
         value = parse_decimal(value_raw)
         share.value = value if value is not None else Decimal("0.00")
 
-        state_raw = str(row_data.get("Status [Beteiligungen]") or "").strip().lower()
-        if state_raw in ("bezahlt", "paid", "einbezahlt", "eingezahlt", "zurückbezahlt"):
-            share.state = "bezahlt"
-        else:
-            share.state = "gefordert"
-
         share_date = parse_date(row_data.get("Datum Beginn [Beteiligungen]"))
         if share_date:
-            share.date = share_date
+            share.payment_date = share_date
         elif not share.pk:
             # Fallback: use today
-            share.date = datetime.date.today()
+            share.payment_date = datetime.date.today()
 
-        share.date_end = parse_date(row_data.get("Datum Ende [Beteiligungen]"))
+        share.repayment_date = parse_date(row_data.get("Datum Ende [Beteiligungen]"))
 
         share.identifier = row_data.get("Beteiligungs-ID") or ""
         share.identifier_external = row_data.get("Beteiligungs-ID extern") or ""

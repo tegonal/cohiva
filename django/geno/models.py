@@ -377,10 +377,10 @@ class Address(GenoBase):
 
     def get_contracts(self):
         if self.address_contracts.exists():
-            return get_active_contracts(pre_select=self.address_contracts.all())
+            return Contract.get_active().filter(contractors=self)
         elif hasattr(self, "address_child"):
             if self.address_child.child_contracts.exists():
-                return get_active_contracts(pre_select=self.address_child.child_contracts.all())
+                return Contract.get_active().filter(children=self.address_child)
         return []
 
     def is_tenant(self):
@@ -935,13 +935,22 @@ class Share(GenoBase):
     share_type = models.ForeignKey(
         ShareType, verbose_name="Beteiligungstyp", on_delete=models.CASCADE
     )
-    STATE_CHOICES = (
-        ("gefordert", "gefordert"),
-        ("bezahlt", "bezahlt"),
+    payment_date = models.DateField("Zahlungsdatum", null=True, blank=True, default=None)
+    repayment_date = models.DateField("Rückzahlungsdatum", null=True, blank=True, default=None)
+    effective_from = models.DateField(
+        verbose_name="Wirksam ab",
+        null=True,
+        blank=True,
+        default=None,
+        help_text="Leer lassen, falls identisch mit Zahlungsdatum. Wird für Reporting/Zinsberechnung verwendet.",
     )
-    state = models.CharField("Status", max_length=50, choices=STATE_CHOICES, blank=True)
-    date = models.DateField("Datum Beginn")
-    date_end = models.DateField("Datum Ende", null=True, blank=True, default=None)
+    effective_until = models.DateField(
+        verbose_name="Wirksam bis",
+        null=True,
+        blank=True,
+        default=None,
+        help_text="Leer lassen, falls identisch mit Rückzahlungsdatum.",
+    )
     duration = models.PositiveIntegerField(
         "Laufzeit", null=True, blank=True, help_text="Jahre (bei Darlehen)"
     )
@@ -1023,10 +1032,39 @@ class Share(GenoBase):
         else:
             return self.manual_interest
 
+    @property
+    @admin.display(description="Zahlungszustand")
+    def payment_state(self):
+        today = datetime.date.today()
+        if self.repayment_date and self.repayment_date <= today:
+            return "zurückgezahlt"
+        elif self.payment_date and self.payment_date <= today:
+            return "bezahlt"
+        else:
+            return "gefordert"
+
+    @property
+    @admin.display(description="Datum Beginn")
+    def date(self):
+        if self.effective_from:
+            return self.effective_from
+        else:
+            return self.payment_date
+
+    @property
+    @admin.display(description="Datum Ende")
+    def date_end(self):
+        if self.effective_until:
+            return self.effective_until
+        elif self.repayment_date:
+            return self.repayment_date
+        return None
+
     def __str__(self):
         extra_info = self.share_type
-        if self.state:
-            extra_info = "%s, %s" % (extra_info, self.state)
+        if self.payment_state:
+            state = self.payment_state
+            extra_info = "%s, %s" % (extra_info, state)
         if self.is_pension_fund:
             extra_info = "%s, BVG-GUTHABEN!!" % (extra_info)
         return "%s [%s]" % (self.name, extra_info)
@@ -1057,7 +1095,21 @@ class Share(GenoBase):
 
         # contract and building relations may not both be present
         if self.attached_to_building is not None and self.attached_to_contract is not None:
-            raise ValidationError("Vertrag und Liegeneschaft dürfen nicht beide ausgewählt sein.")
+            raise ValidationError(_("Contract and building can not both be selected."))
+
+        # At least one of payment date or effective from date must be provided
+        if not self.payment_date and not self.effective_from:
+            raise ValidationError(
+                _("At least one of payment date or effective from date must be provided.")
+            )
+        # Repayment date cannot be before payment date
+        if self.payment_date and self.repayment_date:
+            if self.payment_date > self.repayment_date:
+                raise ValidationError(_("Repayment date cannot be before payment date."))
+        # Effective until date cannot be before effective from date
+        if self.effective_from and self.effective_until:
+            if self.effective_from > self.effective_until:
+                raise ValidationError(_("Effective until date cannot be before effective from date."))
         super().clean(*args, **kwargs)
 
     def save(self, *args, **kwargs):
@@ -1089,15 +1141,55 @@ class Share(GenoBase):
             ("share_mailing", "Kann Mailing zu Beteiligungen erstellen"),
         )
 
+    @classmethod
+    def get_active(cls, interest=True, date=None):
+        """Get Shares that are active at the reference date 'date'. If the reference date is equal
+        to the repayment/effective_unil date, the share is NOT included.
+        The default date is the current day."""
+        if date is None:
+            date = datetime.date.today()
+        select = cls.objects.filter(
+            (Q(effective_from__isnull=False) & Q(effective_from__lte=date))
+            | (Q(effective_from__isnull=True) & Q(payment_date__lte=date))
+        ).filter(
+            (Q(effective_until__isnull=False) & Q(effective_until__gt=date))
+            | (
+                Q(effective_until__isnull=True)
+                & (Q(repayment_date__isnull=True) | Q(repayment_date__gt=date))
+            )
+        )
+        if not interest:
+            return select.filter(is_interest_credit=False)
+        else:
+            return select
 
-def get_active_shares(interest=True, date=None):
-    if date is None:
-        date = datetime.datetime.today()
-    select = Share.objects.filter(Q(date_end=None) | Q(date_end__gt=date)).filter(date__lte=date)
-    if not interest:
-        return select.filter(is_interest_credit=False).filter(state="bezahlt")
-    else:
-        return select.filter(state="bezahlt")
+    @classmethod
+    def get_active_in_period(
+        cls, interest=True, period_start=None, period_end=None, exclude_period_end=False
+    ):
+        """Get Shares that have an overlap with the reference period [period_start, period_end].
+        The end date `period_end` is inclusive unless exclude_period_end is set to True.
+        The default period is the current year."""
+        if period_start is None:
+            period_start = datetime.date(datetime.date.today().year, 1, 1)
+        if period_end is None:
+            period_end = datetime.date(datetime.date.today().year, 12, 31)
+        elif exclude_period_end:
+            period_end = period_end - datetime.timedelta(days=1)
+        select = cls.objects.filter(
+            (Q(effective_from__isnull=False) & Q(effective_from__lte=period_end))
+            | (Q(effective_from__isnull=True) & Q(payment_date__lte=period_end))
+        ).filter(
+            (Q(effective_until__isnull=False) & Q(effective_until__gte=period_start))
+            | (
+                Q(effective_until__isnull=True)
+                & (Q(repayment_date=None) | Q(repayment_date__gte=period_start))
+            )
+        )
+        if not interest:
+            return select.filter(is_interest_credit=False)
+        else:
+            return select
 
 
 DOCUMENTTYPE_NAME_CHOICES = (
@@ -1842,19 +1934,40 @@ class Contract(GenoBase):
             ),
         )
 
+    @classmethod
+    def get_active(cls, date=None, include_subcontracts=False):
+        """Get Contracts that are active at the reference date 'date'.
+        The default date is the current day."""
+        if date is None:
+            date = datetime.date.today()
+            if date < datetime.date(2021, 12, 1):
+                date = datetime.date(2021, 12, 1)
+        select = cls.objects.filter(Q(date_end=None) | Q(date_end__gt=date)).filter(date__lte=date)
+        if include_subcontracts:
+            return select
+        else:
+            return select.filter(main_contract__isnull=True)
 
-def get_active_contracts(date=None, pre_select=None, include_subcontracts=False):
-    if date is None:
-        date = datetime.date.today()
-        if date < datetime.date(2021, 12, 1):
-            date = datetime.date(2021, 12, 1)
-    if not pre_select:
-        pre_select = Contract.objects.all()
-    select = pre_select.filter(Q(date_end=None) | Q(date_end__gt=date)).filter(date__lte=date)
-    if include_subcontracts:
-        return select
-    else:
-        return select.filter(main_contract__isnull=True)
+    @classmethod
+    def get_active_in_period(
+        cls, period_start=None, period_end=None, exclude_period_end=False, include_subcontracts=False
+    ):
+        """Get Contracts that have an overlap with the reference period [period_start, period_end].
+        The end date `period_end` is inclusive unless exclude_period_end is set to True.
+        The default period is the current year."""
+        if period_start is None:
+            period_start = datetime.date(datetime.date.today().year, 1, 1)
+        if period_end is None:
+            period_end = datetime.date(datetime.date.today().year, 12, 31)
+        elif exclude_period_end:
+            period_end = period_end - datetime.timedelta(days=1)
+        select = cls.objects.filter(Q(date__lte=period_end)).filter(
+            Q(date_end=None) | Q(date_end__gte=period_start)
+        )
+        if not include_subcontracts:
+            return select.filter(main_contract__isnull=True)
+        else:
+            return select
 
 
 INVOICE_OBJECT_TYPE_CHOICES = (

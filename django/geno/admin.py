@@ -69,6 +69,31 @@ def copy_objects(modeladmin, request, queryset):
     messages.success(request, f"{count} Objekt(e) kopiert.")
 
 
+class ShareStateFilter(admin.SimpleListFilter):
+    title = "Status"
+    parameter_name = "payment_state"
+
+    def lookups(self, request, model_admin):
+        return [
+            ("gefordert", "gefordert"),
+            ("bezahlt", "bezahlt"),
+            ("zurückgezahlt", "zurückgezahlt"),
+        ]
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        today = datetime.date.today()
+        if value == "zurückgezahlt":
+            return queryset.filter(repayment_date__lte=today)
+        elif value == "bezahlt":
+            return queryset.filter(payment_date__lte=today).filter(
+                Q(repayment_date__isnull=True) | Q(repayment_date__gt=today)
+            )
+        elif value == "gefordert":
+            return queryset.filter(Q(payment_date__gt=today) | Q(payment_date__isnull=True))
+        return queryset
+
+
 class BooleanFieldDefaultTrueListFilter(admin.BooleanFieldListFilter):
     """
     Filter a boolean field `active`.
@@ -739,8 +764,6 @@ class MemberAttributeAdmin(GenoBaseAdmin):
     ]
     autocomplete_fields = ["member", "attribute_type"]
     actions = GenoBaseAdmin.actions + [
-        mark_billed,
-        mark_paid,
         mark_reminder,
         member_attribute_send_membermail,
     ]
@@ -753,16 +776,6 @@ class ShareTypeAdmin(GenoBaseAdmin):
     list_display = ["name", "description", "standard_interest"]
     list_filter = ["standard_interest"]
     search_fields = ["name", "description"]
-
-
-@admin.display(description='Als "bezahlt" markieren')
-def share_mark_paid(modeladmin, request, queryset):
-    queryset.update(state="bezahlt", date=datetime.date.today())
-
-
-@admin.display(description='Als "gefordert" markieren')
-def share_mark_billed(modeladmin, request, queryset):
-    queryset.update(state="gefordert", date=datetime.date.today())
 
 
 @admin.display(description="Laufzeit löschen")
@@ -780,14 +793,20 @@ def share_set_duration10(modeladmin, request, queryset):
     queryset.update(duration=10)
 
 
-@admin.display(description=("Datum Ende auf 31.12. des Vorjahres (=Jahresende) setzen"))
+@admin.display(description=("Rückzahlungsdatum auf 31.12. des Vorjahres (=Jahresende) setzen"))
 def share_set_end_endofyear(modeladmin, request, queryset):
-    queryset.update(date_end=datetime.date(datetime.datetime.now().year - 1, 12, 31))
+    repayment_date = datetime.date(datetime.datetime.now().year - 1, 12, 31)
+    for share in queryset:
+        share.repayment_date = repayment_date
+        share.save()
 
 
-@admin.display(description=("Datum Ende auf 31.12. vor ZWEI Jahren (=Jahresende) setzen"))
+@admin.display(description=("Rückzahlungsdatum auf 31.12. vor ZWEI Jahren (=Jahresende) setzen"))
 def share_set_end_endofyear2(modeladmin, request, queryset):
-    queryset.update(date_end=datetime.date(datetime.datetime.now().year - 2, 12, 31))
+    repayment_date = datetime.date(datetime.datetime.now().year - 2, 12, 31)
+    for share in queryset:
+        share.repayment_date = repayment_date
+        share.save()
 
 
 @admin.display(description="Zinsatz-Modus auf «Standard» setzen.")
@@ -830,8 +849,9 @@ class ShareAdmin(GenoBaseAdmin):
     fields = [
         "name",
         "share_type",
-        "state",
-        ("date", "date_end"),
+        "payment_state",
+        ("payment_date", "repayment_date"),
+        ("effective_from", "effective_until"),
         ("duration", "date_due"),
         "quantity",
         ("value", "value_total", "is_interest_credit", "is_pension_fund", "is_business"),
@@ -848,6 +868,7 @@ class ShareAdmin(GenoBaseAdmin):
         "backlinks",
     ]
     readonly_fields = [
+        "payment_state",
         "value_total",
         "interest",
         "import_id",
@@ -861,9 +882,9 @@ class ShareAdmin(GenoBaseAdmin):
     list_display = [
         "name",
         "share_type",
-        "state",
-        "date",
-        "date_end",
+        "payment_state",
+        "payment_date",
+        "repayment_date",
         "duration",
         "date_due",
         "quantity",
@@ -877,12 +898,12 @@ class ShareAdmin(GenoBaseAdmin):
         ("active", BooleanFieldDefaultTrueListFilter),
         "share_type",
         "interest_mode",
-        "state",
+        ShareStateFilter,
         "is_interest_credit",
         "is_pension_fund",
         "is_business",
-        "date",
-        "date_end",
+        "payment_date",
+        "repayment_date",
         "duration",
         "date_due",
         "quantity",
@@ -900,8 +921,6 @@ class ShareAdmin(GenoBaseAdmin):
     ]
     autocomplete_fields = ["name", "share_type", "attached_to_contract", "attached_to_building"]
     actions = GenoBaseAdmin.actions + [
-        share_mark_paid,
-        share_mark_billed,
         share_set_duration5,
         share_set_duration10,
         share_delete_duration,
