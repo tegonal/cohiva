@@ -134,7 +134,7 @@ from .tables import (
     MemberTable,
     MemberTableAdmin,
 )
-from .utils import fill_template_pod, is_member, nformat, odt2pdf
+from .utils import fill_template_pod, nformat, odt2pdf
 
 # from .decorators import login_required
 
@@ -559,7 +559,7 @@ class MemberOverviewView(CohivaAdminViewMixin, TemplateView):
 
         # Collect statistics
         for m in Member.objects.all():
-            if is_member(m.name, date_mode=date_mode):
+            if m.name.is_member(date_mode=date_mode):
                 gender_stat["Total"] += 1
 
                 # Gender statistics
@@ -989,7 +989,7 @@ def share_export(request):
                 row.append(0)
             row.append(duedate)
             row.append(a.duration)
-            if is_member(a.name):
+            if a.name.is_member(date=valuta_date):
                 row.append("Ja")
             else:
                 row.append("Nein")
@@ -1810,7 +1810,7 @@ def share_mailing(request):
     ret = []
     objects = []
     for adr in Address.objects.filter(active=True).order_by("name"):
-        if not is_member(adr, date_mode="end_date"):
+        if not adr.is_member(date_mode="end_date"):
             ## Nichtmitglied
             # ret.append({'info': str(adr), 'objects': ['Ohne Mitgliedschaft']})
             continue
@@ -2628,7 +2628,7 @@ class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
                         wohnpost_missing.append(person["email"])
         else:
             for member in Member.objects.all():
-                if not is_member(member.name):
+                if not member.name.is_member():
                     continue
                 if not member.name.email:
                     genossenschaft_no_email.append(str(member.name))
@@ -3055,7 +3055,7 @@ def send_member_mail_filter_members(form, member_list, only_active=True):
         stype02 = None
     for member in members:
         ## Filter active membership
-        if only_active and not is_member(member.name):
+        if only_active and not member.name.is_member():
             continue
         ## Filter out members without shares
         if "share_paid_01" in form.cleaned_data and form.cleaned_data["share_paid_01"]:
