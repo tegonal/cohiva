@@ -35,7 +35,6 @@ from cohiva.utils.settings import (
 )
 from geno.model_fields import LowercaseEmailField
 from geno.utils import (
-    is_member,
     is_renting,
     nformat,
     sanitize_filename,
@@ -386,11 +385,52 @@ class Address(GenoBase):
     def is_tenant(self):
         return bool(Tenant.objects.filter(name=self).filter(active=True).first())
 
+    def is_member(self, date_mode="strict", date: None | datetime.date | datetime.datetime = None):
+        """Returns true if this address is a member at the time of the reference date, or according
+        to the specified date mode, respectively.
+
+        date_mode:
+         - strict (default): Check if a membership end date is not in the future
+                             and that join date is in the past, with respect to the reference date.
+         - end_date: Only check if a membership end date exists.
+         - last_year: Check membership at the end of previous year
+
+        date: The reference date when the strict mode is used (default: current day)
+        """
+        if date is not None and date_mode != "strict":
+            raise ValueError("A reference date can only be specified with the date_mode 'strict'")
+        if date is None:
+            if date_mode == "last_year":
+                reference_date = datetime.date(datetime.date.today().year - 1, 12, 31)
+            else:
+                reference_date = datetime.date.today()
+        elif isinstance(date, datetime.datetime):
+            reference_date = date.date()
+        elif isinstance(date, datetime.date):
+            reference_date = date
+        else:
+            raise ValueError("date must be datetime.date or datetime.datetime object")
+        memberships = Member.objects.filter(name=self)
+        if not memberships.exists():
+            return False
+        for m in memberships:
+            if date_mode in ("strict", "last_year"):
+                if not (
+                    m.date_leave and m.date_leave <= reference_date or m.date_join > reference_date
+                ):
+                    return True
+            elif date_mode == "end_date":
+                if not m.date_leave:
+                    return True
+            else:
+                raise ValueError("Invalid date_mode")
+        return False
+
     def get_roles(self):
         roles = []
         if self.active:
             roles.append("user")
-            if is_member(self):
+            if self.is_member():
                 roles.append("member")
             if is_renting(self):
                 roles.append("renter")
@@ -1109,7 +1149,9 @@ class Share(GenoBase):
         # Effective until date cannot be before effective from date
         if self.effective_from and self.effective_until:
             if self.effective_from > self.effective_until:
-                raise ValidationError(_("Effective until date cannot be before effective from date."))
+                raise ValidationError(
+                    _("Effective until date cannot be before effective from date.")
+                )
         super().clean(*args, **kwargs)
 
     def save(self, *args, **kwargs):
@@ -1950,7 +1992,11 @@ class Contract(GenoBase):
 
     @classmethod
     def get_active_in_period(
-        cls, period_start=None, period_end=None, exclude_period_end=False, include_subcontracts=False
+        cls,
+        period_start=None,
+        period_end=None,
+        exclude_period_end=False,
+        include_subcontracts=False,
     ):
         """Get Contracts that have an overlap with the reference period [period_start, period_end].
         The end date `period_end` is inclusive unless exclude_period_end is set to True.

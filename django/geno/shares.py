@@ -18,7 +18,7 @@ from finance.accounting import (
 )
 
 from .models import Address, Contract, RentalUnit, Share, ShareType
-from .utils import is_member, nformat
+from .utils import nformat
 
 
 class IncompatibleInterestRates(Exception):
@@ -834,7 +834,7 @@ def check_rental_shares_report():
                     "amount_loan_special_5yr": amount_loan_special_5yr,
                     "is_pension_fund": share.is_pension_fund,
                     "is_business": share.is_business,
-                    "is_member": is_member(share.name),
+                    "is_member": share.name.is_member(),
                     "has_rental": False,
                 }
 

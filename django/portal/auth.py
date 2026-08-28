@@ -6,7 +6,7 @@ from oauth2_provider.models import get_application_model
 from oauth2_provider.views import AuthorizationView
 
 from geno.models import Address
-from geno.utils import is_member, is_renting
+from geno.utils import is_renting
 
 Application = get_application_model()
 logger = logging.getLogger("access_portal")
@@ -104,7 +104,7 @@ def authorize_address(address, uid, host=None):
         user_id = "%s_%s" % (settings.GENO_ID, uid)
         if not address.active:
             return {"user_id": None, "reason": "inactive address %s" % address}
-        if not address.login_permission and not is_member(address) and not is_renting(address):
+        if not address.login_permission and not address.is_member() and not is_renting(address):
             return {"user_id": None, "reason": "non-member/non-renter %s" % address}
     ## Grant access
     return {
