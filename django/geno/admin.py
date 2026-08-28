@@ -935,22 +935,22 @@ class ShareAdmin(GenoBaseAdmin):
     ]
 
     @action(
-        description=_("Export"),
+        description=_("Current extract"),
         permissions=["geno.canview_share"],
         icon="download",
         # variant=ActionVariant.PRIMARY,
     )
     def export_shares(self, request):
-        return redirect(reverse("geno:share-export") + "?aggregate=yes")
+        return redirect(reverse("geno:share-export"))
 
     @action(
-        description=_("Export per Ende Vorjahr"),
+        description=_("Extract as of end of prior year"),
         permissions=["geno.canview_share"],
         icon="clock_arrow_down",
         # variant=ActionVariant.PRIMARY,
     )
     def export_shares_endofyear(self, request):
-        return redirect(reverse("geno:share-export") + "?aggregate=yes&jahresende=yes")
+        return redirect(reverse("geno:share-export") + "?jahresende=yes")
 
 
 @admin.register(DocumentType)
