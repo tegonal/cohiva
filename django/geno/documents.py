@@ -504,30 +504,7 @@ class ProcessDocuments:
     def set_regenerate_invoices_mode(self, mode):
         self.regenerate_invoices_mode = mode
 
-    def add_document_template(self, att):
-        try:
-            (att_type, att_id) = att.split(":", 1)
-        except ValueError:
-            att_type = None
-            att_id = None
-
-        content_template = None
-        doctype = None
-        if att_type == "DocumentType":
-            try:
-                doctype = DocumentType.objects.get(id=att_id)
-                content_template = doctype.templates.filter(active=True).first()
-                if not content_template:
-                    raise ValueError(f"Dokumenttyp {doctype} hat keine Vorlagen-Datei")
-            except DocumentType.DoesNotExist:
-                raise ValueError(f"Dokumenttyp mit ID {att_id} nicht gefunden.")
-        elif att_type == "ContentTemplate":
-            try:
-                content_template = ContentTemplate.objects.get(id=att_id)
-            except ContentTemplate.DoesNotExist:
-                raise ValueError(f"Vorlage mit ID {att_id} nicht gefunden.")
-        else:
-            raise TypeError(f"Unbekannter Vorlagentyp: {att}")
+    def add_document_template(self, content_template, doctype=None):
         self.templates.append(
             DocumentTemplate(
                 content_template,
@@ -537,30 +514,9 @@ class ProcessDocuments:
             )
         )
 
-    def set_invoice_template(self, att):
+    def set_invoice_template(self, content_template, doctype=None):
         if not self.regenerate_invoices_mode:
             return
-        try:
-            (att_type, att_id) = att.split(":", 1)
-        except ValueError:
-            att_type = None
-            att_id = None
-
-        content_template = None
-        doctype = None
-        if att_type == "DocumentType":
-            try:
-                doctype = DocumentType.objects.get(id=att_id)
-                content_template = doctype.template
-            except DocumentType.DoesNotExist:
-                raise ValueError(f"Dokumenttyp mit ID {att_id} nicht gefunden.")
-        elif att_type == "ContentTemplate":
-            try:
-                content_template = ContentTemplate.objects.get(id=att_id)
-            except ContentTemplate.DoesNotExist:
-                raise ValueError(f"Vorlage mit ID {att_id} nicht gefunden.")
-        else:
-            raise TypeError(f"Unbekannter Vorlagentyp: {att}")
         self.invoice_template = DocumentTemplate(
             content_template,
             doctype=doctype,
@@ -893,12 +849,14 @@ def send_member_mail_process(data):
 
     try:
         for template in data["template_files"]:
-            process.add_document_template(template)
+            process.add_document_template(ContentTemplate.get_by_formfield_key(template))
     except Exception as e:
         return {"errors": [{"info": f"Fehler: Konte Dokumentvorlage nicht hinzufügen: {e}"}]}
 
     try:
-        process.set_invoice_template(data.get("invoice_template"))
+        process.set_invoice_template(
+            ContentTemplate.get_by_formfield_key(data.get("invoice_template"))
+        )
     except Exception as e:
         return {"errors": [{"info": f"Fehler: Konte Rechnungsvorlage nicht hinzufügen: {e}"}]}
 
