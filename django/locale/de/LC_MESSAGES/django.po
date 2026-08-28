@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Cohiva 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-11 23:30+0200\n"
+"POT-Creation-Date: 2026-08-28 15:16+0200\n"
 "PO-Revision-Date: 2025-10-21 01:30+0200\n"
 "Last-Translator: Cohiva Development Team\n"
 "Language-Team: German\n"
@@ -21,62 +21,62 @@ msgstr ""
 msgid "Invalid AHV number"
 msgstr "Ungültige AHV Nummer"
 
-#: cohiva/settings_defaults.py:1070
+#: cohiva/settings_defaults.py:1071
 msgid "Stammdaten"
 msgstr "Stammdaten"
 
-#: cohiva/settings_defaults.py:1075
+#: cohiva/settings_defaults.py:1076
 msgid "Adressen/Personen"
 msgstr "Adressen/Personen"
 
-#: cohiva/settings_defaults.py:1082 cohiva/settings_defaults.py:1132
-#: cohiva/settings_defaults.py:1174 cohiva/settings_defaults.py:1212
-#: cohiva/settings_defaults.py:1249 cohiva/settings_defaults.py:1284
-#: cohiva/settings_defaults.py:1308
+#: cohiva/settings_defaults.py:1083 cohiva/settings_defaults.py:1133
+#: cohiva/settings_defaults.py:1175 cohiva/settings_defaults.py:1213
+#: cohiva/settings_defaults.py:1250 cohiva/settings_defaults.py:1285
+#: cohiva/settings_defaults.py:1309
 msgid "Erweitert"
 msgstr "Erweitert"
 
-#: cohiva/settings_defaults.py:1095
+#: cohiva/settings_defaults.py:1096
 msgid "Erweiterte Konfiguration"
 msgstr "Erweiterte Konfiguration"
 
-#: cohiva/settings_defaults.py:1102
+#: cohiva/settings_defaults.py:1103
 msgid "Mitglieder"
 msgstr "Mitglieder"
 
-#: cohiva/settings_defaults.py:1141
+#: cohiva/settings_defaults.py:1142
 msgid "Vermietung"
 msgstr "Vermietung"
 
-#: cohiva/settings_defaults.py:1188
+#: cohiva/settings_defaults.py:1189
 msgid "Gemeinschaft"
 msgstr "Gemeinschaft"
 
-#: cohiva/settings_defaults.py:1224
+#: cohiva/settings_defaults.py:1225
 msgid "Inkasso"
 msgstr "Inkasso"
 
-#: cohiva/settings_defaults.py:1259
+#: cohiva/settings_defaults.py:1260
 msgid "Finanzierung"
 msgstr "Finanzierung"
 
-#: cohiva/settings_defaults.py:1293
+#: cohiva/settings_defaults.py:1294
 msgid "Dokumente & Kommunikation"
 msgstr "Dokumente & Kommunikation"
 
-#: cohiva/settings_defaults.py:1321
+#: cohiva/settings_defaults.py:1322
 msgid "Systemadministration"
 msgstr "Systemadministration"
 
-#: cohiva/settings_defaults.py:1394
+#: cohiva/settings_defaults.py:1395
 msgid "Dokumentation/Wiki"
 msgstr ""
 
-#: cohiva/settings_defaults.py:1399
+#: cohiva/settings_defaults.py:1400
 msgid "GitHub Issues"
 msgstr ""
 
-#: cohiva/settings_defaults.py:1404
+#: cohiva/settings_defaults.py:1405
 msgid "Cohiva Website"
 msgstr "Cohiva Website"
 
@@ -115,35 +115,39 @@ msgstr "Alle Anwendungen"
 msgid "You don’t have permission to view or edit anything."
 msgstr "Sie haben keine Berechtigung, etwas anzusehen oder zu bearbeiten."
 
-#: geno/admin.py:419
+#: geno/admin.py:445
 msgid "Weitere Aktionen"
 msgstr "Weitere Aktionen"
 
-#: geno/admin.py:426 geno/admin.py:896
+#: geno/admin.py:474
 msgid "Export"
 msgstr "Export"
 
-#: geno/admin.py:435
+#: geno/admin.py:483
 msgid "Export ADIT"
 msgstr "Export ADIT"
 
-#: geno/admin.py:905
-msgid "Export per Ende Vorjahr"
-msgstr "Export per Ende Vorjahr"
+#: geno/admin.py:938
+msgid "Current extract"
+msgstr "Auszug aktuell"
 
-#: geno/admin.py:1507
+#: geno/admin.py:947
+msgid "Extract as of end of prior year"
+msgstr "Auszug per Ende Vorjahr"
+
+#: geno/admin.py:1551
 msgid "Untervertrag hinzufügen"
 msgstr "Untervertrag hinzufügen"
 
-#: geno/admin.py:1527
+#: geno/admin.py:1571
 msgid "Aktionen"
 msgstr ""
 
-#: geno/admin.py:1555
+#: geno/admin.py:1599
 msgid "Report Pflichtanteile/Belegung"
 msgstr "Report Pflichtanteile/Belegung"
 
-#: geno/admin.py:1852
+#: geno/admin.py:1900
 msgid "Mietobjektspiegel"
 msgstr ""
 
@@ -570,19 +574,20 @@ msgstr ""
 msgid "Übersicht per Stichtag"
 msgstr ""
 
-#: geno/models.py:817
+#: geno/models.py:823
 msgid "Membership durations cannot overlap"
 msgstr "Die Laufzeiten der Mitgliedschaften dürfen sich nicht überschneiden"
 
 #: geno/models.py:1098
-msgid "Contract and building may not both be selected."
+msgid "Contract and building can not both be selected."
 msgstr "Vertrag und Liegenschaft dürfen nicht beide ausgewählt sein."
 
 #: geno/models.py:1103
 msgid "At least one of payment date or effective from date must be provided."
-msgstr "Mindestens eines von Zahlungsdatum oder Wirksam ab muss angegeben werden."
+msgstr ""
+"Mindestens eines von Zahlungsdatum oder Wirksam ab muss angegeben werden."
 
-#: geno/models.py:1109
+#: geno/models.py:1108
 msgid "Repayment date cannot be before payment date."
 msgstr "Rückzahlungsdatum darf nicht vor dem Zahlungsdatum liegen."
 
@@ -645,7 +650,7 @@ msgstr ""
 msgid "Beschreibung"
 msgstr "Beschreibung"
 
-#: geno/tables.py:171 geno/tables.py:178 geno/views.py:4087
+#: geno/tables.py:171 geno/tables.py:178 geno/views.py:4084
 msgid "Rechnung"
 msgstr ""
 
@@ -663,6 +668,10 @@ msgstr ""
 
 #: geno/tables.py:194
 msgid "Keine Rechnungen gefunden."
+msgstr ""
+
+#: geno/templates/admin/change_list_results.html:36
+msgid "Expand row"
 msgstr ""
 
 #: geno/templates/geno/components/django_tables2_unfold.html:103
@@ -1096,162 +1105,162 @@ msgstr "Log anzeigen"
 msgid "Datei hochladen und verarbeiten"
 msgstr "Datei hochladen und verarbeiten"
 
-#: geno/views.py:1367 geno/views.py:2048
+#: geno/views.py:1361 geno/views.py:2042
 msgid "Mitglied"
 msgstr ""
 
-#: geno/views.py:1367
+#: geno/views.py:1361
 msgid "Beitrittsdatum"
 msgstr ""
 
-#: geno/views.py:1446 geno/views.py:1600
+#: geno/views.py:1440 geno/views.py:1594
 msgid "Name/Adresse"
 msgstr ""
 
-#: geno/views.py:1446
+#: geno/views.py:1440
 msgid "Details"
 msgstr ""
 
-#: geno/views.py:1600
+#: geno/views.py:1594
 msgid "Darlehen Details"
 msgstr ""
 
-#: geno/views.py:1626
+#: geno/views.py:1620
 msgid "Zinsabrechnung"
 msgstr ""
 
-#: geno/views.py:2049
+#: geno/views.py:2043
 msgid "Anteilscheine"
 msgstr ""
 
-#: geno/views.py:2050
+#: geno/views.py:2044
 msgid "Darlehen"
 msgstr ""
 
-#: geno/views.py:2051
+#: geno/views.py:2045
 msgid "Depositen"
 msgstr ""
 
-#: geno/views.py:2052
+#: geno/views.py:2046
 msgid "Verrechnungssteuer"
 msgstr ""
 
-#: geno/views.py:2053
+#: geno/views.py:2047
 msgid "Zinszahlung"
 msgstr ""
 
-#: geno/views.py:2749
+#: geno/views.py:2746
 msgid ""
 "<i>INFO: Mailman-API ist nicht konfiguriert. Dies ist ein Demo-Output.</i>"
 msgstr ""
 "<i>INFO: Mailman-API ist nicht konfiguriert. Dies ist ein Demo-Output.</i>"
 
-#: geno/views.py:2761
+#: geno/views.py:2758
 msgid "Mitglieder ohne Email-Adresse (ignoriert)"
 msgstr "Mitglieder ohne Email-Adresse (ignoriert)"
 
-#: geno/views.py:2769
+#: geno/views.py:2766
 msgid "Mitglieder mit doppelter Email-Adresse (ignoriert)"
 msgstr "Mitglieder mit doppelter Email-Adresse (ignoriert)"
 
-#: geno/views.py:2775
+#: geno/views.py:2772
 msgid "Mitglied nicht in genossenschaft-ML"
 msgstr "Mitglied nicht in genossenschaft-ML"
 
-#: geno/views.py:2780
+#: geno/views.py:2777
 msgid "In genossenschaft-ML aber nicht Mitglied"
 msgstr "In genossenschaft-ML aber nicht Mitglied"
 
-#: geno/views.py:2790
+#: geno/views.py:2787
 msgid "Bewohnende ohne Email-Adresse (ignoriert)"
 msgstr "Bewohnende ohne Email-Adresse (ignoriert)"
 
-#: geno/views.py:2798
+#: geno/views.py:2795
 msgid "Bewohnende mit doppelter Email-Adresse (ignoriert)"
 msgstr "Bewohnende mit doppelter Email-Adresse (ignoriert)"
 
-#: geno/views.py:2804
+#: geno/views.py:2801
 msgid "Bewohnende aber nicht in bewohnende-ML"
 msgstr "Bewohnende aber nicht in bewohnende-ML"
 
-#: geno/views.py:2809
+#: geno/views.py:2806
 msgid "In bewohnende-ML aber nicht Bewohnende"
 msgstr "In bewohnende-ML aber nicht Bewohnende"
 
-#: geno/views.py:2814
+#: geno/views.py:2811
 msgid "Mitglied aber NICHT in Newsletter(CS)"
 msgstr "Mitglied aber NICHT in Newsletter(CS)"
 
-#: geno/views.py:2818
+#: geno/views.py:2815
 msgid "Mitglied aber UNSUBSCRIBED in Newsletter(CS)"
 msgstr "Mitglied aber UNSUBSCRIBED in Newsletter(CS)"
 
-#: geno/views.py:2824
+#: geno/views.py:2821
 msgid "Mitglied aber BOUNCED in Newsletter(CS)"
 msgstr "Mitglied aber BOUNCED in Newsletter(CS)"
 
-#: geno/views.py:2830
+#: geno/views.py:2827
 msgid "Mitglied aber DELETED in Newsletter(CS)"
 msgstr "Mitglied aber DELETED in Newsletter(CS)"
 
-#: geno/views.py:2836
+#: geno/views.py:2833
 #, python-format
 msgid "In genossenschaft-ML aber nicht in Wohnpost (%s)"
 msgstr "In genossenschaft-ML aber nicht in Wohnpost (%s)"
 
-#: geno/views.py:2844
+#: geno/views.py:2841
 #, python-format
 msgid ""
 "Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s)"
 msgstr ""
 "Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s)"
 
-#: geno/views.py:2850
+#: geno/views.py:2847
 msgid "Mailman warnings"
 msgstr "Mailman warnings"
 
-#: geno/views.py:3178
+#: geno/views.py:3175
 msgid ""
 "Keine Empfänger:innen gefunden, welche diesen Filterkriterien entsprechen."
 msgstr ""
 
-#: geno/views.py:3184
+#: geno/views.py:3181
 msgid "Dokumente erstellen/versenden"
 msgstr ""
 
-#: geno/views.py:3185
+#: geno/views.py:3182
 msgid "Schritt 1 - Empfänger:innen filtern"
 msgstr ""
 
-#: geno/views.py:3232
+#: geno/views.py:3229
 msgid "Ungültiger Basis-Datensatz"
 msgstr ""
 
-#: geno/views.py:3242
+#: geno/views.py:3239
 msgid "Schritt 2 - Empfänger:innen auswählen"
 msgstr ""
 
-#: geno/views.py:3264
+#: geno/views.py:3261
 msgid "Schritt 3 - Aktionen ausführen"
 msgstr ""
 
-#: geno/views.py:3720
+#: geno/views.py:3717
 msgid "Die ersten 3 Nächte sind gemäss Reglement Jokerzimmer kostenlos."
 msgstr ""
 
-#: geno/views.py:3724
+#: geno/views.py:3721
 msgid "X Nächte à Fr. 22.00, Gästezimmer 003"
 msgstr ""
 
-#: geno/views.py:3729
+#: geno/views.py:3726
 msgid "X Nächte à Fr. 17.00, Gästezimmer 410"
 msgstr ""
 
-#: geno/views.py:3734
+#: geno/views.py:3731
 msgid "X Nächte à Fr. 17.00, Gästezimmer 509"
 msgstr ""
 
-#: geno/views.py:3742
+#: geno/views.py:3739
 msgid ""
 "Vielen Dank für die Beitrittserklärung. Die Mitgliedschaft in der "
 "Genossenschaft ist verbunden mit dem Zeichnen von Anteilscheinen und einer "
@@ -1259,45 +1268,45 @@ msgid ""
 "Zahlungseingang folgt dann die Bestätigung der Mitgliedschaft."
 msgstr ""
 
-#: geno/views.py:3749
+#: geno/views.py:3746
 msgid "Beitrittsgebühr Genossenschaft"
 msgstr ""
 
-#: geno/views.py:3754
+#: geno/views.py:3751
 msgid "Zeichnung von 1 Anteilschein der Genossenschaft"
 msgstr ""
 
-#: geno/views.py:4053
+#: geno/views.py:4050
 msgid "Mietzinsrechnung erstellen"
 msgstr ""
 
-#: geno/views.py:4090
+#: geno/views.py:4087
 msgid "Rechnungen"
 msgstr ""
 
-#: geno/views.py:4099
+#: geno/views.py:4096
 #, python-format
 msgid "Ungültige Aktion: %s"
 msgstr ""
 
-#: geno/views.py:4132
+#: geno/views.py:4129
 msgid "Optionen"
 msgstr ""
 
-#: geno/views.py:4134
+#: geno/views.py:4131
 #, python-format
 msgid "Probelauf: %s"
 msgstr ""
 
-#: geno/views.py:4134
+#: geno/views.py:4131
 msgid "Ja"
 msgstr ""
 
-#: geno/views.py:4134
+#: geno/views.py:4131
 msgid "Nein"
 msgstr ""
 
-#: geno/views.py:4135
+#: geno/views.py:4132
 #, python-format
 msgid "Rechnungen bis: %s"
 msgstr ""
