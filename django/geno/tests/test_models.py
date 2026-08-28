@@ -185,6 +185,8 @@ class AddressTest(TestCase):
     def test_is_member(self):
         adr = Address.objects.create(name="Test")
         self.assertFalse(adr.is_member())
+        with self.assertRaises(ValueError):
+            adr.is_member(date_mode="_invalid")
 
         m1 = Member.objects.create(name=adr, date_join=date(2000, 1, 1))
         self.assertTrue(adr.is_member())

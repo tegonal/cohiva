@@ -397,6 +397,8 @@ class Address(GenoBase):
 
         date: The reference date when the strict mode is used (default: current day)
         """
+        if date_mode not in ("strict", "end_date", "last_year"):
+            raise ValueError(f"Invalid date mode: {date_mode}")
         if date is not None and date_mode != "strict":
             raise ValueError("A reference date can only be specified with the date_mode 'strict'")
         if date is None:
@@ -414,16 +416,14 @@ class Address(GenoBase):
         if not memberships.exists():
             return False
         for m in memberships:
-            if date_mode in ("strict", "last_year"):
+            if date_mode == "end_date":
+                if not m.date_leave:
+                    return True
+            else:
                 if not (
                     m.date_leave and m.date_leave <= reference_date or m.date_join > reference_date
                 ):
                     return True
-            elif date_mode == "end_date":
-                if not m.date_leave:
-                    return True
-            else:
-                raise ValueError("Invalid date_mode")
         return False
 
     def get_roles(self):

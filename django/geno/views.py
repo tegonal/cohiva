@@ -934,6 +934,8 @@ def share_export(request):
             ws_col = ws.cell(row=new_row_num + 1, column=col + 1)
             if isinstance(row[col], datetime.datetime):
                 ws_col.value = timezone.localtime(row[col]).strftime("%Y-%m-%d %H:%M")
+            elif isinstance(row[col], str) and row[col].startswith("="):
+                ws_col.value = f"'{row[col]}"
             else:
                 ws_col.value = row[col]
         return new_row_num
