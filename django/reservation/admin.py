@@ -348,7 +348,6 @@ class ReportAdmin(GenoBaseAdmin):
         "status",
         "report_type",
         "category",
-        "status",
         "rental_unit",
         "report_date",
         "status_date",
