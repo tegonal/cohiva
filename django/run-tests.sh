@@ -10,7 +10,7 @@
 #
 #    COVERAGE=1              # Run with coverage.
 #    SKIP_SLOW=1             # Skip slow tests and migrations.
-#    MIGRAION_TESTS = 1      # Include also migration tests.
+#    MIGRATION_TESTS = 1     # Include also migration tests.
 #    KEEP_DB=1               # Keep the test database between test runs to speed up startup.
 #    SELECTED_TESTS="<list>" # Only run the test(s) specified in the list.
 #
