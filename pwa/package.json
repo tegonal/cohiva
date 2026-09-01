@@ -34,7 +34,7 @@
     "@fullcalendar/list": "^6.1.19",
     "@fullcalendar/timegrid": "^6.1.19",
     "@fullcalendar/vue3": "^6.1.19",
-    "@khmyznikov/pwa-install": "^0.5.8",
+    "@khmyznikov/pwa-install": "^0.6.0",
     "@quasar/extras": "^1.17.0",
     "axios": "^1.20.0",
     "lit": "^3.3.1",
@@ -83,7 +83,7 @@
     "node": "^24",
     "yarn": "^4.9.4"
   },
-  "packageManager": "yarn@4.10.3",
+  "packageManager": "yarn@4.18.0",
   "resolutions": {
     "minimatch": "^10.2.3",
     "flatted": "^3.4.2",
