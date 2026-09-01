@@ -4,16 +4,30 @@ import django.db.models.deletion
 from django.db import migrations, models
 
 
+def migrate_template(apps, schema_editor):
+    doctype_model = apps.get_model("geno", "DocumentType")
+
+    for obj in doctype_model.objects.all():
+        if obj.template:
+            obj.templates.add(obj.template)
+
+
+def migrate_template_reverse(apps, schema_editor):
+    doctype_model = apps.get_model("geno", "DocumentType")
+
+    for obj in doctype_model.objects.all():
+        template = obj.templates.first()
+        if template:
+            obj.template = template
+            obj.save(update_fields=["template"])
+
+
 class Migration(migrations.Migration):
     dependencies = [
         ("geno", "0026_convert_uuids_from_char"),
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name="documenttype",
-            name="template",
-        ),
         migrations.AddField(
             model_name="document",
             name="template",
@@ -36,5 +50,10 @@ class Migration(migrations.Migration):
                 to="geno.contenttemplate",
                 verbose_name="Vorlagen",
             ),
+        ),
+        migrations.RunPython(migrate_template, migrate_template_reverse),
+        migrations.RemoveField(
+            model_name="documenttype",
+            name="template",
         ),
     ]
