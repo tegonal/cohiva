@@ -1862,7 +1862,7 @@ class TenantsViewAdmin(GenoBaseAdmin):
         "p_membership_date",
     ]
     list_filter = [
-        "active",
+        ("active", BooleanFieldDefaultTrueListFilter),
         "bu_name",
         "ru_type",
         "ru_floor",
