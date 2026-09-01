@@ -163,6 +163,8 @@ django-taggit==6.1.0
     # via wagtail
 django-tasks==0.7.0
     # via wagtail
+django-test-migrations==1.5.0
+    # via -r requirements.in
 django-treebeard==4.7.1
     # via wagtail
 django-unfold==0.78.1
@@ -404,6 +406,7 @@ typing-extensions==4.13.2
     #   aiosignal
     #   django-stubs-ext
     #   django-tasks
+    #   django-test-migrations
     #   jwcrypto
 tzdata==2025.2
     # via

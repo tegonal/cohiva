@@ -93,6 +93,7 @@ whitenoise
 
 ## For tests
 coverage
+django-test-migrations
 
 ## For development
 ruff
