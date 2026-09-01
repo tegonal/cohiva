@@ -4,6 +4,7 @@ import math
 import uuid
 from decimal import Decimal
 
+from auditlog.registry import auditlog
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.models import User
@@ -2314,3 +2315,5 @@ class TenantsView(GenoBase):
                 name="unique_tenantsview_entry",
             ),
         ]
+
+auditlog.register(GenoBase)
