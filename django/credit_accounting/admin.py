@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from geno.admin import GenoBaseAdmin
+from geno.admin import BooleanFieldDefaultTrueListFilter, GenoBaseAdmin
 
 from .models import Account, AccountOwner, Transaction, UserAccountSetting, Vendor, VendorAdmin
 
@@ -23,7 +23,7 @@ class VendorAdm(GenoBaseAdmin):
     ]
     readonly_fields = ["ts_created", "ts_modified", "links", "backlinks"]
     list_display = ["name", "vendor_type", "active"]
-    list_filter = ["active", "vendor_type"]
+    list_filter = [("active", BooleanFieldDefaultTrueListFilter), "vendor_type"]
     search_fields = ["name", "comment"]
 
 
