@@ -213,7 +213,46 @@
               }
           }
 
+          // Show/hide conditional fields based on action selection
+          function toggleAction() {
+              const action = document.getElementById('id_action');
+              if (!action) return;
+
+              const documentBlock = document.getElementById('document-block');
+              const emailBlock = document.getElementById('email-block');
+
+              const value = action.value;
+
+              // Hide all by default
+              if (documentBlock) documentBlock.style.display = 'none';
+              if (emailBlock) emailBlock.style.display = 'none';
+
+              // Show relevant elements
+              if ((value === 'makezip' || value === 'makezip_pdf' || value === 'mail' || value === 'mail_test') && documentBlock) {
+                  documentBlock.style.display = 'block';
+              }
+              if ((value === 'mail' || value === 'mail_test') && emailBlock) {
+                  emailBlock.style.display = 'block';
+              }
+          }
+
           // Show/hide email settings based on send_email checkbox
+          function toggleRegenerateInvoiceSettings() {
+              console.log("1");
+              const regenerateInvoice = document.getElementById('id_regenerate_invoices');
+              const regenerateInvoiceSettings = document.getElementById('regenerate-invoices-settings');
+
+              if (!regenerateInvoice || !regenerateInvoiceSettings) return;
+
+              if (regenerateInvoice.checked) {
+                  regenerateInvoiceSettings.style.display = 'block';
+              } else {
+                  regenerateInvoiceSettings.style.display = 'none';
+              }
+          }
+
+          // Show/hide email settings based on send_email checkbox
+          /*
           function toggleEmailSettings() {
               const sendEmail = document.getElementById('id_send_email');
               const emailSettings = document.getElementById('email-settings');
@@ -225,7 +264,7 @@
               } else {
                   emailSettings.style.display = 'none';
               }
-          }
+          }*/
 
           // Show/hide attribute settings based on change_attributes checkbox
           function toggleAttributeSettings() {
@@ -245,7 +284,9 @@
           document.addEventListener('DOMContentLoaded', function() {
               toggleFilters();
               toggleInvoiceFilters();
-              toggleEmailSettings();
+              toggleAction();
+              //toggleEmailSettings();
+              toggleRegenerateInvoiceSettings();
               toggleAttributeSettings();
 
               // Add event listeners
@@ -259,10 +300,20 @@
                   filterInvoice.addEventListener('change', toggleInvoiceFilters);
               }
 
-              const sendEmail = document.getElementById('id_send_email');
+              const selectAction = document.getElementById('id_action');
+              if (selectAction) {
+                  selectAction.addEventListener('change', toggleAction);
+              }
+
+              const regenerateInvoice = document.getElementById('id_regenerate_invoices');
+              if (regenerateInvoice) {
+                  regenerateInvoice.addEventListener('change', toggleRegenerateInvoiceSettings);
+              }
+
+              /*const sendEmail = document.getElementById('id_send_email');
               if (sendEmail) {
                   sendEmail.addEventListener('change', toggleEmailSettings);
-              }
+              }*/
 
               const changeAttributes = document.getElementById('id_change_attributes');
               if (changeAttributes) {

@@ -2098,6 +2098,81 @@ class Invoice(GenoBase):
             namestr = "%s" % self.contract
         return "%s/%s %s CHF %.2f" % (namestr, self.name, self.invoice_type, self.amount)
 
+    @property
+    def content_template(self):
+        ## TODO: We need a more robust way for remembering the content_template for invoices.
+        ##       Options:
+        ##         - Link the ContentTemplate to Inovice when creating the invoice. But this
+        ##           would not work for generic invoices, because we also need the full context.
+        ##         - Link a Document to Inovice when creating the invoice, the Document then
+        ##           links to ContentTemplate and also stores the full context.
+        ##         - In addition, the Invoice (oder Document) could also store the generated PDF
+        ##           so we would have the option to either re-generate or simply get the PDF again.
+
+        ## Try to get the most recent active ContentTemplate for this invoice category:
+        template = (
+            ContentTemplate.objects.filter(active=True)
+            .filter(template_context__name__name="qrbill_invoice_type_id")
+            .filter(template_context__value=str(self.invoice_category.reference_id))
+            .distinct()
+            .order_by("-ts_modified")
+            .first()
+        )
+        if template:
+            return template
+
+        ## Use generic template for the invoice doctype, if available
+        ## TODO: This does not work yet, since the context to regenerate a generic invoice
+        ##       is not available (see above).
+        # try:
+        #    invoice_doctype = DocumentType.objects.get(name="invoice", active=True)
+        #    template = invoice_doctype.template
+        #    # template = invoice_doctype.templates.filter(active=True).first()
+        #    return template
+        # except DocumentType.DoesNotExist:
+        #    return None
+
+        return None
+
+    def get_object_actions(self):
+        if self.invoice_type == "Invoice" and self.content_template:
+            return [
+                (
+                    "/geno/invoice/regenerate/%s/" % self.pk,
+                    "Rechnung nochmals erzeugen (PDF)",
+                ),
+            ]
+        return None
+
+    def regenerate_invoice_document(self, template=None):
+        from geno.documents import ProcessDocuments
+
+        if not template:
+            template = self.content_template
+        if not template:
+            logger.error(f"No content_template available to regenerate the invoice {self.id}.")
+            return None
+
+        process = ProcessDocuments(dry_run=True)
+        process.set_output_format("pdf")
+        process.set_regenerate_invoices_mode("all")
+        process.set_invoice_template(template)
+        try:
+            member = Member.objects.get(name=self.person)
+            recip = process.add_recipient(member, self.contract, "")
+        except Member.DoesNotExist:
+            recip = process.add_recipient(self.person, self.contract, "")
+        recip.add_invoice(self)
+        try:
+            process.regenerate_invoices()
+        except Exception as e:
+            logger.error(f"Fehler beim Erstellen der Dokumente: {e}")
+            return None
+
+        output_doc = process.recipients[0].documents[0]
+        # process.cleanup()
+        return output_doc
+
     class Meta:
         verbose_name = "Rechnung"
         verbose_name_plural = "Rechnungen"
@@ -2248,6 +2323,39 @@ class ContentTemplate(GenoBase):
             return Template(self.text)
         else:
             return None
+
+    @classmethod
+    def get_by_formfield_key(cls, key: str) -> "ContentTemplate|None":
+        """Returns the ContentTemplate object specified by a key that typically comes from a
+        form submission and has the following format: "<key_type>:<object_id>".
+        The following key_types are currently supported:
+          - DocumentType
+          - ContentTemplate
+        """
+        try:
+            (key_type, object_id) = key.split(":", 1)
+        except ValueError:
+            key_type = None
+            object_id = None
+
+        content_template = None
+        doctype = None
+        if key_type == "DocumentType":
+            try:
+                doctype = DocumentType.objects.get(id=object_id, active=True)
+                content_template = doctype.templates.filter(active=True).first()
+                if not content_template:
+                    raise ValueError(f"Dokumenttyp {doctype} hat keine Vorlagen-Datei")
+            except DocumentType.DoesNotExist:
+                raise ValueError(f"Dokumenttyp mit ID {object_id} nicht gefunden.")
+        elif key_type == "ContentTemplate":
+            try:
+                content_template = cls.objects.get(id=object_id, active=True)
+            except cls.DoesNotExist:
+                raise ValueError(f"Vorlage mit ID {object_id} nicht gefunden.")
+        else:
+            raise TypeError(f"Unbekannter Vorlagentyp: {key}")
+        return content_template
 
     def save_as_copy(self):
         old_template_context = self.template_context.all()
