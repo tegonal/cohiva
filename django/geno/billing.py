@@ -1524,6 +1524,10 @@ def process_sepa_transactions(data):
     success = []
     for item in data["log"]:
         logger.info("%s: %s" % (item["info"], "/".join(item["objects"])))
+        ## Add ignored transactions log messages to skipped
+        for log_item in item["objects"]:
+            if log_item.startswith("Ignoring "):
+                skipped.append(f"Ungültige Buchung in der CAMT Datei: {log_item}")
 
     with AccountingManager(data["log"]) as book:
         if book:
@@ -1551,6 +1555,17 @@ def add_sepa_transaction(book, tx, errors, skipped, success):
             "Ungültige Referenznummer: %s für Buchung %s - CHF %s (Referenznr. %s, %s)"
             % (
                 bill_info["error"],
+                tx["date"],
+                tx["amount"],
+                tx["reference_nr"],
+                "/".join(addtl_info),
+            )
+        )
+        return
+    if "person" not in bill_info or "contract" not in bill_info or "description" not in bill_info:
+        errors.append(
+            "Ungültige Referenznummer für diese Anwendung: Buchung %s - CHF %s (Referenznr. %s, %s)"
+            % (
                 tx["date"],
                 tx["amount"],
                 tx["reference_nr"],
