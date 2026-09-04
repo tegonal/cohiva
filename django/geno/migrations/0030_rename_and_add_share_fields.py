@@ -20,13 +20,23 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="share",
             name="effective_from",
-            field=models.DateField(blank=True, default=None, null=True, verbose_name="Wirksam ab"),
+            field=models.DateField(
+                blank=True,
+                default=None,
+                help_text="Leer lassen, falls identisch mit Zahlungsdatum. Wird für Reporting/Zinsberechnung verwendet.",
+                null=True,
+                verbose_name="Wirksam ab",
+            ),
         ),
         migrations.AddField(
             model_name="share",
             name="effective_until",
             field=models.DateField(
-                blank=True, default=None, null=True, verbose_name="Wirksam bis"
+                blank=True,
+                default=None,
+                help_text="Leer lassen, falls identisch mit Rückzahlungsdatum.",
+                null=True,
+                verbose_name="Wirksam bis",
             ),
         ),
         migrations.RemoveField(model_name="share", name="state"),
