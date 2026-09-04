@@ -31,7 +31,7 @@ export PYTHONWARNINGS=always
 INSTALL_DIR=$(grep "^INSTALL_DIR = " cohiva/base_config.py | cut -d \" -f 2)
 
 ## Normalize flags
-case "${COVERAGE,,}" in
+case "${COVERAGE}" in
   true|1|yes|on)
     COVERAGE="true"
     ;;
@@ -39,7 +39,7 @@ case "${COVERAGE,,}" in
     COVERAGE="false"
     ;;
 esac
-case "${GITHUB_ACTIONS,,}" in
+case "${GITHUB_ACTIONS}" in
   true|1|yes|on)
     GITHUB_ACTIONS="true"
     ;;
@@ -47,7 +47,7 @@ case "${GITHUB_ACTIONS,,}" in
     GITHUB_ACTIONS="false"
     ;;
 esac
-case "${SKIP_SLOW,,}" in
+case "${SKIP_SLOW}" in
   true|1|yes|on)
     SKIP_SLOW="true"
     ;;
@@ -55,7 +55,7 @@ case "${SKIP_SLOW,,}" in
     SKIP_SLOW="false"
     ;;
 esac
-case "${MIGRATION_TESTS,,}" in
+case "${MIGRATION_TESTS}" in
   true|1|yes|on)
     MIGRATION_TESTS="true"
     ;;
@@ -63,7 +63,7 @@ case "${MIGRATION_TESTS,,}" in
     MIGRATION_TESTS="false"
     ;;
 esac
-case "${KEEP_DB,,}" in
+case "${KEEP_DB}" in
   true|1|yes|on)
     KEEP_DB="true"
     ;;
