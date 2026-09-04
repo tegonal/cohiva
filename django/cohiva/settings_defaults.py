@@ -1175,6 +1175,7 @@ COHIVA_ADMIN_NAVIGATION = [
                 "name": _("Erweitert"),
                 "icon": "manufacturing",
                 "items": [
+                    {"type": "model", "value": "geno.VirtualContract"},
                     {"type": "model", "value": "reservation.ReportCategory"},
                     {"type": "model", "value": "reservation.ReportType"},
                     {"type": "model", "value": "reservation.ReportPicture"},
@@ -1325,6 +1326,16 @@ COHIVA_ADMIN_NAVIGATION = [
                 "name": _("Report-Konfiguration"),
                 "type": "model",
                 "value": "report.ReportConfiguration",
+                "icon": "subtitles_gear",
+            },
+            {
+                "type": "model",
+                "value": "geno.RentalUnitSectionWeights",
+                "icon": "subtitles_gear",
+            },
+            {
+                "type": "model",
+                "value": "geno.MonthlyWeights",
                 "icon": "subtitles_gear",
             },
         ],

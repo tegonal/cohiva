@@ -10,6 +10,7 @@ from django.contrib import admin, messages
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, User
+from django.core.exceptions import PermissionDenied
 from django.db.models import Case, IntegerField, Q, Value, When
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
@@ -43,14 +44,19 @@ from geno.models import (
     Member,
     MemberAttribute,
     MemberAttributeType,
+    MonthlyWeights,
     Registration,
     RegistrationEvent,
     RegistrationSlot,
     RentalUnit,
+    RentalUnitSectionWeights,
+    RentalUnitWeight,
+    RentalUnitWeightType,
     Share,
     ShareType,
     Tenant,
     TenantsView,
+    VirtualContract,
 )
 
 
@@ -296,6 +302,51 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
                         continue
                     filtered_fields.append(field)
                 setattr(cls, attr, filtered_fields)
+
+
+class ProtectedNameMixin:
+    """Use this mixin to protect model instances with specific names from being deleted
+    or having their name changed in the admin interface.
+
+    Usage: Add this mixin to the ModelAdmin class you want to protect and set protected_names
+    to a tuple of object names you want to protect.
+    """
+
+    protected_names = tuple()
+
+    # Prevent deletion of the specific instance (single-object delete)
+    def has_delete_permission(self, request, obj=None):
+        if obj and obj.name in self.protected_names:
+            return False
+        return super().has_delete_permission(request, obj)
+
+    # Prevent bulk deletion if the queryset includes the protected instance
+    def delete_queryset(self, request, queryset):
+        if queryset.filter(name__in=self.protected_names).exists():
+            raise PermissionDenied(
+                _("Objects with the name '{names}' cannot be deleted.").format(
+                    names=", ".join(self.protected_names)
+                )
+            )
+        super().delete_queryset(request, queryset)
+
+    # Make the 'name' field read-only for that specific instance
+    def get_readonly_fields(self, request, obj=None):
+        readonly = super().get_readonly_fields(request, obj)
+        if obj and obj.name in self.protected_names:
+            if "name" not in readonly:
+                return (*readonly, "name")
+        return readonly
+
+    # Extra backend validation
+    def save_model(self, request, obj, form, change):
+        if change:
+            original = self.model.objects.get(pk=obj.pk)
+            if original.name in self.protected_names and "name" in form.changed_data:
+                raise PermissionDenied(
+                    _("You are not allowed to change the name of this instance.")
+                )
+        super().save_model(request, obj, form, change)
 
 
 @admin.display(description="Anrede auf 'Herr' setzen")
@@ -647,6 +698,12 @@ class ChildAdmin(GenoBaseAdmin):
     autocomplete_fields = ["name"]
 
 
+class BuildingRentalUnitWeightTypeInline(TabularInline):
+    model = RentalUnitWeightType
+    fields = ["name", "active"]
+    tab = True
+
+
 @admin.register(Building)
 class BuildingAdmin(GenoBaseAdmin):
     model = Building
@@ -668,6 +725,7 @@ class BuildingAdmin(GenoBaseAdmin):
     list_display = ["name", "description", "active"]
     list_filter = [("active", BooleanFieldDefaultTrueListFilter)]
     search_fields = ["name", "description", "team"]
+    inlines = [BuildingRentalUnitWeightTypeInline]
 
 
 @admin.register(Tenant)
@@ -1238,33 +1296,71 @@ class RegistrationEventAdmin(GenoBaseAdmin):
         return super().get_form(request, obj, **kwargs)
 
 
+class RentalUnitWeightInline(TabularInline):
+    model = RentalUnitWeight
+    fields = ["name", "weight"]
+    tab = True
+
+
 @admin.decorators.register(RentalUnit)
 class RentalUnitAdmin(GenoBaseAdmin):
-    fields = [
-        "name",
-        ("label", "label_short"),
-        ("rental_type", "rooms", "min_occupancy"),
-        ("building", "floor"),
-        ("area", "area_balcony", "area_add"),
-        ("height", "volume"),
-        "billing_period",
-        ("rent_netto", "nk", "nk_flat", "nk_electricity"),
-        ("rent_netto_per_month", "nk_per_month", "nk_flat_per_month", "nk_electricity_per_month"),
-        ("rent_total", "rent_total_per_month"),
-        ("share", "depot"),
-        ("internal_nr", "ewid"),
-        "note",
-        "svg_polygon",
-        "description",
-        "status",
-        "adit_serial",
-        "active",
-        "comment",
-        "import_id",
-        ("ts_created", "ts_modified"),
-        "links",
-        "backlinks",
-    ]
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "name",
+                    ("label", "label_short"),
+                    ("rental_type", "rooms", "min_occupancy"),
+                    ("building", "floor"),
+                    "comment",
+                    "active",
+                ),
+            },
+        ),
+        (
+            "Inkasso",
+            {
+                "fields": (
+                    "billing_period",
+                    ("rent_netto", "nk", "nk_flat", "nk_electricity"),
+                    (
+                        "rent_netto_per_month",
+                        "nk_per_month",
+                        "nk_flat_per_month",
+                        "nk_electricity_per_month",
+                    ),
+                    ("rent_total", "rent_total_per_month"),
+                    ("share", "depot"),
+                ),
+                "classes": ["tab"],
+            },
+        ),
+        (
+            "Detailangaben",
+            {
+                "fields": (
+                    ("area", "area_balcony", "area_add"),
+                    ("height", "volume"),
+                    ("internal_nr", "ewid"),
+                    "svg_polygon",
+                    "description",
+                    "status",
+                    "adit_serial",
+                ),
+                "classes": ["tab"],
+            },
+        ),
+        (
+            "Einstellungen",
+            {"fields": ("virtual_contract", "section"), "classes": ["tab"]},
+        ),
+        (
+            "Zusatzinfos",
+            {"fields": ("note", "ts_created", "ts_modified", "import_id"), "classes": ["tab"]},
+        ),
+        ("Verknüpfungen", {"fields": ("links", "backlinks"), "classes": ["tab"]}),
+    )
     readonly_fields = [
         "rent_total",
         "rent_total_per_month",
@@ -1291,8 +1387,6 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "nk",
         "nk_flat",
         "share",
-        "status",
-        "comment",
     ]
     search_fields = [
         "name",
@@ -1314,8 +1408,152 @@ class RentalUnitAdmin(GenoBaseAdmin):
         "floor",
         "status",
         "billing_period",
+        "virtual_contract",
+    ]
+    autocomplete_fields = ["building", "virtual_contract"]
+    inlines = [RentalUnitWeightInline]
+
+
+@admin.register(RentalUnitWeightType)
+class RentalUnitWeightTypeAdmin(GenoBaseAdmin):
+    model = RentalUnitWeightType
+    fields = [
+        "name",
+        "building",
+        "active",
+        "comment",
+        ("ts_created", "ts_modified"),
+        "links",
+        "backlinks",
+    ]
+    readonly_fields = [
+        "ts_created",
+        "ts_modified",
+        "links",
+        "backlinks",
+    ]
+    list_display = ["name", "building", "ts_created", "ts_modified", "active"]
+    search_fields = ["name", "comment"]
+    list_filter = [
+        ("active", BooleanFieldDefaultTrueListFilter),
+        "building",
+        "ts_created",
+        "ts_modified",
     ]
     autocomplete_fields = ["building"]
+
+
+@admin.register(RentalUnitWeight)
+class RentalUnitWeightAdmin(GenoBaseAdmin):
+    model = RentalUnitWeight
+    fields = [
+        "name",
+        "rental_unit",
+        "weight",
+        "comment",
+        ("ts_created", "ts_modified"),
+        "links",
+        "backlinks",
+    ]
+    readonly_fields = [
+        "ts_created",
+        "ts_modified",
+        "links",
+        "backlinks",
+    ]
+    list_display = ["name", "rental_unit", "ts_created", "ts_modified"]
+    search_fields = ["name", "comment"]
+    list_filter = [
+        "name",
+        "rental_unit__building",
+        "ts_created",
+        "ts_modified",
+    ]
+    autocomplete_fields = ["rental_unit"]
+
+
+@admin.register(RentalUnitSectionWeights)
+class RentalUnitSectionWeightAdmin(GenoBaseAdmin):
+    model = RentalUnitSectionWeights
+    fields = [
+        "name",
+        "weight_allgemein",
+        "weight_wohnen",
+        "weight_gewerbe",
+        "weight_lager",
+        "active",
+        "comment",
+        ("ts_created", "ts_modified"),
+        "links",
+        "backlinks",
+    ]
+    readonly_fields = [
+        "ts_created",
+        "ts_modified",
+        "links",
+        "backlinks",
+    ]
+    list_display = ["name", "weight_allgemein", "weight_wohnen", "weight_gewerbe", "weight_lager"]
+    search_fields = ["name", "comment"]
+    list_filter = [
+        ("active", BooleanFieldDefaultTrueListFilter),
+        "ts_created",
+        "ts_modified",
+    ]
+    autocomplete_fields = []
+
+
+@admin.register(MonthlyWeights)
+class MonthlyWeightsAdmin(GenoBaseAdmin):
+    model = MonthlyWeights
+    fields = [
+        "name",
+        "weight_01",
+        "weight_02",
+        "weight_03",
+        "weight_04",
+        "weight_05",
+        "weight_06",
+        "weight_07",
+        "weight_08",
+        "weight_09",
+        "weight_10",
+        "weight_11",
+        "weight_12",
+        "active",
+        "comment",
+        ("ts_created", "ts_modified"),
+        "links",
+        "backlinks",
+    ]
+    readonly_fields = [
+        "ts_created",
+        "ts_modified",
+        "links",
+        "backlinks",
+    ]
+    list_display = [
+        "name",
+        "weight_01",
+        "weight_02",
+        "weight_03",
+        "weight_04",
+        "weight_05",
+        "weight_06",
+        "weight_07",
+        "weight_08",
+        "weight_09",
+        "weight_10",
+        "weight_11",
+        "weight_12",
+    ]
+    search_fields = ["name", "comment"]
+    list_filter = [
+        ("active", BooleanFieldDefaultTrueListFilter),
+        "ts_created",
+        "ts_modified",
+    ]
+    autocomplete_fields = []
 
 
 @admin.display(description='Als "angeboten" markieren')
@@ -1633,6 +1871,39 @@ class ContractAdmin(GenoBaseAdmin):
 #    #    print("get urls")
 #    #    view = self.admin_site.admin_view(ResidentListView.as_view(model_admin=self))
 #    #    return super().get_urls() + [path("resident-list", view, name="resident-list")]
+
+
+@admin.register(VirtualContract)
+class VirtualContractAdmin(ProtectedNameMixin, GenoBaseAdmin):
+    protected_names = ["Allgemein", "Leerstand"]
+    fields = [
+        "name",
+        "description",
+        "nk_account",
+        "nk_account_building_based",
+        "building_based_cost_center",
+        "active",
+        "comment",
+        ("ts_created", "ts_modified"),
+        "links",
+        "backlinks",
+    ]
+    readonly_fields = [
+        "ts_created",
+        "ts_modified",
+        "links",
+        "backlinks",
+    ]
+    list_display = ["name", "description", "nk_account", "comment"]
+    search_fields = [
+        "name",
+        "description",
+        "comment",
+    ]
+    list_filter = [
+        ("active", BooleanFieldDefaultTrueListFilter),
+    ]
+    autocomplete_fields = []
 
 
 @admin.display(description='Als "NICHT konsolidiert" markieren')

@@ -1532,13 +1532,17 @@ class RentalUnit(GenoBase):
     )
     virtual_contract = models.ForeignKey(
         "VirtualContract",
-        verbose_name="Virtueller Vertrag für Nebenkosten wenn kein aktiver Vertrag besteht",
+        verbose_name="Virtueller Vertrag",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
+        help_text=(
+            "Für Zuweisung von Kosten, wenn kein aktiver Vertrag besteht. Wenn nichts "
+            "ausgewählt, wird «Leerstand» verwendet."
+        ),
     )
     section = models.CharField(
-        "Bereichszuordnung für Nebenkosten",
+        "Bereichszuordnung",
         max_length=50,
         choices=RENTAL_UNIT_SECTION_CHOICES,
         default="auto",
@@ -1706,7 +1710,7 @@ class RentalUnitWeight(GenoBase):
         ]
 
 
-class RentalUnitSectionWeight(GenoBase):
+class RentalUnitSectionWeights(GenoBase):
     name = models.CharField("Bezeichnung", max_length=50, unique=True)
     weight_allgemein = models.DecimalField(
         "Gewichtung für Bereich «Allgemein»", max_digits=10, decimal_places=2, default=1.0

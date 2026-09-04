@@ -62,7 +62,7 @@ def populate_data_reverse(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("geno", "0029_alter_invoicecategory_linked_object_type"),
+        ("geno", "0028_remove_documenttype_template_file"),
         ("report", "0003_convert_uuids_from_char"),
     ]
 
