@@ -1359,6 +1359,12 @@ RENTAL_UNIT_TYPES = (
     ("Gemeinschaft", "Gemeinschaftsräume/Diverses"),
     ("Parkplatz", "Parkplatz"),
 )
+RENTAL_UNIT_SECTION_CHOICES = (
+    ("auto", "Automatisch (aufgrund Typ)"),
+    ("wohnen", "Wohnen"),
+    ("gewerbe", "Gewerbe"),
+    ("lager", "Lager/Sonstiges"),
+)
 
 
 class RentalUnit(GenoBase):
@@ -1431,6 +1437,20 @@ class RentalUnit(GenoBase):
     )
     share = models.DecimalField(
         "Anteilskapital (Fr.)", max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    virtual_contract = models.ForeignKey(
+        "VirtualContract",
+        verbose_name="Virtueller Vertrag für Nebenkosten wenn kein aktiver Vertrag besteht",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    section = models.CharField(
+        "Bereichszuordnung für Nebenkosten",
+        max_length=50,
+        choices=RENTAL_UNIT_SECTION_CHOICES,
+        default="auto",
+        help_text="Für Ausnahmen kann hier statt «Automatisch» ein Bereich ausgewählt werden.",
     )
     note = models.CharField("Zusatzinfo", max_length=200, blank=True)
     active = models.BooleanField("Aktiv", default=True)
@@ -1554,6 +1574,112 @@ class RentalUnit(GenoBase):
         verbose_name = "Mietobjekt"
         verbose_name_plural = "Mietobjekte"
         ordering = ["building__name", "name"]
+
+
+class RentalUnitWeightType(GenoBase):
+    name = models.CharField("Bezeichnung", max_length=50)
+    building = models.ForeignKey(Building, verbose_name="Gebäude", on_delete=models.CASCADE)
+    active = models.BooleanField("Aktiv", default=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "Gewichtungsfaktor für Mietobjekte"
+        verbose_name_plural = "Gewichtungsfaktoren für Mietobjekte"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name", "building"],
+                name="unique_rentalunitweighttype_name_per_building",
+            ),
+        ]
+
+
+class RentalUnitWeight(GenoBase):
+    name = models.ForeignKey(
+        RentalUnitWeightType, verbose_name="Gewichtungsfaktor", on_delete=models.CASCADE
+    )
+    rental_unit = models.ForeignKey(
+        "RentalUnit", verbose_name="Mietobjekt", on_delete=models.CASCADE
+    )
+    weight = models.DecimalField("Wert", max_digits=10, decimal_places=2, default=1.0)
+
+    class Meta:
+        ordering = ["rental_unit", "name"]
+        verbose_name = "Gewichtung für Mietobjekte"
+        verbose_name_plural = "Gewichtungen für Mietobjekte"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name", "rental_unit"],
+                name="unique_rentalunitweight_per_type_and_unit",
+            ),
+        ]
+
+
+class RentalUnitSectionWeight(GenoBase):
+    name = models.CharField("Bezeichnung", max_length=50, unique=True)
+    weight_allgemein = models.DecimalField(
+        "Gewichtung für Bereich «Allgemein»", max_digits=10, decimal_places=2, default=1.0
+    )
+    weight_wohnen = models.DecimalField(
+        "Gewichtung für Bereich «Wohnen»", max_digits=10, decimal_places=2, default=1.0
+    )
+    weight_gewerbe = models.DecimalField(
+        "Gewichtung für Bereich «Gewerbe»", max_digits=10, decimal_places=2, default=1.0
+    )
+    weight_lager = models.DecimalField(
+        "Gewichtung für Bereich «Lager/Sonstiges»", max_digits=10, decimal_places=2, default=1.0
+    )
+    active = models.BooleanField("Aktiv", default=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "Bereichs-Gewichtung für Mietobjekte"
+        verbose_name_plural = "Bereichts-Gewichtungen für Mietobjekte"
+
+
+class MonthlyWeights(GenoBase):
+    name = models.CharField("Bezeichnung", max_length=50, unique=True)
+    weight_01 = models.DecimalField(
+        "Gewichtung für Januar", max_digits=10, decimal_places=2, default=1.0
+    )
+    weight_02 = models.DecimalField(
+        "Gewichtung für Februar", max_digits=10, decimal_places=2, default=1.0
+    )
+    weight_03 = models.DecimalField(
+        "Gewichtung für März", max_digits=10, decimal_places=2, default=1.0
+    )
+    weight_04 = models.DecimalField(
+        "Gewichtung für April", max_digits=10, decimal_places=2, default=1.0
+    )
+    weight_05 = models.DecimalField(
+        "Gewichtung für Mai", max_digits=10, decimal_places=2, default=1.0
+    )
+    weight_06 = models.DecimalField(
+        "Gewichtung für Juni", max_digits=10, decimal_places=2, default=1.0
+    )
+    weight_07 = models.DecimalField(
+        "Gewichtung für Juli", max_digits=10, decimal_places=2, default=1.0
+    )
+    weight_08 = models.DecimalField(
+        "Gewichtung für August", max_digits=10, decimal_places=2, default=1.0
+    )
+    weight_09 = models.DecimalField(
+        "Gewichtung für September", max_digits=10, decimal_places=2, default=1.0
+    )
+    weight_10 = models.DecimalField(
+        "Gewichtung für Oktober", max_digits=10, decimal_places=2, default=1.0
+    )
+    weight_11 = models.DecimalField(
+        "Gewichtung für November", max_digits=10, decimal_places=2, default=1.0
+    )
+    weight_12 = models.DecimalField(
+        "Gewichtung für Dezember", max_digits=10, decimal_places=2, default=1.0
+    )
+    active = models.BooleanField("Aktiv", default=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "Gewichtungsfaktor pro Monat"
+        verbose_name_plural = "Gewichtungsfaktoren pro Monat"
 
 
 class Contract(GenoBase):
@@ -1857,6 +1983,29 @@ def get_active_contracts(date=None, pre_select=None, include_subcontracts=False)
         return select
     else:
         return select.filter(main_contract__isnull=True)
+
+
+class VirtualContract(GenoBase):
+    name = models.CharField("Name", max_length=50)
+    description = models.CharField("Beschreibung", max_length=255, blank=True)
+    nk_account = models.CharField(
+        "Kontonummer in Buchhaltung für Nebenkosten", max_length=50, default="6700"
+    )
+    nk_account_building_based = models.BooleanField(
+        "Konto liegenschaftsabhängig",
+        default=False,
+        help_text="Liegenschafts-Postfix (bspw. 81) wird genutzt um Kontonummer zu bilden. Es resultiert bspw. 300081",
+    )
+    building_based_cost_center = models.BooleanField(
+        "Kostenstelle hinzufügen",
+        default=False,
+        help_text="Fügt Buchungen eine Kostenstelle hinzu, basierend auf dem Liegenschafts-Postfix.",
+    )
+    active = models.BooleanField("Aktiv", default=True)
+
+    class Meta:
+        verbose_name = "Virtueller Vertrag"
+        verbose_name_plural = "Virtuelle Verträge"
 
 
 INVOICE_OBJECT_TYPE_CHOICES = (
