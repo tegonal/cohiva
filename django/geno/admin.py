@@ -1455,6 +1455,8 @@ class ContractAdmin(GenoBaseAdmin):
         "contractors",
         "main_contact",
         "rental_units",
+        "contractors_are_residents",
+        "residents",
         "children",
         "state",
         ("date", "date_end", "date_since"),
@@ -1507,9 +1509,11 @@ class ContractAdmin(GenoBaseAdmin):
         "contractors",
         "main_contact",
         "rental_units",
+        "residents",
         "children",
         "billing_contract",
     ]
+    conditional_fields = {"residents": "contractors_are_residents == false"}
     actions = GenoBaseAdmin.actions + [
         contract_mark_signed,
         contract_mark_offered,

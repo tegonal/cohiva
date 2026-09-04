@@ -1651,6 +1651,12 @@ class Contract(GenoBase):
         on_delete=models.SET_NULL,
         related_name="address_main_contracts",
     )
+    contractors_are_residents = models.BooleanField(
+        "Bewohnende/Nutzer:innen sind identisch mit Vertragspartner:innen", default=True
+    )
+    residents = models.ManyToManyField(
+        Address, verbose_name="Bewohnende/Nutzer:innen", related_name="resident_contracts"
+    )
     children = models.ManyToManyField(
         Child, verbose_name="Kinder", blank=True, related_name="child_contracts"
     )
