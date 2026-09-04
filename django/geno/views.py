@@ -123,8 +123,6 @@ from .models import (
     RentalUnit,
     Share,
     ShareType,
-    get_active_contracts,
-    get_active_shares,
 )
 from .shares import (
     check_rental_shares_report,
@@ -303,7 +301,7 @@ class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
 
         for share_type in ShareType.objects.all():
             stat = {"quantity": 0, "value": 0, "last_date": None}
-            for s in get_active_shares(date=reference_date).filter(share_type=share_type):
+            for s in Share.get_active(date=reference_date).filter(share_type=share_type):
                 stat["quantity"] += s.quantity
                 stat["value"] += s.quantity * s.value
                 if stat["last_date"] is None or s.date > stat["last_date"]:
@@ -325,7 +323,7 @@ class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
         # Check for non-members with shares (warning)
         non_members = []
         if not reference_date and self.request.user.has_perm("geno.canview_share") and stype_AS:
-            for s in get_active_shares(date=reference_date).filter(share_type=stype_AS):
+            for s in Share.get_active(date=reference_date).filter(share_type=stype_AS):
                 try:
                     m = Member.objects.get(name=s.name)
                     if m.date_leave:
@@ -453,7 +451,7 @@ def share_overview_boxplot(request):
         stat_share = []
         for m in Member.objects.filter(Q(date_leave=None) | Q(date_leave__gt=today)):
             total = 0
-            for s in get_active_shares().filter(name=m.name).filter(share_type=share_type):
+            for s in Share.get_active().filter(name=m.name).filter(share_type=share_type):
                 total += s.quantity * float(s.value)
             if total >= 1000:
                 stat_share.append(total / 1000.0)
@@ -466,7 +464,7 @@ def share_overview_boxplot(request):
     for m in Member.objects.filter(Q(date_leave=None) | Q(date_leave__gt=today)):
         total = 0
         for s in (
-            get_active_shares()
+            Share.get_active()
             .filter(name=m.name)
             .exclude(share_type=stype_DarlehenSpezial)
             .exclude(share_type=stype_Hypothek)
@@ -487,7 +485,7 @@ def share_overview_boxplot(request):
         except Member.DoesNotExist:
             total = 0
             for s in (
-                get_active_shares()
+                Share.get_active()
                 .filter(name=a.id)
                 .exclude(share_type=stype_DarlehenSpezial)
                 .exclude(share_type=stype_Hypothek)
@@ -821,12 +819,12 @@ def address_export(request, show_wohnung=True):
             pass
 
         if stype01:
-            share = get_active_shares().filter(share_type=stype01).filter(name=a).first()
+            share = Share.get_active().filter(share_type=stype01).filter(name=a).first()
             if share:
                 share01_paid = share.date.strftime("%d.%m.%Y")
 
         if show_wohnung:
-            for c in get_active_contracts().filter(contractors__pk=a.pk):
+            for c in Contract.get_active().filter(contractors__pk=a.pk):
                 for child in c.children.all():
                     if kinder == "":
                         kinder = "%s %s (%s)" % (
@@ -938,7 +936,9 @@ def share_export(request):
     if request.GET.get("aggregate", "") == "yes":
         last = None
         row = []
-        for a in get_active_shares(date=valuta_date).order_by("share_type", "name", "date"):
+        for a in Share.get_active(date=valuta_date).order_by(
+            "share_type", "name", "payment_date", "effective_from"
+        ):
             if a.date_due:
                 duedate = a.date_due
             elif a.duration:
@@ -983,7 +983,7 @@ def share_export(request):
                 c = ws.cell(row=row_num + 1, column=col_num + 1)
                 c.value = row[col_num]
     else:
-        for a in get_active_shares(date=valuta_date).order_by("-date"):
+        for a in Share.get_active(date=valuta_date).order_by("-payment_date", "-effective_from"):
             row = []
             row.append(a.pk)
             row.append(str(a.name))
@@ -1129,7 +1129,7 @@ def check_payments(request):
         warn = []
         ## Check if member has at least one share:
         if (
-            get_active_shares()
+            Share.get_active()
             .filter(name=member.name)
             .filter(share_type=ShareType.objects.get(name="Anteilschein"))
             .count()
@@ -1410,12 +1410,12 @@ class ShareConfirmationLetterView(DocumentGeneratorView):
             stype_hypo = None
         objects = []
         for s in (
-            get_active_shares(interest=False)
-            .filter(date__gt=settings.GENO_SHARE_LETTER_CUTOFF_DATE)
+            Share.get_active(interest=False)
+            .filter(payment_date__gt=settings.GENO_SHARE_LETTER_CUTOFF_DATE)
             .exclude(share_type=stype_hypo)
-            .order_by("-date")
+            .order_by("-payment_date")
         ):
-            obj_data = {"obj": s, "info": "%s %dx %s" % (s.date, s.quantity, s.value)}
+            obj_data = {"obj": s, "info": "%s %dx %s" % (s.payment_date, s.quantity, s.value)}
             if s.share_type == stype_share:
                 obj_data["doctype"] = "shareconfirm"
                 obj_data["info"] = "%s [Best. Anteilschein]" % obj_data["info"]
@@ -1505,10 +1505,10 @@ class ShareReminderLetterView(DocumentGeneratorView):
             info = []
             ## Get active loans that have no end date
             for share in (
-                get_active_shares()
+                Share.get_active()
                 .filter(name=adr)
                 .filter(share_type__name__startswith="Darlehen")
-                .filter(date_end=None)
+                .filter(Q(repayment_date=None) & Q(effective_until=None))
                 .filter(is_interest_credit=False)
             ):
                 startdate = share.date
@@ -1869,7 +1869,7 @@ def share_mailing(request):
         if loan:
             letter = "mitDarlehen"
             for d in (
-                get_active_shares()
+                Share.get_active()
                 .filter(name=adr)
                 .filter(
                     Q(share_type=ShareType.objects.get(name="Darlehen zinslos"))
@@ -1878,8 +1878,8 @@ def share_mailing(request):
                 .filter(is_interest_credit=False)
             ):
                 # loan_values.append(nformat(d.value))
-                duedate = d.date + relativedelta(years=d.duration)
-                duedate_new = d.date + relativedelta(years=(d.duration + 5))
+                duedate = d.payment_date + relativedelta(years=d.duration)
+                duedate_new = d.payment_date + relativedelta(years=(d.duration + 5))
                 # loan_due.append(duedate.strftime("%d.%m.%Y"))
                 # loan_duenew.append(duedate_new.strftime("%d.%m.%Y"))
                 loan_info.append(
@@ -2172,7 +2172,7 @@ class ContractCheckFormsView(DocumentGeneratorView):
     def get_objects(self):
         """Build the list of contracts that need check forms."""
         objects = []
-        for c in get_active_contracts():
+        for c in Contract.get_active():
             for ru in c.rental_units.all():
                 if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
                     objects.append({"obj": c})
@@ -2191,7 +2191,7 @@ class ContractCheckFormsView(DocumentGeneratorView):
 
         # Always calculate the list of contracts for count
         contracts = []
-        for c in get_active_contracts():
+        for c in Contract.get_active():
             for ru in c.rental_units.all():
                 if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
                     contracts.append(c)
@@ -2377,7 +2377,7 @@ def create_documents_deprecated(request, default_doctype, objects=None, options=
     if not objects:
         if default_doctype == "contract_check":
             objects = []
-            for c in get_active_contracts():
+            for c in Contract.get_active():
                 for ru in c.rental_units.all():
                     if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
                         objects.append({"obj": c})
@@ -2582,7 +2582,7 @@ class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
                     else:
                         bewohnende_missing.append(person["email"])
         else:
-            for c in get_active_contracts():
+            for c in Contract.get_active():
                 include = False
                 for ru in c.rental_units.all():
                     if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
@@ -2875,7 +2875,7 @@ def run_maintenance_tasks(request):
 
 def send_member_mail_filter_rental(form, member_list):
     adr_list = []
-    contracts = get_active_contracts(
+    contracts = Contract.get_active(
         include_subcontracts=form.cleaned_data["include_subcontracts"]
         if form.cleaned_data["include_subcontracts"]
         else False
@@ -2995,7 +2995,7 @@ def send_member_mail_filter_shares(form, member_list):
 
     # print(stype_filter)
 
-    shares = get_active_shares()
+    shares = Share.get_active()
     if stype_filter:
         shares = shares.filter(share_type__in=stype_filter)
     if stype_exclude:
@@ -3065,13 +3065,13 @@ def send_member_mail_filter_members(form, member_list, only_active=True):
             continue
         ## Filter out members without shares
         if "share_paid_01" in form.cleaned_data and form.cleaned_data["share_paid_01"]:
-            share = get_active_shares().filter(share_type=stype01).filter(name=member.name).first()
+            share = Share.get_active().filter(share_type=stype01).filter(name=member.name).first()
             if not share:
                 continue
         ## Filter out members with shares
         if "share_unpaid" in form.cleaned_data and form.cleaned_data["share_unpaid"]:
             share = (
-                get_active_shares()
+                Share.get_active()
                 .filter(Q(share_type=stype01) | Q(share_type=stype02))
                 .filter(name=member.name)
                 .first()
@@ -4237,7 +4237,7 @@ class ResidentUnitListView(CohivaAdminViewMixin, TemplateView):
             children = []
             comments = []
 
-            contracts = get_active_contracts().filter(rental_units__id__exact=ru.id)
+            contracts = Contract.get_active().filter(rental_units__id__exact=ru.id)
             n_contracts = contracts.count()
             if n_contracts > 0:
                 if n_contracts > 1:
@@ -4363,7 +4363,7 @@ def rental_unit_list_create_documents(request, doc="mailbox"):
         count_first_names = 0
         mietpartei = []
 
-        contracts = get_active_contracts().filter(rental_units__id__exact=ru.id)
+        contracts = Contract.get_active().filter(rental_units__id__exact=ru.id)
         n_contracts = contracts.count()
         if n_contracts > 0:
             if n_contracts > 1:

@@ -12,6 +12,7 @@ from zipfile import ZipFile
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
+from django.db.models import Q
 from django.http import HttpResponse
 from django.template import Context, Template, loader
 from django.utils.html import escape
@@ -33,7 +34,6 @@ from geno.models import (
     MemberAttributeType,
     Share,
     ShareType,
-    get_active_shares,
 )
 from geno.shares import get_share_statement_data
 from geno.utils import fill_template_pod, nformat, odt2pdf, remove_temp_files, sanitize_filename
@@ -152,7 +152,9 @@ class DocumentTemplate:
 
         ## Geforderte Beteiligungen
         shares = (
-            Share.objects.filter(state="gefordert")
+            Share.objects.filter(
+                Q(payment_date__gt=datetime.date.today()) | Q(payment_date__isnull=True)
+            )
             .filter(name=recipient.address)
             .order_by("share_type")
         )
@@ -1066,7 +1068,7 @@ def get_context_data(doctype, obj_id, extra_context):
                 c["bvg"] = False
             count = 0
             amount = 0
-            for s in get_active_shares().filter(name=obj.name).filter(share_type=stype_share):
+            for s in Share.get_active().filter(name=obj.name).filter(share_type=stype_share):
                 count += s.quantity
                 amount += s.quantity * s.value
             if count == 1:
@@ -1102,7 +1104,7 @@ def get_context_data(doctype, obj_id, extra_context):
                 nformat(obj.value, 2),
             )
 
-        c["datum_zahlung"] = obj.date.strftime("%d.%m.%Y")
+        c["datum_zahlung"] = obj.payment_date.strftime("%d.%m.%Y")
     elif doctype == "statement" or doctype == "mailing" or doctype == "loanreminder":
         obj = Address.objects.get(pk=obj_id)
         adr = obj

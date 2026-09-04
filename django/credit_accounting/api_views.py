@@ -9,7 +9,7 @@ from rest_framework.exceptions import AuthenticationFailed, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from geno.models import RentalUnit, get_active_contracts
+from geno.models import Contract, RentalUnit
 
 from .accounts import (
     get_accounts_for_user,
@@ -302,7 +302,7 @@ class PosAccountView(PosView):
                 name = f"{ru.label} {ru.name}"
             else:
                 name = f"Wohnung {ru.name}"
-            contract = get_active_contracts().filter(rental_units__id__exact=ru.id).first()
+            contract = Contract.get_active().filter(rental_units__id__exact=ru.id).first()
         else:
             name = f"Konto {request.data.get('name')}"
             contract = None

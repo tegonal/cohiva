@@ -7,7 +7,7 @@ from django.db.utils import IntegrityError
 from django.test import TestCase, override_settings
 from django.urls import NoReverseMatch, reverse
 
-from geno.models import Address, InvoiceCategory, Member, RegistrationEvent
+from geno.models import Address, Contract, InvoiceCategory, Member, RegistrationEvent
 
 from .base import GenoAdminTestCase
 
@@ -204,3 +204,213 @@ class RegistrationEventTest(TestCase):
             event.registration_link,
             f"[Fehler: Keine URL für '{self.registration_form_viewname}' gefunden]",
         )
+
+
+class GetActiveContractsTests(GenoAdminTestCase):
+    """
+    Tests for Contract.get_active(date=reference_date) and
+    Contract.get_active_in_period(period_start=..., period_end=...).
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.D1 = date(2020, 1, 1)  # far past
+        cls.D2 = date(2020, 6, 10)  # past
+        cls.D3 = date(2020, 6, 15)  # present (reference only)
+        cls.D4 = date(2020, 6, 20)  # future
+        cls.D5 = date(2020, 12, 31)  # far future
+
+    def _create_contract(self, **kwargs):
+        return Contract.objects.create(**kwargs)
+
+    # --------------------------------------------------------------------- #
+    # SINGLE DATE
+    # --------------------------------------------------------------------- #
+    def test_single_date_active_inside_period(self):
+        contract = self._create_contract(date=self.D2, date_end=self.D4)
+        result = Contract.get_active(date=self.D3)
+        self.assertIn(contract, result)
+
+    def test_single_date_active_on_start_boundary(self):
+        contract = self._create_contract(date=self.D3, date_end=self.D4)
+        result = Contract.get_active(date=self.D3)
+        self.assertIn(contract, result)
+
+    def test_single_date_active_on_end_boundary_is_excluded(self):
+        contract = self._create_contract(date=self.D2, date_end=self.D3)
+        result = Contract.get_active(date=self.D3)
+        self.assertNotIn(contract, result)
+
+    def test_single_date_inactive_before_start(self):
+        contract = self._create_contract(date=self.D4, date_end=self.D5)
+        result = Contract.get_active(date=self.D3)
+        self.assertNotIn(contract, result)
+
+    def test_single_date_inactive_after_end(self):
+        contract = self._create_contract(date=self.D1, date_end=self.D2)
+        result = Contract.get_active(date=self.D3)
+        self.assertNotIn(contract, result)
+
+    def test_single_date_active_open_ended(self):
+        contract = self._create_contract(date=self.D3, date_end=None)
+        result = Contract.get_active(date=self.D5)
+        self.assertIn(contract, result)
+
+    def test_single_date_inactive_open_ended_before_start(self):
+        contract = self._create_contract(date=self.D4, date_end=None)
+        result = Contract.get_active(date=self.D3)
+        self.assertNotIn(contract, result)
+
+    # --------------------------------------------------------------------- #
+    # SUBCONTRACTS
+    # --------------------------------------------------------------------- #
+    def test_single_date_excludes_subcontracts_by_default(self):
+        main = self._create_contract(date=self.D2, date_end=self.D4)
+        sub = self._create_contract(date=self.D2, date_end=self.D4, main_contract=main)
+        result = Contract.get_active(date=self.D3)
+        self.assertIn(main, result)
+        self.assertNotIn(sub, result)
+
+    def test_single_date_includes_subcontracts_when_requested(self):
+        main = self._create_contract(date=self.D2, date_end=self.D4)
+        sub = self._create_contract(date=self.D2, date_end=self.D4, main_contract=main)
+        result = Contract.get_active(date=self.D3, include_subcontracts=True)
+        self.assertIn(main, result)
+        self.assertIn(sub, result)
+
+    def test_subcontract_alone_is_inactive_when_parent_is_inactive(self):
+        main = self._create_contract(date=self.D1, date_end=self.D2)
+        sub = self._create_contract(date=self.D2, date_end=self.D4, main_contract=main)
+        result = Contract.get_active(date=self.D3, include_subcontracts=True)
+        self.assertNotIn(main, result)
+        self.assertIn(sub, result)
+
+    # --------------------------------------------------------------------- #
+    # DEFAULT DATE CLAMPING
+    # --------------------------------------------------------------------- #
+    def test_default_date_clamped_to_2021_12_01(self):
+        contract = self._create_contract(date=date(2020, 1, 1), date_end=None)
+
+        class MockDate(date):
+            @classmethod
+            def today(cls):
+                return cls(2020, 1, 1)
+
+        with patch("geno.models.datetime.date", MockDate):
+            result = Contract.get_active()
+            # Because date is clamped to 2021-12-01, the contract is active
+            self.assertIn(contract, result)
+
+    # --------------------------------------------------------------------- #
+    # DATE RANGE - overlap variations
+    # --------------------------------------------------------------------- #
+    def test_range_contract_fully_contains_reference(self):
+        contract = self._create_contract(date=self.D1, date_end=self.D5)
+        result = Contract.get_active_in_period(period_start=self.D2, period_end=self.D4)
+        self.assertIn(contract, result)
+
+    def test_range_reference_fully_contains_contract(self):
+        contract = self._create_contract(date=self.D2, date_end=self.D4)
+        result = Contract.get_active_in_period(period_start=self.D1, period_end=self.D5)
+        self.assertIn(contract, result)
+
+    def test_range_reference_overlaps_start_of_contract(self):
+        contract = self._create_contract(date=self.D3, date_end=self.D5)
+        result = Contract.get_active_in_period(period_start=self.D1, period_end=self.D3)
+        self.assertIn(contract, result)
+
+    def test_range_reference_does_not_overlap_start_when_end_is_exclusive(self):
+        contract = self._create_contract(date=self.D3, date_end=self.D5)
+        result = Contract.get_active_in_period(
+            period_start=self.D1, period_end=self.D3, exclude_period_end=True
+        )
+        self.assertNotIn(contract, result)
+
+    def test_range_reference_overlaps_end_of_contract(self):
+        contract = self._create_contract(date=self.D1, date_end=self.D3)
+        result = Contract.get_active_in_period(period_start=self.D3, period_end=self.D5)
+        self.assertIn(contract, result)
+
+    def test_range_no_overlap_reference_before_contract(self):
+        contract = self._create_contract(date=self.D3, date_end=self.D5)
+        result = Contract.get_active_in_period(period_start=self.D1, period_end=self.D2)
+        self.assertNotIn(contract, result)
+
+    def test_range_no_overlap_reference_after_contract(self):
+        contract = self._create_contract(date=self.D1, date_end=self.D2)
+        result = Contract.get_active_in_period(period_start=self.D3, period_end=self.D5)
+        self.assertNotIn(contract, result)
+
+    def test_range_no_overlap_adjacent_days(self):
+        """Contract ends D2, reference starts D3 -> no common day."""
+        contract = self._create_contract(date=self.D1, date_end=self.D2)
+        result = Contract.get_active_in_period(period_start=self.D3, period_end=self.D4)
+        self.assertNotIn(contract, result)
+
+    def test_range_active_open_ended(self):
+        contract = self._create_contract(date=self.D4, date_end=None)
+        result = Contract.get_active_in_period(period_start=self.D5, period_end=self.D5)
+        self.assertIn(contract, result)
+
+    def test_range_inactive_open_ended_before_start(self):
+        contract = self._create_contract(date=self.D4, date_end=None)
+        result = Contract.get_active_in_period(period_start=self.D1, period_end=self.D2)
+        self.assertNotIn(contract, result)
+
+    def test_range_single_day_contract_inside_range(self):
+        contract = self._create_contract(date=self.D3, date_end=self.D3)
+        result = Contract.get_active_in_period(period_start=self.D2, period_end=self.D4)
+        self.assertIn(contract, result)
+
+    def test_range_single_day_reference_overlaps(self):
+        contract = self._create_contract(date=self.D2, date_end=self.D4)
+        result = Contract.get_active_in_period(period_start=self.D3, period_end=self.D3)
+        self.assertIn(contract, result)
+
+    # --------------------------------------------------------------------- #
+    # DATE RANGE - subcontracts
+    # --------------------------------------------------------------------- #
+    def test_range_excludes_subcontracts_by_default(self):
+        main = self._create_contract(date=self.D2, date_end=self.D4)
+        sub = self._create_contract(date=self.D2, date_end=self.D4, main_contract=main)
+        result = Contract.get_active_in_period(period_start=self.D3, period_end=self.D3)
+        self.assertIn(main, result)
+        self.assertNotIn(sub, result)
+
+    def test_range_includes_subcontracts_when_requested(self):
+        main = self._create_contract(date=self.D2, date_end=self.D4)
+        sub = self._create_contract(date=self.D2, date_end=self.D4, main_contract=main)
+        result = Contract.get_active_in_period(
+            period_start=self.D3, period_end=self.D3, include_subcontracts=True
+        )
+        self.assertIn(main, result)
+        self.assertIn(sub, result)
+
+    # --------------------------------------------------------------------- #
+    # MIXED / BULK SCENARIOS
+    # --------------------------------------------------------------------- #
+    def test_range_returns_empty_when_no_contracts_overlap(self):
+        c1 = self._create_contract(date=self.D1, date_end=self.D2)
+        c2 = self._create_contract(date=self.D4, date_end=self.D5)
+        result = list(Contract.get_active(date=self.D3))
+        self.assertNotIn(c1, result)
+        self.assertNotIn(c2, result)
+        self.assertEqual(len(result), 0)
+
+    def test_range_excludes_neighbors_but_keeps_active(self):
+        expired = self._create_contract(date=self.D1, date_end=self.D2)
+        active = self._create_contract(date=self.D2, date_end=self.D4)
+        future = self._create_contract(date=self.D4, date_end=self.D5)
+        result = list(Contract.get_active(date=self.D3))
+        self.assertNotIn(expired, result)
+        self.assertIn(active, result)
+        self.assertNotIn(future, result)
+        self.assertEqual(len(result), 1)
+
+    def test_range_excluded_when_contracts_create_gap(self):
+        first = self._create_contract(date=self.D1, date_end=self.D2)
+        second = self._create_contract(date=self.D3, date_end=self.D5)
+        result = list(Contract.get_active_in_period(period_start=self.D3, period_end=self.D4))
+        self.assertNotIn(first, result)
+        self.assertIn(second, result)

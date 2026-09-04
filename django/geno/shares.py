@@ -17,7 +17,7 @@ from finance.accounting import (
     Transaction,
 )
 
-from .models import Address, RentalUnit, Share, ShareType, get_active_contracts, get_active_shares
+from .models import Address, Contract, RentalUnit, Share, ShareType
 from .utils import is_member, nformat
 
 
@@ -421,16 +421,17 @@ def share_interest_calc(address, year, enddate=None):
         bvg_amount = 0
         stype_str = "/".join(map(str, stype))
         for share in (
-            Share.objects.filter(name=address)
+            Share.get_active_in_period(
+                period_start=period_start, period_end=period_end, exclude_period_end=True
+            )
+            .filter(name=address)
             .filter(share_type__in=stype)
-            .filter(state="bezahlt")
-            .filter(date__lt=period_end)
-            .filter(Q(date_end=None) | Q(date_end__gte=period_start))
             .exclude(
-                Q(date=datetime.date(year, 12, 31))
+                Q(payment_date=datetime.date(year, 12, 31))
+                | Q(effective_from=datetime.date(year, 12, 31))
                 & Q(is_interest_credit=True)  ## Exclude already booked interest of this period
             )
-            .order_by("date")
+            .order_by("effective_from", "payment_date")
         ):
             amount = share.quantity * share.value
             if share.date < period_start:
@@ -587,7 +588,7 @@ def create_interest_transactions():
     ret = []
 
     ## Try to guess if transactions have already been made
-    count = Share.objects.filter(is_interest_credit=True).filter(date=book_date).count()
+    count = Share.objects.filter(is_interest_credit=True).filter(payment_date=book_date).count()
     if count:
         ret.append(
             {
@@ -662,11 +663,10 @@ def create_interest_transactions_execute(book_date):
                         Share(
                             name=adr,
                             share_type=ShareType.objects.get(name="Depositenkasse"),
-                            date=book_date,
+                            payment_date=book_date,
                             quantity=1,
                             value=interest["pay"][3],
                             is_interest_credit=True,
-                            state="bezahlt",
                             note="Bruttozinsen %s%% Depositenkasse %d"
                             % (nformat(interest_rate), book_date.year),
                         )
@@ -737,9 +737,9 @@ def share_get_donations(address, year, enddate=None):
     for share in (
         Share.objects.filter(name=address)
         .filter(share_type=stype_donation)
-        .filter(state="bezahlt")
-        .filter(date__gte=period_start)
-        .filter(date__lt=period_end)
+        .filter(Q(repayment_date__isnull=True) | Q(repayment_date__gt=period_start))
+        .filter(payment_date__gte=period_start)
+        .filter(payment_date__lt=period_end)
     ):
         total += share.quantity * share.value
     return total
@@ -757,7 +757,7 @@ def check_rental_shares_report():
     shares_contract = {}
     stype_share = ShareType.objects.filter(name="Anteilschein").first()
     for share in (
-        get_active_shares()
+        Share.get_active()
     ):  # .filter(attached_to_contract=None): #.filter(share_type=stype_share):
         amount = 0
         amount_loan = 0
@@ -940,7 +940,7 @@ def check_rental_shares_report():
         if ru.min_occupancy:
             min_occupancy = ru.min_occupancy
         no_contract = True
-        for contract in get_active_contracts().filter(rental_units__id=ru.id):
+        for contract in Contract.get_active().filter(rental_units__id=ru.id):
             # print(" - Contract: %s" % contract)
             no_contract = False
 

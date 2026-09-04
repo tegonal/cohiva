@@ -412,33 +412,29 @@ class ShareStatementViewTest(GenoAdminTestCase):
             value=200,
             quantity=1,
             share_type=stype_as,
-            date=datetime.date(2020, 1, 1),
+            payment_date=datetime.date(2020, 1, 1),
             name=cls.addresses[0],
-            state="bezahlt",
         )
         Share.objects.create(
             value=200,
             quantity=5,
             share_type=stype_as,
-            date=datetime.date(2020, 1, 1),
+            payment_date=datetime.date(2020, 1, 1),
             name=cls.addresses[1],
-            state="bezahlt",
         )
         Share.objects.create(
             value=200,
             quantity=6,
             share_type=stype_as,
-            date=datetime.date(2020, 1, 1),
+            payment_date=datetime.date(2020, 1, 1),
             name=cls.addresses[2],
-            state="bezahlt",
         )
         Share.objects.create(
             value=200,
             quantity=10,
             share_type=stype_as,
-            date=datetime.date(2020, 1, 1),
+            payment_date=datetime.date(2020, 1, 1),
             name=cls.addresses[3],
-            state="bezahlt",
         )
 
     def test_get_object_skips(self):
@@ -458,9 +454,8 @@ class ShareStatementViewTest(GenoAdminTestCase):
                 value=500,
                 quantity=1,
                 share_type=ShareType.objects.get(name="Depositenkasse"),
-                date=datetime.date(2020, 1, 1),
+                payment_date=datetime.date(2020, 1, 1),
                 name=self.addresses[1],
-                state="bezahlt",
             )
             obj = view.get_objects()
             self.assertEqual(len(obj), 3)

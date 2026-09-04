@@ -26,7 +26,6 @@ from .models import (
     RentalUnit,
     Share,
     ShareType,
-    get_active_shares,
 )
 from .sepa_reader import SepaReaderException, read_camt
 from .utils import decode_from_iso8859
@@ -117,7 +116,7 @@ def process_eigenmittel():
         total = 0
         for share_type in ShareType.objects.all():
             summe = 0
-            for s in get_active_shares().filter(name=m).filter(share_type=share_type):
+            for s in Share.get_active().filter(name=m).filter(share_type=share_type):
                 summe += s.quantity * float(s.value)
             members[m.pk][share_type_map[share_type.name]] = int(summe)
             total += summe
