@@ -134,7 +134,7 @@ from .tables import (
     MemberTable,
     MemberTableAdmin,
 )
-from .utils import fill_template_pod, is_member, nformat, odt2pdf
+from .utils import fill_template_pod, nformat, odt2pdf
 
 # from .decorators import login_required
 
@@ -559,7 +559,7 @@ class MemberOverviewView(CohivaAdminViewMixin, TemplateView):
 
         # Collect statistics
         for m in Member.objects.all():
-            if is_member(m.name, date_mode=date_mode):
+            if m.name.is_member(date_mode=date_mode):
                 gender_stat["Total"] += 1
 
                 # Gender statistics
@@ -874,53 +874,6 @@ def share_export(request):
     if not request.user.has_perm("geno.canview_share"):
         return unauthorized(request)
 
-    response = HttpResponse(
-        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-    response["Content-Disposition"] = (
-        "attachment; filename=%s_Beteiligungen.xlsx" % settings.GENO_FILENAME_STR
-    )
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "Beteiligungen %s" % settings.GENO_FILENAME_STR
-
-    row_num = 0
-
-    ## Header
-    if request.GET.get("aggregate", "") == "yes":
-        columns = [
-            ("A", "Name", 30),
-            ("B", "Typ", 20),
-            ("C", "Anzahl", 8),
-            ("D", "Summe CHF", 12),
-            ("E", "Fälligkeit", 10),
-            ("F", "Laufzeit", 8),
-            ("G", "Mitgliedschaft", 30),
-        ]
-    else:
-        columns = [
-            ("A", "ID", 7),
-            ("B", "Name", 30),
-            ("C", "Adress-ID", 10),
-            ("D", "Typ", 20),
-            ("E", "Datum", 12),
-            ("F", "Anzahl", 8),
-            ("G", "Betrag CHF", 12),
-            ("H", "Summe CHF", 12),
-            ("I", "Zinssatz-Modus", 10),
-            ("J", "Zinssatz", 10),
-            ("K", "Zins?", 8),
-            ("L", "Zusatzinfo", 30),
-            ("M", "Erstellt", 22),
-            ("N", "Geändert", 22),
-        ]
-    for col_num in range(len(columns)):
-        c = ws.cell(row=row_num + 1, column=col_num + 1)
-        c.value = columns[col_num][1]
-        c.font = Font(bold=True)
-        # set column width
-        ws.column_dimensions[columns[col_num][0]].width = columns[col_num][2]
-
     ## Data
     today = datetime.datetime.today()
     if request.GET.get("jahresende", "") == "yes":
@@ -933,79 +886,122 @@ def share_export(request):
         anonymous = False
     person_count = 0
     person_nr = {}
-    if request.GET.get("aggregate", "") == "yes":
-        last = None
-        row = []
-        for a in Share.get_active(date=valuta_date).order_by(
-            "share_type", "name", "payment_date", "effective_from"
-        ):
-            if a.date_due:
-                duedate = a.date_due
-            elif a.duration:
-                duedate = a.date + relativedelta(years=a.duration)
-            else:
-                duedate = ""
 
-            if last == str(a.name) + str(a.share_type) + str(duedate):
-                ## Update row
-                row[2] += a.quantity
-                row[3] += a.quantity * a.value
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = (
+        f"attachment; filename={settings.GENO_FILENAME_STR}_"
+        f"Beteiligungen_{valuta_date.strftime('%Y-%m-%d')}.xlsx"
+    )
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = (
+        f"Aktive Beteiligungen per {valuta_date.strftime('%d.%m.%Y')} {settings.GENO_FILENAME_STR}"
+    )
+
+    row_num = 0
+
+    ## Header
+    columns = [
+        ("A", "Name", 30),
+        ("B", "Typ", 24),
+        ("C", "Anzahl", 8),
+        ("D", "Summe CHF", 12),
+        ("E", "davon CHF WEF", 16),
+        ("F", "Fälligkeit", 10),
+        ("G", "Laufzeit", 8),
+        ("H", "Mitgliedschaft", 18),
+        ("I", "Kennung", 30),
+        ("J", "Älteste Beteiligung seit", 23),
+        ("K", "Jüngste Beteiligung seit", 23),
+        ("L", "Erste Erstellung", 20),
+        ("M", "Letzte Änderung", 20),
+    ]
+    for col_num in range(len(columns)):
+        c = ws.cell(row=row_num + 1, column=col_num + 1)
+        c.value = columns[col_num][1]
+        c.font = Font(bold=True)
+        # set column width
+        ws.column_dimensions[columns[col_num][0]].width = columns[col_num][2]
+
+    ## Aggregated export
+    def _add_row():
+        if last is None or ws is None:
+            return row_num
+        new_row_num = row_num + 1
+        for col in range(len(row)):
+            ws_col = ws.cell(row=new_row_num + 1, column=col + 1)
+            if isinstance(row[col], datetime.datetime):
+                ws_col.value = timezone.localtime(row[col]).strftime("%Y-%m-%d %H:%M")
+            elif isinstance(row[col], str) and row[col].startswith("="):
+                ws_col.value = f"'{row[col]}"
             else:
-                ## Insert row
-                if last is not None:
-                    row_num += 1
-                    for col_num in range(len(row)):
-                        c = ws.cell(row=row_num + 1, column=col_num + 1)
-                        c.value = row[col_num]
-                row = []
-                # row.append(a.pk)
-                if anonymous:
-                    if a.name.pk not in person_nr:
-                        person_count += 1
-                        person_nr[a.name.pk] = "Person %s" % person_count
-                    person_name = person_nr[a.name.pk]
+                ws_col.value = row[col]
+        return new_row_num
+
+    last = None
+    row = []
+    for a in Share.get_active(date=valuta_date).order_by(
+        "share_type", "name", "payment_date", "effective_from"
+    ):
+        if a.date_due:
+            duedate = a.date_due
+        elif a.duration:
+            duedate = a.date + relativedelta(years=a.duration)
+        else:
+            duedate = ""
+
+        if last == str(a.name) + str(a.share_type) + str(duedate):
+            ## Update row
+            row[2] += a.quantity
+            row[3] += a.quantity * a.value
+            if a.is_pension_fund:
+                row[4] += a.quantity * a.value
+            if a.identifier:
+                if not row[8]:
+                    row[8] = a.identifier
                 else:
-                    person_name = str(a.name)
-                row.append(person_name)
-                row.append(str(a.share_type))
-                row.append(a.quantity)
-                row.append(a.quantity * a.value)
-                row.append(duedate)
-                row.append(a.duration)
-                if is_member(a.name):
-                    row.append("Ja")
-                else:
-                    row.append("Nein")
-            last = str(a.name) + str(a.share_type) + str(duedate)
-        if last is not None:
-            row_num += 1
-            for col_num in range(len(row)):
-                c = ws.cell(row=row_num + 1, column=col_num + 1)
-                c.value = row[col_num]
-    else:
-        for a in Share.get_active(date=valuta_date).order_by("-payment_date", "-effective_from"):
+                    row[8] += f", {a.identifier}"
+            if a.date > row[10]:
+                row[10] = a.date  # youngest date
+            if a.ts_created < row[11]:
+                row[11] = a.ts_created  # first created
+            if a.ts_modified > row[12]:
+                row[12] = a.ts_modified  # last modified
+        else:
+            ## Insert row
+            row_num = _add_row()
             row = []
-            row.append(a.pk)
-            row.append(str(a.name))
-            row.append(a.name.pk)
+            # row.append(a.pk)
+            if anonymous:
+                if a.name.pk not in person_nr:
+                    person_count += 1
+                    person_nr[a.name.pk] = "Person %s" % person_count
+                person_name = person_nr[a.name.pk]
+            else:
+                person_name = str(a.name)
+            row.append(person_name)
             row.append(str(a.share_type))
-            row.append(a.date)
             row.append(a.quantity)
-            row.append(a.value)
             row.append(a.quantity * a.value)
-            row.append(a.interest_mode)
-            row.append(a.interest())
-            if a.is_interest_credit:
-                row.append(1)
+            if a.is_pension_fund:
+                row.append(a.quantity * a.value)
             else:
                 row.append(0)
-            row.append(a.note)
-            row.append(timezone.localtime(a.ts_created).strftime("%Y-%m-%d %H:%M"))
-            row.append(timezone.localtime(a.ts_modified).strftime("%Y-%m-%d %H:%M"))
-            row_num += 1
-            for col_num in range(len(row)):
-                c = ws.cell(row=row_num + 1, column=col_num + 1)
-                c.value = row[col_num]
+            row.append(duedate)
+            row.append(a.duration)
+            if a.name.is_member(date=valuta_date):
+                row.append("Ja")
+            else:
+                row.append("Nein")
+            row.append(a.identifier)
+            row.append(a.date)  # oldest date
+            row.append(a.date)  # youngest date
+            row.append(a.ts_created)
+            row.append(a.ts_modified)
+        last = str(a.name) + str(a.share_type) + str(duedate)
+    row_num = _add_row()
 
     wb.save(response)
     return response
@@ -1816,7 +1812,7 @@ def share_mailing(request):
     ret = []
     objects = []
     for adr in Address.objects.filter(active=True).order_by("name"):
-        if not is_member(adr, date_mode="end_date"):
+        if not adr.is_member(date_mode="end_date"):
             ## Nichtmitglied
             # ret.append({'info': str(adr), 'objects': ['Ohne Mitgliedschaft']})
             continue
@@ -2634,7 +2630,7 @@ class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
                         wohnpost_missing.append(person["email"])
         else:
             for member in Member.objects.all():
-                if not is_member(member.name):
+                if not member.name.is_member():
                     continue
                 if not member.name.email:
                     genossenschaft_no_email.append(str(member.name))
@@ -3061,7 +3057,7 @@ def send_member_mail_filter_members(form, member_list, only_active=True):
         stype02 = None
     for member in members:
         ## Filter active membership
-        if only_active and not is_member(member.name):
+        if only_active and not member.name.is_member():
             continue
         ## Filter out members without shares
         if "share_paid_01" in form.cleaned_data and form.cleaned_data["share_paid_01"]:

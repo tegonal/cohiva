@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from unittest.mock import patch
 
 from django.conf import settings
@@ -181,6 +181,59 @@ class AddressTest(TestCase):
         with override_settings(DEBUG=False, TEST_MAIL_RECIPIENT="test@domain.com"):
             result = addr.get_mail_recipient()
             self.assertEqual(result, '"Lisa Meier" <lisa@realmail.com>')
+
+    def test_is_member(self):
+        adr = Address.objects.create(name="Test")
+        self.assertFalse(adr.is_member())
+        with self.assertRaises(ValueError):
+            adr.is_member(date_mode="_invalid")
+
+        m1 = Member.objects.create(name=adr, date_join=date(2000, 1, 1))
+        self.assertTrue(adr.is_member())
+        self.assertTrue(adr.is_member(date_mode="last_year"))
+        self.assertTrue(adr.is_member(date_mode="end_date"))
+        self.assertFalse(adr.is_member(date=date(1999, 12, 31)))
+        self.assertTrue(adr.is_member(date=date(date.today().year + 1, 1, 2)))
+
+        m1.date_leave = date(date.today().year + 1, 1, 1)
+        m1.save()
+        self.assertTrue(adr.is_member())
+        self.assertTrue(adr.is_member(date_mode="last_year"))
+        self.assertFalse(adr.is_member(date_mode="end_date"))
+        self.assertFalse(adr.is_member(date=date(1999, 12, 31)))
+        self.assertFalse(adr.is_member(date=date(date.today().year + 1, 1, 2)))
+
+        m1.date_join = date(date.today().year, 1, 1)
+        m1.save()
+        self.assertTrue(adr.is_member())
+        self.assertFalse(adr.is_member(date_mode="last_year"))
+        self.assertFalse(adr.is_member(date_mode="end_date"))
+        self.assertFalse(adr.is_member(date=date(1999, 12, 31)))
+        self.assertFalse(adr.is_member(date=date(date.today().year + 1, 1, 2)))
+
+        m1.date_leave = None
+        m1.save()
+        self.assertTrue(adr.is_member())
+        self.assertFalse(adr.is_member(date_mode="last_year"))
+        self.assertTrue(adr.is_member(date_mode="end_date"))
+        self.assertFalse(adr.is_member(date=date(1999, 12, 31)))
+        self.assertTrue(adr.is_member(date=date(date.today().year + 1, 1, 2)))
+
+        Member.objects.create(name=adr, date_join=date(1995, 1, 1), date_leave=date(1998, 6, 1))
+        self.assertTrue(adr.is_member())
+        self.assertFalse(adr.is_member(date_mode="last_year"))
+        self.assertTrue(adr.is_member(date_mode="end_date"))
+        self.assertFalse(adr.is_member(date=date(1999, 12, 31)))
+        self.assertTrue(adr.is_member(date=date(date.today().year + 1, 1, 2)))
+        self.assertTrue(adr.is_member(date=date(1997, 12, 31)))
+        self.assertTrue(adr.is_member(date=datetime(1997, 12, 31, 1, 1, 1)))
+
+        with self.assertRaises(ValueError):
+            adr.is_member(date_mode="last_year", date=date(1999, 12, 31))
+        with self.assertRaises(ValueError):
+            adr.is_member(date=False)
+        with self.assertRaises(ValueError):
+            adr.is_member(date_mode="_invalid")
 
 
 class RegistrationEventTest(TestCase):
