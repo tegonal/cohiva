@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING
 
+from geno.models import RentalUnitWeightType
+
 if TYPE_CHECKING:
     from report.models import ReportInputData
 
@@ -81,6 +83,16 @@ class BaseSettingsConfig:
                 CostConfigFieldTypes.INT,
                 verbose_name="Startjahr der Abrechnung",
                 show=True,
+            ),
+            CostConfigField(
+                "Startmonat",
+                CostConfigFieldTypes.INT,
+                verbose_name="Startmonat der Abrechnung",
+            ),
+            CostConfigField(
+                "Anzahl Monate",
+                CostConfigFieldTypes.INT,
+                verbose_name="Anzahl Monate der Abrechnung",
             ),
             CostConfigField(
                 "Vorlage:Abrechnung",
@@ -184,7 +196,9 @@ class CostConfig:
         for field in fields:
             name = field.name.name
             if name in single_value_keys:
-                config[name] = field.get_value()
+                value = field.get_value()
+                if value is not None:
+                    config[name] = value
 
     def set_name(self, name):
         self.config["name"] = name
@@ -473,7 +487,10 @@ def get_report_item_config() -> Iterator[CostConfig | BaseSettingsConfig]:
         "name": "BaseSettings",
         "bezeichnung": "Grundeinstellungen",
         "Startjahr": datetime.date.today().year,
+        "Startmonat": 7,
+        "Anzahl Monate": 12,
         "config": BaseSettingsConfig,
+        "order": 99,
     }
     yield BaseSettingsConfig(default_base_settings)
     cost_item_types = [
@@ -483,6 +500,7 @@ def get_report_item_config() -> Iterator[CostConfig | BaseSettingsConfig]:
             # "billing_group": "Hauswartung",
             "class": NkTotalCost,
             "config": NkTotalCostConfig,
+            "order": 10,
         },
         {
             "name": "VEWA-Annual",
@@ -535,16 +553,24 @@ def get_report_item_config() -> Iterator[CostConfig | BaseSettingsConfig]:
 
 
 def _build_report_item_categories() -> tuple[tuple[str, str], ...]:
-    categories: dict[str, str] = {}
+    categories: dict[str, dict] = {}
     for cost in get_report_item_config():
         if isinstance(cost, BaseSettingsConfig):
             key = "BaseSettingsConfig"
         else:
             key = cost.cost_class.__name__
         # Multiple labels per Class are possible.
-        categories[cost.config.get("name", key)] = cost.config.get("bezeichnung", key)
-    # order returned tuple by label
-    return tuple(sorted(categories.items(), key=lambda item: (item[1], item[0])))
+        categories[cost.config.get("name", key)] = {
+            "label": cost.config.get("bezeichnung", key),
+            "order": cost.config.get("order", 20),
+        }
+    # order returned tuple by order and label
+    return tuple(
+        [
+            (item[0], item[1]["label"])
+            for item in sorted(categories.items(), key=lambda i: (i[1]["order"], i[1]["label"]))
+        ]
+    )
 
 
 def build_section_weights_choices() -> list[tuple[str, str]]:
@@ -581,16 +607,18 @@ def build_vewa_category_choices() -> list[tuple[str, str]]:
 
 
 def build_object_weights_choices() -> list[tuple[str, str]]:
-    return [
+    choices = [
         ("area", "Fläche (m2)"),
         ("volume", "Volumen (m3)"),
         ("rooms", "Zimmeranzahl"),
         ("min_occupancy", "Mindestbelegung"),
         ("uniform", "Gleichverteilung"),
-        ("nk_factor_1", "NK-Faktor 1"),
-        ("nk_factor_2", "NK-Faktor 2"),
-        ("nk_factor_3", "NK-Faktor 3"),
     ]
+    # TODO: Do we want to filter by building here? Then we need the building that the report
+    #       is configured for.
+    for weight_type in RentalUnitWeightType.objects.filter(active=True):
+        choices.append((f"ru_weight_type_{weight_type.id}", weight_type.name))
+    return choices
 
 
 def get_enum_value(enum_type: str, value: str) -> Enum | str | None:

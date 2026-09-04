@@ -139,7 +139,8 @@ class NKBillTest(NkReportTestCase):
         self.create_special_akonto_invoice(self.contracts[2], rg.dates[2]["end"], 50000)
 
         mocks = self.generate_with_mock_output(rg)
-        self.assertEqual(mocks["create_qrbill"].call_count, len(rg.contracts))
+        contracts_with_rental_units = [c for c in rg.contracts if c.rental_units]
+        self.assertEqual(mocks["create_qrbill"].call_count, len(contracts_with_rental_units))
 
         ## First contract
 
@@ -149,7 +150,8 @@ class NKBillTest(NkReportTestCase):
             mocks["create_qrbill"].call_args_list[0].args
         )
         self.assertEqual(context["betreff"], "Nebenkostenabrechnung 01.07.2023 – 30.06.2024")
-        self.assertEqual(context["building"], "Musterweg 1, 3000 Bern")
+        self.assertEqual(context["liegenschaft"], "Musterweg 1, 3000 Bern")
+        self.assertEqual(context["show_liegenschaft"], True)
         self.assertEqual(context["contract_info"], self.contracts[0].get_contract_label())
         self.assertEqual(context["invoice_nr"], 9999999999)
         self.assertEqual(context["invoice_date"], datetime.date.today().strftime("%d.%m.%Y"))

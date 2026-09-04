@@ -160,7 +160,7 @@ class ExportCSV:
         for attr in footer_nominal_items:
             footer_nominal[attr].append(nominal_obj[attr]["sum"])
             for s in self.nk.sections:
-                footer_nominal[attr].append(nominal_obj[attr][s.id])
+                footer_nominal[attr].append(nominal_obj[attr].get(s.id, 0.0))
                 if self.include_percent:
                     footer_nominal[attr].append("")  # No percent
             for ru in self.nk.rental_units:

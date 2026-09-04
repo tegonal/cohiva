@@ -657,6 +657,23 @@ def create_rentalunits(cls: "type[GenoAdminTestCase]", building_count=2):
         )
     )
 
+    ## Building 2
+    cls.rentalunits.append(
+        RentalUnit.objects.create(
+            name="001a2",
+            rental_type="Wohnung",
+            building=cls.buildings[1],
+            area=102,
+            height=3.2,
+            volume=302,
+            rooms=2,
+            min_occupancy=2,
+            nk=102,
+            rent_netto=1002,
+            share=10002,
+        )
+    )
+
 
 def create_contracts(cls: "type[GenoAdminTestCase]"):
     create_rentalunits(cls)

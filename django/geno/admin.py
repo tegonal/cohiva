@@ -615,6 +615,7 @@ class MemberAttributeTabularInline(TabularInline):
     model = MemberAttribute
     fields = ["date", "value", "attribute_type", "comment"]
     tab = True
+    extra = 0
 
 
 @admin.register(Member)
@@ -702,6 +703,7 @@ class BuildingRentalUnitWeightTypeInline(TabularInline):
     model = RentalUnitWeightType
     fields = ["name", "active"]
     tab = True
+    extra = 0
 
 
 @admin.register(Building)
@@ -1300,6 +1302,7 @@ class RentalUnitWeightInline(TabularInline):
     model = RentalUnitWeight
     fields = ["name", "weight"]
     tab = True
+    extra = 0
 
 
 @admin.decorators.register(RentalUnit)
@@ -1461,13 +1464,14 @@ class RentalUnitWeightAdmin(GenoBaseAdmin):
         "links",
         "backlinks",
     ]
-    list_display = ["name", "rental_unit", "ts_created", "ts_modified"]
+    list_display = ["name", "weight", "rental_unit", "ts_created", "ts_modified"]
     search_fields = ["name", "comment"]
     list_filter = [
         "name",
         "rental_unit__building",
         "ts_created",
         "ts_modified",
+        "weight",
     ]
     autocomplete_fields = ["rental_unit"]
 

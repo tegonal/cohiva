@@ -99,8 +99,8 @@ class NkReportGenerator(ReportGenerator):
         self.settings = self.get_base_settings()
 
         self.start_year = self._get_settings_int("Startjahr")
-        self.start_month = 7
-        self.num_months = 12
+        self.start_month = self._get_settings_int("Startmonat", 7)
+        self.num_months = self._get_settings_int("Anzahl Monate", 12)
         self.num_months_passed = 0
         self.period_start_index = 0
         self.dry_run = dry_run
@@ -110,7 +110,7 @@ class NkReportGenerator(ReportGenerator):
         self.costs: list[NkCost] = []
         self.rental_units = []
         self.building = None
-        self.contracts = []
+        self.contracts: list[NkContract] = []
 
         self.object_messung = {}
         self.object_weights = [
@@ -253,6 +253,9 @@ class NkReportGenerator(ReportGenerator):
             ):
                 self.log.append(f"Überspringe Vertrag mit ID {contract.id} gemäss Konfiguration.")
                 continue
+            if not contract.rental_units:
+                self.log.append(f"Überspringe Vertrag ohne Mietobjekte mit ID {contract.id}.")
+                continue
             bill = NkBill(contract, self.period_end, self.output_dir, self.dry_run)
             bill.set_templates(
                 self.settings["Vorlage:Abrechnung"],
@@ -333,7 +336,7 @@ class NkReportGenerator(ReportGenerator):
             raise RuntimeError(
                 "Die Nebenkostenabrechung benötigt derzeit genau eine Liegenschaft."
             )
-        building = units.first().building
+        self.building = units.first().building
         for unit in units:
             try:
                 self.rental_units.append(NkRentalUnit.from_rental_unit(unit, self))
@@ -342,7 +345,7 @@ class NkReportGenerator(ReportGenerator):
                     f'WARNUNG: Ignoriere Objekt "{unit.name}" wegen fehlenden Daten: {e}'
                 )
                 self.add_warning(f"Ignoriere Objekt wegen fehlenden Daten: {e}", unit.name)
-        self._update_virtual_rental_units(building)
+        self._update_virtual_rental_units(self.building)
 
     def _init_virtual_rental_units(self):
         self.rental_units.extend(
@@ -398,6 +401,7 @@ class NkReportGenerator(ReportGenerator):
             Contract.objects.filter(state__in=("unterzeichnet", "gekuendigt"))
             .filter(main_contract=None)
             .filter(date_overlap | billing_date_overlap)
+            .filter(rental_units__building=self.building)
         )
         for contract in contracts:
             try:
@@ -708,8 +712,8 @@ class NkReportGenerator(ReportGenerator):
         log += "\n".join(self.log[-lines:])
         return log
 
-    def _get_settings_int(self, name: str) -> int:
-        val = self.settings.get(name)
+    def _get_settings_int(self, name: str, default: int | None = None) -> int:
+        val = self.settings.get(name, default)
         if isinstance(val, (int, str)):
             return int(val)
         raise ValueError(f"Setting {name} needs to be an integer")

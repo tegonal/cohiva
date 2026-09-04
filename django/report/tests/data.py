@@ -25,8 +25,8 @@ def create_contracts(cls):
             email="hans.muster{i}@example.com",
             title="Herr",
             formal="Sie",
-            street_name=cls.buildings[0].name.split(" ")[0],
-            house_number=cls.buildings[0].name.split(" ")[1],
+            street_name=ru.building.name.split(" ")[0],
+            house_number=ru.building.name.split(" ")[1],
             city_zipcode="3000",
             city_name="Bern",
         )

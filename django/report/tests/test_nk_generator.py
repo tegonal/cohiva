@@ -38,9 +38,14 @@ class NKReportGeneratorTest(NkReportTestCase):
         report.load_rental_units()
         report.load_contracts()
         self.assertEqual(report.get_warnings(), [])
-        self.assertEqual(
-            len(report.contracts), len(self.contracts) + len(report.virtual_contracts)
+        # Make sure only contracts from the report were loaded
+        report_contracts = Contract.objects.filter(
+            rental_units__building__in=self.report_config.buildings.all()
         )
+        self.assertEqual(
+            len(report.contracts), report_contracts.count() + len(report.virtual_contracts)
+        )
+        self.assertTrue(Contract.objects.count() > report_contracts.count())
 
     def test_assign_rental_units_to_contracts(self):
         self.configure_test_report_empty()

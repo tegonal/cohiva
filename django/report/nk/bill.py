@@ -5,6 +5,7 @@ from collections import OrderedDict
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 from stdnum.ch import esr
 
 from cohiva.utils.pdf import PdfGenerator
@@ -45,6 +46,10 @@ class NkBill:
         return "DRY-RUN: " if self.dry_run else ""
 
     def set_templates(self, bill_template, akonto_recommendation_template=None):
+        if not bill_template:
+            raise ValueError(
+                _("No bill template provided. Please configure a bill template first.")
+            )
         self.odt_bill_template = bill_template
         self.odt_akonto_recommendation_template = akonto_recommendation_template
 
@@ -107,6 +112,8 @@ class NkBill:
         return context
 
     def _create_rental_unit_files(self, context, ru):
+        if not self.odt_bill_template:
+            raise ValueError(_("No bill template set."))
         tmp_filename = fill_template_pod(self.odt_bill_template, context, output_format="odt")
         odt_file = "%s/bills/parts/%s_object_%s.odt" % (self.output_dir, self.contract, ru.id)
         os.rename(tmp_filename, odt_file)
@@ -224,7 +231,7 @@ class NkBill:
         pdfgen.write_file(self.output_pdf_filename)
 
     def _get_qrbill(self, context):
-        invoice_category = InvoiceCategory.objects.get(reference_id=12)
+        invoice_category = self._get_invoice_category()
         if self.contract.is_virtual:
             ## Virtual contract
             self.invoice_id = 8888888888
@@ -273,6 +280,7 @@ class NkBill:
             "%d.%m.%Y"
         )
         context["invoice_nr"] = self.invoice_id
+        context["liegenschaft"] = context.get("building")
         context["show_liegenschaft"] = True
         context["sect_rent"] = False
         context["sect_generic"] = True
@@ -403,14 +411,20 @@ class NkBill:
             )
 
     @staticmethod
-    def _get_invoice_category(kind="default"):
-        if kind == "default":
-            # Nebenkostenabrechnung
-            return InvoiceCategory.objects.get(reference_id=12)
+    def _get_invoice_category(kind="default") -> InvoiceCategory:
+        name = "Nebenkostenabrechnung"
+        reference_id = 12
         if kind == "akonto_recommendation":
-            # Nebenkosten Akonto ausserordentlich
-            return InvoiceCategory.objects.get(reference_id=13)
-        return None
+            name = "Nebenkosten Akonto ausserordentlich"
+            reference_id = 13
+        try:
+            return InvoiceCategory.objects.get(reference_id=reference_id)
+        except InvoiceCategory.DoesNotExist:
+            raise ValueError(
+                _("No invoice category with reference id {reference_id} ({name}) found.").format(
+                    reference_id=reference_id, name=name
+                )
+            )
 
     def _get_virtual_contract_account(self):
         if not self.contract.is_virtual:

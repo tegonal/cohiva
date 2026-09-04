@@ -1,5 +1,5 @@
 import datetime
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from geno.models import Building, RentalUnit
@@ -27,6 +27,7 @@ class NkRentalUnit:
     volume: float = 0.0
     min_occupancy: float = 0
     rooms: float = 0
+    custom_weights: dict[str, float] = field(default_factory=dict)
     akonto: float = 0.0
     nk_pauschal: float = 0.0
     strom_pauschal: float = 0.0
@@ -54,7 +55,7 @@ class NkRentalUnit:
                 if unit.volume:
                     volume = float(unit.volume)
                 else:
-                    nkg.log.append("WARNING: Unit {label} has no volume.")
+                    nkg.log.append(f"WARNING: Unit {label} has no volume.")
                     nkg.add_warning("Kein Volumen definiert", label)
                     volume = 0
                 min_occupancy = float(unit.min_occupancy) if unit.min_occupancy else 0
@@ -84,6 +85,7 @@ class NkRentalUnit:
             rent_net=float(unit.rent_netto),
         )
         obj.contract_ids = []
+        obj.load_custom_weights(unit)
         return obj
 
     @classmethod
@@ -144,6 +146,15 @@ class NkRentalUnit:
         if self.assigned_contract_per_month is None:
             return None
         return self.assigned_contract_per_month.get(month_index, None)
+
+    def load_custom_weights(self, ru: RentalUnit):
+        for weight in ru.rentalunitweight_set.all():
+            self.custom_weights[f"ru_weight_type_{weight.name.id}"] = float(weight.weight)
+
+    def get_weight(self, key):
+        if key.startswith("ru_weight_type_"):
+            return self.custom_weights.get(key, 0.0)
+        return getattr(self, key, 0.0)
 
     def get_context(self):
         return {

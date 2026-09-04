@@ -50,7 +50,7 @@ class NkTotalCost(NkCost):
             ## The base class returns uniform weights
             return super().get_rental_unit_weights(ru)
         return [
-            getattr(ru, self.rental_unit_usage) / self.generator.num_months
+            ru.get_weight(self.rental_unit_usage) / self.generator.num_months
         ] * self.generator.num_months
 
 

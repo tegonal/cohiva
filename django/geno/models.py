@@ -1696,7 +1696,7 @@ class RentalUnitWeight(GenoBase):
     rental_unit = models.ForeignKey(
         "RentalUnit", verbose_name="Mietobjekt", on_delete=models.CASCADE
     )
-    weight = models.DecimalField("Wert", max_digits=10, decimal_places=2, default=1.0)
+    weight = models.DecimalField("Wert", max_digits=10, decimal_places=3, default=1.0)
 
     class Meta:
         ordering = ["rental_unit", "name"]
@@ -1709,20 +1709,23 @@ class RentalUnitWeight(GenoBase):
             ),
         ]
 
+    def __str__(self):
+        return f"{self.name.name} {self.weight}"
+
 
 class RentalUnitSectionWeights(GenoBase):
     name = models.CharField("Bezeichnung", max_length=50, unique=True)
     weight_allgemein = models.DecimalField(
-        "Gewichtung für Bereich «Allgemein»", max_digits=10, decimal_places=2, default=1.0
+        "Gewichtung für Bereich «Allgemein»", max_digits=10, decimal_places=3, default=1.0
     )
     weight_wohnen = models.DecimalField(
-        "Gewichtung für Bereich «Wohnen»", max_digits=10, decimal_places=2, default=1.0
+        "Gewichtung für Bereich «Wohnen»", max_digits=10, decimal_places=3, default=1.0
     )
     weight_gewerbe = models.DecimalField(
-        "Gewichtung für Bereich «Gewerbe»", max_digits=10, decimal_places=2, default=1.0
+        "Gewichtung für Bereich «Gewerbe»", max_digits=10, decimal_places=3, default=1.0
     )
     weight_lager = models.DecimalField(
-        "Gewichtung für Bereich «Lager/Sonstiges»", max_digits=10, decimal_places=2, default=1.0
+        "Gewichtung für Bereich «Lager/Sonstiges»", max_digits=10, decimal_places=3, default=1.0
     )
     active = models.BooleanField("Aktiv", default=True)
 
@@ -1735,40 +1738,40 @@ class RentalUnitSectionWeights(GenoBase):
 class MonthlyWeights(GenoBase):
     name = models.CharField("Bezeichnung", max_length=50, unique=True)
     weight_01 = models.DecimalField(
-        "Gewichtung für Januar", max_digits=10, decimal_places=2, default=1.0
+        "Gewichtung für Januar", max_digits=10, decimal_places=3, default=1.0
     )
     weight_02 = models.DecimalField(
-        "Gewichtung für Februar", max_digits=10, decimal_places=2, default=1.0
+        "Gewichtung für Februar", max_digits=10, decimal_places=3, default=1.0
     )
     weight_03 = models.DecimalField(
-        "Gewichtung für März", max_digits=10, decimal_places=2, default=1.0
+        "Gewichtung für März", max_digits=10, decimal_places=3, default=1.0
     )
     weight_04 = models.DecimalField(
-        "Gewichtung für April", max_digits=10, decimal_places=2, default=1.0
+        "Gewichtung für April", max_digits=10, decimal_places=3, default=1.0
     )
     weight_05 = models.DecimalField(
-        "Gewichtung für Mai", max_digits=10, decimal_places=2, default=1.0
+        "Gewichtung für Mai", max_digits=10, decimal_places=3, default=1.0
     )
     weight_06 = models.DecimalField(
-        "Gewichtung für Juni", max_digits=10, decimal_places=2, default=1.0
+        "Gewichtung für Juni", max_digits=10, decimal_places=3, default=1.0
     )
     weight_07 = models.DecimalField(
-        "Gewichtung für Juli", max_digits=10, decimal_places=2, default=1.0
+        "Gewichtung für Juli", max_digits=10, decimal_places=3, default=1.0
     )
     weight_08 = models.DecimalField(
-        "Gewichtung für August", max_digits=10, decimal_places=2, default=1.0
+        "Gewichtung für August", max_digits=10, decimal_places=3, default=1.0
     )
     weight_09 = models.DecimalField(
-        "Gewichtung für September", max_digits=10, decimal_places=2, default=1.0
+        "Gewichtung für September", max_digits=10, decimal_places=3, default=1.0
     )
     weight_10 = models.DecimalField(
-        "Gewichtung für Oktober", max_digits=10, decimal_places=2, default=1.0
+        "Gewichtung für Oktober", max_digits=10, decimal_places=3, default=1.0
     )
     weight_11 = models.DecimalField(
-        "Gewichtung für November", max_digits=10, decimal_places=2, default=1.0
+        "Gewichtung für November", max_digits=10, decimal_places=3, default=1.0
     )
     weight_12 = models.DecimalField(
-        "Gewichtung für Dezember", max_digits=10, decimal_places=2, default=1.0
+        "Gewichtung für Dezember", max_digits=10, decimal_places=3, default=1.0
     )
     active = models.BooleanField("Aktiv", default=True)
 

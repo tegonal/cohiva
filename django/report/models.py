@@ -430,7 +430,7 @@ class ReportInputData(GenoBase):
         if self.name.field_type == "file" and self.value.startswith("filer:"):
             try:
                 filer_file = FilerFile.objects.get(id=int(self.value[6:]))
-                return filer_file.path
+                return filer_file.path or None
             except FilerFile.DoesNotExist:
                 return f"[FEHLT: Datei für «{self.name.name}» mit ID {self.value}]"
         if self.name.field_type == "bool":
@@ -447,7 +447,8 @@ class ReportInputData(GenoBase):
             return jsonc.loads(self.value)
         if self.name.field_type.startswith("enum_"):
             return get_enum_value(self.name.field_type, self.value)
-        return self.value
+        # We return None for emtpy strings, so it is handled like an unconfigured input field.
+        return self.value or None
 
 
 REPORT_OUTPUTTYPE_CHOICES = (

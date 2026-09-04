@@ -68,9 +68,13 @@ class NkContract:
     def _get_akonto_paid(
         cls, contract: Contract, period_start: datetime.date, period_end: datetime.date
     ) -> float:
-        invoice_category_nk_ausserordentlich = InvoiceCategory.objects.get(
-            name="Nebenkosten Akonto ausserordentlich"
-        )
+        try:
+            ## TODO: Make this configurable
+            invoice_category_nk_ausserordentlich = InvoiceCategory.objects.get(
+                name="Nebenkosten Akonto ausserordentlich"
+            )
+        except InvoiceCategory.DoesNotExist:
+            invoice_category_nk_ausserordentlich = None
         akonto_total = 0
         if contract.id >= 0:
             account = Account.from_settings(AccountKey.NK).set_code(contract=contract)
@@ -86,16 +90,17 @@ class NkContract:
                 if akonto["amount__sum"]:
                     akonto_total += akonto["amount__sum"]
             # Ausserordentliche Akonto-Zahlungen
-            for c in Contract.objects.filter(Q(id=contract.id) | Q(billing_contract=contract)):
-                akonto = Invoice.objects.filter(
-                    contract=c,
-                    invoice_category=invoice_category_nk_ausserordentlich,
-                    invoice_type="Invoice",
-                    date__gte=period_start,
-                    date__lte=period_end,
-                ).aggregate(Sum("amount"))
-                if akonto["amount__sum"]:
-                    akonto_total += akonto["amount__sum"]
+            if invoice_category_nk_ausserordentlich:
+                for c in Contract.objects.filter(Q(id=contract.id) | Q(billing_contract=contract)):
+                    akonto = Invoice.objects.filter(
+                        contract=c,
+                        invoice_category=invoice_category_nk_ausserordentlich,
+                        invoice_type="Invoice",
+                        date__gte=period_start,
+                        date__lte=period_end,
+                    ).aggregate(Sum("amount"))
+                    if akonto["amount__sum"]:
+                        akonto_total += akonto["amount__sum"]
         return float(akonto_total)
 
     def __str__(self):
@@ -112,10 +117,15 @@ class NkContract:
             return self.id
 
     def get_ru_list_string(self, max_items=8, delimiter="_"):
-        objects = [str(ru.id) for ru in self.rental_units]
+        objects = []
+        for ru in self.rental_units:
+            if 0 < len(ru.name) < 8:
+                objects.append(ru.name)
+            else:
+                objects.append(str(ru.id))
         count = len(objects)
         if count > max_items:
-            return delimiter.join(objects[0:max_items]) + f"_und_{count - max_items}_Weitere"
+            return delimiter.join(objects[0:max_items]) + f"_und_{count - max_items}_weitere"
         else:
             return delimiter.join(objects)
 
