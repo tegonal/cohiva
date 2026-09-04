@@ -299,8 +299,6 @@ propcache==0.3.2
     #   yarl
 pycountry==24.6.1
     # via -r requirements.in
-pygments==2.20.0
-    # via -r requirements.in
 pycparser==2.22
     # via cffi
 pylint==3.3.8

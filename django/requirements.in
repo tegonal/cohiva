@@ -69,7 +69,6 @@ vdirsyncer
 ## Misc
 json-with-comments
 pycountry
-pygments
 
 ## GnuCash interface
 piecash
