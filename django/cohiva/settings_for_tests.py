@@ -37,7 +37,7 @@ logging.disable()
 if os.getenv("SKIP_SLOW", "false") == "true":
     ## Speed up tests in quick mode
     PASSWORD_HASHERS = ("django.contrib.auth.hashers.MD5PasswordHasher",)
-    if os.getenv("KEEP_DB", "false") == "false":
+    if os.getenv("MIGRATION_TESTS", "false") == "false" and os.getenv("KEEP_DB", "false") == "false":
         ## Skip migrations and use a test runner that applies selected migrations needed for tests
         DATABASES["default"]["TEST"] = {"MIGRATE": False}
         TEST_RUNNER = "cohiva.utils.migrations_for_tests.SelectiveMigrationRunner"
