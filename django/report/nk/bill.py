@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _
 from stdnum.ch import esr
 
 from cohiva.utils.pdf import PdfGenerator
-from finance.accounting import Account, AccountingBook, AccountingManager, AccountKey, AccountRole
+from finance.accounting import Account, AccountingBook, AccountingManager, AccountKey
 from geno.billing import add_invoice, create_qrbill, get_reference_nr, render_qrbill
 from geno.models import InvoiceCategory
 from geno.utils import fill_template_pod, nformat, odt2pdf
@@ -441,21 +441,13 @@ class NkBill:
         if not self.contract.is_virtual:
             return None
         # Virtual contracts: Just do accounting, no invoice
-        # Example: (configured in settings.FINANCIAL_ACCOUNTS)
-        #      1 - Aufwand Gästezimmer [6700]
-        #      2 - Aufwand Sitzungszimmer [6720]
-        #      3 - Geschäftsstelle -> Büromiete [6500]
-        #      4 - Holliger -> Nicht verteilbare NK [4581]  --> von dort manuell umbuchen / in Rechnung stellen
-        #      5 - Allgemein -> Nicht verteilbare NK [4581] --> von dort manuell umbuchen / in Rechnung stellen
-        #      6 - Leerstand -> NK Leerstand [4582]
-        account = None
-        for key, account_conf in settings.FINANCIAL_ACCOUNTS.items():
-            if (
-                account_conf.get("role") == AccountRole.NK_VIRTUAL
-                and "virtual_id" in account_conf
-                and account_conf["virtual_id"] == self.contract.id
-            ):
-                account = Account.from_settings(key)
+        # Examples: (account numbers are configured in VirtualContract)
+        #      - Aufwand Gästezimmer [6700]
+        #      - Aufwand Sitzungszimmer [6720]
+        #      - Geschäftsstelle -> Büromiete [6500]
+        #      - Allgemein -> Nicht verteilbare NK [4581]
+        #      - Leerstand -> NK Leerstand [4582]
+        account = self.contract.account
         if account and self.contract.geno_contract:
             account.set_code(contract=self.contract.geno_contract)
         elif account and self.contract.rental_units and self.contract.rental_units[0].building:

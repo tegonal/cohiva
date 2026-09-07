@@ -36,6 +36,7 @@ class NkRentalUnit:
     is_allgemein: bool = False
     is_virtual: bool = False
     assigned_contract_per_month: "dict[int, NkContract] | None" = None
+    virtual_contract_id: int | None = None
 
     @classmethod
     def from_rental_unit(cls, unit: RentalUnit, nkg: "NkReportGenerator"):
@@ -83,6 +84,7 @@ class NkRentalUnit:
                 nkg.num_months * float(unit.nk_electricity) if unit.nk_electricity else 0
             ),
             rent_net=float(unit.rent_netto),
+            virtual_contract_id=-1 * unit.virtual_contract.id if unit.virtual_contract else None,
         )
         obj.contract_ids = []
         obj.load_custom_weights(unit)

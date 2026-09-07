@@ -1,7 +1,4 @@
-from django.db.models import Sum
-
 import report.tests.data as testdata
-from geno.models import RentalUnit
 from report.nk.cost import NkCost, NkCostValueType, NkPerRentalUnitCost, NkTotalCost
 from report.nk.generator import NkReportGenerator
 
@@ -39,7 +36,7 @@ class NKReportCostTest(NkReportTestCase):
         self.assertEqual(len(cost.section_values), len(report.sections))
         self.assertAlmostEqual(
             cost.total_values[NkCostValueType.WEIGHT].amount,
-            len(self.rentalunits) * report.num_months,
+            len(self.rentalunits_for_report) * report.num_months,
         )
 
     def test_split_costs_total_by_area(self):
@@ -57,7 +54,7 @@ class NKReportCostTest(NkReportTestCase):
         cost.split_costs()
         # pprint(cost.rental_unit_values)
         # pprint(cost.total_values)
-        total_area = float(RentalUnit.objects.aggregate(Sum("area")).get("area__sum"))
+        total_area = float(sum([ru.area for ru in self.rentalunits_for_report]))
         self.assertAlmostEqual(cost.total_values[NkCostValueType.COST].amount, cost1)
         self.assertEqual(cost.total_values[NkCostValueType.USAGE].name, "Fläche")
         self.assertEqual(cost.total_values[NkCostValueType.USAGE].unit, "m2")

@@ -566,7 +566,7 @@ def create_buildings(cls: "type[GenoAdminTestCase]", count=2):
             city_name="Bern",
         )
     )
-    for i in range(2, count):
+    for i in range(1, count):
         cls.buildings.append(Building.objects.create(name=f"Musterweg {i + 1}"))
 
 
@@ -660,7 +660,7 @@ def create_rentalunits(cls: "type[GenoAdminTestCase]", building_count=2):
     ## Building 2
     cls.rentalunits.append(
         RentalUnit.objects.create(
-            name="001a2",
+            name="z001a",
             rental_type="Wohnung",
             building=cls.buildings[1],
             area=102,

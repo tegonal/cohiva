@@ -21,7 +21,10 @@ class NKReportGeneratorTest(NkReportTestCase):
         report = NkReportGenerator(self.report, True, output_root="/tmp/")
         report.load_rental_units()
         self.assertEqual(report.get_warnings(), [])
-        self.assertEqual(len(report.rental_units), len(self.rentalunits) + 3)
+        self.assertEqual(
+            len(report.rental_units),
+            len(self.rentalunits_for_report) + 3,
+        )
         self.assertEqual(report.rental_units[0].id, -1)
         self.assertEqual(report.rental_units[0].name, "allg")
         self.assertEqual(report.rental_units[0].is_virtual, True)
@@ -43,7 +46,8 @@ class NKReportGeneratorTest(NkReportTestCase):
             rental_units__building__in=self.report_config.buildings.all()
         )
         self.assertEqual(
-            len(report.contracts), report_contracts.count() + len(report.virtual_contracts)
+            len(report.contracts),
+            report_contracts.count() + len([c for c in report.contracts if c.is_virtual]),
         )
         self.assertTrue(Contract.objects.count() > report_contracts.count())
 
@@ -61,13 +65,13 @@ class NKReportGeneratorTest(NkReportTestCase):
 
     def test_assign_rental_units_to_contracts_with_change(self):
         self.configure_test_report_empty()
-        self.contracts[0].date_end = datetime.datetime(2023, 9, 30)
+        self.contracts[0].date_end = datetime.date(2023, 9, 30)
         self.contracts[0].save()
 
         new_contract = Contract.objects.create(
             date=datetime.datetime(2023, 12, 1), state="unterzeichnet"
         )
-        new_contract.rental_units.set([self.rentalunits[0]])
+        new_contract.rental_units.set([self.rentalunits_for_report[0]])
         new_contract.contractors.set([self.addresses[0]])
         new_contract.save()
 
@@ -82,7 +86,10 @@ class NKReportGeneratorTest(NkReportTestCase):
             )
         for idx in range(3, 5):
             # Virtual contract "Leerstand"
-            self.assertEqual(report.rental_units[3].assigned_contract_per_month[idx].id, -6)
+            self.assertEqual(
+                report.rental_units[3].assigned_contract_per_month[idx],
+                report.get_virtual_contract_by_name("Leerstand"),
+            )
         for idx in range(5, report.num_months):
             # New contract
             self.assertEqual(

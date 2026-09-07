@@ -224,7 +224,12 @@ class NKBillTest(NkReportTestCase):
         self.contracts[2].save()
 
         mocks = self.generate_with_mock_output(rg)
-        self.assertEqual(mocks["create_final_pdf"].call_count, len(rg.contracts))
+        # Contracts for other buildings should be skipped
+        skip_count = 0
+        for contract in self.contracts:
+            if not contract.rental_units.filter(building=rg.building).count():
+                skip_count += 1
+        self.assertEqual(mocks["create_final_pdf"].call_count, len(rg.contracts) - skip_count)
         self.assertEqual(mocks["add_output_to_report"].call_count, 1)
 
         # Check the context for the first contract (extended check)

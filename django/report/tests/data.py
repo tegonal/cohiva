@@ -7,7 +7,7 @@ from geno.tests import data as geno_testdata
 
 
 def create_nk_data(cls, legacy=False):
-    geno_testdata.create_rentalunits(cls, 3)
+    geno_testdata.create_rentalunits(cls)
     create_contracts(cls)
     create_measurement_data(cls, legacy)
     create_templates(cls)
@@ -40,6 +40,8 @@ def create_contracts(cls):
         contract.save()
         cls.contracts.append(contract)
         cls.addresses.append(address)
+
+    cls.rentalunits_for_report = [ru for ru in cls.rentalunits if ru.building == cls.buildings[0]]
 
 
 def create_templates(cls):

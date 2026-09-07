@@ -2,6 +2,7 @@ import json
 from unittest.mock import patch
 
 import geno.tests.data as geno_testdata
+from geno.models import MonthlyWeights, RentalUnitSectionWeights, VirtualContract
 from geno.tests.base import BaseTestCase
 from report.models import (
     Report,
@@ -39,6 +40,9 @@ class NkReportTestCase(ReportTestCase):
             report_type="NK",
         )
 
+        self.configure_weights()
+        self.configure_virtual_contracts()
+
         self.report_config.buildings.set([self.buildings[0]])
         self.report = Report.objects.create(name="Test", report_configuration=self.report_config)
 
@@ -53,6 +57,111 @@ class NkReportTestCase(ReportTestCase):
         self._add_input(item, "Ausgabe:Plots", False)
         self._add_input(item, "Vorlage:Abrechnung", f"filer:{self.filer_template_qrbill.id}")
         self._add_input(item, "Vorlage:EmpfehlungAkonto", f"filer:{self.filer_template_akonto.id}")
+
+    def configure_virtual_contracts(self):
+        VirtualContract.objects.get_or_create(name="Leerstand", nk_account=4582)
+        VirtualContract.objects.get_or_create(name="Allgemein", nk_account=4581)
+
+    def configure_weights(self):
+        NK_SECTION_WEIGHTS = {
+            "Standard (uniform)": {"Allgemein": 1.0, "Wohnen": 1.0, "Gewerbe": 1.0, "Lager": 1.0},
+            "default": {"Allgemein": 1.0, "Wohnen": 1.0, "Gewerbe": 1.0, "Lager": 1.0},
+            #'ohne_lager': {'Allgemein': 1.0, 'Wohnen': 1.0, 'Gewerbe': 1.0, 'Lager': 0.0},
+            "nur_wohnen": {"Allgemein": 0.0, "Wohnen": 1.0, "Gewerbe": 0.0, "Lager": 0.0},
+            "radiatoren": {"Allgemein": 0.0, "Wohnen": 0.01, "Gewerbe": 1.0, "Lager": 0.0},
+            "lueftung": {
+                "Allgemein": 0.0,
+                "Wohnen": 0.35,
+                "Gewerbe": 0.55,
+                "Lager": 0.1,
+            },  ## Abschätzung aus Luftmenge, Betriebszeiten, Temperatur
+            "wasser_allgemein": {"Allgemein": 0.0, "Wohnen": 1.0, "Gewerbe": 0.5, "Lager": 0.5},
+            #'allgemeinstrom': {'Allgemein': 0.0, 'Wohnen': 1.0, 'Gewerbe': 1.0, 'Lager': 1.0},
+            "reinigung": {"Allgemein": 0.0, "Wohnen": 0.7, "Gewerbe": 1.0, "Lager": 1.0},
+        }
+        for name, weights in NK_SECTION_WEIGHTS.items():
+            RentalUnitSectionWeights.objects.get_or_create(
+                name=name,
+                weight_allgemein=weights["Allgemein"],
+                weight_wohnen=weights["Wohnen"],
+                weight_gewerbe=weights["Gewerbe"],
+                weight_lager=weights["Lager"],
+            )
+
+        NK_MONTHLY_WEIGHTS = {
+            "default": {
+                1: 1,
+                2: 1,
+                3: 1,
+                4: 1,
+                5: 1,
+                6: 1,
+                7: 1,
+                8: 1,
+                9: 1,
+                10: 1,
+                11: 1,
+                12: 1,
+            },
+            "Standard (uniform)": {
+                1: 1,
+                2: 1,
+                3: 1,
+                4: 1,
+                5: 1,
+                6: 1,
+                7: 1,
+                8: 1,
+                9: 1,
+                10: 1,
+                11: 1,
+                12: 1,
+            },
+            "heizgradtage_mit_ww": {
+                1: 13.6,
+                2: 12.1,
+                3: 11.5,
+                4: 9.3,
+                5: 5.6,
+                6: 3.7,
+                7: 3.7,
+                8: 3.6,
+                9: 3.7,
+                10: 9.5,
+                11: 10.7,
+                12: 13.0,
+            },
+            "heizgradtage_ohne_ww": {
+                1: 17.5,
+                2: 14.5,
+                3: 13.5,
+                4: 9.5,
+                5: 3.5,
+                6: 0,
+                7: 0,
+                8: 0,
+                9: 1.0,
+                10: 10.0,
+                11: 13.5,
+                12: 17.0,
+            },
+        }
+        for name, weights in NK_MONTHLY_WEIGHTS.items():
+            MonthlyWeights.objects.get_or_create(
+                name=name,
+                weight_01=weights[1],
+                weight_02=weights[2],
+                weight_03=weights[3],
+                weight_04=weights[4],
+                weight_05=weights[5],
+                weight_06=weights[6],
+                weight_07=weights[7],
+                weight_08=weights[8],
+                weight_09=weights[9],
+                weight_10=weights[10],
+                weight_11=weights[11],
+                weight_12=weights[12],
+            )
 
     def configure_test_report_wb_reference(self):
         self.configure_test_report_empty()

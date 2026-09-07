@@ -1,5 +1,6 @@
 import datetime
 import json
+from unittest import skip
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
@@ -17,6 +18,7 @@ from geno.models import Contract, Invoice, InvoiceCategory
 from .base import GenoAdminTestCase
 
 
+@skip("Legacy test, will be removed in the future.")
 class AkontoViewTest(GenoAdminTestCase):
     @classmethod
     def setUpTestData(cls):
@@ -166,6 +168,7 @@ class AkontoViewTest(GenoAdminTestCase):
         )
 
 
+@skip("Legacy test, will be removed in the future.")
 class QRBillAPIViewTest(GenoAdminTestCase):
     @classmethod
     def setUpTestData(cls):

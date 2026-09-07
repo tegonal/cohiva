@@ -14,18 +14,19 @@ class NkContract:
     def __init__(self, **kwargs):
         if "id" not in kwargs or "date_start" not in kwargs or "date_end" not in kwargs:
             raise ValueError("Missing required parameters")
-        self.id: int = kwargs.get("id")
-        self.date_start: datetime.date = kwargs.get("date_start")
-        self.date_end: datetime.date = kwargs.get("date_end")
+        self.id: int | None = kwargs.get("id")
+        self.date_start: datetime.date | None = kwargs.get("date_start")
+        self.date_end: datetime.date | None = kwargs.get("date_end")
         self.billing_period_start: datetime.date | None = None
         self.billing_period_end: datetime.date | None = None
-        self.name: str = kwargs.get("name")
+        self.name: str | None = kwargs.get("name")
         self.is_virtual: bool = kwargs.get("is_virtual", False)
         self.is_formal: bool = kwargs.get("is_formal", True)
-        self.akonto_paid: float = kwargs.get("akonto_paid")
+        self.akonto_paid: float | None = kwargs.get("akonto_paid")
         self.akonto_nominal_per_rental_unit: dict[int, float] = {}
         self.rental_units: list[NkRentalUnit] = kwargs.get("rental_units", [])
-        self.geno_contract: Contract = kwargs.get("geno_contract")
+        self.geno_contract: Contract | None = kwargs.get("geno_contract")
+        self.account: Account | None = kwargs.get("account")
 
         if self.is_virtual:
             self.address = Address.objects.filter(organization=settings.GENO_NAME).first()

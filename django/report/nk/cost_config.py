@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from geno.models import RentalUnitWeightType
+from geno.models import MonthlyWeights, RentalUnitSectionWeights, RentalUnitWeightType
 
 if TYPE_CHECKING:
     from report.models import ReportInputData
@@ -574,19 +574,11 @@ def _build_report_item_categories() -> tuple[tuple[str, str], ...]:
 
 
 def build_section_weights_choices() -> list[tuple[str, str]]:
-    ## Section weights are still hard-coded. We need
-    ## a better way to configure them in the future.
-    from report.nk.generator import NK_SECTION_WEIGHTS
-
-    return _build_weights_choices_from_dict(NK_SECTION_WEIGHTS)
+    return _build_weights_choices_from_dict(RentalUnitSectionWeights.get_dict())
 
 
 def build_monthly_weights_choices() -> list[tuple[str, str]]:
-    ## Monthly weights are still hard-coded. We need
-    ## a better way to configure them in the future.
-    from report.nk.generator import NK_MONTHLY_WEIGHTS
-
-    return _build_weights_choices_from_dict(NK_MONTHLY_WEIGHTS)
+    return _build_weights_choices_from_dict(MonthlyWeights.get_dict())
 
 
 def _build_weights_choices_from_dict(weights: dict) -> list[tuple[str, str]]:

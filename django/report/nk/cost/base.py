@@ -54,8 +54,8 @@ class NkCost:
         self.warnings = []
         self.name = cost_config.get("name")
         self.billing_group = cost_config.get("billing_group", self.name)
-        self.monthly_weights_key = cost_config.get("monthly_weights", "default")
-        self.section_weights_key = cost_config.get("section_weights", "default")
+        self.monthly_weights_key = cost_config.get("monthly_weights", "Standard (uniform)")
+        self.section_weights_key = cost_config.get("section_weights", "Standard (uniform)")
 
     def add_value_type(self, kind: NkCostValueType, name: str, unit: str):
         self._add_value_type_to_dict(self.total_values, kind, name, unit)
@@ -393,7 +393,7 @@ class NkCost:
         context.update(self._get_context(ru, contract))
 
     def add_warning(self, msg):
-        print(f"WARNING: {msg}")
+        # print(f"WARNING: {msg}")
         self.warnings.append(msg)
 
 
@@ -413,7 +413,6 @@ class NkMeasurementDataMixin(NkCost):
             for m in self.measurements.values():
                 m.load()
                 for warning in m.warnings:
-                    print(warning)
                     self.generator.add_warning(warning[0], warning[1])
         super().load_input_data()
 
@@ -424,7 +423,7 @@ class NkCommonCostMixin(NkCost):
     def __init__(self, report_generator: "NkReportGenerator", cost_config: dict):
         super().__init__(report_generator, cost_config)
         self.common_cost_section_weights = cost_config.get(
-            "common_cost_section_weights", "default"
+            "common_cost_section_weights", "Standard (uniform)"
         )
         self.add_value_type(NkCostValueType.COMMON_COST, "Allgemeinkosten", "CHF")
         self.add_value_type(NkCostValueType.COMMON_WEIGHT, "Gewichtung", "")

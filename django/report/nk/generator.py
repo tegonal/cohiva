@@ -2,11 +2,16 @@ import datetime
 import json
 import os
 import shutil
-from collections import OrderedDict
 
 from django.db.models import Q
 
-from geno.models import Contract, RentalUnit
+from geno.models import (
+    Contract,
+    MonthlyWeights,
+    RentalUnit,
+    RentalUnitSectionWeights,
+    VirtualContract,
+)
 from geno.utils import JSONDecoderDatetime, nformat
 from report.generator import ReportGenerator
 from report.models import ReportOutput
@@ -18,69 +23,71 @@ from report.nk.export_csv import ExportCSV
 from report.nk.rental_unit import NkRentalUnit, NkVirtualRentalUnitId
 from report.nk.section import NK_SECTIONS, get_section_by_id
 
-## Section weights are still hard-coded with values for Warmbächli. We need
-## a better way to configure them in the futute.
-NK_SECTION_WEIGHTS = {
-    "default": {"Allgemein": 1.0, "Wohnen": 1.0, "Gewerbe": 1.0, "Lager": 1.0},
-    #'ohne_lager': {'Allgemein': 1.0, 'Wohnen': 1.0, 'Gewerbe': 1.0, 'Lager': 0.0},
-    "nur_wohnen": {"Allgemein": 0.0, "Wohnen": 1.0, "Gewerbe": 0.0, "Lager": 0.0},
-    "radiatoren": {"Allgemein": 0.0, "Wohnen": 0.01, "Gewerbe": 1.0, "Lager": 0.0},
-    "lueftung": {
-        "Allgemein": 0.0,
-        "Wohnen": 0.35,
-        "Gewerbe": 0.55,
-        "Lager": 0.1,
-    },  ## Abschätzung aus Luftmenge, Betriebszeiten, Temperatur
-    "wasser_allgemein": {"Allgemein": 0.0, "Wohnen": 1.0, "Gewerbe": 0.5, "Lager": 0.5},
-    #'allgemeinstrom': {'Allgemein': 0.0, 'Wohnen': 1.0, 'Gewerbe': 1.0, 'Lager': 1.0},
-    "reinigung": {"Allgemein": 0.0, "Wohnen": 0.7, "Gewerbe": 1.0, "Lager": 1.0},
-}
+# Section weights that were hard-coded. Now the weights are loaded from
+# RentalUNitSectionWeights
+# NK_SECTION_WEIGHTS = {
+#     "default": {"Allgemein": 1.0, "Wohnen": 1.0, "Gewerbe": 1.0, "Lager": 1.0},
+#     #'ohne_lager': {'Allgemein': 1.0, 'Wohnen': 1.0, 'Gewerbe': 1.0, 'Lager': 0.0},
+#     "nur_wohnen": {"Allgemein": 0.0, "Wohnen": 1.0, "Gewerbe": 0.0, "Lager": 0.0},
+#     "radiatoren": {"Allgemein": 0.0, "Wohnen": 0.01, "Gewerbe": 1.0, "Lager": 0.0},
+#     "lueftung": {
+#         "Allgemein": 0.0,
+#         "Wohnen": 0.35,
+#         "Gewerbe": 0.55,
+#         "Lager": 0.1,
+#     },  ## Abschätzung aus Luftmenge, Betriebszeiten, Temperatur
+#     "wasser_allgemein": {"Allgemein": 0.0, "Wohnen": 1.0, "Gewerbe": 0.5, "Lager": 0.5},
+#     #'allgemeinstrom': {'Allgemein': 0.0, 'Wohnen': 1.0, 'Gewerbe': 1.0, 'Lager': 1.0},
+#     "reinigung": {"Allgemein": 0.0, "Wohnen": 0.7, "Gewerbe": 1.0, "Lager": 1.0},
+# }
 
+# Monthly weights that were hard-coded. Now the weights are loaded from
+# MonthlyWeights
 # Dict key is the month number (1 = Jan, ..., 12 = Dec)
-NK_MONTHLY_WEIGHTS = {
-    "default": {
-        1: 1,
-        2: 1,
-        3: 1,
-        4: 1,
-        5: 1,
-        6: 1,
-        7: 1,
-        8: 1,
-        9: 1,
-        10: 1,
-        11: 1,
-        12: 1,
-    },
-    "heizgradtage_mit_ww": {
-        1: 13.6,
-        2: 12.1,
-        3: 11.5,
-        4: 9.3,
-        5: 5.6,
-        6: 3.7,
-        7: 3.7,
-        8: 3.6,
-        9: 3.7,
-        10: 9.5,
-        11: 10.7,
-        12: 13.0,
-    },
-    "heizgradtage_ohne_ww": {
-        1: 17.5,
-        2: 14.5,
-        3: 13.5,
-        4: 9.5,
-        5: 3.5,
-        6: 0,
-        7: 0,
-        8: 0,
-        9: 1.0,
-        10: 10.0,
-        11: 13.5,
-        12: 17.0,
-    },
-}
+# NK_MONTHLY_WEIGHTS = {
+#     "default": {
+#         1: 1,
+#         2: 1,
+#         3: 1,
+#         4: 1,
+#         5: 1,
+#         6: 1,
+#         7: 1,
+#         8: 1,
+#         9: 1,
+#         10: 1,
+#         11: 1,
+#         12: 1,
+#     },
+#     "heizgradtage_mit_ww": {
+#         1: 13.6,
+#         2: 12.1,
+#         3: 11.5,
+#         4: 9.3,
+#         5: 5.6,
+#         6: 3.7,
+#         7: 3.7,
+#         8: 3.6,
+#         9: 3.7,
+#         10: 9.5,
+#         11: 10.7,
+#         12: 13.0,
+#     },
+#     "heizgradtage_ohne_ww": {
+#         1: 17.5,
+#         2: 14.5,
+#         3: 13.5,
+#         4: 9.5,
+#         5: 3.5,
+#         6: 0,
+#         7: 0,
+#         8: 0,
+#         9: 1.0,
+#         10: 10.0,
+#         11: 13.5,
+#         12: 17.0,
+#     },
+# }
 
 
 class NkReportGenerator(ReportGenerator):
@@ -140,47 +147,47 @@ class NkReportGenerator(ReportGenerator):
 
         # self.admin_fee_factor = float(self.config["Verwaltungsaufwand:Faktor"]) / 100.0
 
-        self.section_weights = NK_SECTION_WEIGHTS
-        self.monthly_weights = NK_MONTHLY_WEIGHTS
+        self.section_weights = self._load_section_weights()
+        self.monthly_weights = self._load_monthly_weights()
 
-        self.virtual_contracts = {
-            "-1": "Gästezimmer",
-            "-2": "Sitzungszimmer",
-            "-3": "Geschäftsstelle",
-            "-4": "Holliger",
-            "-5": "Allgemein",
-            "-6": "Leerstand",
-        }
+        # self.virtual_contracts = {
+        #    "-1": "Gästezimmer",
+        #    "-2": "Sitzungszimmer",
+        #    "-3": "Geschäftsstelle",
+        #    "-4": "Holliger",
+        #    "-5": "Allgemein",
+        #    "-6": "Leerstand",
+        # }
 
-        self.virtual_contracts_map = {
-            "003": "-1",
-            "410": "-1",
-            "509": "-1",
-            "9907": "-2",
-            "9909": "-2",
-            "9912": "-2",
-            "9932": "-3",
-            "9931": "-4",
-            "9728": "-4",
-            "9729": "-4",
-            "604": "-5",  # Dachküche
-            "9913": "-5",  # Teeküche
-        }
+        # self.virtual_contracts_map = {
+        #     "003": "-1",
+        #     "410": "-1",
+        #     "509": "-1",
+        #     "9907": "-2",
+        #     "9909": "-2",
+        #     "9912": "-2",
+        #     "9932": "-3",
+        #     "9931": "-4",
+        #     "9728": "-4",
+        #     "9729": "-4",
+        #     "604": "-5",  # Dachküche
+        #     "9913": "-5",  # Teeküche
+        # }
 
-        self.categories = OrderedDict()
-        self.categories["hauswart"] = {"i": 0, "label": "Hauswart/Reinigung/Kehricht/Serviceabos"}
-        self.categories["waerme_wasser_grund"] = {
-            "i": 1,
-            "label": "Heizung/Warmwasser/Wasser/Abwasser allg.",
-        }
-        self.categories["strom_allgemein"] = {"i": 2, "label": "Allgemeinstrom"}
-        self.categories["waerme_wasser_verbrauch"] = {
-            "i": 3,
-            "label": "Heizung/Warmwasser/Wasser/Abwasser indiv. Verbrauch",
-        }
-        self.categories["strom"] = {"i": 4, "label": "Strom indiv. Verbrauch"}
-        self.categories["internet"] = {"i": 5, "label": "Internet/WLAN"}
-        self.categories["verwaltung"] = {"i": 6, "label": "Verwaltungsaufwand"}
+        # self.categories = OrderedDict()
+        # self.categories["hauswart"] = {"i": 0, "label": "Hauswart/Reinigung/Kehricht/Serviceabos"}
+        # self.categories["waerme_wasser_grund"] = {
+        #     "i": 1,
+        #     "label": "Heizung/Warmwasser/Wasser/Abwasser allg.",
+        # }
+        # self.categories["strom_allgemein"] = {"i": 2, "label": "Allgemeinstrom"}
+        # self.categories["waerme_wasser_verbrauch"] = {
+        #     "i": 3,
+        #     "label": "Heizung/Warmwasser/Wasser/Abwasser indiv. Verbrauch",
+        # }
+        # self.categories["strom"] = {"i": 4, "label": "Strom indiv. Verbrauch"}
+        # self.categories["internet"] = {"i": 5, "label": "Internet/WLAN"}
+        # self.categories["verwaltung"] = {"i": 6, "label": "Verwaltungsaufwand"}
 
         self.limit_bills_to_contract_ids = list(
             map(int, self.settings.get("Ausgabe:LimitiereVertragsIDs"))
@@ -428,13 +435,15 @@ class NkReportGenerator(ReportGenerator):
         self._load_virtual_contracts()
 
     def _load_virtual_contracts(self):
-        for virtual_id, name in self.virtual_contracts.items():
+        for virtual_contract in VirtualContract.objects.filter(active=True):
+            id = -1 * virtual_contract.id
             contract = NkContract(
-                id=int(virtual_id),
-                name=name,
+                id=id,
+                name=virtual_contract.name,
                 is_virtual=True,
                 date_start=self.period_start,
                 date_end=self.period_end,
+                account=virtual_contract.get_account(),
             )
             self.contracts.append(contract)
 
@@ -462,13 +471,36 @@ class NkReportGenerator(ReportGenerator):
         return active_contract
 
     def _get_virtual_contract(self, ru):
-        if ru.name in self.virtual_contracts_map:
-            contract_id = self.virtual_contracts_map[ru.name]
+        if ru.virtual_contract_id:
+            return self.get_contract_by_id(ru.virtual_contract_id)
         elif ru.is_allgemein:
-            contract_id = -5  # Allgemein
+            return self.get_virtual_contract_by_name("Allgemein")
         else:
-            contract_id = -6  # Leerstand
-        return self.get_contract_by_id(contract_id)
+            return self.get_virtual_contract_by_name("Leerstand")
+
+    @staticmethod
+    def _load_section_weights():
+        return NkReportGenerator._convert_to_float(
+            RentalUnitSectionWeights.get_dict()
+        )  # NK_SECTION_WEIGHTS
+
+    @staticmethod
+    def _load_monthly_weights():
+        return NkReportGenerator._convert_to_float(
+            MonthlyWeights.get_dict()
+        )  # return NK_MONTHLY_WEIGHTS
+
+    @staticmethod
+    def _convert_to_float(data):
+        if isinstance(data, dict):
+            return {k: NkReportGenerator._convert_to_float(v) for k, v in data.items()}
+        elif isinstance(data, list):
+            return [NkReportGenerator._convert_to_float(v) for v in data]
+        else:
+            try:
+                return float(data)
+            except (ValueError, TypeError):
+                return data
 
     def load_costs(self):
         """Create cost objects from report config and load input data"""
@@ -517,9 +549,9 @@ class NkReportGenerator(ReportGenerator):
         defaults = {
             "category": "hauswart",
             "time_period": "yearly",
-            "monthly_weights": "default",
+            "monthly_weights": "Standard (uniform)",
             "amount": None,
-            "section_weights": "default",
+            "section_weights": "Standard (uniform)",
             "object_weights": "area",
         }
         for cost in self.costs:
@@ -669,6 +701,12 @@ class NkReportGenerator(ReportGenerator):
             if contract.id == int(contract_id):
                 return contract
         raise ValueError(f"Contract with id {contract_id} not found")
+
+    def get_virtual_contract_by_name(self, name: str):
+        for contract in self.contracts:
+            if contract.is_virtual and contract.name == name:
+                return contract
+        raise ValueError(f"Virtual contract with name {name} not found")
 
     def get_rental_unit_by_id(self, ru_id):
         for unit in self.rental_units:

@@ -33,6 +33,7 @@ from cohiva.utils.settings import (
     get_default_formal_choice,
     get_default_mail_footer,
 )
+from finance.accounting import Account
 from geno.model_fields import LowercaseEmailField
 from geno.utils import (
     is_member,
@@ -1730,9 +1731,21 @@ class RentalUnitSectionWeights(GenoBase):
     active = models.BooleanField("Aktiv", default=True)
 
     class Meta:
-        ordering = ["name"]
+        ordering = ["id"]
         verbose_name = "Bereichs-Gewichtung für Mietobjekte"
         verbose_name_plural = "Bereichts-Gewichtungen für Mietobjekte"
+
+    @classmethod
+    def get_dict(cls):
+        weights = {}
+        for weight in cls.objects.filter(active=True):
+            weights[weight.name] = {
+                "Allgemein": weight.weight_allgemein,
+                "Wohnen": weight.weight_wohnen,
+                "Gewerbe": weight.weight_gewerbe,
+                "Lager": weight.weight_lager,
+            }
+        return weights
 
 
 class MonthlyWeights(GenoBase):
@@ -1776,9 +1789,29 @@ class MonthlyWeights(GenoBase):
     active = models.BooleanField("Aktiv", default=True)
 
     class Meta:
-        ordering = ["name"]
+        ordering = ["id"]
         verbose_name = "Gewichtungsfaktor pro Monat"
         verbose_name_plural = "Gewichtungsfaktoren pro Monat"
+
+    @classmethod
+    def get_dict(cls):
+        weights = {}
+        for weight in cls.objects.filter(active=True):
+            weights[weight.name] = {
+                1: weight.weight_01,
+                2: weight.weight_02,
+                3: weight.weight_03,
+                4: weight.weight_04,
+                5: weight.weight_05,
+                6: weight.weight_06,
+                7: weight.weight_07,
+                8: weight.weight_08,
+                9: weight.weight_09,
+                10: weight.weight_10,
+                11: weight.weight_11,
+                12: weight.weight_12,
+            }
+        return weights
 
 
 class Contract(GenoBase):
@@ -2142,6 +2175,15 @@ class VirtualContract(GenoBase):
     class Meta:
         verbose_name = "Virtueller Vertrag"
         verbose_name_plural = "Virtuelle Verträge"
+
+    def get_account(self):
+        account = Account(
+            name=self.name,
+            prefix=self.nk_account,
+            building_based=self.nk_account_building_based,
+            building_based_cost_center=self.building_based_cost_center,
+        )
+        return account
 
 
 INVOICE_OBJECT_TYPE_CHOICES = (

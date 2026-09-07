@@ -66,7 +66,6 @@ class ReportItemConfigurationBaseDataTest(TestCase):
             description="",
             item_configuration=item,
             field_type="char",
-            active=True,
             value_default="",
         )
 
