@@ -1,9 +1,11 @@
 from typing import TYPE_CHECKING
 
+from geno.utils import nformat
+
 from .base import NkCost, NkCostValueType
 
 if TYPE_CHECKING:
-    from report.nk.generator import NkReportGenerator
+    from report.nk.generator import NkContract, NkRentalUnit, NkReportGenerator
 
 
 class NkTotalCost(NkCost):
@@ -52,6 +54,38 @@ class NkTotalCost(NkCost):
         return [
             ru.get_weight(self.rental_unit_usage) / self.generator.num_months
         ] * self.generator.num_months
+
+    def get_assigned_usage(
+        self, contract: "NkContract", rental_unit: "NkRentalUnit | None" = None
+    ):
+        return self._get_assigned_amount(NkCostValueType.USAGE, contract, rental_unit)
+
+    def get_building_usage(self):
+        return self._get_building_amount(NkCostValueType.USAGE)
+
+    def _get_context(self, ru: "NkRentalUnit", contract: "NkContract") -> dict:
+        ctx = super()._get_context(ru, contract)
+        amount = self.get_assigned_cost(contract, ru)
+        usage = self.get_assigned_usage(contract, ru)
+        building_amount = self.get_building_cost()
+        building_usage = self.get_building_usage()
+        ctx.update(
+            {
+                "name": self.name,
+                "chf": nformat(amount),
+                "chft": nformat(building_amount),
+                "use": nformat(usage),
+                "uset": nformat(building_usage),
+                "eh": nformat(building_amount / building_usage),
+                "include_in_details": True,
+            }
+        )
+        return ctx
+
+    def update_context(
+        self, ru: "NkRentalUnit", contract: "NkContract", context: dict, aggregated_values: dict
+    ) -> None:
+        context["section_details"] = True
 
 
 class NkMonthlyCost(NkCost):

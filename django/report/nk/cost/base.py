@@ -320,6 +320,12 @@ class NkCost:
     def get_assigned_cost(self, contract: "NkContract", rental_unit: "NkRentalUnit | None" = None):
         return self._get_assigned_amount(NkCostValueType.COST, contract, rental_unit)
 
+    def get_assigned_usage(
+        self, contract: "NkContract", rental_unit: "NkRentalUnit | None" = None
+    ):
+        """The base class does not know about usage. Overwrite this in child classes."""
+        return 0
+
     @classmethod
     def get_assigned_amounts(
         cls,
@@ -357,6 +363,10 @@ class NkCost:
 
     def get_building_cost(self):
         return self._get_building_amount(NkCostValueType.COST)
+
+    def get_building_usage(self):
+        """The base class does not know about usage. Overwrite this in child classes."""
+        return 0
 
     def _get_building_amount(self, value_type: NkCostValueType):
         return self.total_values[value_type].amount

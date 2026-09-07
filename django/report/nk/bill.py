@@ -157,9 +157,15 @@ class NkBill:
     ):
         object_cost = 0
         building_cost = 0
+        detail_items = []
         for cost in group:
-            object_cost += cost.get_assigned_cost(self.contract, rental_unit)
-            building_cost += cost.get_building_cost()
+            amount = cost.get_assigned_cost(self.contract, rental_unit)
+            building_amount = cost.get_building_cost()
+            cost_context = cost._get_context(rental_unit, self.contract)
+            object_cost += amount
+            building_cost += building_amount
+            if cost_context.get("include_in_details"):
+                detail_items.append(cost_context)
         if object_cost == 0 and building_cost == 0:
             return None
         if building_cost:
@@ -177,6 +183,7 @@ class NkBill:
             "pctt": nformat(building_cost_percent, 1),
             "pct": nformat(object_cost_percent, 1),
             "share": share,
+            "detail_items": detail_items,
         }
 
     def _get_bill_line(self, context):
@@ -197,6 +204,10 @@ class NkBill:
             <= context["akonto_threshold"] / 100
         ):
             # No recommendation needed.
+            return
+
+        if not self.odt_akonto_recommendation_template:
+            # No recommendation template configured
             return
 
         tmp_filename = fill_template_pod(

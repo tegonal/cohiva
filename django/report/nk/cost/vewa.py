@@ -238,6 +238,15 @@ class NkCostVEWA(NkCommonCostMixin, NkMeasurementDataMixin, NkTotalCost):
         for key, value in cost_context.items():
             context[f"{context_prefix}{key}"] = value
 
+        ## Activate VEWA sections in templates
+        if self.vewa_category in (
+            NkCostVEWACategories.HEAT_WATER,
+            NkCostVEWACategories.HEAT_HEATING,
+        ):
+            context["section_heating"] = True
+        elif self.vewa_category == NkCostVEWACategories.WATER_GENERAL:
+            context["section_water"] = True
+
     def get_context_key(self):
         """Return the context key and prefix (for legecy templates) for the ODT bill template."""
         if self.vewa_category == NkCostVEWACategories.HEAT_WATER:

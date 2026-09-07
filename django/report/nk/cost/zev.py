@@ -292,6 +292,8 @@ class NkCostZEVStromallmend(NkCommonCostMixin, NkMeasurementDataMixin, NkCost):
             # Grand total, building totals already include common costs
             "stot_chft": fmt(bt["total"]["chf"]),
             "stot_chf": fmt(d["chf_total"] + common_cost),
+            ## Activate section in templates
+            "section_zev": True,
         }
         return ctx
 
