@@ -217,8 +217,8 @@ class InvoicesTest(GenoAdminTestCase):
         invoice.delete()
         payment.delete()
 
-    @staticmethod
-    def generate_camt053_data(invoices):
+    @classmethod
+    def generate_camt053_data(cls, invoices, add_invalid=False):
         template = loader.get_template("geno/camt053_demo_data.xml")
         context = {"payments": []}
         ts = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
@@ -236,6 +236,32 @@ class InvoicesTest(GenoAdminTestCase):
                 "comment": comment,
                 "amount": format(invoice.amount, ".2f"),
                 "debtor_name": str(invoice.person),
+            }
+            context["payments"].append(info)
+        if add_invalid:
+            date = datetime.date.today()
+            # 1) Missing creditor reference
+            info = {
+                "iban": settings.FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]["iban"],
+                "skip_creditor_reference": True,
+                "transaction_id": f"TEST_no_creditor_reference_{ts}",
+                "date": date.strftime("%Y-%m-%d"),
+                "comment": comment,
+                "amount": "99.99",
+                "debtor_name": "Debtor Name",
+            }
+            context["payments"].append(info)
+
+            # 2) Valid reference_nr, but from another application
+            reference_nr = get_reference_nr("app", 999, extra_id1=1, app_name="credit_accounting")
+            info = {
+                "iban": settings.FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]["iban"],
+                "refnr": reference_nr,
+                "transaction_id": f"TEST_{reference_nr}_{ts}",
+                "date": date.strftime("%Y-%m-%d"),
+                "comment": comment,
+                "amount": "99.99",
+                "debtor_name": "Debtor Name",
             }
             context["payments"].append(info)
         return template.render(context)
@@ -293,6 +319,33 @@ class InvoicesTest(GenoAdminTestCase):
         self.assertNotEqual(payments[0].fin_transaction_ref, "")
         self.assertNotEqual(payments[1].fin_transaction_ref, "")
         Invoice.objects.all().delete()
+
+    def test_invoice_camt_invalid_payments(self):
+        if not settings.FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]["iban"]:
+            raise AssertionError(
+                "FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]['iban'] must be set for this test."
+            )
+        if "account_iban" not in settings.FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]:
+            raise AssertionError(
+                "FINANCIAL_ACCOUNTS[AccountKey.DEFAULT_DEBTOR]['account_iban'] "
+                "must be defined for this test."
+            )
+
+        camt053_data = self.generate_camt053_data([], add_invalid=True)
+        camt053_file = SimpleUploadedFile(
+            "camt053_upload.xml", str.encode(camt053_data), content_type="application/xml"
+        )
+        response = self.client.post("/geno/transaction_upload/", {"file": camt053_file})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Es wurden keine gültigen Buchungen gefunden.", html=True)
+        self.assertContains(response, "Es gab 1 Fehler:", html=True)
+        self.assertContains(response, "Ungültige Referenznummer für diese Anwendung", html=False)
+        self.assertContains(response, "1 Buchung wurde ignoriert:", html=True)
+        self.assertContains(
+            response,
+            "Ungültige Buchung in der CAMT Datei: Ignoring transaction without creditor reference information.",
+            html=True,
+        )
 
     def test_consolidate_invoices(self):
         Invoice.objects.create(

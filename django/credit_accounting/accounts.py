@@ -167,12 +167,16 @@ def check_account_balance(account):
 
 
 def import_transactions(data, vendor):
-    log = data["log"]
-    for item in log:
-        logger.info("%s: %s" % (item["info"], "/".join(item["objects"])))
     errors = []
     skipped = []
     success = []
+    log = data["log"]
+    for item in log:
+        logger.info("%s: %s" % (item["info"], "/".join(item["objects"])))
+        ## Add ignored transactions log messages to skipped
+        for log_item in item["objects"]:
+            if log_item.startswith("Ignoring "):
+                skipped.append(f"Ungültige Buchung in der CAMT Datei: {log_item}")
     for tx in data["transactions"]:
         addtl_info = []
         if tx["extra_info"]:
