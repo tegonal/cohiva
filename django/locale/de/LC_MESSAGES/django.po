@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Cohiva 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-11 23:30+0200\n"
+"POT-Creation-Date: 2026-09-08 17:28+0200\n"
 "PO-Revision-Date: 2025-10-21 01:30+0200\n"
 "Last-Translator: Cohiva Development Team\n"
 "Language-Team: German\n"
@@ -137,15 +137,15 @@ msgstr[1] ""
 msgid "Es wurden keine gültigen %(item_name_plural)s gefunden."
 msgstr ""
 
-#: geno/admin.py:420
+#: geno/admin.py:445
 msgid "Weitere Aktionen"
 msgstr "Weitere Aktionen"
 
-#: geno/admin.py:426 geno/admin.py:896
+#: geno/admin.py:474
 msgid "Export"
 msgstr "Export"
 
-#: geno/admin.py:435
+#: geno/admin.py:483
 msgid "Export ADIT"
 msgstr "Export ADIT"
 
@@ -161,15 +161,15 @@ msgstr "Auszug per Ende Vorjahr"
 msgid "Untervertrag hinzufügen"
 msgstr "Untervertrag hinzufügen"
 
-#: geno/admin.py:1527
+#: geno/admin.py:1571
 msgid "Aktionen"
 msgstr ""
 
-#: geno/admin.py:1555
+#: geno/admin.py:1599
 msgid "Report Pflichtanteile/Belegung"
 msgstr "Report Pflichtanteile/Belegung"
 
-#: geno/admin.py:1852
+#: geno/admin.py:1900
 msgid "Mietobjektspiegel"
 msgstr ""
 
@@ -596,24 +596,24 @@ msgstr ""
 msgid "Übersicht per Stichtag"
 msgstr ""
 
-#: geno/models.py:823
+#: geno/models.py:863
 msgid "Membership durations cannot overlap"
 msgstr "Die Laufzeiten der Mitgliedschaften dürfen sich nicht überschneiden"
 
-#: geno/models.py:1098
+#: geno/models.py:1138
 msgid "Contract and building can not both be selected."
 msgstr "Vertrag und Liegenschaft dürfen nicht beide ausgewählt sein."
 
-#: geno/models.py:1103
+#: geno/models.py:1143
 msgid "At least one of payment date or effective from date must be provided."
 msgstr ""
 "Mindestens eines von Zahlungsdatum oder Wirksam ab muss angegeben werden."
 
-#: geno/models.py:1108
+#: geno/models.py:1148
 msgid "Repayment date cannot be before payment date."
 msgstr "Rückzahlungsdatum darf nicht vor dem Zahlungsdatum liegen."
 
-#: geno/models.py:1113
+#: geno/models.py:1153
 msgid "Effective until date cannot be before effective from date."
 msgstr "Wirksam bis darf nicht vor dem Wirksam ab liegen."
 
@@ -1108,142 +1108,142 @@ msgstr "Log anzeigen"
 msgid "Datei hochladen und verarbeiten"
 msgstr "Datei hochladen und verarbeiten"
 
-#: geno/views.py:1361 geno/views.py:2042
+#: geno/views.py:1363 geno/views.py:2044
 msgid "Mitglied"
 msgstr ""
 
-#: geno/views.py:1361
+#: geno/views.py:1363
 msgid "Beitrittsdatum"
 msgstr ""
 
-#: geno/views.py:1440 geno/views.py:1594
+#: geno/views.py:1442 geno/views.py:1596
 msgid "Name/Adresse"
 msgstr ""
 
-#: geno/views.py:1440
+#: geno/views.py:1442
 msgid "Details"
 msgstr ""
 
-#: geno/views.py:1594
+#: geno/views.py:1596
 msgid "Darlehen Details"
 msgstr ""
 
-#: geno/views.py:1620
+#: geno/views.py:1622
 msgid "Zinsabrechnung"
 msgstr ""
 
-#: geno/views.py:2043
+#: geno/views.py:2045
 msgid "Anteilscheine"
 msgstr ""
 
-#: geno/views.py:2044
+#: geno/views.py:2046
 msgid "Darlehen"
 msgstr ""
 
-#: geno/views.py:2045
+#: geno/views.py:2047
 msgid "Depositen"
 msgstr ""
 
-#: geno/views.py:2046
+#: geno/views.py:2048
 msgid "Verrechnungssteuer"
 msgstr ""
 
-#: geno/views.py:2047
+#: geno/views.py:2049
 msgid "Zinszahlung"
 msgstr ""
 
-#: geno/views.py:2749
+#: geno/views.py:2748
 msgid ""
 "<i>INFO: Mailman-API ist nicht konfiguriert. Dies ist ein Demo-Output.</i>"
 msgstr ""
 "<i>INFO: Mailman-API ist nicht konfiguriert. Dies ist ein Demo-Output.</i>"
 
-#: geno/views.py:2761
+#: geno/views.py:2760
 msgid "Mitglieder ohne Email-Adresse (ignoriert)"
 msgstr "Mitglieder ohne Email-Adresse (ignoriert)"
 
-#: geno/views.py:2769
+#: geno/views.py:2768
 msgid "Mitglieder mit doppelter Email-Adresse (ignoriert)"
 msgstr "Mitglieder mit doppelter Email-Adresse (ignoriert)"
 
-#: geno/views.py:2775
+#: geno/views.py:2774
 msgid "Mitglied nicht in genossenschaft-ML"
 msgstr "Mitglied nicht in genossenschaft-ML"
 
-#: geno/views.py:2780
+#: geno/views.py:2779
 msgid "In genossenschaft-ML aber nicht Mitglied"
 msgstr "In genossenschaft-ML aber nicht Mitglied"
 
-#: geno/views.py:2790
+#: geno/views.py:2789
 msgid "Bewohnende ohne Email-Adresse (ignoriert)"
 msgstr "Bewohnende ohne Email-Adresse (ignoriert)"
 
-#: geno/views.py:2798
+#: geno/views.py:2797
 msgid "Bewohnende mit doppelter Email-Adresse (ignoriert)"
 msgstr "Bewohnende mit doppelter Email-Adresse (ignoriert)"
 
-#: geno/views.py:2804
+#: geno/views.py:2803
 msgid "Bewohnende aber nicht in bewohnende-ML"
 msgstr "Bewohnende aber nicht in bewohnende-ML"
 
-#: geno/views.py:2809
+#: geno/views.py:2808
 msgid "In bewohnende-ML aber nicht Bewohnende"
 msgstr "In bewohnende-ML aber nicht Bewohnende"
 
-#: geno/views.py:2814
+#: geno/views.py:2813
 msgid "Mitglied aber NICHT in Newsletter(CS)"
 msgstr "Mitglied aber NICHT in Newsletter(CS)"
 
-#: geno/views.py:2818
+#: geno/views.py:2817
 msgid "Mitglied aber UNSUBSCRIBED in Newsletter(CS)"
 msgstr "Mitglied aber UNSUBSCRIBED in Newsletter(CS)"
 
-#: geno/views.py:2824
+#: geno/views.py:2823
 msgid "Mitglied aber BOUNCED in Newsletter(CS)"
 msgstr "Mitglied aber BOUNCED in Newsletter(CS)"
 
-#: geno/views.py:2830
+#: geno/views.py:2829
 msgid "Mitglied aber DELETED in Newsletter(CS)"
 msgstr "Mitglied aber DELETED in Newsletter(CS)"
 
-#: geno/views.py:2836
+#: geno/views.py:2835
 #, python-format
 msgid "In genossenschaft-ML aber nicht in Wohnpost (%s)"
 msgstr "In genossenschaft-ML aber nicht in Wohnpost (%s)"
 
-#: geno/views.py:2844
+#: geno/views.py:2843
 #, python-format
 msgid ""
 "Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s)"
 msgstr ""
 "Bewohnende/Gewerbemietende weder in genossenschaft-ML noch in Wohnpost (%s)"
 
-#: geno/views.py:2850
+#: geno/views.py:2849
 msgid "Mailman warnings"
 msgstr "Mailman warnings"
 
-#: geno/views.py:3178
+#: geno/views.py:3177
 msgid ""
 "Keine Empfänger:innen gefunden, welche diesen Filterkriterien entsprechen."
 msgstr ""
 
-#: geno/views.py:3184
+#: geno/views.py:3183
 msgid "Dokumente erstellen/versenden"
 msgstr ""
 
-#: geno/views.py:3185
+#: geno/views.py:3184
 msgid "Schritt 1 - Empfänger:innen filtern"
 msgstr ""
 
-#: geno/views.py:3232
+#: geno/views.py:3231
 msgid "Ungültiger Basis-Datensatz"
 msgstr ""
 
-#: geno/views.py:3242
+#: geno/views.py:3241
 msgid "Schritt 2 - Empfänger:innen auswählen"
 msgstr ""
 
-#: geno/views.py:3264
+#: geno/views.py:3263
 msgid "Schritt 3 - Aktionen ausführen"
 msgstr ""
 
