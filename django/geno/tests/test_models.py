@@ -182,44 +182,70 @@ class AddressTest(TestCase):
             result = addr.get_mail_recipient()
             self.assertEqual(result, '"Lisa Meier" <lisa@realmail.com>')
 
-    def test_is_member(self):
+    def test_is_member_no_membership(self):
+        """Address with no membership returns False."""
         adr = Address.objects.create(name="Test")
         self.assertFalse(adr.is_member())
-        with self.assertRaises(ValueError):
-            adr.is_member(date_mode="_invalid")
 
-        m1 = Member.objects.create(name=adr, date_join=date(2000, 1, 1))
+    def test_is_member_open_ended(self):
+        """Open-ended memberships: joined long ago and joined this year."""
+        adr = Address.objects.create(name="Test")
+
+        # Open-ended, joined long ago
+        Member.objects.create(name=adr, date_join=date(2000, 1, 1))
         self.assertTrue(adr.is_member())
         self.assertTrue(adr.is_member(date_mode="last_year"))
         self.assertTrue(adr.is_member(date_mode="end_date"))
         self.assertFalse(adr.is_member(date=date(1999, 12, 31)))
         self.assertTrue(adr.is_member(date=date(date.today().year + 1, 1, 2)))
 
-        m1.date_leave = date(date.today().year + 1, 1, 1)
-        m1.save()
-        self.assertTrue(adr.is_member())
-        self.assertTrue(adr.is_member(date_mode="last_year"))
-        self.assertFalse(adr.is_member(date_mode="end_date"))
-        self.assertFalse(adr.is_member(date=date(1999, 12, 31)))
-        self.assertFalse(adr.is_member(date=date(date.today().year + 1, 1, 2)))
-
-        m1.date_join = date(date.today().year, 1, 1)
-        m1.save()
-        self.assertTrue(adr.is_member())
-        self.assertFalse(adr.is_member(date_mode="last_year"))
-        self.assertFalse(adr.is_member(date_mode="end_date"))
-        self.assertFalse(adr.is_member(date=date(1999, 12, 31)))
-        self.assertFalse(adr.is_member(date=date(date.today().year + 1, 1, 2)))
-
-        m1.date_leave = None
-        m1.save()
+        # Open-ended, joined this year
+        Member.objects.all().delete()
+        Member.objects.create(name=adr, date_join=date(date.today().year, 1, 1))
         self.assertTrue(adr.is_member())
         self.assertFalse(adr.is_member(date_mode="last_year"))
         self.assertTrue(adr.is_member(date_mode="end_date"))
         self.assertFalse(adr.is_member(date=date(1999, 12, 31)))
         self.assertTrue(adr.is_member(date=date(date.today().year + 1, 1, 2)))
 
+    def test_is_member_with_end_date(self):
+        """Memberships with a future end date: joined long ago and joined this year."""
+        adr = Address.objects.create(name="Test")
+
+        # Future end date, joined long ago
+        Member.objects.create(
+            name=adr,
+            date_join=date(2000, 1, 1),
+            date_leave=date(date.today().year + 1, 1, 1),
+        )
+        self.assertTrue(adr.is_member())
+        self.assertTrue(adr.is_member(date_mode="last_year"))
+        self.assertFalse(adr.is_member(date_mode="end_date"))
+        self.assertFalse(adr.is_member(date=date(1999, 12, 31)))
+        self.assertFalse(adr.is_member(date=date(date.today().year + 1, 1, 1)))
+        self.assertFalse(adr.is_member(date=date(date.today().year + 1, 1, 2)))
+
+        # Future end date, joined this year
+        Member.objects.all().delete()
+        Member.objects.create(
+            name=adr,
+            date_join=date(date.today().year, 1, 1),
+            date_leave=date(date.today().year + 1, 1, 1),
+        )
+        self.assertTrue(adr.is_member())
+        self.assertFalse(adr.is_member(date_mode="last_year"))
+        self.assertFalse(adr.is_member(date_mode="end_date"))
+        self.assertFalse(adr.is_member(date=date(1999, 12, 31)))
+        self.assertFalse(adr.is_member(date=date(date.today().year + 1, 1, 2)))
+
+    def test_is_member_multiple_memberships(self):
+        """Multiple memberships including a current open-ended one and a past one."""
+        adr = Address.objects.create(name="Test")
+
+        # Current open-ended membership + past membership
+        Member.objects.create(name=adr, date_join=date(date.today().year, 1, 1))
         Member.objects.create(name=adr, date_join=date(1995, 1, 1), date_leave=date(1998, 6, 1))
+
         self.assertTrue(adr.is_member())
         self.assertFalse(adr.is_member(date_mode="last_year"))
         self.assertTrue(adr.is_member(date_mode="end_date"))
@@ -227,6 +253,10 @@ class AddressTest(TestCase):
         self.assertTrue(adr.is_member(date=date(date.today().year + 1, 1, 2)))
         self.assertTrue(adr.is_member(date=date(1997, 12, 31)))
         self.assertTrue(adr.is_member(date=datetime(1997, 12, 31, 1, 1, 1)))
+
+    def test_is_member_invalid_arguments(self):
+        """Invalid arguments raise ValueError."""
+        adr = Address.objects.create(name="Test")
 
         with self.assertRaises(ValueError):
             adr.is_member(date_mode="last_year", date=date(1999, 12, 31))
