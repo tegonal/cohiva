@@ -114,7 +114,7 @@
 | geno/migrations/0024\_member\_name\_to\_fk\_and\_date\_constraint.py                                   |       13 |        5 |     62% |     10-14 |
 | geno/migrations/0025\_alter\_registration\_telephone.py                                                |        4 |        0 |    100% |           |
 | geno/migrations/0026\_convert\_uuids\_from\_char.py                                                    |        4 |        0 |    100% |           |
-| geno/migrations/0027\_alter\_documenttype\_template\_to\_m2m.py                                        |        5 |        0 |    100% |           |
+| geno/migrations/0027\_alter\_documenttype\_template\_to\_m2m.py                                        |       17 |        8 |     53% |11-12, 16-22 |
 | geno/migrations/0028\_remove\_documenttype\_template\_file.py                                          |        4 |        0 |    100% |           |
 | geno/migrations/0029\_contract\_active.py                                                              |       15 |        6 |     60% |12-13, 16-19 |
 | geno/migrations/0030\_rename\_and\_add\_share\_fields.py                                               |        4 |        0 |    100% |           |
@@ -135,6 +135,7 @@
 | geno/tests/test\_billing.py                                                                            |      423 |       13 |     97% |305, 325, 342, 373, 396, 415, 441, 463, 495, 733, 741-743 |
 | geno/tests/test\_documents.py                                                                          |      474 |        2 |     99% |  521, 527 |
 | geno/tests/test\_invoices.py                                                                           |      214 |        4 |     98% |288, 292, 325, 329 |
+| geno/tests/test\_migrations.py                                                                         |       28 |       17 |     39% |10-13, 17-20, 29-34, 38-40 |
 | geno/tests/test\_models.py                                                                             |      359 |        0 |    100% |           |
 | geno/tests/test\_registration.py                                                                       |       52 |        0 |    100% |           |
 | geno/tests/test\_reports.py                                                                            |       55 |        0 |    100% |           |
@@ -239,7 +240,7 @@
 | reservation/tests/test\_views.py                                                                       |       10 |        2 |     80% |     21-22 |
 | reservation/urls.py                                                                                    |        4 |        0 |    100% |           |
 | reservation/views.py                                                                                   |      136 |      112 |     18% |22-201, 240-263 |
-| **TOTAL**                                                                                              | **24704** | **6014** | **76%** |           |
+| **TOTAL**                                                                                              | **24744** | **6039** | **76%** |           |
 
 
 ## Setup coverage badge
