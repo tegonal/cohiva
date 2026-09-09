@@ -165,8 +165,15 @@ class GenoBase(models.Model):
         return mark_safe(f'<ul class="cohiva_object-actions">{action_list}</ul>')
 
     def save_as_copy(self):
+        """
+        Prepare and save the instance as a new copy.
+
+        If available, appends "[KOPIE]" to the name and clears the import identifier before saving the instance with a new primary key.
+        """
         if hasattr(self, "name") and isinstance(self.name, str):
             self.name = "%s [KOPIE]" % self.name
+        if hasattr(self, "import_id"):
+            self.import_id = None
         self.pk = None
         self.id = None
         self._state.adding = True
@@ -612,8 +619,10 @@ class Address(GenoBase):
         ]
 
     def save_as_copy(self):
+        """
+        Save the address as a new copy with a new random identifier and no linked user.
+        """
         self.user = None
-        self.import_id = None
         self.random_id = uuid.uuid4()
         super().save_as_copy()
 
@@ -1109,7 +1118,9 @@ class Share(GenoBase):
         # Effective until date cannot be before effective from date
         if self.effective_from and self.effective_until:
             if self.effective_from > self.effective_until:
-                raise ValidationError(_("Effective until date cannot be before effective from date."))
+                raise ValidationError(
+                    _("Effective until date cannot be before effective from date.")
+                )
         super().clean(*args, **kwargs)
 
     def save(self, *args, **kwargs):
@@ -1910,10 +1921,10 @@ class Contract(GenoBase):
         return actions
 
     def save_as_copy(self):
+        """Create a copy of the contract while preserving its related contractors, children, and rental units."""
         old_contractors = self.contractors.all()
         old_children = self.children.all()
         old_rental_units = self.rental_units.all()
-        self.import_id = None
         super().save_as_copy()
         self.contractors.set(old_contractors)
         self.children.set(old_children)
@@ -1950,7 +1961,11 @@ class Contract(GenoBase):
 
     @classmethod
     def get_active_in_period(
-        cls, period_start=None, period_end=None, exclude_period_end=False, include_subcontracts=False
+        cls,
+        period_start=None,
+        period_end=None,
+        exclude_period_end=False,
+        include_subcontracts=False,
     ):
         """Get Contracts that have an overlap with the reference period [period_start, period_end].
         The end date `period_end` is inclusive unless exclude_period_end is set to True.
