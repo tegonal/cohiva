@@ -2,12 +2,24 @@ from datetime import date
 from unittest.mock import patch
 
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 from django.test import TestCase, override_settings
 from django.urls import NoReverseMatch, reverse
 
-from geno.models import Address, Contract, InvoiceCategory, Member, RegistrationEvent
+from geno.models import (
+    Address,
+    Building,
+    Child,
+    Contract,
+    InvoiceCategory,
+    Member,
+    RegistrationEvent,
+    RentalUnit,
+    Share,
+    ShareType,
+)
 
 from .base import GenoAdminTestCase
 
@@ -414,3 +426,132 @@ class GetActiveContractsTests(GenoAdminTestCase):
         result = list(Contract.get_active_in_period(period_start=self.D3, period_end=self.D4))
         self.assertNotIn(first, result)
         self.assertIn(second, result)
+
+
+class GenoBaseSaveAsCopyTests(TestCase):
+    """
+    Tests for GenoBase.save_as_copy(), in particular the clearing of
+    `import_id` (if the model has that field) that was added alongside
+    the pre-existing `name` "[KOPIE]" suffix logic.
+    """
+
+    def test_import_id_and_name_are_reset_on_copy(self):
+        building = Building.objects.create(name="Building A")
+        rental_unit = RentalUnit.objects.create(
+            name="A1",
+            rental_type="Wohnung",
+            building=building,
+            import_id="IMPORT-100",
+        )
+        original_pk = rental_unit.pk
+
+        rental_unit.save_as_copy()
+
+        # The instance now represents the freshly inserted copy.
+        self.assertIsNotNone(rental_unit.pk)
+        self.assertNotEqual(rental_unit.pk, original_pk)
+        self.assertEqual(rental_unit.name, "A1 [KOPIE]")
+        self.assertIsNone(rental_unit.import_id)
+
+        # The original row must be left untouched.
+        original = RentalUnit.objects.get(pk=original_pk)
+        self.assertEqual(original.name, "A1")
+        self.assertEqual(original.import_id, "IMPORT-100")
+
+        # The copy was persisted with a cleared import_id.
+        copy = RentalUnit.objects.get(pk=rental_unit.pk)
+        self.assertIsNone(copy.import_id)
+        self.assertEqual(copy.name, "A1 [KOPIE]")
+
+    def test_import_id_cleared_even_when_name_is_not_a_string(self):
+        # Child.name is a OneToOneField to Address (not a string), so the
+        # "[KOPIE]" suffix logic must not touch it, but import_id must
+        # still be cleared independently.
+        address = Address.objects.create(name="Test", first_name="Testus")
+        share = Share.objects.create(
+            name=address,
+            share_type=ShareType.objects.create(name="Test"),
+            value=1,
+            import_id="SHARE-1",
+        )
+
+        share.save_as_copy()
+
+        self.assertEqual(share.name, address)
+        self.assertIsNone(share.import_id)
+
+
+class AddressSaveAsCopyTests(TestCase):
+    def test_save_as_copy_clears_user_random_id_and_import_id(self):
+        user = User.objects.create_user(username="hans", password="secret")
+        address = Address.objects.create(
+            name="Muster",
+            first_name="Hans",
+            user=user,
+            import_id="ADDR-1",
+        )
+        original_pk = address.pk
+        original_random_id = address.random_id
+
+        address.save_as_copy()
+
+        self.assertIsNotNone(address.pk)
+        self.assertNotEqual(address.pk, original_pk)
+        self.assertIsNone(address.user)
+        self.assertNotEqual(address.random_id, original_random_id)
+        self.assertIsNone(address.import_id)
+        self.assertEqual(address.name, "Muster [KOPIE]")
+
+        # The original row keeps its user, random_id and import_id.
+        original = Address.objects.get(pk=original_pk)
+        self.assertEqual(original.user, user)
+        self.assertEqual(original.random_id, original_random_id)
+        self.assertEqual(original.import_id, "ADDR-1")
+        self.assertEqual(original.name, "Muster")
+
+    def test_save_as_copy_without_import_id_still_clears_user_and_random_id(self):
+        user = User.objects.create_user(username="anna", password="secret")
+        address = Address.objects.create(name="Musterfrau", first_name="Anna", user=user)
+        original_random_id = address.random_id
+
+        address.save_as_copy()
+
+        self.assertIsNone(address.user)
+        self.assertIsNone(address.import_id)
+        self.assertNotEqual(address.random_id, original_random_id)
+
+
+class ContractSaveAsCopyTests(TestCase):
+    def setUp(self):
+        building = Building.objects.create(name="Building C")
+        self.rental_unit = RentalUnit.objects.create(
+            name="C1", rental_type="Wohnung", building=building
+        )
+        self.contractor = Address.objects.create(name="Muster", first_name="Hans")
+        child_address = Address.objects.create(name="Muster", first_name="Kind")
+        self.child = Child.objects.create(name=child_address, presence=5.0)
+
+    def test_save_as_copy_preserves_m2m_and_clears_import_id(self):
+        contract = Contract.objects.create(date=date(2024, 1, 1), import_id="CONTRACT-1")
+        contract.contractors.set([self.contractor])
+        contract.children.set([self.child])
+        contract.rental_units.set([self.rental_unit])
+
+        original_pk = contract.pk
+
+        contract.save_as_copy()
+
+        self.assertIsNotNone(contract.pk)
+        self.assertNotEqual(contract.pk, original_pk)
+        self.assertIsNone(contract.import_id)
+        self.assertEqual(list(contract.contractors.all()), [self.contractor])
+        self.assertEqual(list(contract.children.all()), [self.child])
+        self.assertEqual(list(contract.rental_units.all()), [self.rental_unit])
+
+        # The original contract is unaffected and keeps its import_id and
+        # its own M2M relations.
+        original = Contract.objects.get(pk=original_pk)
+        self.assertEqual(original.import_id, "CONTRACT-1")
+        self.assertEqual(list(original.contractors.all()), [self.contractor])
+        self.assertEqual(list(original.children.all()), [self.child])
+        self.assertEqual(list(original.rental_units.all()), [self.rental_unit])

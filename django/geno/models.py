@@ -167,7 +167,7 @@ class GenoBase(models.Model):
     def save_as_copy(self):
         """
         Prepare and save the instance as a new copy.
-        
+
         If available, appends "[KOPIE]" to the name and clears the import identifier before saving the instance with a new primary key.
         """
         if hasattr(self, "name") and isinstance(self.name, str):
@@ -1118,7 +1118,9 @@ class Share(GenoBase):
         # Effective until date cannot be before effective from date
         if self.effective_from and self.effective_until:
             if self.effective_from > self.effective_until:
-                raise ValidationError(_("Effective until date cannot be before effective from date."))
+                raise ValidationError(
+                    _("Effective until date cannot be before effective from date.")
+                )
         super().clean(*args, **kwargs)
 
     def save(self, *args, **kwargs):
@@ -1959,7 +1961,11 @@ class Contract(GenoBase):
 
     @classmethod
     def get_active_in_period(
-        cls, period_start=None, period_end=None, exclude_period_end=False, include_subcontracts=False
+        cls,
+        period_start=None,
+        period_end=None,
+        exclude_period_end=False,
+        include_subcontracts=False,
     ):
         """Get Contracts that have an overlap with the reference period [period_start, period_end].
         The end date `period_end` is inclusive unless exclude_period_end is set to True.

@@ -27,6 +27,7 @@ lint.ignore = [
   "E722",    # Do not use bare `except`
   "E731",    # Do not assign a `lambda` expression, use a `def`
   "UP031",   # Use format specifiers instead of percent format
+  "UP037",   # Remove quotes from type annotation (currently, we need that to avoid circular imports...)
   "B904",    # raise-without-from-inside-except
   "SIM108",  # if-else-block-instead-of-if-exp
   "SIM115",  # open-file-with-context-handler
