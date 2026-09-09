@@ -1716,6 +1716,7 @@ class InvoiceAdmin(GenoBaseAdmin):
         ("contract", "year", "month"),
         "is_additional_invoice",
         "active",
+        "object_actions",
         ("transaction_id", "reference_nr"),
         "additional_info",
         ("fin_transaction_ref", "fin_account", "fin_account_receivables"),
@@ -1726,6 +1727,7 @@ class InvoiceAdmin(GenoBaseAdmin):
     ]
     readonly_fields = [
         "consolidated",
+        "object_actions",
         "transaction_id",
         "reference_nr",
         "additional_info",

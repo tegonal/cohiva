@@ -116,6 +116,11 @@ urlpatterns = [
         geno_views.InvoiceBatchGenerateView.as_view(action="download"),
         name="invoice-download",
     ),
+    re_path(
+        r"^invoice/regenerate/(?P<key>[0-9]+)/?$",
+        geno_views.InvoiceRegenerateView.as_view(),
+        name="invoice-regenerate",
+    ),
     path("debtor/", geno_views.DebtorView.as_view(action="overview"), name="debtor-list"),
     re_path(
         r"^debtor/detail/(?P<key_type>[cp])/(?P<key>[0-9]+)/?$",
