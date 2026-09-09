@@ -2440,4 +2440,5 @@ class TenantsView(GenoBase):
             ),
         ]
 
+
 auditlog.register(GenoBase)

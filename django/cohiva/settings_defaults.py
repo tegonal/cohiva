@@ -1510,11 +1510,6 @@ COHIVA_TITLE_FONT = "Lato"
 COHIVA_TEXT_FONT = "Liberation Serif"
 
 # Auditlog history settings
-AUDITLOG_INCLUDE_ALL_MODELS=True
-AUDITLOG_EXCLUDE_TRACKING_FIELDS = (
-    "ts_created",
-    "ts_modified"
-)
-AUDITLOG_MASK_TRACKING_FIELDS = (
-    "api_secret",
-)
+AUDITLOG_INCLUDE_ALL_MODELS = True
+AUDITLOG_EXCLUDE_TRACKING_FIELDS = ("ts_created", "ts_modified")
+AUDITLOG_MASK_TRACKING_FIELDS = ("api_secret",)
