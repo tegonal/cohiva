@@ -1170,7 +1170,7 @@ class Share(GenoBase):
             "manual_interest": nformat(self.manual_interest),
             "is_interest_credit": self.is_interest_credit,
             "duration": self.duration,
-            "state": self.state,
+            "payment_state": self.payment_state,
             "note": self.note,
             "identifier": self.identifier,
             "identifier_external": self.identifier_external,
@@ -1199,7 +1199,7 @@ class Share(GenoBase):
             related_rental_units = []
             shares_by_type[share_type.name] = []
             for share in (
-                get_active_shares()
+                self.get_active()
                 .filter(share_type=share_type)
                 .filter(name=self.name)
                 .order_by("date")
@@ -1246,7 +1246,7 @@ class Share(GenoBase):
         verbose_name_plural = "Beteiligungen"
         constraints = [
             models.CheckConstraint(
-                check=Q(attached_to_building=None) | Q(attached_to_contract=None),
+                condition=Q(attached_to_building=None) | Q(attached_to_contract=None),
                 name="geno_share_attached_to_building_or_contract",
             )
         ]
