@@ -1105,6 +1105,7 @@ def get_context_data(doctype, obj_id, extra_context):
             )
 
         c["datum_zahlung"] = obj.payment_date.strftime("%d.%m.%Y")
+        c.update(obj.get_context(include_related_shares=True))
     elif doctype == "statement" or doctype == "mailing" or doctype == "loanreminder":
         obj = Address.objects.get(pk=obj_id)
         adr = obj
