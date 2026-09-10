@@ -1085,6 +1085,26 @@ class Share(GenoBase):
             return self.repayment_date
         return None
 
+    @property
+    @admin.display(description=_("Related building/contracts"))
+    def related_contracts(self) -> str:
+        def _format(contracts: list[Contract]):
+            return ", ".join(
+                [
+                    (
+                        f"{c.get_building_label()}: "
+                        f"{c.list_rental_units(without_building=True, exclude_minor=True)}"
+                    )
+                    for c in contracts
+                ]
+            )
+
+        if self.attached_to_contract:
+            return _format([self.attached_to_contract])
+        if self.attached_to_building:
+            return self.attached_to_building.name
+        return _format(list(Contract.get_active().filter(contractors=self.name)))
+
     def __str__(self):
         extra_info = self.share_type
         if self.payment_state:
@@ -1920,7 +1940,9 @@ class Contract(GenoBase):
         ru = self.rental_units.first()
         return ru.building.name if ru else None
 
-    def list_rental_units(self, short=False, exclude_minor=False, as_list=False):
+    def list_rental_units(
+        self, short=False, exclude_minor=False, as_list=False, without_building=False
+    ):
         units = []
         if exclude_minor:
             rus = self.rental_units.exclude(rental_type="Kellerabteil")
@@ -1929,6 +1951,8 @@ class Contract(GenoBase):
         for u in rus.order_by("name"):
             if short:
                 units.append("%s" % u.name)
+            elif without_building:
+                units.append(u.name_with_label)
             else:
                 units.append("%s" % u)
         if as_list:
