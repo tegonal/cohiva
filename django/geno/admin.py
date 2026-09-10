@@ -11,7 +11,7 @@ from django.contrib import admin, messages
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, User
-from django.db.models import Case, IntegerField, Q, Value, When
+from django.db.models import Case, Exists, IntegerField, OuterRef, Q, Value, When
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -93,6 +93,46 @@ class ShareStateFilter(admin.SimpleListFilter):
         elif value == "gefordert":
             return queryset.filter(Q(payment_date__gt=today) | Q(payment_date__isnull=True))
         return queryset
+
+
+class ShareBuildingFilter(admin.SimpleListFilter):
+    """Filter Shares to show the ones that are related to a specific building.
+    The relationship is determined by the following rules:
+     - If attached_to_building is set, include the Share if that building is the selected Building.
+     - If attached_to_contract is set, include the Share if the contract has a RentalUnit in the
+       selected Building.
+     - Otherwise, include the Share if the owner of the share has an active Contract with a
+       RentalUnit in the selected Building.
+     Note that attached_to_building and attached_to_contract are mutually exclusive."""
+
+    title = Building._meta.verbose_name  # .title()
+    parameter_name = "building_id"
+
+    def lookups(self, request, model_admin):
+        return Building.objects.filter(active=True).values_list("pk", "name")
+
+    def queryset(self, request, queryset):
+        building_id = self.value()
+        if building_id is None:
+            return queryset
+        try:
+            building = Building.objects.get(id=building_id)
+        except Building.DoesNotExist:
+            return queryset.none()
+        # Subquery for active contracts that include the Address of the Share (`name` field) in
+        # the list of contractors and that are related to the building.
+        contract_subquery = Contract.get_active().filter(
+            contractors=OuterRef("name"), rental_units__building=building
+        )
+        return queryset.filter(
+            Q(attached_to_building=building)
+            | Q(attached_to_contract__rental_units__building=building)
+            | (
+                Q(attached_to_building__isnull=True)
+                & Q(attached_to_contract__isnull=True)
+                & Exists(contract_subquery)
+            )
+        )
 
 
 class BooleanFieldDefaultTrueListFilter(admin.BooleanFieldListFilter):
@@ -928,6 +968,7 @@ class ShareAdmin(ObjectActionsMixin, GenoBaseAdmin):
         ("value", "value_total", "is_interest_credit", "is_pension_fund", "is_business"),
         "attached_to_contract",
         "attached_to_building",
+        "related_contracts",
         "note",
         ("interest", "interest_mode", "manual_interest"),
         ("identifier", "identifier_external"),
@@ -940,6 +981,7 @@ class ShareAdmin(ObjectActionsMixin, GenoBaseAdmin):
     readonly_fields = [
         "payment_state",
         "value_total",
+        "related_contracts",
         "interest",
         "import_id",
         "active",
@@ -971,6 +1013,7 @@ class ShareAdmin(ObjectActionsMixin, GenoBaseAdmin):
         "is_interest_credit",
         "is_pension_fund",
         "is_business",
+        ShareBuildingFilter,
         "payment_date",
         "repayment_date",
         "duration",

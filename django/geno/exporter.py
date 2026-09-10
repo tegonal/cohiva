@@ -7,9 +7,11 @@ import vdirsyncer
 import vobject
 from django.conf import settings
 from django.contrib import admin
+from django.contrib.admin.utils import label_for_field
 from django.http import HttpResponse
 from django.template import loader
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from openpyxl import load_workbook
 from vdirsyncer.storage.dav import CardDAVStorage
 
@@ -187,7 +189,12 @@ def export_to_xls_generic(data, fields, title, header, filename_suffix):
         col_num = 0
         for field in fields:
             c = ws.cell(row=row_num + 1, column=col_num + 1)
-            value = getattr(obj, field, "")
+            try:
+                value = getattr(obj, field, "")
+                if callable(value):
+                    value = value()
+            except:
+                value = _("[invalid]")
             if isinstance(value, numbers.Number):
                 c.value = value
             else:
@@ -216,14 +223,40 @@ def export_to_xls_generic(data, fields, title, header, filename_suffix):
 
 
 class ExportXlsMixin:
+    """Mixin class that adds an action to export all fields shown in the ModelAdmin an XLS file.
+
+    If `export_use_fieldset` is `True`, all model fields, as well as calculated values,
+    that are configured in the model admin are exported. Otherwise, all the model fields are
+    exported, regardless of the model admin configuration (but no calculated values).
+
+    Fields with names listed in `export_exclude_fields` are excluded from the export.
+    """
+
+    export_use_fieldset = True
+    export_exclude_fields = ["links", "backlinks"]
+
     @admin.display(description="Ausgewählte als XLS exportieren")
     def export_as_xls(self, request, queryset):
         fields = []
         header = {}
         meta = self.model._meta
-        for field in meta.fields:
-            fields.append(field.name)
-            header[field.name] = field.verbose_name
+        if self.export_use_fieldset:
+            # Export model fields, as well as calculated values, that are configured
+            # in the model admin
+            for fieldset in self.get_fieldsets(request):
+                for field_list in fieldset[1]["fields"]:
+                    if isinstance(field_list, str):
+                        field_list = (field_list,)
+                    for field in field_list:
+                        if field not in self.export_exclude_fields:
+                            fields.append(field)
+                            header[field] = label_for_field(field, self.model, model_admin=self)
+        else:
+            ## Export all model fields, but no calculated values.
+            for field in meta.fields:
+                if field not in self.export_exclude_fields:
+                    fields.append(field.name)
+                    header[field.name] = field.verbose_name
         return export_to_xls_generic(queryset, fields, str(meta), header, str(meta))
 
 

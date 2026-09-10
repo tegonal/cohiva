@@ -10,7 +10,18 @@ import geno.tests.data as geno_testdata
 from geno import admin
 
 # from django.conf import settings
-from geno.models import Address, Child, ContentTemplate, Contract, GenericAttribute, Member
+from geno.models import (
+    Address,
+    Building,
+    Child,
+    ContentTemplate,
+    Contract,
+    GenericAttribute,
+    Member,
+    RentalUnit,
+    Share,
+    ShareType,
+)
 from geno.tests.base import MockDate
 from reservation.admin import ReservationAdmin
 from reservation.models import Reservation
@@ -616,3 +627,180 @@ class AddressAdminSearchTest(GenoAdminTestCase):
         # Multiple consecutive commas are stripped; all remaining words must match
         qs = self._search("test comment,,,with multiple commas")
         self.assertIn(self.adr_comment_multi, qs)
+
+
+class ShareAdminFilterTest(GenoAdminTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+
+        stype = ShareType.objects.create(name="ShareFilterTest")
+
+        cls.building_A = Building.objects.create(name="A")
+        cls.building_B = Building.objects.create(name="B")
+        cls.building_C = Building.objects.create(name="C")
+        cls.building_inactive = Building.objects.create(name="inactive", active=False)
+
+        adr_unrelated = Address.objects.create(name="unrelated")
+        residentA = Address.objects.create(name="residentA")
+        residentB = Address.objects.create(name="residentB")
+        residentAB = Address.objects.create(name="residentAB")
+        residentABmulti = Address.objects.create(name="residentABmulti")
+
+        ruA = RentalUnit.objects.create(name="ruA", building=cls.building_A)
+        ruB = RentalUnit.objects.create(name="ruB", building=cls.building_B)
+
+        contract_A = Contract.objects.create(date=datetime.date.today())
+        contract_A.contractors.set([residentA])
+        contract_A.rental_units.set([ruA])
+        contract_A.save()
+
+        contract_B = Contract.objects.create(date=datetime.date.today())
+        contract_B.contractors.set([residentB])
+        contract_B.rental_units.set([ruB])
+        contract_B.save()
+
+        contract_AB_A = Contract.objects.create(date=datetime.date.today())
+        contract_AB_A.contractors.set([residentAB])
+        contract_AB_A.rental_units.set([ruA])
+        contract_AB_A.save()
+
+        contract_AB_B = Contract.objects.create(date=datetime.date.today())
+        contract_AB_B.contractors.set([residentAB])
+        contract_AB_B.rental_units.set([ruB])
+        contract_AB_B.save()
+
+        contract_A_and_B = Contract.objects.create(date=datetime.date.today())
+        contract_A_and_B.contractors.set([residentABmulti])
+        contract_A_and_B.rental_units.set([ruA, ruB])
+        contract_A_and_B.save()
+
+        cls.share_unrelated = Share.objects.create(
+            name=adr_unrelated, share_type=stype, payment_date=datetime.date.today(), value=1
+        )
+        cls.share_unrelated_linked_to_A_by_contract = Share.objects.create(
+            name=adr_unrelated,
+            share_type=stype,
+            payment_date=datetime.date.today(),
+            value=1,
+            attached_to_contract=contract_A,
+        )
+        cls.share_unrelated_linked_to_A_and_B_by_contract = Share.objects.create(
+            name=adr_unrelated,
+            share_type=stype,
+            payment_date=datetime.date.today(),
+            value=1,
+            attached_to_contract=contract_A_and_B,
+        )
+        cls.share_unrelated_linked_to_A_by_building = Share.objects.create(
+            name=adr_unrelated,
+            share_type=stype,
+            payment_date=datetime.date.today(),
+            value=1,
+            attached_to_building=cls.building_A,
+        )
+
+        cls.share_residentA = Share.objects.create(
+            name=residentA,
+            share_type=stype,
+            payment_date=datetime.date.today(),
+            value=1,
+        )
+        cls.share_residentA_linked_to_B_by_contract = Share.objects.create(
+            name=residentA,
+            share_type=stype,
+            payment_date=datetime.date.today(),
+            value=1,
+            attached_to_contract=contract_B,
+        )
+        cls.share_residentA_linked_to_B_by_building = Share.objects.create(
+            name=residentA,
+            share_type=stype,
+            payment_date=datetime.date.today(),
+            value=1,
+            attached_to_building=cls.building_B,
+        )
+
+        cls.share_residentAB = Share.objects.create(
+            name=residentAB,
+            share_type=stype,
+            payment_date=datetime.date.today(),
+            value=1,
+        )
+        cls.share_residentAB_linked_to_B_by_contract = Share.objects.create(
+            name=residentAB,
+            share_type=stype,
+            payment_date=datetime.date.today(),
+            value=1,
+            attached_to_contract=contract_B,
+        )
+        cls.share_residentAB_linked_to_B_by_building = Share.objects.create(
+            name=residentAB,
+            share_type=stype,
+            payment_date=datetime.date.today(),
+            value=1,
+            attached_to_building=cls.building_B,
+        )
+
+    def _create_filter(self, query_params=None):
+        factory = RequestFactory()
+        request = factory.get("/admin/geno/share/", query_params=query_params)
+        model_admin = admin.ShareAdmin(Share, django_admin.site)
+
+        share_filter = admin.ShareBuildingFilter(
+            request=request,
+            params=query_params or {},
+            model=Share,
+            model_admin=model_admin,
+        )
+        lookups = share_filter.lookups(request=request, model_admin=model_admin)
+        qs = share_filter.queryset(request, Share.objects.all())
+        return lookups, qs
+
+    def test_lookups(self):
+        lookups, _ = self._create_filter()
+        buildings = Building.objects.filter(active=True)
+        self.assertIsNotNone(lookups)
+        lookup_ids = [item[0] for item in lookups]
+        self.assertEqual(len(lookup_ids), buildings.count())
+        self.assertEqual(list(lookups)[0], (buildings[0].id, buildings[0].name))
+        self.assertNotIn(self.building_inactive.id, lookup_ids)
+
+    def test_buildingA(self):
+        _, qs = self._create_filter({"building_id": [self.building_A.id]})
+        self.assertEqual(
+            [
+                self.share_unrelated_linked_to_A_by_contract,
+                self.share_unrelated_linked_to_A_and_B_by_contract,
+                self.share_unrelated_linked_to_A_by_building,
+                self.share_residentA,
+                self.share_residentAB,
+            ],
+            list(qs),
+        )
+
+    def test_buildingB(self):
+        _, qs = self._create_filter({"building_id": [self.building_B.id]})
+        self.assertEqual(
+            [
+                self.share_unrelated_linked_to_A_and_B_by_contract,
+                self.share_residentA_linked_to_B_by_contract,
+                self.share_residentA_linked_to_B_by_building,
+                self.share_residentAB,
+                self.share_residentAB_linked_to_B_by_contract,
+                self.share_residentAB_linked_to_B_by_building,
+            ],
+            list(qs),
+        )
+
+    def test_buildingC(self):
+        _, qs = self._create_filter({"building_id": [self.building_C.id]})
+        self.assertEqual(qs.count(), 0)
+
+    def test_invalid_building_id(self):
+        _, qs = self._create_filter({"building_id": [-1]})
+        self.assertEqual(qs.count(), 0)
+
+    def test_no_filter(self):
+        _, qs = self._create_filter()
+        self.assertEqual(qs.count(), Share.get_active().count())
