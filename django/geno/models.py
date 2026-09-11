@@ -23,7 +23,7 @@ from django.utils.translation import gettext as _
 from filer.fields.file import FilerFileField
 
 import geno.settings as geno_settings
-from cohiva.fields import AHVNumberField
+from cohiva.fields import AHVNumberField, LowercaseEmailField
 from cohiva.utils.countries import (
     get_country_choices,
     get_default_country_code,
@@ -33,7 +33,6 @@ from cohiva.utils.settings import (
     get_default_formal_choice,
     get_default_mail_footer,
 )
-from geno.model_fields import LowercaseEmailField
 from geno.utils import (
     is_member,
     is_renting,
