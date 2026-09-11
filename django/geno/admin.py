@@ -104,7 +104,7 @@ class ShareBuildingFilter(admin.SimpleListFilter):
        RentalUnit in the selected Building.
      Note that attached_to_building and attached_to_contract are mutually exclusive."""
 
-    title = Building._meta.verbose_name  # .title()
+    title = Building._meta.verbose_name
     parameter_name = "building_id"
 
     def lookups(self, request, model_admin):
@@ -131,7 +131,7 @@ class ShareBuildingFilter(admin.SimpleListFilter):
                 & Q(attached_to_contract__isnull=True)
                 & Exists(contract_subquery)
             )
-        )
+        ).distinct()
 
 
 class BooleanFieldDefaultTrueListFilter(admin.BooleanFieldListFilter):
