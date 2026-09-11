@@ -1128,15 +1128,13 @@ class Share(GenoBase):
     @admin.display(description=_("Related building/contracts"))
     def related_contracts(self) -> str:
         def _format(contracts: list[Contract]):
-            return ", ".join(
-                [
-                    (
-                        f"{c.get_building_label()}: "
-                        f"{c.list_rental_units(without_building=True, exclude_minor=True)}"
-                    )
-                    for c in contracts
-                ]
-            )
+            ret = []
+            for c in contracts:
+                for building, rental_units in c.list_rental_units(
+                    group_buildings=True, exclude_minor=True
+                ).items():
+                    ret.append(f"{building}: {rental_units}")
+            return ", ".join(ret)
 
         if self.attached_to_contract:
             return _format([self.attached_to_contract])
@@ -1980,23 +1978,36 @@ class Contract(GenoBase):
         return ru.building.name if ru else None
 
     def list_rental_units(
-        self, short=False, exclude_minor=False, as_list=False, without_building=False
-    ):
+        self, short=False, exclude_minor=False, as_list=False, group_buildings=False
+    ) -> str | list[str] | dict[str, str | list[str]]:
         units = []
+        units_by_building = {}
         if exclude_minor:
             rus = self.rental_units.exclude(rental_type="Kellerabteil")
         else:
             rus = self.rental_units.all()
         for u in rus.order_by("name"):
             if short:
-                units.append("%s" % u.name)
-            elif without_building:
-                units.append(u.name_with_label)
+                label = str(u.name)
+            elif group_buildings:
+                label = str(u.name_with_label)
             else:
-                units.append("%s" % u)
+                label = str(u)
+            units.append(label)
+            if u.building.name in units_by_building:
+                units_by_building[u.building.name].append(label)
+            else:
+                units_by_building[u.building.name] = [label]
         if as_list:
+            if group_buildings:
+                return units_by_building
             return units
         else:
+            if group_buildings:
+                ret = {}
+                for building, building_units in units_by_building.items():
+                    ret[building] = "/".join(building_units)
+                return ret
             return "/".join(units)
 
     def get_context(self):

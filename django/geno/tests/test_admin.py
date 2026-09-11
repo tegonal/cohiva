@@ -648,12 +648,18 @@ class ShareAdminFilterTest(GenoAdminTestCase):
         residentABmulti = Address.objects.create(name="residentABmulti")
 
         ruA = RentalUnit.objects.create(name="ruA", building=cls.building_A)
+        ruA2 = RentalUnit.objects.create(name="ruA2", building=cls.building_A)
         ruB = RentalUnit.objects.create(name="ruB", building=cls.building_B)
 
         contract_A = Contract.objects.create(date=datetime.date.today())
         contract_A.contractors.set([residentA])
         contract_A.rental_units.set([ruA])
         contract_A.save()
+
+        contract_A_multi = Contract.objects.create(date=datetime.date.today())
+        contract_A_multi.contractors.set([residentA])
+        contract_A_multi.rental_units.set([ruA, ruA2])
+        contract_A_multi.save()
 
         contract_B = Contract.objects.create(date=datetime.date.today())
         contract_B.contractors.set([residentB])
@@ -691,6 +697,13 @@ class ShareAdminFilterTest(GenoAdminTestCase):
             payment_date=datetime.date.today(),
             value=1,
             attached_to_contract=contract_A_and_B,
+        )
+        cls.share_unrelated_linked_to_A_by_contract_multi = Share.objects.create(
+            name=residentA,
+            share_type=stype,
+            payment_date=datetime.date.today(),
+            value=1,
+            attached_to_contract=contract_A_multi,
         )
         cls.share_unrelated_linked_to_A_by_building = Share.objects.create(
             name=adr_unrelated,
@@ -768,10 +781,11 @@ class ShareAdminFilterTest(GenoAdminTestCase):
 
     def test_buildingA(self):
         _, qs = self._create_filter({"building_id": [self.building_A.id]})
-        self.assertEqual(
+        self.assertCountEqual(
             [
                 self.share_unrelated_linked_to_A_by_contract,
                 self.share_unrelated_linked_to_A_and_B_by_contract,
+                self.share_unrelated_linked_to_A_by_contract_multi,
                 self.share_unrelated_linked_to_A_by_building,
                 self.share_residentA,
                 self.share_residentAB,
@@ -781,7 +795,7 @@ class ShareAdminFilterTest(GenoAdminTestCase):
 
     def test_buildingB(self):
         _, qs = self._create_filter({"building_id": [self.building_B.id]})
-        self.assertEqual(
+        self.assertCountEqual(
             [
                 self.share_unrelated_linked_to_A_and_B_by_contract,
                 self.share_residentA_linked_to_B_by_contract,

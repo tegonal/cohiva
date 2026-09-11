@@ -247,14 +247,16 @@ class ExportXlsMixin:
                 for field_list in fieldset[1]["fields"]:
                     if isinstance(field_list, str):
                         field_list = (field_list,)
-                    for field in field_list:
-                        if field not in self.export_exclude_fields:
-                            fields.append(field)
-                            header[field] = label_for_field(field, self.model, model_admin=self)
+                    for field_name in field_list:
+                        if field_name not in self.export_exclude_fields:
+                            fields.append(field_name)
+                            header[field_name] = label_for_field(
+                                field_name, self.model, model_admin=self
+                            )
         else:
             ## Export all model fields, but no calculated values.
             for field in meta.fields:
-                if field not in self.export_exclude_fields:
+                if field.name not in self.export_exclude_fields:
                     fields.append(field.name)
                     header[field.name] = field.verbose_name
         return export_to_xls_generic(queryset, fields, str(meta), header, str(meta))
