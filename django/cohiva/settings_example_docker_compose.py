@@ -13,7 +13,7 @@ COHIVA_INSTANCE_PATH = os.environ.get("COHIVA_INSTANCE_PATH", "/instance_files/o
 
 # Override Celery broker and default cache for Docker Compose networking
 CELERY_BROKER_URL = "redis://redis:6379/0"
-CACHES["default"]["LOCATION"] = "redis://redis:6379"
+CACHES["default"]["LOCATION"] = "redis://redis:6379/2"
 
 # Static files configuration for Docker Compose
 STATIC_ROOT = "/tmp/static"

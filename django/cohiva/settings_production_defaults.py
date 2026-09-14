@@ -109,6 +109,6 @@ CELERY_BROKER_URL = "redis://localhost:6379/1"
 try:
     from .settings import CACHES
 
-    CACHES["default"]["LOCATION"] = "redis://redis:6379/3"
+    CACHES["default"]["LOCATION"] = "redis://localhost:6379/3"
 except ImportError:
     pass
