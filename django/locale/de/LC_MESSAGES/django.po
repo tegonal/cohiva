@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Cohiva 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-17 17:45+0200\n"
+"POT-Creation-Date: 2026-07-11 23:30+0200\n"
 "PO-Revision-Date: 2025-10-21 01:30+0200\n"
 "Last-Translator: Cohiva Development Team\n"
 "Language-Team: German\n"
@@ -17,50 +17,50 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: cohiva/fields.py:25 cohiva/fields.py:32
+#: cohiva/fields.py:40 cohiva/fields.py:47
 msgid "Invalid AHV number"
 msgstr "Ungültige AHV Nummer"
 
-#: cohiva/settings_defaults.py:1071
+#: cohiva/settings_defaults.py:1070
 msgid "Stammdaten"
 msgstr "Stammdaten"
 
-#: cohiva/settings_defaults.py:1076
+#: cohiva/settings_defaults.py:1075
 msgid "Adressen/Personen"
 msgstr "Adressen/Personen"
 
-#: cohiva/settings_defaults.py:1083 cohiva/settings_defaults.py:1133
-#: cohiva/settings_defaults.py:1175 cohiva/settings_defaults.py:1213
-#: cohiva/settings_defaults.py:1250 cohiva/settings_defaults.py:1285
-#: cohiva/settings_defaults.py:1309
+#: cohiva/settings_defaults.py:1082 cohiva/settings_defaults.py:1132
+#: cohiva/settings_defaults.py:1174 cohiva/settings_defaults.py:1212
+#: cohiva/settings_defaults.py:1249 cohiva/settings_defaults.py:1284
+#: cohiva/settings_defaults.py:1308
 msgid "Erweitert"
 msgstr "Erweitert"
 
-#: cohiva/settings_defaults.py:1096
+#: cohiva/settings_defaults.py:1095
 msgid "Erweiterte Konfiguration"
 msgstr "Erweiterte Konfiguration"
 
-#: cohiva/settings_defaults.py:1103
+#: cohiva/settings_defaults.py:1102
 msgid "Mitglieder"
 msgstr "Mitglieder"
 
-#: cohiva/settings_defaults.py:1142
+#: cohiva/settings_defaults.py:1141
 msgid "Vermietung"
 msgstr "Vermietung"
 
-#: cohiva/settings_defaults.py:1189
+#: cohiva/settings_defaults.py:1188
 msgid "Gemeinschaft"
 msgstr "Gemeinschaft"
 
-#: cohiva/settings_defaults.py:1225
+#: cohiva/settings_defaults.py:1224
 msgid "Inkasso"
 msgstr "Inkasso"
 
-#: cohiva/settings_defaults.py:1260
+#: cohiva/settings_defaults.py:1259
 msgid "Finanzierung"
 msgstr "Finanzierung"
 
-#: cohiva/settings_defaults.py:1294
+#: cohiva/settings_defaults.py:1293
 msgid "Dokumente & Kommunikation"
 msgstr "Dokumente & Kommunikation"
 
@@ -76,15 +76,15 @@ msgstr ""
 msgid "Systemadministration"
 msgstr "Systemadministration"
 
-#: cohiva/settings_defaults.py:1406
+#: cohiva/settings_defaults.py:1394
 msgid "Dokumentation/Wiki"
 msgstr ""
 
-#: cohiva/settings_defaults.py:1411
+#: cohiva/settings_defaults.py:1399
 msgid "GitHub Issues"
 msgstr ""
 
-#: cohiva/settings_defaults.py:1416
+#: cohiva/settings_defaults.py:1404
 msgid "Cohiva Website"
 msgstr "Cohiva Website"
 
@@ -123,35 +123,61 @@ msgstr "Alle Anwendungen"
 msgid "You don’t have permission to view or edit anything."
 msgstr "Sie haben keine Berechtigung, etwas anzusehen oder zu bearbeiten."
 
-#: geno/admin.py:429
-msgid "Weitere Aktionen"
-msgstr "Weitere Aktionen"
+#: credit_accounting/templates/credit_accounting/transaction_upload.html:41
+#: geno/templates/geno/transaction_upload.html:66
+#, python-format
+msgid "%(counter)s %(item_name)s wurde ignoriert:"
+msgid_plural "%(counter)s %(item_name_plural)s wurden ignoriert:"
+msgstr[0] ""
+msgstr[1] ""
 
-#: geno/admin.py:458 geno/admin.py:928
-msgid "Export"
-msgstr "Export"
+#: credit_accounting/templates/credit_accounting/transaction_upload.html:52
+#: geno/templates/geno/transaction_upload.html:80
+#, python-format
+msgid "%(counter)s %(item_name)s wurde importiert:"
+msgid_plural "%(counter)s %(item_name_plural)s wurden importiert:"
+msgstr[0] ""
+msgstr[1] ""
 
-#: geno/admin.py:467
-msgid "Export ADIT"
-msgstr "Export ADIT"
+#: credit_accounting/templates/credit_accounting/transaction_upload.html:60
+#: geno/templates/geno/transaction_upload.html:91
+#, python-format
+msgid "Es wurden keine gültigen %(item_name_plural)s gefunden."
+msgstr ""
 
-#: geno/admin.py:937
-msgid "Export per Ende Vorjahr"
-msgstr "Export per Ende Vorjahr"
-
-#: geno/admin.py:1539
-msgid "Untervertrag hinzufügen"
-msgstr "Untervertrag hinzufügen"
-
-#: geno/admin.py:1559
+#: geno/admin.py:379
 msgid "Aktionen"
 msgstr ""
 
-#: geno/admin.py:1587
+#: geno/admin.py:558
+msgid "Weitere Aktionen"
+msgstr "Weitere Aktionen"
+
+#: geno/admin.py:426 geno/admin.py:896
+msgid "Export"
+msgstr "Export"
+
+#: geno/admin.py:435
+msgid "Export ADIT"
+msgstr "Export ADIT"
+
+#: geno/admin.py:1050
+msgid "Current extract"
+msgstr "Auszug aktuell"
+
+#: geno/admin.py:1059
+msgid "Extract as of end of prior year"
+msgstr "Auszug per Ende Vorjahr"
+
+#: geno/admin.py:1650
+msgid "Untervertrag hinzufügen"
+msgstr "Untervertrag hinzufügen"
+
+#: geno/admin.py:1675
 msgid "Report Pflichtanteile/Belegung"
 msgstr "Report Pflichtanteile/Belegung"
 
-#: geno/admin.py:1884
+#: geno/admin.py:1852
 msgid "Mietobjektspiegel"
 msgstr ""
 
@@ -189,26 +215,30 @@ msgstr "Rechnungen in Buchhaltung erstellen"
 msgid "%(invoice_count)s für %(contract_count)s"
 msgstr "%(invoice_count)s für %(contract_count)s"
 
-#: geno/billing.py:364
+#: geno/billing.py:366
 #, python-format
 msgid "%(month)d.%(year)d: %(contract)s"
 msgstr "%(month)d.%(year)d: %(contract)s"
 
-#: geno/billing.py:390 geno/billing.py:416 geno/billing.py:442
-#: geno/billing.py:468 geno/billing.py:495 geno/billing.py:532
+#: geno/billing.py:392 geno/billing.py:418 geno/billing.py:444
+#: geno/billing.py:470 geno/billing.py:497 geno/billing.py:534
 #, python-format
 msgid "%(description)s für %(contract)s"
 msgstr "%(description)s für %(contract)s"
 
-#: geno/billing.py:805 geno/billing.py:809
+#: geno/billing.py:807 geno/billing.py:811
 #, python-brace-format
 msgid "Account {account} does not exist."
 msgstr "Konto {account} existiert nicht."
 
-#: geno/billing.py:813
+#: geno/billing.py:815
 #, python-brace-format
 msgid "Can't access accounting backend: {error}"
 msgstr "Kann nicht auf Buchhaltung zugreifen: {error}"
+
+#: geno/exporter.py:197
+msgid "[invalid]"
+msgstr "[ungültig]"
 
 #: geno/forms.py:166
 msgid "ist nicht vorhanden"
@@ -578,10 +608,16 @@ msgstr ""
 msgid "Übersicht per Stichtag"
 msgstr ""
 
-#: geno/models.py:840
+#: geno/models.py:817
 msgid "Membership durations cannot overlap"
 msgstr "Die Laufzeiten der Mitgliedschaften dürfen sich nicht überschneiden"
 
+#: geno/models.py:1128
+msgid "Related building/contracts"
+msgstr "Verknüpfte Liegenschaften/Verträge"
+
+#: geno/models.py:1180
+msgid "Contract and building can not both be selected."
 #: geno/models.py:1862
 msgid "Address/Person"
 msgstr "Adresse/Person"
@@ -594,15 +630,16 @@ msgstr "Vertrag"
 msgid "Contract and building may not both be selected."
 msgstr "Vertrag und Liegenschaft dürfen nicht beide ausgewählt sein."
 
-#: geno/models.py:1103
+#: geno/models.py:1185
 msgid "At least one of payment date or effective from date must be provided."
-msgstr "Mindestens eines von Zahlungsdatum oder Wirksam ab muss angegeben werden."
+msgstr ""
+"Mindestens eines von Zahlungsdatum oder Wirksam ab muss angegeben werden."
 
-#: geno/models.py:1109
+#: geno/models.py:1190
 msgid "Repayment date cannot be before payment date."
 msgstr "Rückzahlungsdatum darf nicht vor dem Zahlungsdatum liegen."
 
-#: geno/models.py:1113
+#: geno/models.py:1195
 msgid "Effective until date cannot be before effective from date."
 msgstr "Wirksam bis darf nicht vor dem Wirksam ab liegen."
 
@@ -684,6 +721,10 @@ msgstr ""
 #: geno/templates/admin/change_list_results.html:36
 msgid "Expand row"
 msgstr "Zeile ausklappen"
+
+#: geno/templates/admin/geno/change_form.html:8
+msgid "Audit Log"
+msgstr ""
 
 #: geno/templates/geno/components/django_tables2_unfold.html:103
 #: geno/templates/geno/components/django_tables2_unfold.html:140
@@ -1089,25 +1130,6 @@ msgid_plural "Es gab %(counter)s Fehler:"
 msgstr[0] "Es gab %(counter)s Fehler:"
 msgstr[1] "Es gab %(counter)s Fehler:"
 
-#: geno/templates/geno/transaction_upload.html:66
-#, python-format
-msgid "%(counter)s %(item_name)s wurde ignoriert:"
-msgid_plural "%(counter)s %(item_name)s wurden ignoriert:"
-msgstr[0] "%(counter)s %(item_name)s wurde ignoriert:"
-msgstr[1] "%(counter)s %(item_name)s wurden ignoriert:"
-
-#: geno/templates/geno/transaction_upload.html:80
-#, python-format
-msgid "%(counter)s %(item_name)s wurde importiert:"
-msgid_plural "%(counter)s %(item_name)s wurden importiert:"
-msgstr[0] "%(counter)s %(item_name)s wurde importiert:"
-msgstr[1] "%(counter)s %(item_name)s wurden importiert:"
-
-#: geno/templates/geno/transaction_upload.html:91
-#, python-format
-msgid "Es wurden keine gültigen %(item_name)s gefunden."
-msgstr "Es wurden keine gültigen %(item_name)s gefunden."
-
 #: geno/templates/geno/transaction_upload.html:100
 msgid "Log anzeigen"
 msgstr "Log anzeigen"
@@ -1115,6 +1137,20 @@ msgstr "Log anzeigen"
 #: geno/templates/geno/transaction_upload.html:125
 msgid "Datei hochladen und verarbeiten"
 msgstr "Datei hochladen und verarbeiten"
+
+#: geno/views.py:239
+#, python-brace-format
+msgid "Action '{action}' is not implemented."
+msgstr "Die Aktion '{action}' ist nicht implementiert."
+
+#: geno/views.py:242
+#, python-brace-format
+msgid "The template '{template}' has no file linked to it."
+msgstr "Die Vorlage '{template}' hat keine Datei, die damit verknüpft ist."
+
+#: geno/views.py:248
+msgid "Could not fill the template"
+msgstr "Konnte die Vorlage nicht ausfüllen"
 
 #: geno/views.py:1367 geno/views.py:2048
 msgid "Mitglied"
@@ -1255,23 +1291,23 @@ msgstr ""
 msgid "Schritt 3 - Aktionen ausführen"
 msgstr ""
 
-#: geno/views.py:3723
+#: geno/views.py:3720
 msgid "Die ersten 3 Nächte sind gemäss Reglement Jokerzimmer kostenlos."
 msgstr ""
 
-#: geno/views.py:3727
+#: geno/views.py:3724
 msgid "X Nächte à Fr. 22.00, Gästezimmer 003"
 msgstr ""
 
-#: geno/views.py:3732
+#: geno/views.py:3729
 msgid "X Nächte à Fr. 17.00, Gästezimmer 410"
 msgstr ""
 
-#: geno/views.py:3737
+#: geno/views.py:3734
 msgid "X Nächte à Fr. 17.00, Gästezimmer 509"
 msgstr ""
 
-#: geno/views.py:3745
+#: geno/views.py:3742
 msgid ""
 "Vielen Dank für die Beitrittserklärung. Die Mitgliedschaft in der "
 "Genossenschaft ist verbunden mit dem Zeichnen von Anteilscheinen und einer "
@@ -1279,11 +1315,11 @@ msgid ""
 "Zahlungseingang folgt dann die Bestätigung der Mitgliedschaft."
 msgstr ""
 
-#: geno/views.py:3752
+#: geno/views.py:3749
 msgid "Beitrittsgebühr Genossenschaft"
 msgstr ""
 
-#: geno/views.py:3757
+#: geno/views.py:3754
 msgid "Zeichnung von 1 Anteilschein der Genossenschaft"
 msgstr ""
 

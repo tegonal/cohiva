@@ -1,13 +1,25 @@
-from datetime import date
+from datetime import date, datetime
 from unittest.mock import patch
 
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 from django.test import TestCase, override_settings
 from django.urls import NoReverseMatch, reverse
 
-from geno.models import Address, Contract, InvoiceCategory, Member, RegistrationEvent
+from geno.models import (
+    Address,
+    Building,
+    Child,
+    Contract,
+    InvoiceCategory,
+    Member,
+    RegistrationEvent,
+    RentalUnit,
+    Share,
+    ShareType,
+)
 
 from .base import GenoAdminTestCase
 
@@ -181,6 +193,89 @@ class AddressTest(TestCase):
         with override_settings(DEBUG=False, TEST_MAIL_RECIPIENT="test@domain.com"):
             result = addr.get_mail_recipient()
             self.assertEqual(result, '"Lisa Meier" <lisa@realmail.com>')
+
+    def test_is_member_no_membership(self):
+        """Address with no membership returns False."""
+        adr = Address.objects.create(name="Test")
+        self.assertFalse(adr.is_member())
+
+    def test_is_member_open_ended(self):
+        """Open-ended memberships: joined long ago and joined this year."""
+        adr = Address.objects.create(name="Test")
+
+        # Open-ended, joined long ago
+        Member.objects.create(name=adr, date_join=date(2000, 1, 1))
+        self.assertTrue(adr.is_member())
+        self.assertTrue(adr.is_member(date_mode="last_year"))
+        self.assertTrue(adr.is_member(date_mode="end_date"))
+        self.assertFalse(adr.is_member(date=date(1999, 12, 31)))
+        self.assertTrue(adr.is_member(date=date(date.today().year + 1, 1, 2)))
+
+        # Open-ended, joined this year
+        Member.objects.all().delete()
+        Member.objects.create(name=adr, date_join=date(date.today().year, 1, 1))
+        self.assertTrue(adr.is_member())
+        self.assertFalse(adr.is_member(date_mode="last_year"))
+        self.assertTrue(adr.is_member(date_mode="end_date"))
+        self.assertFalse(adr.is_member(date=date(1999, 12, 31)))
+        self.assertTrue(adr.is_member(date=date(date.today().year + 1, 1, 2)))
+
+    def test_is_member_with_end_date(self):
+        """Memberships with a future end date: joined long ago and joined this year."""
+        adr = Address.objects.create(name="Test")
+
+        # Future end date, joined long ago
+        Member.objects.create(
+            name=adr,
+            date_join=date(2000, 1, 1),
+            date_leave=date(date.today().year + 1, 1, 1),
+        )
+        self.assertTrue(adr.is_member())
+        self.assertTrue(adr.is_member(date_mode="last_year"))
+        self.assertFalse(adr.is_member(date_mode="end_date"))
+        self.assertFalse(adr.is_member(date=date(1999, 12, 31)))
+        self.assertFalse(adr.is_member(date=date(date.today().year + 1, 1, 1)))
+        self.assertFalse(adr.is_member(date=date(date.today().year + 1, 1, 2)))
+
+        # Future end date, joined this year
+        Member.objects.all().delete()
+        Member.objects.create(
+            name=adr,
+            date_join=date(date.today().year, 1, 1),
+            date_leave=date(date.today().year + 1, 1, 1),
+        )
+        self.assertTrue(adr.is_member())
+        self.assertFalse(adr.is_member(date_mode="last_year"))
+        self.assertFalse(adr.is_member(date_mode="end_date"))
+        self.assertFalse(adr.is_member(date=date(1999, 12, 31)))
+        self.assertFalse(adr.is_member(date=date(date.today().year + 1, 1, 2)))
+
+    def test_is_member_multiple_memberships(self):
+        """Multiple memberships including a current open-ended one and a past one."""
+        adr = Address.objects.create(name="Test")
+
+        # Current open-ended membership + past membership
+        Member.objects.create(name=adr, date_join=date(date.today().year, 1, 1))
+        Member.objects.create(name=adr, date_join=date(1995, 1, 1), date_leave=date(1998, 6, 1))
+
+        self.assertTrue(adr.is_member())
+        self.assertFalse(adr.is_member(date_mode="last_year"))
+        self.assertTrue(adr.is_member(date_mode="end_date"))
+        self.assertFalse(adr.is_member(date=date(1999, 12, 31)))
+        self.assertTrue(adr.is_member(date=date(date.today().year + 1, 1, 2)))
+        self.assertTrue(adr.is_member(date=date(1997, 12, 31)))
+        self.assertTrue(adr.is_member(date=datetime(1997, 12, 31, 1, 1, 1)))
+
+    def test_is_member_invalid_arguments(self):
+        """Invalid arguments raise ValueError."""
+        adr = Address.objects.create(name="Test")
+
+        with self.assertRaises(ValueError):
+            adr.is_member(date_mode="last_year", date=date(1999, 12, 31))
+        with self.assertRaises(ValueError):
+            adr.is_member(date=False)
+        with self.assertRaises(ValueError):
+            adr.is_member(date_mode="_invalid")
 
 
 class RegistrationEventTest(TestCase):
@@ -414,3 +509,132 @@ class GetActiveContractsTests(GenoAdminTestCase):
         result = list(Contract.get_active_in_period(period_start=self.D3, period_end=self.D4))
         self.assertNotIn(first, result)
         self.assertIn(second, result)
+
+
+class GenoBaseSaveAsCopyTests(TestCase):
+    """
+    Tests for GenoBase.save_as_copy(), in particular the clearing of
+    `import_id` (if the model has that field) that was added alongside
+    the pre-existing `name` "[KOPIE]" suffix logic.
+    """
+
+    def test_import_id_and_name_are_reset_on_copy(self):
+        building = Building.objects.create(name="Building A")
+        rental_unit = RentalUnit.objects.create(
+            name="A1",
+            rental_type="Wohnung",
+            building=building,
+            import_id="IMPORT-100",
+        )
+        original_pk = rental_unit.pk
+
+        rental_unit.save_as_copy()
+
+        # The instance now represents the freshly inserted copy.
+        self.assertIsNotNone(rental_unit.pk)
+        self.assertNotEqual(rental_unit.pk, original_pk)
+        self.assertEqual(rental_unit.name, "A1 [KOPIE]")
+        self.assertIsNone(rental_unit.import_id)
+
+        # The original row must be left untouched.
+        original = RentalUnit.objects.get(pk=original_pk)
+        self.assertEqual(original.name, "A1")
+        self.assertEqual(original.import_id, "IMPORT-100")
+
+        # The copy was persisted with a cleared import_id.
+        copy = RentalUnit.objects.get(pk=rental_unit.pk)
+        self.assertIsNone(copy.import_id)
+        self.assertEqual(copy.name, "A1 [KOPIE]")
+
+    def test_import_id_cleared_even_when_name_is_not_a_string(self):
+        # Child.name is a OneToOneField to Address (not a string), so the
+        # "[KOPIE]" suffix logic must not touch it, but import_id must
+        # still be cleared independently.
+        address = Address.objects.create(name="Test", first_name="Testus")
+        share = Share.objects.create(
+            name=address,
+            share_type=ShareType.objects.create(name="Test"),
+            value=1,
+            import_id="SHARE-1",
+        )
+
+        share.save_as_copy()
+
+        self.assertEqual(share.name, address)
+        self.assertIsNone(share.import_id)
+
+
+class AddressSaveAsCopyTests(TestCase):
+    def test_save_as_copy_clears_user_random_id_and_import_id(self):
+        user = User.objects.create_user(username="hans", password="secret")
+        address = Address.objects.create(
+            name="Muster",
+            first_name="Hans",
+            user=user,
+            import_id="ADDR-1",
+        )
+        original_pk = address.pk
+        original_random_id = address.random_id
+
+        address.save_as_copy()
+
+        self.assertIsNotNone(address.pk)
+        self.assertNotEqual(address.pk, original_pk)
+        self.assertIsNone(address.user)
+        self.assertNotEqual(address.random_id, original_random_id)
+        self.assertIsNone(address.import_id)
+        self.assertEqual(address.name, "Muster [KOPIE]")
+
+        # The original row keeps its user, random_id and import_id.
+        original = Address.objects.get(pk=original_pk)
+        self.assertEqual(original.user, user)
+        self.assertEqual(original.random_id, original_random_id)
+        self.assertEqual(original.import_id, "ADDR-1")
+        self.assertEqual(original.name, "Muster")
+
+    def test_save_as_copy_without_import_id_still_clears_user_and_random_id(self):
+        user = User.objects.create_user(username="anna", password="secret")
+        address = Address.objects.create(name="Musterfrau", first_name="Anna", user=user)
+        original_random_id = address.random_id
+
+        address.save_as_copy()
+
+        self.assertIsNone(address.user)
+        self.assertIsNone(address.import_id)
+        self.assertNotEqual(address.random_id, original_random_id)
+
+
+class ContractSaveAsCopyTests(TestCase):
+    def setUp(self):
+        building = Building.objects.create(name="Building C")
+        self.rental_unit = RentalUnit.objects.create(
+            name="C1", rental_type="Wohnung", building=building
+        )
+        self.contractor = Address.objects.create(name="Muster", first_name="Hans")
+        child_address = Address.objects.create(name="Muster", first_name="Kind")
+        self.child = Child.objects.create(name=child_address, presence=5.0)
+
+    def test_save_as_copy_preserves_m2m_and_clears_import_id(self):
+        contract = Contract.objects.create(date=date(2024, 1, 1), import_id="CONTRACT-1")
+        contract.contractors.set([self.contractor])
+        contract.children.set([self.child])
+        contract.rental_units.set([self.rental_unit])
+
+        original_pk = contract.pk
+
+        contract.save_as_copy()
+
+        self.assertIsNotNone(contract.pk)
+        self.assertNotEqual(contract.pk, original_pk)
+        self.assertIsNone(contract.import_id)
+        self.assertEqual(list(contract.contractors.all()), [self.contractor])
+        self.assertEqual(list(contract.children.all()), [self.child])
+        self.assertEqual(list(contract.rental_units.all()), [self.rental_unit])
+
+        # The original contract is unaffected and keeps its import_id and
+        # its own M2M relations.
+        original = Contract.objects.get(pk=original_pk)
+        self.assertEqual(original.import_id, "CONTRACT-1")
+        self.assertEqual(list(original.contractors.all()), [self.contractor])
+        self.assertEqual(list(original.children.all()), [self.child])
+        self.assertEqual(list(original.rental_units.all()), [self.rental_unit])

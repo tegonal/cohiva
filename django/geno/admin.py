@@ -3,6 +3,7 @@ import gettext
 from collections.abc import Callable
 
 import pycountry
+from auditlog.mixins import AuditlogHistoryAdminMixin
 from dateutil.relativedelta import relativedelta
 from django import forms
 from django.conf import settings
@@ -11,7 +12,7 @@ from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, User
 from django.core.exceptions import PermissionDenied
-from django.db.models import Case, IntegerField, Q, Value, When
+from django.db.models import Case, Exists, IntegerField, OuterRef, Q, Value, When
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -100,6 +101,46 @@ class ShareStateFilter(admin.SimpleListFilter):
         return queryset
 
 
+class ShareBuildingFilter(admin.SimpleListFilter):
+    """Filter Shares to show the ones that are related to a specific building.
+    The relationship is determined by the following rules:
+     - If attached_to_building is set, include the Share if that building is the selected Building.
+     - If attached_to_contract is set, include the Share if the contract has a RentalUnit in the
+       selected Building.
+     - Otherwise, include the Share if the owner of the share has an active Contract with a
+       RentalUnit in the selected Building.
+     Note that attached_to_building and attached_to_contract are mutually exclusive."""
+
+    title = Building._meta.verbose_name
+    parameter_name = "building_id"
+
+    def lookups(self, request, model_admin):
+        return Building.objects.filter(active=True).values_list("pk", "name")
+
+    def queryset(self, request, queryset):
+        building_id = self.value()
+        if building_id is None:
+            return queryset
+        try:
+            building = Building.objects.get(id=building_id)
+        except Building.DoesNotExist:
+            return queryset.none()
+        # Subquery for active contracts that include the Address of the Share (`name` field) in
+        # the list of contractors and that are related to the building.
+        contract_subquery = Contract.get_active().filter(
+            contractors=OuterRef("name"), rental_units__building=building
+        )
+        return queryset.filter(
+            Q(attached_to_building=building)
+            | Q(attached_to_contract__rental_units__building=building)
+            | (
+                Q(attached_to_building__isnull=True)
+                & Q(attached_to_contract__isnull=True)
+                & Exists(contract_subquery)
+            )
+        ).distinct()
+
+
 class BooleanFieldDefaultTrueListFilter(admin.BooleanFieldListFilter):
     """
     Filter a boolean field `active`.
@@ -154,12 +195,14 @@ class BooleanFieldDefaultTrueListFilter(admin.BooleanFieldListFilter):
 
 
 ## Base admin class
-class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
+class GenoBaseAdmin(AuditlogHistoryAdminMixin, ModelAdmin, ExportXlsMixin):
     model = None
     view_on_site = False
     save_as = True
     save_on_top = True
+    change_form_template = "admin/geno/change_form.html"
     actions = ["export_as_xls", copy_objects]
+    actions_detail = []
 
     # Add custom admin JS (focus handling for select2 focus)
     class Media:
@@ -173,6 +216,30 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
                 if field_name in form.base_fields:
                     form.base_fields[field_name].widget.can_add_related = False
         return form
+
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        """
+        Render the changeform and include a link to the django-auditlog history
+        URL (i.e. /auditlog) when we are editing an existing record.
+
+        Args:
+            request: The current HTTP request.
+            object_id: The primary key of the object being edited, or ``None``
+                when adding a new object.
+            form_url: The URL of the form.
+            extra_context: Optional dictionary of extra template context.
+
+        Returns:
+            TemplateResponse: The rendered changeform response.
+        """
+        extra_context = extra_context or {}
+        if object_id:
+            opts = self.model._meta
+            extra_context["auditlog_url"] = reverse(
+                "admin:%s_%s_auditlog" % (opts.app_label, opts.model_name),
+                args=[object_id],
+            )
+        return super().changeform_view(request, object_id, form_url, extra_context)
 
     def __init__(self, model, admin_site):
         super().__init__(model, admin_site)
@@ -304,6 +371,54 @@ class GenoBaseAdmin(ModelAdmin, ExportXlsMixin):
                 setattr(cls, attr, filtered_fields)
 
 
+class ObjectActionsMixin:
+    """Mixin to add object actions to a dropdown menu of a model admin.
+    It will add the actions returned by the get_object_actions() method of the object to the
+    dropdown menu with a download icon. Override get_dropdown_actions() to add custom actions
+    before or after those returned by get_object_actions()."""
+
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        response = super().changeform_view(request, object_id, form_url, extra_context)
+
+        if object_id and hasattr(response, "context_data"):
+            try:
+                object = self.model.objects.get(pk=object_id)
+            except self.model.DoesNotExist:
+                return response
+
+            dropdown_items = self.get_dropdown_actions(object, request)
+
+            if dropdown_items:
+                response.context_data["actions_detail"].append(
+                    {
+                        "title": str(_("Aktionen")),
+                        "path": None,
+                        "icon": None,
+                        "variant": ActionVariant.PRIMARY,
+                        "method_name": f"{object._meta.model_name}_actions",
+                        "items": dropdown_items,
+                    }
+                )
+
+        return response
+
+    def get_dropdown_actions(self, object, request):
+        """List of object actions for the dropdown menu. Override this method in the model admin
+        to add custom actions."""
+        dropdown_items = []
+        for action_item in object.get_object_actions():
+            if isinstance(action_item, dict) and "title" in action_item and "path" in action_item:
+                dropdown_items.append(
+                    {
+                        "title": action_item.get("title"),
+                        "path": action_item.get("path"),
+                        "icon": action_item.get("icon", "file_save"),
+                        "attrs": action_item.get("attrs", {}),
+                    }
+                )
+        return dropdown_items
+
+
 class ProtectedNameMixin:
     """Use this mixin to protect model instances with specific names from being deleted
     or having their name changed in the admin interface.
@@ -415,7 +530,7 @@ class CountryFilter(admin.SimpleListFilter):
 
 
 @admin.register(Address)
-class AddressAdmin(GenoBaseAdmin):
+class AddressAdmin(ObjectActionsMixin, GenoBaseAdmin):
     model = Address
     fields = [
         "organization",
@@ -440,7 +555,6 @@ class AddressAdmin(GenoBaseAdmin):
         ("ts_created", "ts_modified"),
         ("import_id", "random_id"),
         "user",
-        "object_actions",
         "links",
         "backlinks",
     ]
@@ -449,7 +563,6 @@ class AddressAdmin(GenoBaseAdmin):
         "ts_modified",
         "import_id",
         "random_id",
-        "object_actions",
         "links",
         "backlinks",
         "carddav_href",
@@ -619,7 +732,7 @@ class MemberAttributeTabularInline(TabularInline):
 
 
 @admin.register(Member)
-class MemberAdmin(GenoBaseAdmin):
+class MemberAdmin(ObjectActionsMixin, GenoBaseAdmin):
     inlines = [MemberAttributeTabularInline]  # model = Member
     fieldsets = (
         (
@@ -641,13 +754,11 @@ class MemberAdmin(GenoBaseAdmin):
         ),
         ("Zusatzinfos", {"fields": ("notes", "ts_created", "ts_modified"), "classes": ["tab"]}),
         ("Verknüpfungen", {"fields": ("links", "backlinks"), "classes": ["tab"]}),
-        ("Aktionen", {"fields": ("object_actions",), "classes": ["tab"]}),
     )
     readonly_fields = [
         "active",
         "ts_created",
         "ts_modified",
-        "object_actions",
         "links",
         "backlinks",
     ]
@@ -913,7 +1024,7 @@ def share_send_membermail(modeladmin, request, queryset):
 
 
 @admin.register(Share)
-class ShareAdmin(GenoBaseAdmin):
+class ShareAdmin(ObjectActionsMixin, GenoBaseAdmin):
     model = Share
     fields = [
         "name",
@@ -926,25 +1037,25 @@ class ShareAdmin(GenoBaseAdmin):
         ("value", "value_total", "is_interest_credit", "is_pension_fund", "is_business"),
         "attached_to_contract",
         "attached_to_building",
+        "related_contracts",
         "note",
         ("interest", "interest_mode", "manual_interest"),
         ("identifier", "identifier_external"),
         "comment",
         "import_id",
         ("ts_created", "ts_modified"),
-        "object_actions",
         "links",
         "backlinks",
     ]
     readonly_fields = [
         "payment_state",
         "value_total",
+        "related_contracts",
         "interest",
         "import_id",
         "active",
         "ts_created",
         "ts_modified",
-        "object_actions",
         "links",
         "backlinks",
     ]
@@ -971,6 +1082,7 @@ class ShareAdmin(GenoBaseAdmin):
         "is_interest_credit",
         "is_pension_fund",
         "is_business",
+        ShareBuildingFilter,
         "payment_date",
         "repayment_date",
         "duration",
@@ -1004,22 +1116,22 @@ class ShareAdmin(GenoBaseAdmin):
     ]
 
     @action(
-        description=_("Export"),
+        description=_("Current extract"),
         permissions=["geno.canview_share"],
         icon="download",
         # variant=ActionVariant.PRIMARY,
     )
     def export_shares(self, request):
-        return redirect(reverse("geno:share-export") + "?aggregate=yes")
+        return redirect(reverse("geno:share-export"))
 
     @action(
-        description=_("Export per Ende Vorjahr"),
+        description=_("Extract as of end of prior year"),
         permissions=["geno.canview_share"],
         icon="clock_arrow_down",
         # variant=ActionVariant.PRIMARY,
     )
     def export_shares_endofyear(self, request):
-        return redirect(reverse("geno:share-export") + "?aggregate=yes&jahresende=yes")
+        return redirect(reverse("geno:share-export") + "?jahresende=yes")
 
 
 @admin.register(DocumentType)
@@ -1062,7 +1174,7 @@ class DocumentTypeAdmin(GenoBaseAdmin):
 
 
 @admin.register(Document)
-class DocumentAdmin(GenoBaseAdmin):
+class DocumentAdmin(ObjectActionsMixin, GenoBaseAdmin):
     model = Document
     fields = [
         "name",
@@ -1071,7 +1183,6 @@ class DocumentAdmin(GenoBaseAdmin):
         "content_type",
         "comment",
         ("ts_created", "ts_modified"),
-        "object_actions",
         "links",
         "backlinks",
     ]
@@ -1079,7 +1190,6 @@ class DocumentAdmin(GenoBaseAdmin):
         "content_type",
         "ts_created",
         "ts_modified",
-        "object_actions",
         "links",
         "backlinks",
     ]
@@ -1113,14 +1223,12 @@ class BankAccountAdmin(GenoBaseAdmin):
         "account_holders",
         "comment",
         ("ts_created", "ts_modified"),
-        "object_actions",
         "links",
         "backlinks",
     ]
     readonly_fields = [
         "ts_created",
         "ts_modified",
-        "object_actions",
         "links",
         "backlinks",
     ]
@@ -1699,7 +1807,7 @@ class VertragstypFilter(admin.SimpleListFilter):
 
 
 @admin.register(Contract)
-class ContractAdmin(GenoBaseAdmin):
+class ContractAdmin(ObjectActionsMixin, GenoBaseAdmin):
     form = ContractAdminModelForm
     fields = [
         "main_contract",
@@ -1783,52 +1891,20 @@ class ContractAdmin(GenoBaseAdmin):
     actions_list = [
         "contract_report",
     ]
-    actions_detail = []
 
-    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
-        response = super().changeform_view(request, object_id, form_url, extra_context)
-
-        if object_id and hasattr(response, "context_data"):
-            try:
-                contract = self.model.objects.get(pk=object_id)
-            except self.model.DoesNotExist:
-                return response
-
-            dropdown_items = []
-
-            if request.user.has_perm("geno.add_contract"):
-                dropdown_items.append(
-                    {
-                        "title": str(_("Untervertrag hinzufügen")),
-                        "path": reverse("admin:geno_contract_add") + f"?main_contract={object_id}",
-                        "icon": "splitscreen_add",
-                        "attrs": {},
-                    }
-                )
-
-            for action_tuple in contract.get_object_actions():
-                dropdown_items.append(
-                    {
-                        "title": action_tuple[1],
-                        "path": action_tuple[0],
-                        "icon": "file_save",
-                        "attrs": {},
-                    }
-                )
-
-            if dropdown_items:
-                response.context_data["actions_detail"] = [
-                    {
-                        "title": str(_("Aktionen")),
-                        "path": None,
-                        "icon": None,
-                        "variant": ActionVariant.PRIMARY,
-                        "method_name": "contract_actions",
-                        "items": dropdown_items,
-                    }
-                ]
-
-        return response
+    def get_dropdown_actions(self, object, request):
+        dropdown_items = super().get_dropdown_actions(object, request)
+        if request.user.has_perm("geno.add_contract"):
+            dropdown_items.insert(
+                0,
+                {
+                    "title": str(_("Untervertrag hinzufügen")),
+                    "path": reverse("admin:geno_contract_add") + f"?main_contract={object.id}",
+                    "icon": "splitscreen_add",
+                    "attrs": {},
+                },
+            )
+        return dropdown_items
 
     @display(
         description="Vertrag",

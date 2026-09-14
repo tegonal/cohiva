@@ -10,7 +10,8 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunSQL(
-            """CREATE VIEW geno_TenantsView AS
+            """DROP VIEW IF EXISTS geno_TenantsView;
+CREATE VIEW geno_TenantsView AS
 SELECT DISTINCT
 	CONVERT(concat(LPAD(c.id, 4, 0), LPAD(bu.id, 4, 0), LPAD(ru.id, 4, 0), LPAD(ad.id, 4,0)), INTEGER) as id,
 	'' as comment,
@@ -106,6 +107,6 @@ LEFT JOIN
     geno_address ad ON ad.id = ch.name_id
 LEFT JOIN
     geno_member m ON m.name_id = ad.id;""",
-            """DROP VIEW geno_TenantsView;""",
+            """DROP VIEW IF EXISTS geno_TenantsView;""",
         )
     ]

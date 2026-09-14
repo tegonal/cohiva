@@ -28,6 +28,8 @@ asgiref==3.8.1
     # via
     #   django
     #   django-cors-headers
+async-timeout==5.0.1
+    # via redis
 atomicwrites==1.4.1
     # via vdirsyncer
 attrs==25.3.0
@@ -97,6 +99,8 @@ django==5.2.17
     # via
     #   -r requirements.in
     #   dj-rest-auth
+    #   django-altcha
+    #   django-auditlog
     #   django-cors-headers
     #   django-crispy-forms
     #   django-datetime-widget
@@ -118,6 +122,8 @@ django==5.2.17
     #   laces
     #   wagtail
 django-altcha==1.0.0
+    # via -r requirements.in
+django-auditlog==3.4.1
     # via -r requirements.in
 django-cogwheels==0.3
     # via wagtailmenus
@@ -153,11 +159,13 @@ django-taggit==6.1.0
     # via wagtail
 django-tasks==0.7.0
     # via wagtail
+django-test-migrations==1.5.0
+    # via -r requirements.in
 django-treebeard==4.7.1
     # via wagtail
 django-unfold==0.85.0
     # via -r requirements.in
-djangorestframework==3.16.1
+djangorestframework==3.17.2
     # via
     #   -r requirements.in
     #   dj-rest-auth
@@ -275,7 +283,7 @@ pyopenssl==24.2.1
     # via pysaml2
 pyparsing==3.2.5
     # via matplotlib
-pypdf==6.15.0
+pypdf==6.16.1
     # via -r requirements.in
 pysaml2==7.5.2
     # via djangosaml2idp
@@ -283,6 +291,7 @@ python-dateutil==2.9.0.post0
     # via
     #   arrow
     #   celery
+    #   django-auditlog
     #   icalendar
     #   matplotlib
     #   pysaml2
@@ -360,6 +369,7 @@ typing-extensions==4.13.2
     #   aiosignal
     #   django-stubs-ext
     #   django-tasks
+    #   django-test-migrations
     #   jwcrypto
 tzdata==2025.2
     # via
@@ -424,6 +434,9 @@ zope-interface==7.2
     #   zope-proxy
 zope-proxy==6.1
     # via zope-deferredimport
+
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools
 
 # Packages added/managed by install.py:
 sepa==0.5.4+mst1

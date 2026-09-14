@@ -6,7 +6,7 @@ from django import forms
 from django.contrib import admin
 from unfold.admin import StackedInline, TabularInline
 
-from geno.admin import GenoBaseAdmin
+from geno.admin import GenoBaseAdmin, ObjectActionsMixin
 from report.forms import _make_report_input_field
 from report.models import (
     Report,
@@ -192,7 +192,7 @@ class ReportItemsInline(StackedInline):  # oder StackedInline
 
 
 @admin.register(Report)
-class ReportAdmin(GenoBaseAdmin):
+class ReportAdmin(ObjectActionsMixin, GenoBaseAdmin):
     model = Report
     fields = [
         "name",
@@ -201,14 +201,12 @@ class ReportAdmin(GenoBaseAdmin):
         "state",
         "state_info",
         "comment",
-        "object_actions",
         "task_id",
         ("ts_created", "ts_modified"),
         "links",
     ]
     readonly_fields = [
         "task_id",
-        "object_actions",
         "ts_created",
         "ts_modified",
         "links",

@@ -156,11 +156,35 @@ class Report(GenoBase):
     def get_object_actions(self):
         actions = []
         if self.state == "new":
-            actions.append((f"/report/generate_dryrun/{self.pk}/", "Report erzeugen (Testlauf)"))
-            actions.append((f"/report/generate/{self.pk}/", "Report erzeugen"))
+            actions.append(
+                {
+                    "path": f"/report/generate_dryrun/{self.pk}/",
+                    "title": "Report erzeugen (Testlauf)",
+                    "icon": "manufacturing",
+                }
+            )
+            actions.append(
+                {
+                    "path": f"/report/generate/{self.pk}/",
+                    "title": "Report erzeugen",
+                    "icon": "manufacturing",
+                }
+            )
         elif self.state != "pending":
-            actions.append((f"/report/output/{self.pk}/", "Resultate anzeigen"))
-            actions.append((f"/report/delete_output/{self.pk}/?init=1", "Alle Resultate LÖSCHEN!"))
+            actions.append(
+                {
+                    "path": f"/report/output/{self.pk}/",
+                    "title": "Resultate anzeigen",
+                    "icon": "docs",
+                }
+            )
+            actions.append(
+                {
+                    "path": f"/report/delete_output/{self.pk}/?init=1",
+                    "title": "Alle Resultate LÖSCHEN!",
+                    "icon": "delete",
+                }
+            )
         return actions
 
     def save_as_copy(self, label_as_copy=True, commit=True):

@@ -37,7 +37,9 @@ Mehrere Dateien des gleichen Typs können in einer <b>ZIP-Datei</b> zusammengefa
 {% endif %}
 
 {% if import_items.skipped %}
-<p><b class="warning">{{ import_items.skipped|length }} Buchungen wurden ignoriert:</b>
+<p><b class="warning">
+    {% blocktrans count counter=import_items.skipped|length %}{{ counter }} {{ item_name }} wurde ignoriert:{% plural %}{{ counter }} {{ item_name_plural }} wurden ignoriert:{% endblocktrans %}
+</b>
 <ul>
 {% for item in import_items.skipped %}
     <li>{{ item }}</li>
@@ -46,14 +48,16 @@ Mehrere Dateien des gleichen Typs können in einer <b>ZIP-Datei</b> zusammengefa
 {% endif %}
 
 {% if import_items.success %}
-<p><b class="success">{{ import_items.success|length }} Buchungen wurden importiert:</b>
+<p><b class="success">
+    {% blocktrans count counter=import_items.success|length %}{{ counter }} {{ item_name }} wurde importiert:{% plural %}{{ counter }} {{ item_name_plural }} wurden importiert:{% endblocktrans %}
+</b>
 <ul>
 {% for item in import_items.success %}
     <li>{{ item }}</li>
 {% endfor %}
 </ul></p>
 {% else %}
-<p><b class="warning">Es wurden keine gültigen Buchungen gefunden.</b></p>
+<p><b class="warning">{% blocktrans %}Es wurden keine gültigen {{ item_name_plural }} gefunden.{% endblocktrans %}</b></p>
 {% endif %}
 
 {% if import_items.log  %}

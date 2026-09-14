@@ -4,6 +4,21 @@ from django.utils.translation import gettext_lazy as _
 from stdnum.ch import ssn
 
 
+class LowercaseEmailField(models.EmailField):
+    """
+    Override EmailField to convert emails to lowercase before saving.
+    """
+
+    def to_python(self, value):
+        """
+        Convert email to lowercase.
+        """
+        value = super().to_python(value)
+        if isinstance(value, str):
+            return value.lower()
+        return value
+
+
 class AHVNumberField(models.CharField):
     description = "Swiss social security number (AHV-Nummer)"
 
@@ -34,10 +49,10 @@ class AHVNumberField(models.CharField):
 
     def from_db_value(self, value, expression, connection):
         if not value:
-            return None
+            return ""
         return self.format_value(value)
 
     def to_python(self, value):
         if not value:
-            return None
+            return ""
         return self.format_value(value)

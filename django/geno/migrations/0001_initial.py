@@ -9,8 +9,8 @@ import select2.fields
 from django.conf import settings
 from django.db import migrations, models
 
+import cohiva.fields
 import cohiva.utils.settings
-import geno.model_fields
 
 
 class Migration(migrations.Migration):
@@ -115,13 +115,13 @@ class Migration(migrations.Migration):
                 ("mobile", models.CharField(blank=True, max_length=30, verbose_name="2. Telefon")),
                 (
                     "email",
-                    geno.model_fields.LowercaseEmailField(
+                    cohiva.fields.LowercaseEmailField(
                         blank=True, max_length=254, verbose_name="Email"
                     ),
                 ),
                 (
                     "email2",
-                    geno.model_fields.LowercaseEmailField(
+                    cohiva.fields.LowercaseEmailField(
                         blank=True, max_length=254, verbose_name="2. Email"
                     ),
                 ),

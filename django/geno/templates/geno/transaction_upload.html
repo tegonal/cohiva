@@ -63,7 +63,7 @@
       {% if import_items.skipped %}
         <div class="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-default">
           <p class="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
-            {% blocktrans count counter=import_items.skipped|length %}{{ counter }} {{ item_name }} wurde ignoriert:{% plural %}{{ counter }} {{ item_name }} wurden ignoriert:{% endblocktrans %}
+            {% blocktrans count counter=import_items.skipped|length %}{{ counter }} {{ item_name }} wurde ignoriert:{% plural %}{{ counter }} {{ item_name_plural }} wurden ignoriert:{% endblocktrans %}
           </p>
           <ul class="list-disc list-inside ml-4 text-yellow-700 dark:text-yellow-300">
             {% for item in import_items.skipped %}
@@ -77,7 +77,7 @@
       {% if import_items.success %}
         <div class="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-default">
           <p class="font-semibold text-green-800 dark:text-green-200 mb-2">
-            {% blocktrans count counter=import_items.success|length %}{{ counter }} {{ item_name }} wurde importiert:{% plural %}{{ counter }} {{ item_name }} wurden importiert:{% endblocktrans %}
+            {% blocktrans count counter=import_items.success|length %}{{ counter }} {{ item_name }} wurde importiert:{% plural %}{{ counter }} {{ item_name_plural }} wurden importiert:{% endblocktrans %}
           </p>
           <ul class="list-disc list-inside ml-4 text-green-700 dark:text-green-300">
             {% for item in import_items.success %}
@@ -88,7 +88,7 @@
       {% else %}
         <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-default">
           <p class="font-semibold text-yellow-800 dark:text-yellow-200">
-            {% blocktrans %}Es wurden keine gültigen {{ item_name }} gefunden.{% endblocktrans %}
+            {% blocktrans %}Es wurden keine gültigen {{ item_name_plural }} gefunden.{% endblocktrans %}
           </p>
         </div>
       {% endif %}

@@ -103,37 +103,6 @@ def ensure_dir_exists(path):
         os.mkdir(path)
 
 
-## strict_dates:
-##   - True:  Check if membership end date is not in the future and that join date is in the past.
-##   - False: Only check if membership end date exists.
-## date_mode:
-##   - strict (default): Check if membership end date is not in the future
-##                       and that join date is in the past.
-##   - end_date: Only check if membership end date exists.
-##   - last_year: Check membership at end of previous year
-def is_member(address, date_mode="strict"):
-    from .models import Member
-
-    today = datetime.date.today()
-    memberships = Member.objects.filter(name=address)
-    if not memberships.exists():
-        return False
-    for m in memberships:
-        if date_mode == "strict":
-            if not (m.date_leave and m.date_leave <= today or m.date_join > today):
-                return True
-        elif date_mode == "end_date":
-            if not m.date_leave:
-                return True
-        elif date_mode == "last_year":
-            end_last_year = datetime.date(today.year - 1, 12, 31)
-            if not (m.date_leave and m.date_leave <= end_last_year or m.date_join > end_last_year):
-                return True
-        else:
-            raise Exception("Unknown date_mode argument in is_member()")
-    return False
-
-
 def is_renting(address, date=None):
     from .models import Child
 
