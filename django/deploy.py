@@ -111,6 +111,12 @@ def deploy_production():
     os.system(
         f"rsync -a --info=NAME {celery_files} {rsync_opts} --delete --delete-missing-args {DEPLOY_DEST_PRODUCTION}/celery/"
     )
+    ## Locale files
+    locale_files = "locale/"
+    os.system(
+        f"rsync -a --info=NAME {locale_files} {rsync_opts} --exclude *.po --delete --delete-missing-args {DEPLOY_DEST_PRODUCTION}/locale/"
+    )
+
 
     print("- Updating version.py")
     update_deployed_version_file()
