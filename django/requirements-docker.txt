@@ -28,6 +28,8 @@ asgiref==3.8.1
     # via
     #   django
     #   django-cors-headers
+async-timeout==5.0.1
+    # via redis
 atomicwrites==1.4.1
     # via vdirsyncer
 attrs==25.3.0
