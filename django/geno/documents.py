@@ -627,13 +627,19 @@ class ProcessDocuments:
         for doc in recipient.documents:
             if doc.doctype is None or doc.context is None:
                 continue
-            Document.objects.create(
-                name=doc.filename,
-                doctype=doc.doctype,
-                template=doc.content_template,
-                data=json.dumps(doc.context, cls=_ContextEncoder),
-                content_object=content_obj,
-            )
+            try:
+                Document.objects.create(
+                    name=doc.filename,
+                    doctype=doc.doctype,
+                    template=doc.content_template,
+                    data=json.dumps(doc.context, cls=_ContextEncoder),
+                    content_object=content_obj,
+                )
+            except Exception as e:
+                msg = f"Konnte Dokument '{doc.filename}' für {recipient} nicht speichern. Fehler: {e}"
+                logger.error(msg)
+                recipient.failure = True
+                recipient.log.append(msg)
 
     def throttle(self):
         if not getattr(settings, "IS_RUNNING_TESTS", False):
