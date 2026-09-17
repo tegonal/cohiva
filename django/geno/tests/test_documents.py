@@ -1485,6 +1485,73 @@ class DocumentProcessTest(GenoAdminTestCase):
             logs=["KEIN EMAIL GESENDET! Grund: Keine Email-Adresse vorhanden."],
         )
 
+    def test_document_create_failure_does_not_stop_zip_processing(self):
+        """A Document.objects.create failure for one recipient does not abort
+        ZIP processing: later recipients' documents are still created."""
+        ct_statement = ContentTemplate.objects.get(name="Statement")
+        self.documenttypes[0].templates.add(ct_statement)
+
+        self.setup_members()
+        self.data["action"] = "makezip"
+        self.data["template_files"] = [
+            f"ContentTemplate:{ct_statement.pk}"
+        ]
+
+        real_create = Document.objects.create
+        state = {"n": 0}
+
+        def failing_create(*args, **kwargs):
+            state["n"] += 1
+            if state["n"] == 1:
+                raise RuntimeError("simulated DB failure")
+            return real_create(*args, **kwargs)
+
+        with patch("geno.documents.Document.objects.create") as mock_create:
+            mock_create.side_effect = failing_create
+            ret = send_member_mail_process(self.data)
+
+        self.assertTrue(isinstance(ret, HttpResponse))
+        # Check that four of the five documents were successfully created
+        self.assertEqual(Document.objects.count(), 4)
+
+    def test_document_create_failure_does_not_stop_mail_processing(self):
+        """A Document.objects.create failure for one recipient does not abort
+        mail sending: later recipients still get their mails sent and docs saved."""
+        ct_statement = ContentTemplate.objects.get(name="Statement")
+        self.documenttypes[0].templates.add(ct_statement)
+
+        self.setup_members()
+        self.data["action"] = "mail"
+        self.data["template_mail"] = f"template_id_{self.email_templates[0].pk}"
+        self.data["template_files"] = [
+            f"ContentTemplate:{ct_statement.pk}"
+        ]
+
+        real_create = Document.objects.create
+        state = {"n": 0}
+
+        def failing_create(*args, **kwargs):
+            state["n"] += 1
+            if state["n"] == 1:
+                raise RuntimeError("simulated DB failure")
+            return real_create(*args, **kwargs)
+
+        with patch(
+            "geno.documents.Document.objects.create", side_effect=failing_create
+        ):
+            ret = send_member_mail_process(self.data)
+
+        # Confirm that all four e-mails are successfully sent
+        self.assertEmailSent(4)
+        # One Document should have failed to save, and the recipient should be logged
+        self.assertEqual(Document.objects.count(), 3)
+        error_entry = next(
+            e for e in ret["errors"] if "Muster, Hans" in e["info"]
+        )
+        self.assertTrue(
+            any("simulated DB failure" in entry for entry in error_entry["objects"])
+        )
+
     def test_mail_sending_failure_with_invoice_rollback(self):
         """Invoices created during rendering are deleted when mail sending fails."""
         self.setup_members()
