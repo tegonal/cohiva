@@ -13,6 +13,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
+from django.db.models.functions import Coalesce
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch.dispatcher import receiver
 from django.template import Template
@@ -1221,6 +1222,10 @@ class Share(GenoBase):
             "is_business": self.is_business,
             "date": self.date.strftime("%d.%m.%Y") if self.date else "",
             "date_end": self.date_end.strftime("%d.%m.%Y") if self.date_end else "",
+            "payment_date": self.payment_date.strftime("%d.%m.%Y") if self.payment_date else "",
+            "repayment_date": self.repayment_date.strftime("%d.%m.%Y")
+            if self.repayment_date
+            else "",
             "date_due": self.date_due.strftime("%d.%m.%Y") if self.date_due else "",
             "interest": nformat(self.interest()),
             "interest_mode": self.interest_mode,
@@ -1242,7 +1247,7 @@ class Share(GenoBase):
             ret["related_shares"] = self.get_related_shares()
         return ret
 
-    def get_related_shares(self):
+    def get_related_shares(self, include_self=True):
         shares_by_type = {}
         shares_pension_fund = []
         total_shares_by_type = {}
@@ -1255,12 +1260,10 @@ class Share(GenoBase):
             related_contracts = []
             related_rental_units = []
             shares_by_type[share_type.name] = []
-            for share in (
-                self.get_active()
-                .filter(share_type=share_type)
-                .filter(name=self.name)
-                .order_by("date")
-            ):
+            shares_query = self.get_active().filter(share_type=share_type).filter(name=self.name)
+            if not include_self:
+                shares_query = shares_query.exclude(id=self.id)
+            for share in shares_query.order_by(Coalesce("effective_from", "payment_date")):
                 share_context = share.get_context()
                 if (
                     share_context["related_building"]
