@@ -1248,6 +1248,14 @@ class Share(GenoBase):
         return ret
 
     def get_related_shares(self, include_self=True):
+        """Get all active shares that belong to the same Address as this share, i.e.,
+        they have the same Share.name. This share is included unless include_self=False.
+
+        It retuns a dictionary with a list of the shares and the totals, both grouped by type.
+        The totals also include a list of related buildings, contracts, and rental_units.
+        Shares that have the is_pension_funds flag set, are returned in addition with a separate
+        list and totals (but they are also included in the general list and totals).
+        """
         shares_by_type = {}
         shares_pension_fund = []
         total_shares_by_type = {}
