@@ -21,6 +21,7 @@ from geno.models import (
     RentalUnit,
     Share,
     ShareType,
+    TenantsView,
 )
 from geno.tests.base import MockDate
 from reservation.admin import ReservationAdmin
@@ -818,3 +819,218 @@ class ShareAdminFilterTest(GenoAdminTestCase):
     def test_no_filter(self):
         _, qs = self._create_filter()
         self.assertEqual(qs.count(), Share.get_active().count())
+
+
+class TenantsViewAdminTest(GenoAdminTestCase):
+    """Tests for TenantsViewAdmin list_display data correctness."""
+
+    def _get_changelist(self, query_params=None):
+        factory = RequestFactory()
+        url = "/admin/geno/tenantsview/"
+        if query_params:
+            query_string = "&".join(f"{k}={v}" for k, v in query_params.items())
+            url = f"{url}?{query_string}"
+        request = factory.get(url)
+        request.user = self.su
+        model_admin = admin.TenantsViewAdmin(TenantsView, django_admin.site)
+        return model_admin.get_changelist_instance(request)
+
+    def _get_results_for_contract(self, contract_id, query_params=None):
+        changelist = self._get_changelist(query_params)
+        return [r for r in changelist.result_list if r.contract_id == contract_id]
+
+    def test_single_contractor(self):
+        """A contract with one contractor shows one row with correct contractor data."""
+        building = Building.objects.create(name="SingleBldg")
+        ru = RentalUnit.objects.create(
+            name="RU001", building=building, rental_type="Wohnung", area=50, rooms=2
+        )
+        adr = Address.objects.create(
+            name="Single", first_name="Contractor", email="single@example.com"
+        )
+        contract = Contract.objects.create(date=datetime.date(2024, 1, 1), state="unterzeichnet")
+        contract.rental_units.set([ru])
+        contract.contractors.set([adr])
+        contract.save()
+
+        results = self._get_results_for_contract(contract.id)
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].ad_name, "Single")
+        self.assertEqual(results[0].ad_first_name, "Contractor")
+        self.assertEqual(results[0].ad_email, "single@example.com")
+        self.assertFalse(results[0].c_ischild)
+        self.assertTrue(results[0].active)
+
+    def test_multiple_contractors(self):
+        """A contract with two contractors shows two rows, one per contractor."""
+        building = Building.objects.create(name="MultiBldg")
+        ru = RentalUnit.objects.create(
+            name="RU002", building=building, rental_type="Wohnung", area=60, rooms=3
+        )
+        adr1 = Address.objects.create(name="First", first_name="Contractor")
+        adr2 = Address.objects.create(name="Second", first_name="Contractor")
+        contract = Contract.objects.create(date=datetime.date(2024, 1, 1), state="unterzeichnet")
+        contract.rental_units.set([ru])
+        contract.contractors.set([adr1, adr2])
+        contract.save()
+
+        results = self._get_results_for_contract(contract.id)
+        self.assertEqual(len(results), 2)
+        names = {r.ad_name for r in results}
+        self.assertEqual(names, {"First", "Second"})
+        for r in results:
+            self.assertFalse(r.c_ischild)
+            self.assertTrue(r.active)
+
+    def test_contractor_is_member(self):
+        """A contractor who is a member shows the membership date."""
+        building = Building.objects.create(name="MemberBldg")
+        ru = RentalUnit.objects.create(
+            name="RU003", building=building, rental_type="Wohnung", area=70, rooms=3
+        )
+        adr = Address.objects.create(name="Member", first_name="Person")
+        Member.objects.create(name=adr, date_join=datetime.date(2020, 6, 15))
+        contract = Contract.objects.create(date=datetime.date(2024, 1, 1), state="unterzeichnet")
+        contract.rental_units.set([ru])
+        contract.contractors.set([adr])
+        contract.save()
+
+        results = self._get_results_for_contract(contract.id)
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].p_membership_date, datetime.date(2020, 6, 15))
+
+    def test_contractor_not_member(self):
+        """A contractor who is not a member shows no membership date."""
+        building = Building.objects.create(name="NonMemberBldg")
+        ru = RentalUnit.objects.create(
+            name="RU004", building=building, rental_type="Wohnung", area=80, rooms=4
+        )
+        adr = Address.objects.create(name="NonMember", first_name="Person")
+        contract = Contract.objects.create(date=datetime.date(2024, 1, 1), state="unterzeichnet")
+        contract.rental_units.set([ru])
+        contract.contractors.set([adr])
+        contract.save()
+
+        results = self._get_results_for_contract(contract.id)
+        self.assertEqual(len(results), 1)
+        self.assertIsNone(results[0].p_membership_date)
+
+    def test_children_associated(self):
+        """Children associated with a contract appear as separate rows with child data."""
+        building = Building.objects.create(name="ChildBldg")
+        ru = RentalUnit.objects.create(
+            name="RU005", building=building, rental_type="Wohnung", area=90, rooms=4
+        )
+        adr_parent = Address.objects.create(name="Parent", first_name="Person")
+        adr_child = Address.objects.create(
+            name="Child", first_name="Kid", date_birth=datetime.date(2015, 3, 10)
+        )
+        child = Child.objects.create(name=adr_child, presence=5.0)
+        contract = Contract.objects.create(date=datetime.date(2024, 1, 1), state="unterzeichnet")
+        contract.rental_units.set([ru])
+        contract.contractors.set([adr_parent])
+        contract.children.set([child])
+        contract.save()
+
+        results = self._get_results_for_contract(contract.id)
+        contractor_rows = [r for r in results if not r.c_ischild]
+        child_rows = [r for r in results if r.c_ischild]
+        self.assertEqual(len(contractor_rows), 1)
+        self.assertEqual(len(child_rows), 1)
+        self.assertEqual(contractor_rows[0].ad_name, "Parent")
+        self.assertEqual(child_rows[0].ad_name, "Child")
+        self.assertEqual(child_rows[0].ad_first_name, "Kid")
+        self.assertTrue(child_rows[0].c_ischild)
+        self.assertIsNotNone(child_rows[0].c_age)
+        self.assertGreater(child_rows[0].c_age, 0)
+        self.assertEqual(child_rows[0].presence, 5.0)
+        self.assertTrue(child_rows[0].active)
+
+    def test_multiple_buildings(self):
+        """Contracts in different buildings show the correct building name per row."""
+        building_a = Building.objects.create(name="BuildingA")
+        building_b = Building.objects.create(name="BuildingB")
+        ru_a = RentalUnit.objects.create(
+            name="RUA", building=building_a, rental_type="Wohnung", area=50, rooms=2
+        )
+        ru_b = RentalUnit.objects.create(
+            name="RUB", building=building_b, rental_type="Wohnung", area=60, rooms=3
+        )
+        adr_a = Address.objects.create(name="TenantA", first_name="Person")
+        adr_b = Address.objects.create(name="TenantB", first_name="Person")
+        contract_a = Contract.objects.create(date=datetime.date(2024, 1, 1), state="unterzeichnet")
+        contract_a.rental_units.set([ru_a])
+        contract_a.contractors.set([adr_a])
+        contract_a.save()
+        contract_b = Contract.objects.create(date=datetime.date(2024, 1, 1), state="unterzeichnet")
+        contract_b.rental_units.set([ru_b])
+        contract_b.contractors.set([adr_b])
+        contract_b.save()
+
+        changelist = self._get_changelist()
+        all_results = list(changelist.result_list)
+        results_a = [r for r in all_results if r.contract_id == contract_a.id]
+        results_b = [r for r in all_results if r.contract_id == contract_b.id]
+        self.assertEqual(len(results_a), 1)
+        self.assertEqual(len(results_b), 1)
+        self.assertEqual(results_a[0].bu_name, "BuildingA")
+        self.assertEqual(results_b[0].bu_name, "BuildingB")
+
+    def test_multiple_rental_units(self):
+        """A contract with multiple rental units shows one row per rental unit."""
+        building = Building.objects.create(name="MultiRUBldg")
+        ru1 = RentalUnit.objects.create(
+            name="RU101", building=building, rental_type="Wohnung", area=50, rooms=2
+        )
+        ru2 = RentalUnit.objects.create(
+            name="RU102", building=building, rental_type="Wohnung", area=55, rooms=2
+        )
+        adr = Address.objects.create(name="MultiRU", first_name="Tenant")
+        contract = Contract.objects.create(date=datetime.date(2024, 1, 1), state="unterzeichnet")
+        contract.rental_units.set([ru1, ru2])
+        contract.contractors.set([adr])
+        contract.save()
+
+        results = self._get_results_for_contract(contract.id)
+        self.assertEqual(len(results), 2)
+        ru_names = {r.ru_name for r in results}
+        self.assertEqual(ru_names, {"RU101", "RU102"})
+
+    def test_active_field_true(self):
+        """An active contract shows active=True in the list."""
+        building = Building.objects.create(name="ActiveBldg")
+        ru = RentalUnit.objects.create(
+            name="RU006", building=building, rental_type="Wohnung", area=50, rooms=2
+        )
+        adr = Address.objects.create(name="Active", first_name="Tenant")
+        contract = Contract.objects.create(
+            date=datetime.date(2024, 1, 1),
+            state="unterzeichnet",
+        )
+        contract.rental_units.set([ru])
+        contract.contractors.set([adr])
+        contract.save()
+
+        results = self._get_results_for_contract(contract.id)
+        self.assertEqual(len(results), 1)
+        self.assertTrue(results[0].active)
+
+    def test_active_field_false(self):
+        """An inactive contract shows active=False when all records are listed."""
+        building = Building.objects.create(name="InactiveBldg")
+        ru = RentalUnit.objects.create(
+            name="RU007", building=building, rental_type="Wohnung", area=50, rooms=2
+        )
+        adr = Address.objects.create(name="Inactive", first_name="Tenant")
+        contract = Contract.objects.create(
+            date=datetime.date(2024, 1, 1),
+            state="unterzeichnet",
+            date_end=datetime.date(2024, 1, 2),
+        )
+        contract.rental_units.set([ru])
+        contract.contractors.set([adr])
+        contract.save()
+
+        results = self._get_results_for_contract(contract.id, {"active__exact": "all"})
+        self.assertEqual(len(results), 1)
+        self.assertFalse(results[0].active)
