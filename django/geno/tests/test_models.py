@@ -1,4 +1,5 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+from decimal import Decimal
 from unittest.mock import patch
 
 from django.conf import settings
@@ -638,3 +639,633 @@ class ContractSaveAsCopyTests(TestCase):
         self.assertEqual(list(original.contractors.all()), [self.contractor])
         self.assertEqual(list(original.children.all()), [self.child])
         self.assertEqual(list(original.rental_units.all()), [self.rental_unit])
+
+
+class ShareGetContextTests(TestCase):
+    """Tests for Share.get_context() — does NOT cover get_related_shares()."""
+
+    def setUp(self):
+        self.address = Address.objects.create(name="Muster", first_name="Hans")
+        self.share_type = ShareType.objects.create(
+            name="TestType", standard_interest=Decimal("2.50")
+        )
+        self.building = Building.objects.create(name="Test Building")
+        self.rental_unit = RentalUnit.objects.create(
+            name="101", rental_type="Wohnung", building=self.building
+        )
+        self.contract = Contract.objects.create(date=date(2020, 1, 1), date_end=date(2100, 1, 1))
+        self.contract.rental_units.set([self.rental_unit])
+        self.contract.contractors.set([self.address])
+
+    def test_basic_context_with_all_fields_with_contract(self):
+        """All populated fields appear correctly formatted in the context (with contract)."""
+        # Only one of building or contract can be attached (DB constraint),
+        # here we test an attached contract.
+        self._check_all_populated_fields(attached_to_building=False)
+
+    def test_basic_context_with_all_fields_with_building(self):
+        """All populated fields appear correctly formatted in the context (with building)."""
+        # Only one of building or contract can be attached (DB constraint),
+        # here we test an attached building.
+        self._check_all_populated_fields(attached_to_building=True)
+
+    def _check_all_populated_fields(self, attached_to_building):
+        share = Share.objects.create(
+            name=self.address,
+            share_type=self.share_type,
+            payment_date=date(2020, 6, 15),
+            repayment_date=date(2025, 6, 15),
+            effective_from=date(2020, 7, 1),
+            effective_until=date(2025, 5, 31),
+            duration=5,
+            quantity=3,
+            value=Decimal("1000.00"),
+            interest_mode="Manual",
+            manual_interest=Decimal("3.75"),
+            is_interest_credit=True,
+            is_pension_fund=True,
+            is_business=True,
+            date_due=date(2025, 6, 15),
+            note="Test note",
+            identifier="AS-001",
+            identifier_external="EXT-001",
+            attached_to_building=None,
+            attached_to_contract=self.contract,
+        )
+        if attached_to_building:
+            share.attached_to_building = self.building
+            share.attached_to_contract = None
+            share.save()
+        ctx = share.get_context()
+
+        self.assertEqual(ctx["share_type"], "TestType")
+        self.assertEqual(ctx["quantity"], 3)
+        self.assertEqual(ctx["value"], "1'000.00")
+        self.assertEqual(ctx["value_total"], "3'000.00")
+        self.assertTrue(ctx["is_pension_fund"])
+        self.assertTrue(ctx["is_business"])
+        self.assertEqual(ctx["date"], "01.07.2020")
+        self.assertEqual(ctx["date_end"], "31.05.2025")
+        self.assertEqual(ctx["payment_date"], "15.06.2020")
+        self.assertEqual(ctx["repayment_date"], "15.06.2025")
+        self.assertEqual(ctx["date_due"], "15.06.2025")
+        self.assertEqual(ctx["interest"], "3.75")
+        self.assertEqual(ctx["interest_mode"], "Manual")
+        self.assertEqual(ctx["manual_interest"], "3.75")
+        self.assertTrue(ctx["is_interest_credit"])
+        self.assertEqual(ctx["duration"], 5)
+        self.assertEqual(ctx["note"], "Test note")
+        self.assertEqual(ctx["identifier"], "AS-001")
+        self.assertEqual(ctx["identifier_external"], "EXT-001")
+        if attached_to_building:
+            self.assertEqual(ctx["related_building"], "Test Building")
+            self.assertEqual(ctx["related_contract"], {})
+        else:
+            self.assertEqual(ctx["related_building"], "")
+            self.assertIn("Vertragsbeginn", ctx["related_contract"])
+
+    def test_null_dates_return_empty_strings(self):
+        """When date fields are None, the context contains empty strings."""
+        share = Share.objects.create(
+            name=self.address,
+            share_type=self.share_type,
+            payment_date=date(2020, 1, 1),
+            value=Decimal("500"),
+        )
+        ctx = share.get_context()
+
+        self.assertEqual(ctx["date_end"], "")
+        self.assertEqual(ctx["repayment_date"], "")
+        self.assertEqual(ctx["date_due"], "")
+
+    def test_interest_mode_standard_uses_share_type_rate(self):
+        """Interest value comes from share_type when mode is Standard."""
+        share = Share.objects.create(
+            name=self.address,
+            share_type=self.share_type,
+            payment_date=date(2020, 1, 1),
+            value=Decimal("1000"),
+            interest_mode="Standard",
+            manual_interest=Decimal("9.99"),
+        )
+        ctx = share.get_context()
+
+        self.assertEqual(ctx["interest"], "2.50")
+        self.assertEqual(ctx["interest_mode"], "Standard")
+
+    def test_interest_mode_manual_uses_manual_rate(self):
+        """Interest value comes from manual_interest when mode is Manual."""
+        share = Share.objects.create(
+            name=self.address,
+            share_type=self.share_type,
+            payment_date=date(2020, 1, 1),
+            value=Decimal("1000"),
+            interest_mode="Manual",
+            manual_interest=Decimal("4.50"),
+        )
+        ctx = share.get_context()
+
+        self.assertEqual(ctx["interest"], "4.50")
+
+    def test_payment_state_gefordert(self):
+        """Future payment date means payment_state is 'gefordert'."""
+        future = date.today() + timedelta(days=1)
+        share = Share.objects.create(
+            name=self.address,
+            share_type=self.share_type,
+            payment_date=future,
+            value=Decimal("1000"),
+        )
+        ctx = share.get_context()
+
+        self.assertEqual(ctx["payment_state"], "gefordert")
+
+    def test_payment_state_bezahlt(self):
+        """Past payment date without repayment means 'bezahlt'."""
+        past = date.today() - timedelta(days=1)
+        share = Share.objects.create(
+            name=self.address,
+            share_type=self.share_type,
+            payment_date=past,
+            value=Decimal("1000"),
+        )
+        ctx = share.get_context()
+
+        self.assertEqual(ctx["payment_state"], "bezahlt")
+
+    def test_payment_state_zurueckgezahlt(self):
+        """Past repayment date means 'zurückgezahlt'."""
+        past = date.today() - timedelta(days=1)
+        share = Share.objects.create(
+            name=self.address,
+            share_type=self.share_type,
+            payment_date=past - timedelta(days=10),
+            repayment_date=past,
+            value=Decimal("1000"),
+        )
+        ctx = share.get_context()
+
+        self.assertEqual(ctx["payment_state"], "zurückgezahlt")
+
+    def test_related_building_present(self):
+        """attached_to_building is reflected in related_building."""
+        share = Share.objects.create(
+            name=self.address,
+            share_type=self.share_type,
+            payment_date=date(2020, 1, 1),
+            value=Decimal("1000"),
+            attached_to_building=self.building,
+        )
+        ctx = share.get_context()
+
+        self.assertEqual(ctx["related_building"], "Test Building")
+
+    def test_related_contract_present(self):
+        """attached_to_contract is reflected in related_contract."""
+        share = Share.objects.create(
+            name=self.address,
+            share_type=self.share_type,
+            payment_date=date(2020, 1, 1),
+            value=Decimal("1000"),
+            attached_to_contract=self.contract,
+        )
+        ctx = share.get_context()
+
+        self.assertIn("Vertragsbeginn", ctx["related_contract"])
+        self.assertEqual(ctx["related_contract"]["Vertragsbeginn"], "01.01.2020")
+
+    def test_no_related_building_or_contract(self):
+        """When nothing is attached, related fields are empty."""
+        share = Share.objects.create(
+            name=self.address,
+            share_type=self.share_type,
+            payment_date=date(2020, 1, 1),
+            value=Decimal("1000"),
+        )
+        ctx = share.get_context()
+
+        self.assertEqual(ctx["related_building"], "")
+        self.assertEqual(ctx["related_contract"], {})
+
+    def test_include_related_shares_false_by_default(self):
+        """By default, related_shares is NOT in the context."""
+        share = Share.objects.create(
+            name=self.address,
+            share_type=self.share_type,
+            payment_date=date(2020, 1, 1),
+            value=Decimal("1000"),
+        )
+        ctx = share.get_context()
+
+        self.assertNotIn("related_shares", ctx)
+
+    @patch.object(Share, "get_related_shares", return_value={"mocked": True})
+    def test_include_related_shares_true_adds_key(self, mock_get_related):
+        """When include_related_shares=True, the key is present."""
+        share = Share.objects.create(
+            name=self.address,
+            share_type=self.share_type,
+            payment_date=date(2020, 1, 1),
+            value=Decimal("1000"),
+        )
+        ctx = share.get_context(include_related_shares=True)
+
+        self.assertIn("related_shares", ctx)
+        self.assertEqual(ctx["related_shares"], {"mocked": True})
+        mock_get_related.assert_called_once()
+
+    def test_value_total_when_quantity_is_zero(self):
+        """When quantity is 0, value_total returns '-' (from the property)."""
+        share = Share.objects.create(
+            name=self.address,
+            share_type=self.share_type,
+            payment_date=date(2020, 1, 1),
+            value=Decimal("1000"),
+            quantity=0,
+        )
+        ctx = share.get_context()
+
+        self.assertEqual(ctx["value_total"], "-")
+
+    def test_date_fallback_to_payment_date(self):
+        """When effective_from is None, date falls back to payment_date."""
+        share = Share.objects.create(
+            name=self.address,
+            share_type=self.share_type,
+            payment_date=date(2019, 3, 10),
+            value=Decimal("1000"),
+        )
+        ctx = share.get_context()
+
+        self.assertEqual(ctx["date"], "10.03.2019")
+
+    def test_date_end_fallback_to_repayment_date(self):
+        """When effective_until is None, date_end falls back to repayment_date."""
+        share = Share.objects.create(
+            name=self.address,
+            share_type=self.share_type,
+            payment_date=date(2020, 1, 1),
+            repayment_date=date(2024, 12, 31),
+            value=Decimal("1000"),
+        )
+        ctx = share.get_context()
+
+        self.assertEqual(ctx["date_end"], "31.12.2024")
+
+    def test_date_end_empty_when_no_repayment_or_effective_until(self):
+        """When both effective_until and repayment_date are None, date_end is empty."""
+        share = Share.objects.create(
+            name=self.address,
+            share_type=self.share_type,
+            payment_date=date(2020, 1, 1),
+            value=Decimal("1000"),
+        )
+        ctx = share.get_context()
+
+        self.assertEqual(ctx["date_end"], "")
+
+    def test_context_keys_are_complete(self):
+        """The returned dict contains all expected keys."""
+        share = Share.objects.create(
+            name=self.address,
+            share_type=self.share_type,
+            payment_date=date(2020, 1, 1),
+            value=Decimal("1000"),
+        )
+        ctx = share.get_context()
+
+        expected_keys = {
+            "share_type",
+            "quantity",
+            "value",
+            "value_total",
+            "is_pension_fund",
+            "is_business",
+            "date",
+            "date_end",
+            "payment_date",
+            "repayment_date",
+            "date_due",
+            "interest",
+            "interest_mode",
+            "manual_interest",
+            "is_interest_credit",
+            "duration",
+            "payment_state",
+            "note",
+            "identifier",
+            "identifier_external",
+            "related_building",
+            "related_contract",
+        }
+        self.assertTrue(expected_keys.issubset(ctx.keys()))
+
+
+class ShareGetRelatedSharesTest(TestCase):
+    """Tests for Share.get_related_shares()."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.address = Address.objects.create(
+            name="Muster", first_name="Hans", email="hans@example.com"
+        )
+        cls.other_address = Address.objects.create(
+            name="Andere", first_name="Anna", email="anna@example.com"
+        )
+        cls.share_type_a = ShareType.objects.create(name="Anteilschein")
+        cls.share_type_b = ShareType.objects.create(
+            name="Darlehen verzinst", standard_interest=1.5
+        )
+        cls.building = Building.objects.create(name="Musterweg 1")
+
+    def test_single_active_share(self):
+        """A single active share appears in shares_by_type and totals."""
+        share = Share.objects.create(
+            name=self.address,
+            share_type=self.share_type_a,
+            payment_date=date(2000, 1, 1),
+            value=1000,
+            quantity=2,
+        )
+        result = share.get_related_shares()
+        self.assertEqual(len(result["shares_by_type"][self.share_type_a.name]), 1)
+        self.assertEqual(result["total_shares_by_type"][self.share_type_a.name]["quantity"], 2)
+        self.assertEqual(
+            result["total_shares_by_type"][self.share_type_a.name]["value"], "2'000.00"
+        )
+
+    def test_no_shares_returns_empty_if_self_not_included(self):
+        """When the address has no shares, all share types have empty lists."""
+        share = Share.objects.create(
+            name=self.address,
+            share_type=self.share_type_a,
+            payment_date=date(2000, 1, 1),
+            value=1000,
+        )
+        result = share.get_related_shares(include_self=False)
+        self.assertIn("shares_by_type", result)
+        self.assertIn("total_shares_by_type", result)
+        self.assertEqual(result["shares_pension_fund"], [])
+        self.assertEqual(result["total_shares_pension_fund"]["quantity"], 0)
+        self.assertEqual(result["total_shares_pension_fund"]["value"], "0.00")
+        # All share types should have empty lists and zero totals
+        for st_name, shares in result["shares_by_type"].items():
+            self.assertEqual(shares, [], f"Expected empty list for {st_name}")
+        for st_name, totals in result["total_shares_by_type"].items():
+            self.assertEqual(totals["quantity"], 0, f"Expected quantity 0 for {st_name}")
+            self.assertEqual(totals["value"], "0.00", f"Expected value 0.00 for {st_name}")
+
+    def test_multiple_shares_same_type(self):
+        """Multiple shares of the same type are aggregated in totals."""
+        Share.objects.create(
+            name=self.address,
+            share_type=self.share_type_a,
+            payment_date=date(2000, 1, 1),
+            value=1000,
+            quantity=1,
+        )
+        Share.objects.create(
+            name=self.address,
+            share_type=self.share_type_a,
+            payment_date=date(2001, 1, 1),
+            value=500,
+            quantity=2,
+        )
+        # Use any share to call get_related_shares
+        share = Share.objects.first()
+        result = share.get_related_shares()
+        self.assertEqual(len(result["shares_by_type"][self.share_type_a.name]), 2)
+        self.assertEqual(result["total_shares_by_type"][self.share_type_a.name]["quantity"], 3)
+        self.assertEqual(
+            result["total_shares_by_type"][self.share_type_a.name]["value"], "2'000.00"
+        )
+
+    def test_multiple_shares_same_type_self_not_included(self):
+        """Multiple shares of the same type are aggregated in totals."""
+        Share.objects.create(
+            name=self.address,
+            share_type=self.share_type_a,
+            payment_date=date(2000, 1, 1),
+            value=1000,
+            quantity=1,
+        )
+        Share.objects.create(
+            name=self.address,
+            share_type=self.share_type_a,
+            payment_date=date(2001, 1, 1),
+            value=500,
+            quantity=2,
+        )
+        # Use any share to call get_related_shares
+        share = Share.objects.first()
+        result = share.get_related_shares(include_self=False)
+        self.assertEqual(len(result["shares_by_type"][self.share_type_a.name]), 1)
+        self.assertEqual(result["total_shares_by_type"][self.share_type_a.name]["quantity"], 2)
+        self.assertEqual(
+            result["total_shares_by_type"][self.share_type_a.name]["value"], "1'000.00"
+        )
+
+    def test_multiple_share_types(self):
+        """Shares of different types are grouped separately."""
+        Share.objects.create(
+            name=self.address,
+            share_type=self.share_type_a,
+            payment_date=date(2000, 1, 1),
+            value=1000,
+        )
+        Share.objects.create(
+            name=self.address,
+            share_type=self.share_type_b,
+            payment_date=date(2000, 1, 1),
+            value=5000,
+        )
+        share = Share.objects.first()
+        result = share.get_related_shares()
+        self.assertEqual(len(result["shares_by_type"][self.share_type_a.name]), 1)
+        self.assertEqual(len(result["shares_by_type"][self.share_type_b.name]), 1)
+        self.assertEqual(
+            result["total_shares_by_type"][self.share_type_a.name]["value"], "1'000.00"
+        )
+        self.assertEqual(
+            result["total_shares_by_type"][self.share_type_b.name]["value"], "5'000.00"
+        )
+
+    def test_pension_fund_shares_separated(self):
+        """Pension fund shares appear in both shares_by_type and shares_pension_fund."""
+        Share.objects.create(
+            name=self.address,
+            share_type=self.share_type_a,
+            payment_date=date(2000, 1, 1),
+            value=1000,
+            is_pension_fund=True,
+        )
+        Share.objects.create(
+            name=self.address,
+            share_type=self.share_type_a,
+            payment_date=date(2001, 1, 1),
+            value=2000,
+            is_pension_fund=False,
+        )
+        share = Share.objects.first()
+        result = share.get_related_shares()
+        self.assertEqual(len(result["shares_by_type"][self.share_type_a.name]), 2)
+        self.assertEqual(len(result["shares_pension_fund"]), 1)
+        self.assertEqual(result["total_shares_pension_fund"]["quantity"], 1)
+        self.assertEqual(result["total_shares_pension_fund"]["value"], "1'000.00")
+
+    def test_inactive_shares_excluded(self):
+        """Shares with repayment_date in the past are inactive and excluded."""
+        Share.objects.create(
+            name=self.address,
+            share_type=self.share_type_a,
+            payment_date=date(2000, 1, 1),
+            repayment_date=date(2000, 6, 1),
+            value=1000,
+        )
+        Share.objects.create(
+            name=self.address,
+            share_type=self.share_type_a,
+            payment_date=date(2000, 1, 1),
+            value=2000,
+        )
+        share = Share.objects.first()
+        result = share.get_related_shares()
+        # Only the second share is active (no repayment_date)
+        self.assertEqual(len(result["shares_by_type"][self.share_type_a.name]), 1)
+        self.assertEqual(
+            result["total_shares_by_type"][self.share_type_a.name]["value"], "2'000.00"
+        )
+
+    def test_other_address_shares_excluded(self):
+        """Shares belonging to a different address are not included."""
+        Share.objects.create(
+            name=self.address,
+            share_type=self.share_type_a,
+            payment_date=date(2000, 1, 1),
+            value=1000,
+        )
+        Share.objects.create(
+            name=self.other_address,
+            share_type=self.share_type_a,
+            payment_date=date(2000, 1, 1),
+            value=5000,
+        )
+        share = Share.objects.filter(name=self.address).first()
+        result = share.get_related_shares()
+        self.assertEqual(len(result["shares_by_type"][self.share_type_a.name]), 1)
+        self.assertEqual(
+            result["total_shares_by_type"][self.share_type_a.name]["value"], "1'000.00"
+        )
+
+    def test_related_building_collected(self):
+        """Shares attached to a building collect the building name."""
+        Share.objects.create(
+            name=self.address,
+            share_type=self.share_type_a,
+            payment_date=date(2000, 1, 1),
+            value=1000,
+            attached_to_building=self.building,
+        )
+        share = Share.objects.first()
+        result = share.get_related_shares()
+        totals = result["total_shares_by_type"][self.share_type_a.name]
+        self.assertEqual(totals["related_buildings"], ["Musterweg 1"])
+
+    def test_ordering_by_payment_date(self):
+        """Shares are ordered by Coalesce(effective_from, payment_date)."""
+        _share_later = Share.objects.create(
+            name=self.address,
+            share_type=self.share_type_a,
+            payment_date=date(2005, 1, 1),
+            value=500,
+        )
+        _share_earlier = Share.objects.create(
+            name=self.address,
+            share_type=self.share_type_a,
+            payment_date=date(2000, 1, 1),
+            value=1000,
+        )
+        share = Share.objects.first()
+        result = share.get_related_shares()
+        contexts = result["shares_by_type"][self.share_type_a.name]
+        self.assertEqual(contexts[0]["payment_date"], "01.01.2000")
+        self.assertEqual(contexts[1]["payment_date"], "01.01.2005")
+
+    def test_ordering_by_effective_from(self):
+        """Shares with effective_from override payment_date for ordering."""
+        Share.objects.create(
+            name=self.address,
+            share_type=self.share_type_a,
+            payment_date=date(2005, 1, 1),
+            effective_from=date(1999, 1, 1),
+            value=500,
+        )
+        Share.objects.create(
+            name=self.address,
+            share_type=self.share_type_a,
+            payment_date=date(2000, 1, 1),
+            value=1000,
+        )
+        share = Share.objects.first()
+        result = share.get_related_shares()
+        contexts = result["shares_by_type"][self.share_type_a.name]
+        # The first share has effective_from=1999, so it should come first
+        self.assertEqual(contexts[0]["date"], "01.01.1999")
+        self.assertEqual(contexts[1]["date"], "01.01.2000")
+
+    def test_related_contracts_and_rental_units(self):
+        """Shares attached to contracts collect contract and rental unit info."""
+        rental_unit = RentalUnit.objects.create(
+            name="101",
+            rental_type="Wohnung",
+            building=self.building,
+        )
+        contract = Contract.objects.create(
+            date=date(2000, 1, 1),
+        )
+        contract.rental_units.set([rental_unit])
+        contract.contractors.set([self.address])
+        contract.save()
+        Share.objects.create(
+            name=self.address,
+            share_type=self.share_type_a,
+            payment_date=date(2000, 1, 1),
+            value=1000,
+            attached_to_contract=contract,
+        )
+        share = Share.objects.first()
+        result = share.get_related_shares()
+        totals = result["total_shares_by_type"][self.share_type_a.name]
+        self.assertEqual(len(totals["related_contracts"]), 1)
+        self.assertEqual(len(totals["related_rental_units"]), 1)
+
+    def test_empty_share_type_has_zero_totals(self):
+        """Share types with no matching shares still appear with zero totals."""
+        Share.objects.create(
+            name=self.address,
+            share_type=self.share_type_a,
+            payment_date=date(2000, 1, 1),
+            value=1000,
+        )
+        share = Share.objects.first()
+        result = share.get_related_shares()
+        # share_type_b has no shares for this address
+        self.assertEqual(result["shares_by_type"][self.share_type_b.name], [])
+        self.assertEqual(result["total_shares_by_type"][self.share_type_b.name]["quantity"], 0)
+        self.assertEqual(result["total_shares_by_type"][self.share_type_b.name]["value"], "0.00")
+
+    def test_quantity_greater_than_one(self):
+        """Totals correctly multiply quantity by value."""
+        Share.objects.create(
+            name=self.address,
+            share_type=self.share_type_a,
+            payment_date=date(2000, 1, 1),
+            value=500,
+            quantity=3,
+        )
+        share = Share.objects.first()
+        result = share.get_related_shares()
+        self.assertEqual(result["total_shares_by_type"][self.share_type_a.name]["quantity"], 3)
+        self.assertEqual(
+            result["total_shares_by_type"][self.share_type_a.name]["value"], "1'500.00"
+        )
