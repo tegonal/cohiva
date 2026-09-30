@@ -10,6 +10,7 @@ from subprocess import PIPE, Popen
 from appy.pod.renderer import Renderer
 from django.conf import settings
 from django.contrib import auth
+from django.core.files import File
 from django.core.mail import mail_admins
 from django.db.models import Q
 
@@ -62,6 +63,10 @@ def odt2pdf(odtfile, instance_tag="default"):
         raise Exception("odt2pdf failed")
 
     return pdf_file
+
+def save_document_file(document, tmp_file_path):
+    with open(tmp_file_path, "rb") as f:
+        document.file.save(document.name, File(f), save=True)
 
 
 def fill_template_pod(template, context, output_format="odt"):

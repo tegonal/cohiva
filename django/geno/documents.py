@@ -38,6 +38,7 @@ from geno.models import (
 )
 from geno.shares import get_share_statement_data
 from geno.utils import fill_template_pod, nformat, odt2pdf, remove_temp_files, sanitize_filename
+from geno.utils import save_document_file
 
 logger = logging.getLogger("geno")
 
@@ -628,13 +629,17 @@ class ProcessDocuments:
             if doc.doctype is None or doc.context is None:
                 continue
             try:
-                Document.objects.create(
+                # Create the Document
+                d = Document.objects.create(
                     name=doc.filename,
                     doctype=doc.doctype,
                     template=doc.content_template,
                     data=json.dumps(doc.context, cls=_ContextEncoder),
                     content_object=content_obj,
                 )
+                # Persist the Document
+                if doc.file and os.path.exists(doc.file):
+                    save_document_file(d, doc.file)
             except Exception as e:
                 msg = f"Konnte Dokument '{doc.filename}' für {recipient} nicht speichern. Fehler: {e}"
                 logger.error(msg)

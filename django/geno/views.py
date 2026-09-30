@@ -134,7 +134,7 @@ from .tables import (
     MemberTable,
     MemberTableAdmin,
 )
-from .utils import fill_template_pod, nformat, odt2pdf
+from .utils import fill_template_pod, nformat, odt2pdf, save_document_file
 
 # from .decorators import login_required
 
@@ -227,14 +227,61 @@ def documents(request, doctype, obj_id, action):
                 raise RuntimeError("Keine Vorlage angegeben.")
             template = doctype_obj.templates.get(pk=template_pk)
             data = get_context_data(doctype, obj_id, {})
+
         elif action == "download":
             if not request.user.has_perm("geno.regenerate_document"):
+                return unauthorized(request)
+            doc = Document.objects.select_related("template").get(pk=obj_id)
+            if doc.file:
+                return FileResponse(
+                    doc.file.open(), as_attachment=True, filename=smart_str(doc.name)
+                )
+            # Fallback for legacy Documents without a stored file
+            template = doc.template or doctype_obj.templates.filter(active=True).first()
+            if not template:
+                raise RuntimeError("Vorlage nicht gefunden.")
+            data = {"visible_filename": doc.name, "context": json.loads(doc.data)}
+
+        elif action == "recreate":
+            if not request.user.has_perm("geno.add_document"):
                 return unauthorized(request)
             doc = Document.objects.select_related("template").get(pk=obj_id)
             template = doc.template or doctype_obj.templates.filter(active=True).first()
             if not template:
                 raise RuntimeError("Vorlage nicht gefunden.")
-            data = {"visible_filename": doc.name, "context": json.loads(doc.data)}
+            data = get_context_data(doctype, doc.content_object.pk, {})
+            if not template.file:
+                raise RuntimeError(
+                    _("The template '{template}' has no file linked to it.").format(template=template)
+                )
+            # Render the "recreated" file
+            filename = fill_template_pod(
+                template.file.path,
+                context_format(data["context"]),
+                output_format="odt",
+            )
+            if not filename:
+                raise RuntimeError(_("Could not fill the template."))
+            # Create a new Document record, to provide an audit trail
+            new_doc = Document.objects.create(
+                name=data["visible_filename"],
+                doctype=doctype_obj,
+                template=template,
+                data=json.dumps(data["context"]),
+                content_object=doc.content_object,
+            )
+            # Persist the newly created Document
+            if os.path.exists(filename):
+                save_document_file(new_doc, filename)
+
+            resp = FileResponse(
+                open(filename, "rb"),
+                as_attachment=True,
+                filename=smart_str(data["visible_filename"]),
+            )
+            os.remove(filename)
+            return resp
+
         else:
             raise RuntimeError(_("Action '{action}' is not implemented.").format(action=action))
         if not template.file:
@@ -255,6 +302,8 @@ def documents(request, doctype, obj_id, action):
                 content_object=data["content_object"],
             )
             d.save()
+            if os.path.exists(filename):
+                save_document_file(d, filename)
         resp = FileResponse(
             open(filename, "rb"), as_attachment=True, filename=smart_str(data["visible_filename"])
         )  # content_type = "application/pdf")
@@ -2443,6 +2492,7 @@ def create_documents_deprecated(request, default_doctype, objects=None, options=
                     content_object=data["content_object"],
                 )
                 d.save()
+                # TODO: should we add a call to save_document_file() here?
 
     if makezip:
         ## Build ZIP-file from list of files
