@@ -1451,8 +1451,12 @@ class Document(GenoBase):
         return [
             {
                 "path": f"/geno/documents/{self.doctype.name}/{self.pk}/download/",
-                "title": "Dokument neu erzeugen",
-            }
+                "title": "Dokument herunterladen",
+            },
+            {
+                "path": f"/geno/documents/{self.doctype.name}/{self.pk}/recreate/",
+                "title": "Dokument neu erzeugen (mit aktuellen Daten)",
+            },
         ]
 
     class Meta:
