@@ -312,7 +312,7 @@ pyopenssl==26.4.0
     # via pysaml2
 pyparsing==3.2.5
     # via matplotlib
-pypdf==6.16.1
+pypdf==6.19.0
     # via -r requirements.in
 pysaml2==7.5.5
     # via djangosaml2idp
