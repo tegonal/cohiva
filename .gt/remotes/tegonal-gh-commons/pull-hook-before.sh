@@ -26,16 +26,12 @@ fi
 sourceOnce "$dir_of_github_commons/gt/pull-hook-functions.sh"
 sourceOnce "$dir_of_tegonal_scripts/utility/parse-fn-args.sh"
 
-function gt_pullHook_tegonal_gh_commons_before() {
-	local _tag source _target
+function pull_hook_before() {
+	local _currentTag _tag source _target
 	# shellcheck disable=SC2034   # is passed to parseFnArgs by name
-	local -ra params=(_tag source _target)
+	local -ra params=(_currentTag _tag source _target)
 	parseFnArgs params "$@"
 
 	replaceTegonalGhCommonsPlaceholders_Tegonal "$source" "cohiva" "$COHIVA_LATEST_VERSION" "cohiva"
 }
-
-function gt_pullHook_tegonal_gh_commons_after() {
-	# no op, nothing to do
-	true
-}
+pull_hook_before "$@"
