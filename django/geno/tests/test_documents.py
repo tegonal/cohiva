@@ -1,4 +1,5 @@
 import datetime
+import os
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -14,6 +15,7 @@ from geno.models import (
     Address,
     ContentTemplate,
     Document,
+    DocumentType,
     GenericAttribute,
     Invoice,
     InvoiceCategory,
@@ -1574,3 +1576,98 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.assertEmailSent(0)
         # The mocked invoices were created during rendering but rolled back afterwards
         self.assertEqual(Invoice.objects.count(), 0)
+
+
+class DocumentFilePersistenceTest(DocumentCreationMockMixin, GenoAdminTestCase):
+    """Tests for persistent Document file storage, re-download and re-creation."""
+    patch_target_fill_template = "geno.documents.fill_template_pod"
+    patch_target_odt2pdf = "geno.documents.odt2pdf"
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        # Create a valid doctype for get_context_data
+        cls.memberletter_doctype = DocumentType.objects.create(
+            name="memberletter", description="Member Letter"
+        )
+        cls.memberletter_doctype.templates.add(cls.contenttemplates[1])  # "Simple"
+
+    def _create_mock_odt_file(self, path="/tmp/mock_odtfile.odt"):
+        with open(path, "wb") as f:
+            f.write(b"ODT mock content")
+
+        def _cleanup(p):
+            if os.path.exists(p):
+                os.remove(p)
+
+        self.addCleanup(_cleanup, path)
+        return path
+
+    def test_document_file_persisted_after_mail_send(self):
+        """After sending mail, created Documents have a stored file."""
+        ct_statement = ContentTemplate.objects.get(name="Statement")
+        self.documenttypes[0].templates.add(ct_statement)
+
+        data = {
+            "members": [],
+            "action": "mail",
+            "template_mail": f"template_id_{self.email_templates[0].pk}",
+            "subject": "Test",
+            "email_sender": "test@example.com",
+            "email_copy": "bcc@example.com",
+            "template_files": [f"ContentTemplate:{ct_statement.pk}"],
+            "change_attribute": None,
+            "change_attribute_value": "",
+            "change_genattribute": None,
+            "change_genattribute_value": "",
+        }
+        for member in self.members[0:3]:
+            data["members"].append({
+                "id": member.pk,
+                "member": str(member),
+                "extra_info": "",
+                "member_type": "member",
+            })
+
+        send_member_mail_process(data)
+
+        docs = Document.objects.all()
+        self.assertGreater(len(docs), 0)
+        for doc in docs:
+            self.assertTrue(doc.file, f"Document {doc.name} has no stored file")
+            self.assertTrue(doc.file.storage.exists(doc.file.name))
+
+    def test_download_returns_stored_file(self):
+        """The download action serves the stored file without re-rendering."""
+        from django.core.files.base import ContentFile
+
+        doc = Document.objects.create(
+            name="test_download.pdf",
+            doctype=self.memberletter_doctype,
+            template=self.contenttemplates[1],
+            data='{"test": "data"}',
+            content_object=self.addresses[0],
+        )
+        doc.file.save("test_download.pdf", ContentFile(b"PDF mock content"))
+
+        url = f"/geno/documents/memberletter/{doc.pk}/download/"
+        # Check the HTTP response -- could we get the file?
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # Check the contents of the file
+        content = b"".join(response.streaming_content)
+        self.assertEqual(content, b"PDF mock content")
+        self.assertEqual(
+            response.headers.get("Content-Disposition"),
+            'attachment; filename="test_download.pdf"',
+        )
+
+    def test_download_fallback_regenerates_legacy_document(self):
+        """Legacy Documents without a stored file are regenerated on download."""
+        # TODO: implement test
+
+    def test_recreate_creates_new_document(self):
+        """Recreate action creates a new Document record with fresh data."""
+        # TODO: create a Document containing a mock file
+        # TODO: recreate the Document with new data
+        # TODO: check that the two Documents are not equal
