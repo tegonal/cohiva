@@ -2,17 +2,22 @@ import datetime
 import gettext
 from collections.abc import Callable
 
+import io
+import zipfile
+
+import os
 import pycountry
 from auditlog.mixins import AuditlogHistoryAdminMixin
 from dateutil.relativedelta import relativedelta
 from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
+from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, User
 from django.db.models import Case, Exists, IntegerField, OuterRef, Q, Value, When
-from django.http import HttpResponseRedirect
+from django.http import FileResponse, HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.html import format_html
@@ -1707,6 +1712,67 @@ def invoice_revert_consolidation(modeladmin, request, queryset):
     queryset.update(consolidated=False)
 
 
+@admin.action(description="Rechnung als PDF herunterladen")
+def download_invoice_pdf(modeladmin, request, queryset):
+    """Admin action to download invoice PDF(s).
+
+    For a single invoice: return the PDF directly.
+    For multiple invoices: return a ZIP containing all PDFs.
+    """
+    from django.utils.encoding import smart_str
+
+    documents = []
+    contract_ct = ContentType.objects.get_for_model(Contract)
+
+    for invoice in queryset:
+        # Invoice documents linked directly on the Invoice object (manual invoices)
+        for doc in invoice.documents.filter(file__isnull=False).exclude(file=""):
+            documents.append(doc)
+
+        # Invoice documents linked on a relevant Contract (rent invoices)
+        if invoice.contract:
+            for doc in Document.objects.filter(
+                content_type=contract_ct,
+                object_id=invoice.contract.pk,
+                doctype__name="invoice",
+                file__isnull=False,
+            ).exclude(file=""):
+                # Avoid duplicates if document is linked to both invoice and contract
+                if doc not in documents:
+                    documents.append(doc)
+
+    if not documents:
+        modeladmin.message_user(request, "Keine PDF-Dokumente für die ausgewählten Rechnungen gefunden.", level=messages.WARNING)
+        return
+
+    if len(documents) == 1:
+        doc = documents[0]
+        file_handle = doc.file.open()
+        try:
+            return FileResponse(
+                file_handle,
+                as_attachment=True,
+                filename=smart_str(doc.name),
+                content_type="application/pdf",
+            )
+        except Exception:
+            file_handle.close()
+            raise
+
+    # Multiple documents go into a .zip
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        for doc in documents:
+            file_path = doc.file.path
+            if os.path.exists(file_path):
+                zf.write(file_path, doc.name)
+
+    zip_buffer.seek(0)
+    response = HttpResponse(zip_buffer.read(), content_type="application/zip")
+    response["Content-Disposition"] = 'attachment; filename="Rechnungen.zip"'
+    return response
+
+
 @admin.register(InvoiceCategory)
 class InvoiceCategoryAdmin(GenoBaseAdmin):
     model = InvoiceCategory
@@ -1836,7 +1902,7 @@ class InvoiceAdmin(GenoBaseAdmin):
         "is_additional_invoice",
     ]
     autocomplete_fields = ["invoice_category", "person", "contract"]
-    actions = GenoBaseAdmin.actions + [invoice_revert_consolidation]
+    actions = GenoBaseAdmin.actions + [invoice_revert_consolidation, download_invoice_pdf]
 
     @admin.display(description="Person/Vertrag")
     def person_or_contract(self, obj):
