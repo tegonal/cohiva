@@ -529,7 +529,14 @@ class MemberMailSelectForm(forms.Form):
         choices = []
         for m in members:
             if m["id"] and m["member"]:
-                choices.append((m["id"], m["member"]))
+                label = m["member"]
+                if "invoice_ids" in m:
+                    count = len(m["invoice_ids"])
+                    if count == 1:
+                        label += " (1 Rechnung)"
+                    else:
+                        label += f" ({count} Rechnungen)"
+                choices.append((m["id"], label))
         self.fields["select_members"] = forms.MultipleChoiceField(
             choices=choices,
             label=_("Empfänger auswählen"),
@@ -581,6 +588,14 @@ class MemberMailActionForm(forms.Form):
             help_text=_("Tippen um zu suchen, mehrere Einträge möglich"),
         )
 
+        self.fields["invoice_template"] = forms.ChoiceField(
+            choices=choices,
+            label=_("Rechnungsvorlage für die erneut erzeugten Rechnungen"),
+            widget=UnfoldAdminSelect2Widget(),
+            required=False,
+            help_text=_("Tippen um zu suchen, mehrere Einträge möglich"),
+        )
+
         template_mail_choices = []
         try:
             for template in (
@@ -604,19 +619,35 @@ class MemberMailActionForm(forms.Form):
         self.helper.form_class = ""
         self.helper.layout = Layout(
             Div("action", css_class="mb-4"),
-            UnfoldSeparator(),
-            UnfoldSectionHeading(_("Dokumente")),
-            Div("template_files", css_class="mb-4"),
-            UnfoldSeparator(),
-            UnfoldSectionHeading(_("E-Mail")),
-            Div("send_email", css_class="mb-4"),
             ConditionalDiv(
-                "email-settings",
+                "document-block",
+                UnfoldSeparator(),
+                UnfoldSectionHeading(_("Dokumente")),
+                Div("template_files", css_class="mb-4"),
+                Div("regenerate_invoices", css_class="mb-4"),
+                ConditionalDiv(
+                    "regenerate-invoices-settings",
+                    Div("regenerate_invoices_mode", css_class="mb-4"),
+                    Div("invoice_template", css_class="mb-4"),
+                ),
+            ),
+            ConditionalDiv(
+                "email-block",
+                UnfoldSeparator(),
+                UnfoldSectionHeading(_("E-Mail")),
+                # Div("send_email", css_class="mb-4"),
+                # ConditionalDiv(
+                #    "email-settings",
+                #    Div("template_mail", css_class="mb-4"),
+                #    Div("subject", css_class="mb-4"),
+                #    Div("email_sender", css_class="mb-4"),
+                #    Div("email_copy", css_class="mb-4"),
+                #    initial_display="none",
+                # ),
                 Div("template_mail", css_class="mb-4"),
                 Div("subject", css_class="mb-4"),
                 Div("email_sender", css_class="mb-4"),
                 Div("email_copy", css_class="mb-4"),
-                initial_display="none",
             ),
             UnfoldSeparator(),
             UnfoldSectionHeading(_("Attribute ändern")),
@@ -674,11 +705,31 @@ class MemberMailActionForm(forms.Form):
         widget=UnfoldAdminSelectWidget(),
     )
 
-    send_email = forms.BooleanField(
-        label=_("E-Mail versenden"),
+    regenerate_invoices = forms.BooleanField(
+        label=_("Rechnungen nochmals erzeugen (ohne erneute Buchung)"),
         required=False,
         widget=UnfoldBooleanSwitchWidget(),
     )
+    regenerate_invoices_mode_choices = (
+        ("all", _("Alle Rechnugen der Person")),
+        ("latest", _("Nur die letzte (jüngste) Rechnung der Person")),
+        ("oldest", _("Nur die älteste Rechnung der Person")),
+    )
+    regenerate_invoices_mode = forms.ChoiceField(
+        choices=regenerate_invoices_mode_choices,
+        label=_(
+            "Welche der mit dem Filter in Schritt 1 ausgewählten Rechnungen "
+            "sollen jeweils nochmals erzugt werden?"
+        ),
+        widget=UnfoldAdminSelectWidget(),
+        required=False,
+    )
+
+    # send_email = forms.BooleanField(
+    #    label=_("E-Mail versenden"),
+    #    required=False,
+    #    widget=UnfoldBooleanSwitchWidget(),
+    # )
 
     subject = forms.CharField(
         label=_("Betreff"),
