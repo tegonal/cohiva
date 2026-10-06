@@ -30,7 +30,12 @@ from geno.models import (
 from geno.tests import data as geno_testdata
 from geno.utils import fill_template_pod, odt2pdf
 
-from .base import DocumentCreationMockMixin, GenoAdminTestCase
+from .base import (
+    DocumentCreationMockMixin,
+    GenoAdminTestCase,
+    fill_template_effect,
+    odt2pdf_effect,
+)
 
 
 class DocumentSendTest(DocumentCreationMockMixin, GenoAdminTestCase):
@@ -1587,6 +1592,19 @@ class DocumentFilePersistenceTest(DocumentCreationMockMixin, GenoAdminTestCase):
     patch_target_fill_template = "geno.documents.fill_template_pod"
     patch_target_odt2pdf = "geno.documents.odt2pdf"
 
+    def setUp(self):
+        super().setUp()
+        # Patch download and re-create functions to use mock files in tests
+        fill_template_patcher = patch("geno.views.fill_template_pod")
+        self.mock_fill_template_views = fill_template_patcher.start()
+        self.mock_fill_template_views.side_effect = fill_template_effect
+        self.addCleanup(fill_template_patcher.stop)
+
+        odt2pdf_patcher = patch("geno.views.odt2pdf")
+        self.mock_odt2pdf_views = odt2pdf_patcher.start()
+        self.mock_odt2pdf_views.side_effect = odt2pdf_effect
+        self.addCleanup(odt2pdf_patcher.stop)
+
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
@@ -1595,17 +1613,6 @@ class DocumentFilePersistenceTest(DocumentCreationMockMixin, GenoAdminTestCase):
             name="memberletter", description="Member Letter"
         )
         cls.memberletter_doctype.templates.add(cls.contenttemplates[1])  # "Simple"
-
-    def _create_mock_odt_file(self, path="/tmp/mock_odtfile.odt"):
-        with open(path, "wb") as f:
-            f.write(b"ODT mock content")
-
-        def _cleanup(p):
-            if os.path.exists(p):
-                os.remove(p)
-
-        self.addCleanup(_cleanup, path)
-        return path
 
     def test_document_file_persisted_after_mail_send(self):
         """After sending mail, created Documents have a stored file."""
@@ -1710,10 +1717,49 @@ class DocumentFilePersistenceTest(DocumentCreationMockMixin, GenoAdminTestCase):
 
     def test_download_fallback_regenerates_legacy_document(self):
         """Legacy Documents without a stored file are regenerated on download."""
-        # TODO: implement test
+        legacy_doc = Document.objects.create(
+            name="Legacy_MemberLetter.odt",
+            doctype=self.memberletter_doctype,
+            template=self.contenttemplates[1],
+            data='{"anrede": "Liebe Anna"}',
+            content_object=self.members[0],
+        )
+        self.assertFalse(legacy_doc.file)
+
+        url = f"/geno/documents/memberletter/{legacy_doc.pk}/download/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        content = b"".join(response.streaming_content)
+        self.assertEqual(content, b"odt mock\n")
+
+        # The legacy document should remain file-less
+        legacy_doc.refresh_from_db()
+        self.assertFalse(legacy_doc.file)
 
     def test_recreate_creates_new_document(self):
         """Recreate action creates a new Document record with fresh data."""
-        # TODO: create a Document containing a mock file
-        # TODO: recreate the Document with new data
-        # TODO: check that the two Documents are not equal
+        original_doc = Document.objects.create(
+            name="Original_MemberLetter.odt",
+            doctype=self.memberletter_doctype,
+            template=self.contenttemplates[1],
+            data='{"old": "data"}',
+            content_object=self.members[0],
+        )
+
+        url = f"/geno/documents/memberletter/{original_doc.pk}/recreate/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        content = b"".join(response.streaming_content)
+        self.assertEqual(content, b"odt mock\n")
+
+        # A new Document should have been created with fresh context data
+        self.assertEqual(Document.objects.count(), 2)
+        new_doc = Document.objects.exclude(pk=original_doc.pk).get()
+        self.assertNotEqual(new_doc.pk, original_doc.pk)
+        self.assertNotEqual(new_doc.data, original_doc.data)
+        self.assertTrue(new_doc.file, f"New document {new_doc.name} has no stored file")
+        self.assertTrue(new_doc.file.storage.exists(new_doc.file.name))
+
+        # Original document should be untouched
+        original_doc.refresh_from_db()
+        self.assertEqual(original_doc.data, '{"old": "data"}')
