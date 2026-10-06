@@ -1,11 +1,16 @@
 import datetime
+import json
+import logging
+import os
 
 from dateutil.relativedelta import relativedelta
 from stdnum.ch import esr
 
 from .billing import add_invoice, create_qrbill, get_reference_nr
-from .models import Invoice, InvoiceCategory
-from .utils import nformat
+from .models import Document, DocumentType, Invoice, InvoiceCategory
+from .utils import nformat, save_document_file
+
+logger = logging.getLogger("geno")
 
 
 class InvoiceCreatorError(Exception):
@@ -126,6 +131,22 @@ class InvoiceCreator:
             email_subject,
             self.dry_run,
         )
+
+        ## Save generated PDF as Document for later download
+        if render and not self.dry_run and self.invoice_object and output_filename:
+            try:
+                invoice_doctype = DocumentType.objects.get(name="invoice")
+                file_path = "/tmp/%s" % output_filename
+                if os.path.exists(file_path):
+                    doc = Document.objects.create(
+                        name=output_filename,
+                        doctype=invoice_doctype,
+                        data=json.dumps(context),
+                        content_object=self.invoice_object,
+                    )
+                    save_document_file(doc, file_path)
+            except Exception as e:
+                logger.error(f"Could not save invoice document: {e}")
 
         if email_templ:
             if mails_sent != 1:
