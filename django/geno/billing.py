@@ -1,6 +1,7 @@
 import contextlib
 import datetime
 import io
+import json
 import logging
 import os.path
 import re
@@ -44,6 +45,7 @@ from .models import (
     Address,
     ContentTemplate,
     Contract,
+    Document,
     DocumentType,
     Invoice,
     InvoiceCategory,
@@ -60,6 +62,7 @@ from .utils import (
     nformat,
     odt2pdf,
     remove_temp_files,
+    save_document_file,
     send_error_mail,
 )
 
@@ -561,6 +564,7 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                 render=True,
                 email_template=None,
                 billing_contract=billing_contract,
+                related_object=billing_contract,
             )
             if not output_filename:
                 raise Http404(f"Konnte Rechnung nicht erzeugen: {invoice_title}: {' '.join(ret)}")
@@ -591,6 +595,7 @@ def create_monthly_invoices(book, contract, reference_date, invoice_category, op
                 render=render,
                 email_template=invoice_category.email_template,
                 billing_contract=billing_contract,
+                related_object=billing_contract,
             )
             messages.extend(ret)
             if dry_run and single_contract:
@@ -1873,6 +1878,7 @@ def create_qrbill_rent(
     render=False,
     email_template=None,
     billing_contract=None,
+    related_object=None,
 ):
     if not billing_contract:
         billing_contract = contract
@@ -1942,6 +1948,22 @@ def create_qrbill_rent(
     if render and not os.path.isfile(f"/tmp/{output_filename}"):
         output_filename = None
         return messages, output_filename
+
+    ## Save generated PDF as Document for later download
+    if render and not dry_run and related_object and output_filename:
+        try:
+            invoice_doctype = DocumentType.objects.get(name="invoice")
+            file_path = f"/tmp/{output_filename}"
+            if os.path.exists(file_path):
+                doc = Document.objects.create(
+                    name=output_filename,
+                    doctype=invoice_doctype,
+                    data=json.dumps(context),
+                    content_object=related_object,
+                )
+                save_document_file(doc, file_path)
+        except Exception as e:
+            logger.error(f"Could not save invoice document: {e}")
 
     if email_template:
         if mails_sent == 1:
