@@ -8,7 +8,8 @@ from django.core import mail
 from django.http import HttpResponse
 from django.test import tag
 
-# from geno.views import send_member_mail_process
+from finance.accounting import Account, AccountingManager, AccountKey
+from geno.billing import add_invoice_obj
 from geno.documents import send_member_mail_process
 from geno.forms import MemberMailActionForm
 from geno.models import (
@@ -1636,6 +1637,26 @@ class DocumentFilePersistenceTest(DocumentCreationMockMixin, GenoAdminTestCase):
         for doc in docs:
             self.assertTrue(doc.file, f"Document {doc.name} has no stored file")
             self.assertTrue(doc.file.storage.exists(doc.file.name))
+
+    def test_document_file_persisted_after_invoice_creation(self):
+        """After creating an invoice, the invoice can be re-downloaded as a .pdf."""
+        with AccountingManager(book_type_id="dum") as book:
+            date = datetime.date(2000, 1, 1)
+            account = Account.from_settings(AccountKey.DEFAULT_DEBTOR_MANUAL)
+            receivables_account = Account.from_settings(AccountKey.SHARES_INTEREST)
+            add_invoice_obj(
+                book,
+                "Invoice",
+                self.invoicecategories[0],
+                "Test-Description",
+                self.addresses[0],
+                account,
+                receivables_account,
+                date,
+                100,
+            )
+            invoice = Invoice.objects.first()
+
 
     def test_download_returns_stored_file(self):
         """The download action serves the stored file without re-rendering."""
