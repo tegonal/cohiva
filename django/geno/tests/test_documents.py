@@ -4,11 +4,14 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.conf import settings
+from django.contrib import admin as django_admin
 from django.core import mail
+from django.core.files.base import ContentFile
 from django.http import HttpResponse
-from django.test import tag
+from django.test import RequestFactory, tag
 
 from finance.accounting import Account, AccountingManager, AccountKey
+from geno.admin import InvoiceAdmin, download_invoice_pdf
 from geno.billing import add_invoice_obj
 from geno.documents import send_member_mail_process
 from geno.forms import MemberMailActionForm
@@ -1658,10 +1661,32 @@ class DocumentFilePersistenceTest(DocumentCreationMockMixin, GenoAdminTestCase):
             invoice = Invoice.objects.first()
 
 
+        doc = Document.objects.create(
+            name="TestInvoice.pdf",
+            doctype=self.documenttypes[0],
+            template=self.contenttemplates[0],
+            data='{"test": "data"}',
+            content_object=invoice,
+        )
+        doc.file.save("TestInvoice.pdf", ContentFile(b"%PDF-1.1\n%Test mock content"))
+
+        modeladmin = InvoiceAdmin(Invoice, django_admin.site)
+        request = RequestFactory().get("/admin/geno/invoice/")
+        request.user = self.su
+
+        response = download_invoice_pdf(modeladmin, request, Invoice.objects.filter(pk=invoice.pk))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers.get("Content-Type"), "application/pdf")
+        self.assertEqual(
+            response.headers.get("Content-Disposition"),
+            'attachment; filename="TestInvoice.pdf"',
+        )
+        content = b"".join(response.streaming_content)
+        self.assertEqual(content, b"%PDF-1.1\n%Test mock content")
+
+
     def test_download_returns_stored_file(self):
         """The download action serves the stored file without re-rendering."""
-        from django.core.files.base import ContentFile
-
         doc = Document.objects.create(
             name="test_download.pdf",
             doctype=self.memberletter_doctype,
