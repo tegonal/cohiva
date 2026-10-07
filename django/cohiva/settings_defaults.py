@@ -1363,6 +1363,7 @@ COHIVA_ADMIN_NAVIGATION = [
                     {"type": "model", "value": "djangosaml2idp.PersistentId"},
                 ],
             },
+            {"type": "model", "value": "auditlog.LogEntry", "icon": "history"},
             {"type": "model", "value": "geno.LookupTable", "icon": "table_chart"},
             {
                 "type": "tabgroup",
@@ -1513,3 +1514,32 @@ COHIVA_TEXT_FONT = "Liberation Serif"
 AUDITLOG_INCLUDE_ALL_MODELS = True
 AUDITLOG_EXCLUDE_TRACKING_FIELDS = ("ts_created", "ts_modified")
 AUDITLOG_MASK_TRACKING_FIELDS = ("api_secret",)
+AUDITLOG_EXCLUDE_TRACKING_MODELS = (
+    "sessions.Session",
+    "oauth2_provider.Grant",
+    "oauth2_provider.AccessToken",
+    "oauth2_provider.RefreshToken",
+    "oauth2_provider.IDToken",
+    "oauth2_provider.DeviceGrant",
+    "portal.OAuthUserStats",
+    "credit_accounting.Transaction",
+    "wagtailcore",
+    "wagtailadmin",
+    "wagtailusers",
+)
+# Settings for specific models can be set with AUDITLOG_INCLUDE_TRACKING_MODELS. All other models
+# are registered with the default settings (if AUDITLOG_INCLUDE_ALL_MODELS is True and if they are
+# not listed in AUDITLOG_EXCLUDE_TRACKING_MODELS)
+AUDITLOG_INCLUDE_TRACKING_MODELS = (
+    {
+        "model": "auth.User",
+        "exclude_fields": ["last_login"],
+    },
+)
+if "credit_accounting" in cbc.FEATURES:
+    AUDITLOG_INCLUDE_TRACKING_MODELS += (
+        {
+            "model": "credit_accounting.Account",
+            "exclude_fields": ["balance"],
+        },
+    )
