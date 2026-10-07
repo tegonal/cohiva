@@ -1363,6 +1363,7 @@ COHIVA_ADMIN_NAVIGATION = [
                     {"type": "model", "value": "djangosaml2idp.PersistentId"},
                 ],
             },
+            {"type": "model", "value": "auditlog.LogEntry", "icon": "history"},
             {"type": "model", "value": "geno.LookupTable", "icon": "table_chart"},
             {
                 "type": "tabgroup",
