@@ -37,14 +37,23 @@ from geno.models import (
     ShareType,
 )
 from geno.shares import get_share_statement_data
-from geno.utils import fill_template_pod, nformat, odt2pdf, remove_temp_files, sanitize_filename
-from geno.utils import save_document_file
+from geno.utils import (
+    fill_template_pod,
+    nformat,
+    odt2pdf,
+    remove_temp_files,
+    sanitize_filename,
+    save_document_file,
+)
 
 logger = logging.getLogger("geno")
 
 
 class _ContextEncoder(DjangoJSONEncoder):
-    """Custom JSON encoder that serializes Django Model instances to their string representation."""
+    """
+    Custom JSON encoder that serializes Django Model instances to their string representation.
+    Used to dump JSON data during Document creation
+    """
 
     def default(self, obj):
         if isinstance(obj, Model):
@@ -96,9 +105,7 @@ class DocumentTemplate:
         self.context_options = {
             "share_statement_context": False,
             "billing_context": False,
-            #'add_qrbill': False
             "qrbill_account": None,
-            #'qrbill_use_refnr': False,
             "qrbill_invoice_type_id": None,
             "qrbill_info": "",
             "qrbill_rental_unit_in_extra_info": False,
@@ -617,6 +624,8 @@ class ProcessDocuments:
                         self._save_documents(recipient)
                 self.throttle()
 
+    # TODO: move save_documents() function to be a top-level function -- we need to access it
+    # from both the send_member_mail_process() and create_documents() functions
     def _save_documents(self, recipient):
         if recipient.content_object is None:
             return
@@ -854,6 +863,9 @@ class ProcessDocuments:
 
 
 def send_member_mail_process(data):
+    """
+    Process and create Documents for sending to Members.
+    """
     is_test = data["action"] == "mail_test"
     process = ProcessDocuments(dry_run=is_test)
     if data["action"] in ("mail", "mail_test"):
@@ -913,6 +925,9 @@ def send_member_mail_process(data):
 
 
 def create_documents(default_doctype, objects=None, options=None):
+    """
+    Create Documents in the DocumentGeneratorView.
+    """
     ret = []
     zipcount = 0
     zipfile_content = []
@@ -986,6 +1001,7 @@ def create_documents(default_doctype, objects=None, options=None):
             counter = 1
             while output_filename in filenames:
                 counter += 1
+                # TODO: explain this and/or remove magic numbers
                 output_filename = "%s_%s%s" % (
                     data["visible_filename"][0:-4],
                     counter,
@@ -1001,6 +1017,7 @@ def create_documents(default_doctype, objects=None, options=None):
                     data=json.dumps(data["context"]),
                     content_object=data["content_object"],
                 )
+                # TODO: what does .save() actually do here?
                 d.save()
 
     if zipcount and makezip:
@@ -1054,19 +1071,19 @@ def get_context_data(doctype, obj_id, extra_context):
     }
 
     filename_ext = ".odt"
-    if doctype[0:6] == "member":
+    if "member" in doctype:
         obj = Member.objects.get(pk=obj_id)
         adr = obj.name
         c["datum_eintritt"] = obj.date_join.strftime("%d.%m.%Y")
-    elif doctype[0:5] == "share":
+    elif "share" in doctype:
         obj = Share.objects.get(pk=obj_id)
         adr = obj.name
-
+        # TODO: consider refactoring this
         if Share.objects.filter(name=adr).filter(share_type=obj.share_type).count() == 1:
             c["is_first_share"] = True
         else:
             c["is_first_share"] = False
-
+        # TODO: consider refactoring this
         try:
             stype_share = ShareType.objects.get(name="Anteilschein")
         except ShareType.DoesNotExist:
