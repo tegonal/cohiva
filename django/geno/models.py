@@ -1415,6 +1415,15 @@ class Document(GenoBase):
     doctype = models.ForeignKey(DocumentType, verbose_name="Dokumenttyp", on_delete=models.CASCADE)
     data = models.TextField("Data")
 
+    # File to store generated Document data (.pdf or .odt)
+    file = models.FileField(
+        "Datei",
+        upload_to="documents/%Y/%m",
+        blank=True,
+        null=True,
+        help_text="Gespeicherte Dokumentdatei (.pdf oder .odt)",
+    )
+
     ## Generic relation to object
     content_type = models.ForeignKey(
         ContentType, verbose_name="Verknüpft mit", on_delete=models.CASCADE
@@ -1442,8 +1451,12 @@ class Document(GenoBase):
         return [
             {
                 "path": f"/geno/documents/{self.doctype.name}/{self.pk}/download/",
-                "title": "Dokument neu erzeugen",
-            }
+                "title": "Dokument herunterladen",
+            },
+            {
+                "path": f"/geno/documents/{self.doctype.name}/{self.pk}/recreate/",
+                "title": "Dokument neu erzeugen (mit aktuellen Daten)",
+            },
         ]
 
     class Meta:

@@ -10,6 +10,7 @@ from subprocess import PIPE, Popen
 from appy.pod.renderer import Renderer
 from django.conf import settings
 from django.contrib import auth
+from django.core.files import File
 from django.core.mail import mail_admins
 from django.db.models import Q
 
@@ -27,8 +28,8 @@ def send_info_mail(subject, msg):
 
 
 def odt2pdf(odtfile, instance_tag="default"):
-    tmpdir = f"/tmp/odt2pdf_{settings.GENO_ID}_{instance_tag}".replace(" ", "")
-    soffice_bin = "/usr/lib/libreoffice/program/soffice.bin"
+    tmpdir = "/tmp/odt2pdf_%s_%s" % (settings.GENO_ID, instance_tag)
+    soffice_bin = "/Applications/LibreOffice.app/Contents/MacOS/soffice"
 
     path, basename = os.path.split(odtfile)
     outfile = os.path.splitext(basename)
@@ -63,6 +64,15 @@ def odt2pdf(odtfile, instance_tag="default"):
 
     return pdf_file
 
+def save_document_file(document, tmp_file_path):
+    """
+    Helper to copy a temporary file into the Document.file field.
+
+    document: the models.Document object that will store the file.
+    tmp_file_path: path to the temporary File data.
+    """
+    with open(tmp_file_path, "rb") as f:
+        document.file.save(document.name, File(f), save=True)
 
 def fill_template_pod(template, context, output_format="odt"):
     media_path = pathlib.Path(settings.MEDIA_ROOT)
