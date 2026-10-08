@@ -2313,8 +2313,6 @@ class Invoice(GenoBase):
         "Konto Forderungen Buchhaltung", max_length=50, blank=True
     )
 
-    documents = GenericRelation("Document", related_query_name="invoices")
-
     def __str__(self):
         if self.person:
             namestr = "%s" % self.person
