@@ -761,6 +761,7 @@ class BuildingAdmin(GenoBaseAdmin):
         ("value_insurance", "value_build"),
         "accounting_postfix",
         "team",
+        "contacts",
         "active",
         ("ts_created", "ts_modified"),
         "links",
@@ -770,6 +771,7 @@ class BuildingAdmin(GenoBaseAdmin):
     list_display = ["name", "description", "active"]
     list_filter = [("active", BooleanFieldDefaultTrueListFilter)]
     search_fields = ["name", "description", "team"]
+    autocomplete_fields = ["contacts"]
 
 
 @admin.register(Tenant)

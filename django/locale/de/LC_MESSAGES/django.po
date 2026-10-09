@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Cohiva 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-11 20:21+0200\n"
+"POT-Creation-Date: 2026-11-08 00:32+0100\n"
 "PO-Revision-Date: 2025-10-21 01:30+0200\n"
 "Last-Translator: Cohiva Development Team\n"
 "Language-Team: German\n"
@@ -153,23 +153,23 @@ msgstr "Export"
 msgid "Export ADIT"
 msgstr "Export ADIT"
 
-#: geno/admin.py:1050
+#: geno/admin.py:1052
 msgid "Current extract"
 msgstr "Auszug aktuell"
 
-#: geno/admin.py:1059
+#: geno/admin.py:1061
 msgid "Extract as of end of prior year"
 msgstr "Auszug per Ende Vorjahr"
 
-#: geno/admin.py:1650
+#: geno/admin.py:1652
 msgid "Untervertrag hinzufügen"
 msgstr "Untervertrag hinzufügen"
 
-#: geno/admin.py:1675
+#: geno/admin.py:1677
 msgid "Report Pflichtanteile/Belegung"
 msgstr "Report Pflichtanteile/Belegung"
 
-#: geno/admin.py:1976
+#: geno/admin.py:1978
 msgid "Mietobjektspiegel"
 msgstr ""
 
@@ -600,28 +600,40 @@ msgstr ""
 msgid "Übersicht per Stichtag"
 msgstr ""
 
-#: geno/models.py:887
+#: geno/models.py:812
+msgid "Contacts"
+msgstr "Kontakte"
+
+#: geno/models.py:815
+msgid ""
+"Contacts who will receive notifications for this building. When left emtpy, "
+"the default email will be used."
+msgstr ""
+"Kontakte, welche Benachrichtigungen für diese Liegenschaft erhalten sollen. "
+"Wenn leer, wird die Standard E-Mail-Adresse verwendet."
+
+#: geno/models.py:897
 msgid "Membership durations cannot overlap"
 msgstr "Die Laufzeiten der Mitgliedschaften dürfen sich nicht überschneiden"
 
-#: geno/models.py:1128
+#: geno/models.py:1138
 msgid "Related building/contracts"
 msgstr "Verknüpfte Liegenschaften/Verträge"
 
-#: geno/models.py:1180
+#: geno/models.py:1190
 msgid "Contract and building can not both be selected."
 msgstr "Vertrag und Liegenschaft dürfen nicht beide ausgewählt sein."
 
-#: geno/models.py:1185
+#: geno/models.py:1195
 msgid "At least one of payment date or effective from date must be provided."
 msgstr ""
 "Mindestens eines von Zahlungsdatum oder Wirksam ab muss angegeben werden."
 
-#: geno/models.py:1190
+#: geno/models.py:1200
 msgid "Repayment date cannot be before payment date."
 msgstr "Rückzahlungsdatum darf nicht vor dem Zahlungsdatum liegen."
 
-#: geno/models.py:1195
+#: geno/models.py:1205
 msgid "Effective until date cannot be before effective from date."
 msgstr "Wirksam bis darf nicht vor dem Wirksam ab liegen."
 
