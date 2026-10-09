@@ -34,6 +34,7 @@ from geno.models import (
     MemberAttributeType,
     Share,
     ShareType,
+    ShareTypeCategory,
 )
 from geno.shares import get_share_statement_data
 from geno.utils import fill_template_pod, nformat, odt2pdf, remove_temp_files, sanitize_filename
@@ -161,7 +162,7 @@ class DocumentTemplate:
         c["bill"] = []
         total = 0
         for s in shares:
-            if s.share_type.name == "Anteilschein":
+            if s.share_type.category == ShareTypeCategory.SHARE:
                 if s.quantity == 1:
                     suffix = ""
                 else:
@@ -182,7 +183,7 @@ class DocumentTemplate:
         ):
             c[self.context_options["share_count_context_var"]] = 0
             stype = ShareType.objects.filter(
-                name=self.context_options["share_count_sharetype"]
+                name=self.context_options["share_count_sharetype"], active=True
             ).first()
             if stype:
                 for share in Share.objects.filter(name=recipient.address).filter(share_type=stype):
@@ -1011,26 +1012,25 @@ def get_context_data(doctype, obj_id, extra_context):
         else:
             c["is_first_share"] = False
 
-        try:
-            stype_share = ShareType.objects.get(name="Anteilschein")
-        except ShareType.DoesNotExist:
-            stype_share = "Nonexistent"
-        try:
-            stype_loan_noint = ShareType.objects.get(name="Darlehen zinslos")
-        except ShareType.DoesNotExist:
-            stype_loan_noint = "Nonexistent"
-        try:
-            stype_loan_int = ShareType.objects.get(name="Darlehen verzinst")
-        except ShareType.DoesNotExist:
-            stype_loan_int = "Nonexistent"
-        try:
-            stype_loan_special = ShareType.objects.get(name="Darlehen spezial")
-        except ShareType.DoesNotExist:
-            stype_loan_special = "Nonexistent"
-        try:
-            stype_deposit = ShareType.objects.get(name="Depositenkasse")
-        except ShareType.DoesNotExist:
-            stype_deposit = "Nonexistent"
+        share_types_share = list(
+            ShareType.objects.filter(category=ShareTypeCategory.SHARE, active=True)
+        )
+        share_types_loan_noint = list(
+            ShareType.objects.filter(
+                category=ShareTypeCategory.LOAN, is_interest_bearing=False, active=True
+            )
+        )
+        share_types_loan_int = list(
+            ShareType.objects.filter(
+                category=ShareTypeCategory.LOAN, is_interest_bearing=True, active=True
+            )
+        )
+        share_types_loan_special = list(
+            ShareType.objects.filter(category=ShareTypeCategory.SPECIAL_LOAN, active=True)
+        )
+        share_types_deposit = list(
+            ShareType.objects.filter(category=ShareTypeCategory.DEPOSIT, active=True)
+        )
 
         if obj.date_due:
             duedate = obj.date_due
@@ -1044,7 +1044,7 @@ def get_context_data(doctype, obj_id, extra_context):
             duedate_text = ""
 
         c["betrag_text_zusatz"] = None
-        if obj.share_type == stype_share:
+        if obj.share_type in share_types_share:
             if hasattr(adr, "member"):
                 c["datum_eintritt"] = adr.member.date_join.strftime("%d.%m.%Y")
             else:
@@ -1068,7 +1068,9 @@ def get_context_data(doctype, obj_id, extra_context):
                 c["bvg"] = False
             count = 0
             amount = 0
-            for s in Share.get_active().filter(name=obj.name).filter(share_type=stype_share):
+            for s in (
+                Share.get_active().filter(name=obj.name).filter(share_type__in=share_types_share)
+            ):
                 count += s.quantity
                 amount += s.quantity * s.value
             if count == 1:
@@ -1076,21 +1078,21 @@ def get_context_data(doctype, obj_id, extra_context):
             else:
                 c["total_anzahl"] = "%s Anteilscheine" % (nformat(count, 0))
             c["total_summe"] = "%s" % (nformat(amount))
-        elif obj.share_type == stype_loan_noint:
+        elif obj.share_type in share_types_loan_noint:
             c["betrag_text"] = "Zinsloses Darlehen von CHF %s%s" % (
                 nformat(obj.value, 2),
                 duedate_text,
             )
-        elif obj.share_type == stype_loan_int:
+        elif obj.share_type in share_types_loan_int:
             c["betrag_text"] = "Darlehen von CHF %s%s" % (
                 nformat(obj.value, 2),
                 duedate_text,
             )
             c["betrag_text_zusatz"] = "Aktueller Zinssatz: %s%%" % (nformat(obj.interest(), 2))
-        elif obj.share_type == stype_deposit:
+        elif obj.share_type in share_types_deposit:
             c["betrag_text"] = "Einlage in die Depositenkasse von CHF %s" % (nformat(obj.value, 2))
             c["betrag_text_zusatz"] = "Aktueller Zinssatz: %s%%" % (nformat(obj.interest(), 2))
-        elif obj.share_type == stype_loan_special:
+        elif obj.share_type in share_types_loan_special:
             c["betrag_text"] = "Darlehen von CHF %s%s" % (
                 nformat(obj.value, 2),
                 duedate_text,

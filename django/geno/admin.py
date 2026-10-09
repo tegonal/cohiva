@@ -883,9 +883,39 @@ class MemberAttributeAdmin(GenoBaseAdmin):
 @admin.register(ShareType)
 class ShareTypeAdmin(GenoBaseAdmin):
     model = ShareType
-    fields = ["name", "description", "standard_interest"]
-    list_display = ["name", "description", "standard_interest"]
-    list_filter = ["standard_interest"]
+    fields = [
+        "name",
+        "description",
+        "category",
+        "standard_interest",
+        "is_interest_bearing",
+        "requires_due_date",
+        "is_excluded_from_reports",
+        "is_excluded_from_rental_units",
+        "is_excluded_from_mailings",
+        "membership_type",
+        "display_order",
+        "active",
+    ]
+    list_display = [
+        "name",
+        "category",
+        "standard_interest",
+        "is_interest_bearing",
+        "membership_type",
+        "display_order",
+        "active",
+    ]
+    list_filter = [
+        "category",
+        "is_interest_bearing",
+        "requires_due_date",
+        "is_excluded_from_reports",
+        "is_excluded_from_rental_units",
+        "is_excluded_from_mailings",
+        "membership_type",
+        "active",
+    ]
     search_fields = ["name", "description"]
 
 

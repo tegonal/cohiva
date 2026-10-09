@@ -257,7 +257,7 @@ class MemberMailForm(forms.Form):
                     ),
                     *(
                         [
-                            Div("share_paid_01", css_class="mb-4"),
+                            Div("share_paid", css_class="mb-4"),
                             Div("share_unpaid", css_class="mb-4"),
                         ]
                         if settings.GENO_ID == "HSG"
@@ -391,17 +391,16 @@ class MemberMailForm(forms.Form):
         required=False,
         widget=UnfoldAdminSelectWidget(),
     )
-    if settings.GENO_ID == "HSG":
-        share_paid_01 = forms.BooleanField(
-            label=_("Nur Mitglieder MIT bezahltem Anteilschein Einzelmitglied"),
-            required=False,
-            widget=UnfoldBooleanSwitchWidget(),
-        )
-        share_unpaid = forms.BooleanField(
-            label=_("Nur Mitglieder OHNE Anteilscheine"),
-            required=False,
-            widget=UnfoldBooleanSwitchWidget(),
-        )
+    share_paid = forms.BooleanField(
+        label=_("Nur Mitglieder MIT bezahltem Anteilschein"),
+        required=False,
+        widget=UnfoldBooleanSwitchWidget(),
+    )
+    share_unpaid = forms.BooleanField(
+        label=_("Nur Mitglieder OHNE Anteilscheine"),
+        required=False,
+        widget=UnfoldBooleanSwitchWidget(),
+    )
     select_rentaltype = forms.ChoiceField(
         choices=rentaltype_choices,
         label=_("Typ"),

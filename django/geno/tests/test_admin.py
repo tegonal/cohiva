@@ -21,6 +21,7 @@ from geno.models import (
     RentalUnit,
     Share,
     ShareType,
+    ShareTypeCategory,
     TenantsView,
 )
 from geno.tests.base import MockDate
@@ -635,7 +636,9 @@ class ShareAdminFilterTest(GenoAdminTestCase):
     def setUpTestData(cls):
         super().setUpTestData()
 
-        stype = ShareType.objects.create(name="ShareFilterTest")
+        stype = ShareType.objects.create(
+            name="ShareFilterTest", category=ShareTypeCategory.SHARE, active=True
+        )
 
         cls.building_A = Building.objects.create(name="A")
         cls.building_B = Building.objects.create(name="B")

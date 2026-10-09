@@ -20,6 +20,7 @@ from geno.models import (
     RentalUnit,
     Share,
     ShareType,
+    ShareTypeCategory,
 )
 
 from .base import GenoAdminTestCase
@@ -554,7 +555,9 @@ class GenoBaseSaveAsCopyTests(TestCase):
         address = Address.objects.create(name="Test", first_name="Testus")
         share = Share.objects.create(
             name=address,
-            share_type=ShareType.objects.create(name="Test"),
+            share_type=ShareType.objects.create(
+                name="Test", category=ShareTypeCategory.SHARE, active=True
+            ),
             value=1,
             import_id="SHARE-1",
         )
@@ -647,7 +650,10 @@ class ShareGetContextTests(TestCase):
     def setUp(self):
         self.address = Address.objects.create(name="Muster", first_name="Hans")
         self.share_type = ShareType.objects.create(
-            name="TestType", standard_interest=Decimal("2.50")
+            name="TestType",
+            standard_interest=Decimal("2.50"),
+            category=ShareTypeCategory.SHARE,
+            active=True,
         )
         self.building = Building.objects.create(name="Test Building")
         self.rental_unit = RentalUnit.objects.create(
@@ -972,9 +978,14 @@ class ShareGetRelatedSharesTest(TestCase):
         cls.other_address = Address.objects.create(
             name="Andere", first_name="Anna", email="anna@example.com"
         )
-        cls.share_type_a = ShareType.objects.create(name="Anteilschein")
+        cls.share_type_a = ShareType.objects.create(
+            name="Anteilschein", category=ShareTypeCategory.SHARE, active=True
+        )
         cls.share_type_b = ShareType.objects.create(
-            name="Darlehen verzinst", standard_interest=1.5
+            name="Darlehen verzinst",
+            standard_interest=1.5,
+            category=ShareTypeCategory.LOAN,
+            active=True,
         )
         cls.building = Building.objects.create(name="Musterweg 1")
 
