@@ -28,7 +28,7 @@ class ShareTypeCategoryTests(TestCase):
         self.assertIn("loan", categories)
         self.assertIn("deposit", categories)
         self.assertIn("mortgage", categories)
-        self.assertIn("donation", categories)
+        self.assertIn("non_repayable", categories)
         self.assertIn("special_loan", categories)
 
     def test_share_type_creation_with_category(self):
@@ -111,9 +111,9 @@ class ShareTypeBehaviorTests(TestCase):
             is_interest_bearing=True,
             standard_interest=0.75,
         )
-        cls.share_type_donation = ShareType.objects.create(
+        cls.share_type_non_repayable = ShareType.objects.create(
             name="Entwicklungsbeitrag",
-            category=ShareTypeCategory.DONATION,
+            category=ShareTypeCategory.NON_REPAYABLE,
         )
         cls.share_type_mortgage = ShareType.objects.create(
             name="Hypothek",
@@ -197,9 +197,9 @@ class ShareTypeBehaviorTests(TestCase):
         self.assertEqual(excluded.count(), 1)
         self.assertEqual(excluded.first(), self.share_type_mortgage)
 
-    def test_donation_category(self):
-        """Donation share type uses DONATION category."""
-        self.assertEqual(self.share_type_donation.category, ShareTypeCategory.DONATION)
+    def test_non_repayable_category(self):
+        """Non-repayable share type uses NON_REPAYABLE category."""
+        self.assertEqual(self.share_type_non_repayable.category, ShareTypeCategory.NON_REPAYABLE)
 
     def test_membership_type_flag_matching(self):
         """ShareType membership_type can be matched against member flags."""

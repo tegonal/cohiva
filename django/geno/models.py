@@ -980,60 +980,60 @@ class MemberAttribute(GenoBase):
 
 
 class ShareTypeCategory(models.TextChoices):
-    SHARE = "share", "Anteilschein"
-    LOAN = "loan", "Darlehen"
-    DEPOSIT = "deposit", "Depositenkasse"
-    MORTGAGE = "mortgage", "Hypothek"
-    DONATION = "donation", "Entwicklungsbeitrag"
-    SPECIAL_LOAN = "special_loan", "Spezialdarlehen"
+    SHARE = "share", _("Share")
+    LOAN = "loan", _("Loan")
+    DEPOSIT = "deposit", _("Deposit")
+    MORTGAGE = "mortgage", _("Mortgage")
+    NON_REPAYABLE = "non_repayable", _("Non-repayable")
+    SPECIAL_LOAN = "special_loan", _("Special Loan")
 
 
 class ShareType(GenoBase):
-    name = models.CharField("Name", max_length=50, unique=True)
-    description = models.CharField("Beschreibung", max_length=200)
+    name = models.CharField(_("Name"), max_length=50, unique=True)
+    description = models.CharField(_("Description"), max_length=200)
     standard_interest = models.DecimalField(
-        "Standard-Zinssatz",
+        _("Standard interest rate"),
         max_digits=4,
         decimal_places=2,
         default=0.00,
-        help_text="Zinssatz gilt für alle Beteiligungen mit Zinssatz-Modus «Standard».",
+        help_text=_("Interest rate applies to all shares with interest mode «Standard»."),
     )
     category = models.CharField(
-        "Kategorie", max_length=20, choices=ShareTypeCategory.choices, default=ShareTypeCategory.SHARE
+        _("Category"), max_length=20, choices=ShareTypeCategory.choices, default=ShareTypeCategory.SHARE
     )
-    is_interest_bearing = models.BooleanField("Verzinst", default=False)
-    requires_due_date = models.BooleanField("Fälligkeitsdatum erforderlich", default=False)
+    is_interest_bearing = models.BooleanField(_("Interest-bearing"), default=False)
+    requires_due_date = models.BooleanField(_("Due date required"), default=False)
     is_excluded_from_reports = models.BooleanField(
-        "Von Reports/Statistiken ausschliessen", default=False
+        _("Exclude from reports/statistics"), default=False
     )
     is_excluded_from_mailings = models.BooleanField(
-        "Von Mailings ausschliessen", default=False
+        _("Exclude from mailings"), default=False
     )
     membership_type = models.CharField(
-        "Mitgliedschaftstyp",
+        _("Membership type"),
         max_length=20,
         choices=[
-            ("", "Freiwillig / Keine Pflichtbeteiligung"),
-            ("all", "Alle Mitglieder"),
-            ("flag_01", "Mitglieder mit flag_01"),
-            ("flag_02", "Mitglieder mit flag_02"),
-            ("flag_03", "Mitglieder mit flag_03"),
-            ("flag_04", "Mitglieder mit flag_04"),
-            ("flag_05", "Mitglieder mit flag_05"),
-            ("not_flag_01", "Mitglieder ohne flag_01"),
-            ("not_flag_02", "Mitglieder ohne flag_02"),
-            ("not_flag_03", "Mitglieder ohne flag_03"),
-            ("not_flag_04", "Mitglieder ohne flag_04"),
-            ("not_flag_05", "Mitglieder ohne flag_05"),
+            ("", _("Voluntary / No mandatory share")),
+            ("all", _("All members")),
+            ("flag_01", _("Members with flag_01")),
+            ("flag_02", _("Members with flag_02")),
+            ("flag_03", _("Members with flag_03")),
+            ("flag_04", _("Members with flag_04")),
+            ("flag_05", _("Members with flag_05")),
+            ("not_flag_01", _("Members without flag_01")),
+            ("not_flag_02", _("Members without flag_02")),
+            ("not_flag_03", _("Members without flag_03")),
+            ("not_flag_04", _("Members without flag_04")),
+            ("not_flag_05", _("Members without flag_05")),
         ],
         blank=True,
         default="",
     )
-    display_order = models.PositiveIntegerField("Anzeigereihenfolge", default=0)
+    display_order = models.PositiveIntegerField(_("Display order"), default=0)
 
     class Meta:
-        verbose_name = "Beteiligungstyp"
-        verbose_name_plural = "Beteiligungstypen"
+        verbose_name = _("Share type")
+        verbose_name_plural = _("Share types")
         ordering = ["display_order", "name"]
 
 

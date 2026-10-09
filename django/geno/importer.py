@@ -11,6 +11,7 @@ from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.http import HttpResponse
+from django.utils.translation import gettext as _
 from openpyxl import load_workbook
 
 ## Installed from custom (modified) python-sepa subdirectory
@@ -508,7 +509,7 @@ def import_members_from_file(empty_tables_first=False):
                             sh = Share(
                                 name=new_addr,
                                 share_type=ShareType.objects.get(
-                                    category=ShareTypeCategory.DONATION
+                                    category=ShareTypeCategory.NON_REPAYABLE
                                 ),
                                 date=datetime.datetime.today(),
                                 quantity=1,
@@ -517,7 +518,7 @@ def import_members_from_file(empty_tables_first=False):
                             )
                             sh.save()
                             fields.append(
-                                "Added new share: Entwicklungsbeitrag %s (gefordert)"
+                                _("Added new share: Non-repayable %s (requested)")
                                 % (att_as[ass])
                             )
                     else:
@@ -544,7 +545,7 @@ def import_members_from_file(empty_tables_first=False):
                             )
                             sh.save()
                             fields.append(
-                                "Added new share: %s %s (bezahlt %s)"
+                                _("Added new share: %s %s (paid %s)")
                                 % (att_as[ass]["value"], share_type.name, att_as[ass]["date"])
                             )
 

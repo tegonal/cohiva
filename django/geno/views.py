@@ -1131,7 +1131,7 @@ def check_payments(request):
             .count()
             < 1
         ):
-            warn.append("Mitglied hat keine Anteilscheine (Beitritt: %s)." % member.date_join)
+            warn.append(_("Member has no shares (joined: %s).") % member.date_join)
         ## Check if entry fee is paid:
         if member.date_join > datetime.date(2015, 1, 1):
             if (
@@ -2968,7 +2968,7 @@ def send_member_mail_filter_shares(form, member_list):
     if form.cleaned_data["select_sharetype"] == "shares":
         stype_filter = list(ShareType.objects.filter(category=ShareTypeCategory.SHARE))
         if not stype_filter:
-            return ["Beteiligungstypen nicht gefunden."]
+            return [_("Share types not found.")]
     elif form.cleaned_data["select_sharetype"] == "loan_deposit":
         stype_filter = list(
             ShareType.objects.filter(
@@ -2976,11 +2976,11 @@ def send_member_mail_filter_shares(form, member_list):
             )
         )
         if not stype_filter:
-            return ["Beteiligungstypen nicht gefunden."]
+            return [_("Share types not found.")]
     elif form.cleaned_data["select_sharetype"] == "with_interest":
         stype_filter = list(ShareType.objects.filter(is_interest_bearing=True))
         if not stype_filter:
-            return ["Beteiligungstypen nicht gefunden."]
+            return [_("Share types not found.")]
     else:
         stype_exclude = list(ShareType.objects.filter(is_excluded_from_mailings=True))
 
@@ -3514,7 +3514,7 @@ class TransactionManualView(CohivaAdminViewMixin, FormView):
         if form.cleaned_data["transaction"] == "development":
             count = 1
             value = form.cleaned_data["amount"]
-            share_type = ShareType.objects.get(category=ShareTypeCategory.DONATION)
+            share_type = ShareType.objects.get(category=ShareTypeCategory.NON_REPAYABLE)
         elif form.cleaned_data["amount"] and float(form.cleaned_data["amount"]) % 200.00 == 0.0:
             value = 200
             count = int(form.cleaned_data["amount"] / value)
@@ -3531,7 +3531,7 @@ class TransactionManualView(CohivaAdminViewMixin, FormView):
                     category=ShareTypeCategory.SHARE, membership_type=""
                 )
         else:
-            messages.error(self.request, "Betrag ist kein Vielfaches von 200.-!")
+            messages.error(self.request, _("Amount is not a multiple of 200.-!"))
             return True
 
         share = Share(

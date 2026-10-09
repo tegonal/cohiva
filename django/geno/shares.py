@@ -738,11 +738,11 @@ def share_get_donations(address, year, enddate=None):
         period_end = enddate + datetime.timedelta(days=1)
     else:
         period_end = datetime.date(year + 1, 1, 1)
-    stype_donation = ShareType.objects.filter(category=ShareTypeCategory.DONATION).first()
+    stype_non_repayable = ShareType.objects.filter(category=ShareTypeCategory.NON_REPAYABLE).first()
     total = 0
     for share in (
         Share.objects.filter(name=address)
-        .filter(share_type=stype_donation)
+        .filter(share_type=stype_non_repayable)
         .filter(Q(repayment_date__isnull=True) | Q(repayment_date__gt=period_start))
         .filter(payment_date__gte=period_start)
         .filter(payment_date__lt=period_end)
