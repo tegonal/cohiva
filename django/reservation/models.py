@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from cohiva.utils.settings import get_default_app_sender
-from geno.models import Address, ContentTemplate, GenoBase, RentalUnit
+from geno.models import Address, ContentTemplate, Contract, GenoBase, RentalUnit
 
 logger = logging.getLogger("reservation")
 
@@ -477,6 +477,40 @@ class Report(GenoBase):
             ) is not None and "status" in update_fields:
                 kwargs["update_fields"] = {"status_date"}.union(update_fields)
         super().save(**kwargs)
+
+    def get_notification_recipients(self):
+        """
+        Return a list of email addresses that should receive notifications for this report.
+
+        The building is determined from the report's rental_unit, or from the oldest
+        active contract of the reporting person. If the building has no contacts,
+        falls back to settings.COHIVA_REPORT_EMAIL.
+        """
+        building = None
+        if self.rental_unit:
+            building = self.rental_unit.building
+        else:
+            contract = (
+                Contract.get_active(include_subcontracts=True)
+                .filter(
+                    contractors=self.contact,
+                )
+                .order_by("date")
+                .first()
+            )
+            if contract:
+                first_rental_unit = contract.rental_units.first()
+                if first_rental_unit:
+                    building = first_rental_unit.building
+
+        if building:
+            contact_emails = [
+                contact.email for contact in building.contacts.filter(active=True) if contact.email
+            ]
+            if contact_emails:
+                return contact_emails
+
+        return [settings.COHIVA_REPORT_EMAIL]
 
     def __str__(self):
         if self.id:
