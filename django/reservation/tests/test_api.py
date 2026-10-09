@@ -3,12 +3,15 @@ from io import BytesIO
 from unittest import skip
 
 from django.conf import settings
+from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 import cohiva.base_config as cbc
+from geno.models import Address, Building, Contract, RentalUnit
+from reservation.api_views import send_report_email
 from reservation.models import Report, ReportCategory, ReportPicture, ReportType, Reservation
 
 from .base import ReservationTestCase
@@ -848,3 +851,180 @@ class ReportSubmissionAPITests(APITestCase, ReservationTestCase):
             )
             self.assertEqual(ri.image.size, 35)
             count += 1
+
+
+class SendReportEmailTests(APITestCase, ReservationTestCase):
+    def test_debug_mode_uses_test_recipient(self):
+        """In DEBUG mode, emails are always sent to TEST_MAIL_RECIPIENT."""
+        building = Building.objects.create(name="Test Building")
+        contact = Address.objects.create(
+            name="Contact", first_name="Building", email="building@example.com"
+        )
+        building.contacts.set([contact])
+
+        report_type = ReportType.objects.create(id=1, name="Reparaturmeldung")
+        cat1 = ReportCategory.objects.create(name="Kat1", report_type=report_type)
+        report = Report.objects.create(
+            name="Test",
+            report_type=report_type,
+            category=cat1,
+            rental_unit=self.prototypes["renter"]["rental_unit"],
+            contact=self.prototypes["renter"]["address"],
+            text="Test",
+            report_date=timezone.now(),
+            status_date=timezone.now(),
+        )
+
+        send_report_email(report)
+        self.assertEmailSent(1, recipient_or_list=settings.TEST_MAIL_RECIPIENT)
+
+    @override_settings(DEBUG=False)
+    def test_rental_unit_with_contacts(self):
+        """Email is sent to all building contacts when rental_unit is set."""
+        building = Building.objects.create(name="Test Building")
+        contact1 = Address.objects.create(
+            name="Contact1", first_name="Building", email="contact1@example.com"
+        )
+        contact2 = Address.objects.create(
+            name="Contact2", first_name="Building", email="contact2@example.com"
+        )
+        building.contacts.set([contact1, contact2])
+
+        ru = RentalUnit.objects.create(
+            name="TestRU",
+            rental_type="Wohnung",
+            building=building,
+            area=50,
+            height=3,
+            volume=150,
+            rooms=2,
+            min_occupancy=1,
+            nk=50,
+            rent_netto=500,
+            share=5000,
+        )
+
+        report_type = ReportType.objects.create(id=1, name="Reparaturmeldung")
+        cat1 = ReportCategory.objects.create(name="Kat1", report_type=report_type)
+        report = Report.objects.create(
+            name="Test",
+            report_type=report_type,
+            category=cat1,
+            rental_unit=ru,
+            contact=self.prototypes["renter"]["address"],
+            text="Test",
+            report_date=timezone.now(),
+            status_date=timezone.now(),
+        )
+
+        self.assertEqual(
+            sorted(report.get_notification_recipients()),
+            sorted(["contact1@example.com", "contact2@example.com"]),
+        )
+
+    @override_settings(DEBUG=False)
+    def test_rental_unit_without_contacts_fallback(self):
+        """Fallback to COHIVA_REPORT_EMAIL when building has no contacts."""
+        building = Building.objects.create(name="Empty Building")
+        ru = RentalUnit.objects.create(
+            name="TestRU",
+            rental_type="Wohnung",
+            building=building,
+            area=50,
+            height=3,
+            volume=150,
+            rooms=2,
+            min_occupancy=1,
+            nk=50,
+            rent_netto=500,
+            share=5000,
+        )
+
+        report_type = ReportType.objects.create(id=1, name="Reparaturmeldung")
+        cat1 = ReportCategory.objects.create(name="Kat1", report_type=report_type)
+        report = Report.objects.create(
+            name="Test",
+            report_type=report_type,
+            category=cat1,
+            rental_unit=ru,
+            contact=self.prototypes["renter"]["address"],
+            text="Test",
+            report_date=timezone.now(),
+            status_date=timezone.now(),
+        )
+
+        self.assertEqual(
+            report.get_notification_recipients(),
+            [settings.COHIVA_REPORT_EMAIL],
+        )
+
+    @override_settings(DEBUG=False)
+    def test_no_rental_unit_uses_oldest_active_contract(self):
+        """Building is resolved from oldest active contract when no rental_unit is set."""
+        building = Building.objects.create(name="Contract Building")
+        contact = Address.objects.create(
+            name="Contact", first_name="Contract", email="contract@example.com"
+        )
+        building.contacts.set([contact])
+
+        ru = RentalUnit.objects.create(
+            name="ContractRU",
+            rental_type="Wohnung",
+            building=building,
+            area=50,
+            height=3,
+            volume=150,
+            rooms=2,
+            min_occupancy=1,
+            nk=50,
+            rent_netto=500,
+            share=5000,
+        )
+
+        contract = Contract.objects.create(
+            comment="Older contract",
+            state="unterzeichnet",
+            date=datetime.date(1990, 1, 1),
+        )
+        contract.rental_units.set([ru])
+        contract.contractors.set([self.prototypes["renter"]["address"]])
+        contract.save()
+
+        report_type = ReportType.objects.create(id=1, name="Reparaturmeldung")
+        cat1 = ReportCategory.objects.create(name="Kat1", report_type=report_type)
+        report = Report.objects.create(
+            name="Test",
+            report_type=report_type,
+            category=cat1,
+            rental_unit=None,
+            contact=self.prototypes["renter"]["address"],
+            text="Test",
+            report_date=timezone.now(),
+            status_date=timezone.now(),
+        )
+
+        self.assertEqual(
+            report.get_notification_recipients(),
+            ["contract@example.com"],
+        )
+
+    @override_settings(DEBUG=False)
+    def test_no_rental_unit_no_active_contract_fallback(self):
+        """Fallback to COHIVA_REPORT_EMAIL when no rental_unit and no active contract."""
+        report_type = ReportType.objects.create(id=1, name="Reparaturmeldung")
+        cat1 = ReportCategory.objects.create(name="Kat1", report_type=report_type)
+        report = Report.objects.create(
+            name="Test",
+            report_type=report_type,
+            category=cat1,
+            rental_unit=None,
+            contact=self.prototypes["external"]["address"],
+            text="Test",
+            report_date=timezone.now(),
+            status_date=timezone.now(),
+        )
+
+        self.assertEqual(
+            report.get_notification_recipients(),
+            [settings.COHIVA_REPORT_EMAIL],
+        )

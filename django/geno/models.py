@@ -807,6 +807,15 @@ class Building(GenoBase):
     accounting_postfix = models.PositiveIntegerField("Buchhaltungs-Postfix", null=True, blank=True)
     egid = models.PositiveIntegerField("EGID", null=True, blank=True)
     active = models.BooleanField("Aktiv", default=True)
+    contacts = models.ManyToManyField(
+        Address,
+        verbose_name=_("Contacts"),
+        blank=True,
+        help_text=_(
+            "Contacts who will receive notifications for this building. "
+            "When left emtpy, the default email will be used."
+        ),
+    )
 
     class Meta:
         ordering = ["name"]
