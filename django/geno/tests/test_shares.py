@@ -8,7 +8,7 @@ from django.db import IntegrityError
 import geno.shares
 from finance.accounting import Account, AccountingManager, AccountKey
 
-from ..models import Address, Building, Contract, Share, ShareType
+from ..models import Address, Building, Contract, Share, ShareType, ShareTypeCategory
 from .base import GenoAdminTestCase, MockDate
 
 
@@ -32,7 +32,7 @@ class ShareTest(GenoAdminTestCase):
         contract = Contract.objects.create(date=today)
         building = Building.objects.create()
         address = Address.objects.create()
-        sharetype = ShareType.objects.create()
+        sharetype = ShareType.objects.create(category=ShareTypeCategory.SHARE)
 
         # Check model constraint
         constraint_name = "geno_share_attached_to_building_or_contract"

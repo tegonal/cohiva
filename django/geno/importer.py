@@ -26,6 +26,7 @@ from .models import (
     RentalUnit,
     Share,
     ShareType,
+    ShareTypeCategory,
 )
 from .sepa_reader import SepaReaderException, read_camt
 from .utils import decode_from_iso8859
@@ -96,10 +97,9 @@ def process_eigenmittel():
     ## Add current shares to 'members'
     # today = datetime.datetime.today()
     share_type_map = {
-        "Anteilschein": "as_eff",
-        "Darlehen zinslos": "dz_eff",
-        "Darlehen verzinst": "dv_eff",
-        "Depositenkasse": "dk_eff",
+        ShareTypeCategory.SHARE: "as_eff",
+        ShareTypeCategory.LOAN: "loan_eff",
+        ShareTypeCategory.DEPOSIT: "dk_eff",
     }
     for m in Address.objects.filter(active=True):
         if m.pk not in members:
@@ -118,7 +118,8 @@ def process_eigenmittel():
             summe = 0
             for s in Share.get_active().filter(name=m).filter(share_type=share_type):
                 summe += s.quantity * float(s.value)
-            members[m.pk][share_type_map[share_type.name]] = int(summe)
+            key = share_type_map.get(share_type.category, "other_eff")
+            members[m.pk][key] = int(summe)
             total += summe
         members[m.pk]["total_eff"] = int(total)
         members[m.pk]["name"] = "%s %s, %s" % (m.name, m.first_name, m.city)
@@ -506,7 +507,9 @@ def import_members_from_file(empty_tables_first=False):
                         if att_as[ass] > 0:
                             sh = Share(
                                 name=new_addr,
-                                share_type=ShareType.objects.get(name="Entwicklungsbeitrag"),
+                                share_type=ShareType.objects.get(
+                                    category=ShareTypeCategory.DONATION
+                                ),
                                 date=datetime.datetime.today(),
                                 quantity=1,
                                 value=att_as[ass],
@@ -519,9 +522,13 @@ def import_members_from_file(empty_tables_first=False):
                             )
                     else:
                         if ass == "AS2":
-                            share_type = "Anteilschein freiwillig"
+                            share_type = ShareType.objects.get(
+                                category=ShareTypeCategory.SHARE, membership_type=""
+                            )
                         else:
-                            share_type = "Anteilschein Einzelmitglied"
+                            share_type = ShareType.objects.get(
+                                category=ShareTypeCategory.SHARE, membership_type="flag_02"
+                            )
                         if att_as[ass]["date"]:
                             pay_state = "bezahlt"
                             # else:
@@ -529,7 +536,7 @@ def import_members_from_file(empty_tables_first=False):
                             #    att_as[ass]['date'] = datetime.date.today()
                             sh = Share(
                                 name=new_addr,
-                                share_type=ShareType.objects.get(name=share_type),
+                                share_type=share_type,
                                 date=att_as[ass]["date"],
                                 quantity=att_as[ass]["value"],
                                 value=200,
@@ -538,7 +545,7 @@ def import_members_from_file(empty_tables_first=False):
                             sh.save()
                             fields.append(
                                 "Added new share: %s %s (bezahlt %s)"
-                                % (att_as[ass]["value"], share_type, att_as[ass]["date"])
+                                % (att_as[ass]["value"], share_type.name, att_as[ass]["date"])
                             )
 
                 # fields = ( '%s: %s' % (header[i],val) for i,val in enumerate(row) )

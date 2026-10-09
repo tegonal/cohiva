@@ -979,6 +979,15 @@ class MemberAttribute(GenoBase):
         verbose_name_plural = "Mitglieder Attribute"
 
 
+class ShareTypeCategory(models.TextChoices):
+    SHARE = "share", "Anteilschein"
+    LOAN = "loan", "Darlehen"
+    DEPOSIT = "deposit", "Depositenkasse"
+    MORTGAGE = "mortgage", "Hypothek"
+    DONATION = "donation", "Entwicklungsbeitrag"
+    SPECIAL_LOAN = "special_loan", "Spezialdarlehen"
+
+
 class ShareType(GenoBase):
     name = models.CharField("Name", max_length=50, unique=True)
     description = models.CharField("Beschreibung", max_length=200)
@@ -989,10 +998,43 @@ class ShareType(GenoBase):
         default=0.00,
         help_text="Zinssatz gilt für alle Beteiligungen mit Zinssatz-Modus «Standard».",
     )
+    category = models.CharField(
+        "Kategorie", max_length=20, choices=ShareTypeCategory.choices, default=ShareTypeCategory.SHARE
+    )
+    is_interest_bearing = models.BooleanField("Verzinst", default=False)
+    requires_due_date = models.BooleanField("Fälligkeitsdatum erforderlich", default=False)
+    is_excluded_from_reports = models.BooleanField(
+        "Von Reports/Statistiken ausschliessen", default=False
+    )
+    is_excluded_from_mailings = models.BooleanField(
+        "Von Mailings ausschliessen", default=False
+    )
+    membership_type = models.CharField(
+        "Mitgliedschaftstyp",
+        max_length=20,
+        choices=[
+            ("", "Freiwillig / Keine Pflichtbeteiligung"),
+            ("all", "Alle Mitglieder"),
+            ("flag_01", "Mitglieder mit flag_01"),
+            ("flag_02", "Mitglieder mit flag_02"),
+            ("flag_03", "Mitglieder mit flag_03"),
+            ("flag_04", "Mitglieder mit flag_04"),
+            ("flag_05", "Mitglieder mit flag_05"),
+            ("not_flag_01", "Mitglieder ohne flag_01"),
+            ("not_flag_02", "Mitglieder ohne flag_02"),
+            ("not_flag_03", "Mitglieder ohne flag_03"),
+            ("not_flag_04", "Mitglieder ohne flag_04"),
+            ("not_flag_05", "Mitglieder ohne flag_05"),
+        ],
+        blank=True,
+        default="",
+    )
+    display_order = models.PositiveIntegerField("Anzeigereihenfolge", default=0)
 
     class Meta:
         verbose_name = "Beteiligungstyp"
         verbose_name_plural = "Beteiligungstypen"
+        ordering = ["display_order", "name"]
 
 
 class Share(GenoBase):

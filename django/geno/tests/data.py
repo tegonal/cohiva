@@ -23,6 +23,7 @@ from geno.models import (
     RentalUnit,
     Share,
     ShareType,
+    ShareTypeCategory,
     Tenant,
 )
 
@@ -524,17 +525,75 @@ def create_shares(cls: "type[GenoAdminTestCase]"):
 
 def create_sharetypes(cls: "type[GenoAdminTestCase]"):
     cls.sharetypes = []
-    cls.sharetypes.append(ShareType.objects.create(name="Anteilschein"))
-    cls.sharetypes.append(ShareType.objects.create(name="Darlehen zinslos"))
     cls.sharetypes.append(
-        ShareType.objects.create(name="Darlehen verzinst", standard_interest=1.0)
+        ShareType.objects.create(
+            name="Anteilschein",
+            category=ShareTypeCategory.SHARE,
+            membership_type="all",
+        )
     )
-    cls.sharetypes.append(ShareType.objects.create(name="Depositenkasse", standard_interest=0.75))
-    cls.sharetypes.append(ShareType.objects.create(name="Darlehen spezial", standard_interest=1.5))
-    cls.sharetypes.append(ShareType.objects.create(name="Hypothek"))
-    cls.sharetypes.append(ShareType.objects.create(name="Anteilschein Einzelmitglied"))
-    cls.sharetypes.append(ShareType.objects.create(name="Anteilschein Gründungsmitglied"))
-    cls.sharetypes.append(ShareType.objects.create(name="Anteilschein freiwillig"))
+    cls.sharetypes.append(
+        ShareType.objects.create(
+            name="Darlehen zinslos",
+            category=ShareTypeCategory.LOAN,
+            requires_due_date=True,
+        )
+    )
+    cls.sharetypes.append(
+        ShareType.objects.create(
+            name="Darlehen verzinst",
+            category=ShareTypeCategory.LOAN,
+            standard_interest=1.0,
+            is_interest_bearing=True,
+            requires_due_date=True,
+        )
+    )
+    cls.sharetypes.append(
+        ShareType.objects.create(
+            name="Depositenkasse",
+            category=ShareTypeCategory.DEPOSIT,
+            standard_interest=0.75,
+            is_interest_bearing=True,
+        )
+    )
+    cls.sharetypes.append(
+        ShareType.objects.create(
+            name="Darlehen spezial",
+            category=ShareTypeCategory.SPECIAL_LOAN,
+            standard_interest=1.5,
+            is_interest_bearing=True,
+            requires_due_date=True,
+        )
+    )
+    cls.sharetypes.append(
+        ShareType.objects.create(
+            name="Hypothek",
+            category=ShareTypeCategory.MORTGAGE,
+            is_excluded_from_reports=True,
+            is_excluded_from_mailings=True,
+        )
+    )
+    cls.sharetypes.append(
+        ShareType.objects.create(
+            name="Anteilschein Einzelmitglied",
+            category=ShareTypeCategory.SHARE,
+            membership_type="flag_02",
+        )
+    )
+    cls.sharetypes.append(
+        ShareType.objects.create(
+            name="Anteilschein Gründungsmitglied",
+            category=ShareTypeCategory.SHARE,
+            membership_type="not_flag_02",
+        )
+    )
+    cls.sharetypes.append(
+        ShareType.objects.create(
+            name="Anteilschein freiwillig",
+            category=ShareTypeCategory.SHARE,
+            membership_type="",
+        )
+    )
 
 
 def create_registrationevents(cls: type[TestRegistrationForm]):

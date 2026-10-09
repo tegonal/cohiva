@@ -34,6 +34,7 @@ from geno.models import (
     MemberAttributeType,
     Share,
     ShareType,
+    ShareTypeCategory,
 )
 from geno.shares import get_share_statement_data
 from geno.utils import fill_template_pod, nformat, odt2pdf, remove_temp_files, sanitize_filename
@@ -161,7 +162,7 @@ class DocumentTemplate:
         c["bill"] = []
         total = 0
         for s in shares:
-            if s.share_type.name == "Anteilschein":
+            if s.share_type.category == ShareTypeCategory.SHARE:
                 if s.quantity == 1:
                     suffix = ""
                 else:
@@ -1012,23 +1013,27 @@ def get_context_data(doctype, obj_id, extra_context):
             c["is_first_share"] = False
 
         try:
-            stype_share = ShareType.objects.get(name="Anteilschein")
+            share_types_share = list(ShareType.objects.filter(category=ShareTypeCategory.SHARE))
         except ShareType.DoesNotExist:
-            stype_share = "Nonexistent"
+            share_types_share = []
         try:
-            stype_loan_noint = ShareType.objects.get(name="Darlehen zinslos")
+            stype_loan_noint = ShareType.objects.get(
+                category=ShareTypeCategory.LOAN, is_interest_bearing=False
+            )
         except ShareType.DoesNotExist:
             stype_loan_noint = "Nonexistent"
         try:
-            stype_loan_int = ShareType.objects.get(name="Darlehen verzinst")
+            stype_loan_int = ShareType.objects.get(
+                category=ShareTypeCategory.LOAN, is_interest_bearing=True
+            )
         except ShareType.DoesNotExist:
             stype_loan_int = "Nonexistent"
         try:
-            stype_loan_special = ShareType.objects.get(name="Darlehen spezial")
+            stype_loan_special = ShareType.objects.get(category=ShareTypeCategory.SPECIAL_LOAN)
         except ShareType.DoesNotExist:
             stype_loan_special = "Nonexistent"
         try:
-            stype_deposit = ShareType.objects.get(name="Depositenkasse")
+            stype_deposit = ShareType.objects.get(category=ShareTypeCategory.DEPOSIT)
         except ShareType.DoesNotExist:
             stype_deposit = "Nonexistent"
 
@@ -1044,7 +1049,7 @@ def get_context_data(doctype, obj_id, extra_context):
             duedate_text = ""
 
         c["betrag_text_zusatz"] = None
-        if obj.share_type == stype_share:
+        if obj.share_type in share_types_share:
             if hasattr(adr, "member"):
                 c["datum_eintritt"] = adr.member.date_join.strftime("%d.%m.%Y")
             else:
@@ -1068,7 +1073,7 @@ def get_context_data(doctype, obj_id, extra_context):
                 c["bvg"] = False
             count = 0
             amount = 0
-            for s in Share.get_active().filter(name=obj.name).filter(share_type=stype_share):
+            for s in Share.get_active().filter(name=obj.name).filter(share_type__in=share_types_share):
                 count += s.quantity
                 amount += s.quantity * s.value
             if count == 1:
