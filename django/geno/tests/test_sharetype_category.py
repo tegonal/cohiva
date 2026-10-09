@@ -294,7 +294,9 @@ class ShareTypeBehaviorTests(TestCase):
         )
 
         # Only active share types should be returned
-        active_share_types = list(ShareType.objects.filter(category=ShareTypeCategory.SHARE, active=True))
+        active_share_types = list(
+            ShareType.objects.filter(category=ShareTypeCategory.SHARE, active=True)
+        )
         self.assertIn(active_st, active_share_types)
         self.assertNotIn(inactive_st, active_share_types)
 

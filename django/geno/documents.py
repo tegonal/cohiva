@@ -16,7 +16,6 @@ from django.db.models import Q
 from django.http import HttpResponse
 from django.template import Context, Template, loader
 from django.utils.html import escape
-from django.utils.translation import gettext as _
 from html2text import html2text
 
 import geno.settings as geno_settings
@@ -1013,30 +1012,25 @@ def get_context_data(doctype, obj_id, extra_context):
         else:
             c["is_first_share"] = False
 
-        try:
-            share_types_share = list(ShareType.objects.filter(category=ShareTypeCategory.SHARE, active=True))
-        except ShareType.DoesNotExist:
-            share_types_share = []
-        try:
-            stype_loan_noint = ShareType.objects.get(
+        share_types_share = list(
+            ShareType.objects.filter(category=ShareTypeCategory.SHARE, active=True)
+        )
+        share_types_loan_noint = list(
+            ShareType.objects.filter(
                 category=ShareTypeCategory.LOAN, is_interest_bearing=False, active=True
             )
-        except ShareType.DoesNotExist:
-            stype_loan_noint = "Nonexistent"
-        try:
-            stype_loan_int = ShareType.objects.get(
+        )
+        share_types_loan_int = list(
+            ShareType.objects.filter(
                 category=ShareTypeCategory.LOAN, is_interest_bearing=True, active=True
             )
-        except ShareType.DoesNotExist:
-            stype_loan_int = "Nonexistent"
-        try:
-            stype_loan_special = ShareType.objects.get(category=ShareTypeCategory.SPECIAL_LOAN, active=True)
-        except ShareType.DoesNotExist:
-            stype_loan_special = "Nonexistent"
-        try:
-            stype_deposit = ShareType.objects.get(category=ShareTypeCategory.DEPOSIT, active=True)
-        except ShareType.DoesNotExist:
-            stype_deposit = "Nonexistent"
+        )
+        share_types_loan_special = list(
+            ShareType.objects.filter(category=ShareTypeCategory.SPECIAL_LOAN, active=True)
+        )
+        share_types_deposit = list(
+            ShareType.objects.filter(category=ShareTypeCategory.DEPOSIT, active=True)
+        )
 
         if obj.date_due:
             duedate = obj.date_due
@@ -1074,7 +1068,9 @@ def get_context_data(doctype, obj_id, extra_context):
                 c["bvg"] = False
             count = 0
             amount = 0
-            for s in Share.get_active().filter(name=obj.name).filter(share_type__in=share_types_share):
+            for s in (
+                Share.get_active().filter(name=obj.name).filter(share_type__in=share_types_share)
+            ):
                 count += s.quantity
                 amount += s.quantity * s.value
             if count == 1:
@@ -1082,21 +1078,21 @@ def get_context_data(doctype, obj_id, extra_context):
             else:
                 c["total_anzahl"] = "%s Anteilscheine" % (nformat(count, 0))
             c["total_summe"] = "%s" % (nformat(amount))
-        elif obj.share_type == stype_loan_noint:
+        elif obj.share_type in share_types_loan_noint:
             c["betrag_text"] = "Zinsloses Darlehen von CHF %s%s" % (
                 nformat(obj.value, 2),
                 duedate_text,
             )
-        elif obj.share_type == stype_loan_int:
+        elif obj.share_type in share_types_loan_int:
             c["betrag_text"] = "Darlehen von CHF %s%s" % (
                 nformat(obj.value, 2),
                 duedate_text,
             )
             c["betrag_text_zusatz"] = "Aktueller Zinssatz: %s%%" % (nformat(obj.interest(), 2))
-        elif obj.share_type == stype_deposit:
+        elif obj.share_type in share_types_deposit:
             c["betrag_text"] = "Einlage in die Depositenkasse von CHF %s" % (nformat(obj.value, 2))
             c["betrag_text_zusatz"] = "Aktueller Zinssatz: %s%%" % (nformat(obj.interest(), 2))
-        elif obj.share_type == stype_loan_special:
+        elif obj.share_type in share_types_loan_special:
             c["betrag_text"] = "Darlehen von CHF %s%s" % (
                 nformat(obj.value, 2),
                 duedate_text,

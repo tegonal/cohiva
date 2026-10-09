@@ -916,14 +916,24 @@ class Member(GenoBase):
                 )
         return actions
 
+    @classmethod
+    def get_active(cls, date=None):
+        """Get Members that are active on the reference date 'date'.
+        The default date is the current day."""
+        if date is None:
+            date = datetime.date.today()
+        select = cls.objects.filter(
+            Q(date_join__lte=date) & (Q(date_leave__isnull=True) | Q(date_leave__gte=date))
+        )
+        return select
+
     class Meta:
         ordering = ["name"]
         verbose_name = "Mitglied"
         verbose_name_plural = "Mitglieder"
         constraints = [
             models.CheckConstraint(
-                check=models.Q(date_leave__isnull=True)
-                | models.Q(date_leave__gte=models.F("date_join")),
+                condition=Q(date_leave__isnull=True) | Q(date_leave__gte=models.F("date_join")),
                 name="member_date_leave_gte_date_join",
             ),
         ]
@@ -984,7 +994,7 @@ class ShareTypeCategory(models.TextChoices):
     LOAN = "loan", _("Loan")
     DEPOSIT = "deposit", _("Deposit")
     MORTGAGE = "mortgage", _("Mortgage")
-    NON_REPAYABLE = "non_repayable", _("Non-repayable")
+    NON_REPAYABLE = "non_repayable", _("Non-repayable Grant")
     SPECIAL_LOAN = "special_loan", _("Special Loan")
 
 
@@ -999,16 +1009,24 @@ class ShareType(GenoBase):
         help_text=_("Interest rate applies to all shares with interest mode «Standard»."),
     )
     category = models.CharField(
-        _("Category"), max_length=20, choices=ShareTypeCategory.choices, default=ShareTypeCategory.SHARE
+        _("Category"),
+        max_length=20,
+        choices=ShareTypeCategory.choices,
+        default=ShareTypeCategory.SHARE,
     )
     is_interest_bearing = models.BooleanField(_("Interest-bearing"), default=False)
     requires_due_date = models.BooleanField(_("Due date required"), default=False)
     is_excluded_from_reports = models.BooleanField(
         _("Exclude from reports/statistics"), default=False
     )
-    is_excluded_from_mailings = models.BooleanField(
-        _("Exclude from mailings"), default=False
+    is_excluded_from_rental_units = models.BooleanField(
+        _("Should not be attributed to a rental unit"),
+        default=False,
+        help_text=_(
+            "E.g. for shares that should not be counted towards the required sum for a rental unit."
+        ),
     )
+    is_excluded_from_mailings = models.BooleanField(_("Exclude from mailings"), default=False)
     membership_type = models.CharField(
         _("Membership type"),
         max_length=20,
@@ -1035,7 +1053,7 @@ class ShareType(GenoBase):
     class Meta:
         verbose_name = _("Share type")
         verbose_name_plural = _("Share types")
-        ordering = ["display_order", "name"]
+        ordering = ["active", "display_order", "name"]
 
 
 class Share(GenoBase):
