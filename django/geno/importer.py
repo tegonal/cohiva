@@ -115,7 +115,7 @@ def process_eigenmittel():
                 "status": "ONLY IN DB",
             }
         total = 0
-        for share_type in ShareType.objects.all():
+        for share_type in ShareType.objects.filter(active=True):
             summe = 0
             for s in Share.get_active().filter(name=m).filter(share_type=share_type):
                 summe += s.quantity * float(s.value)
@@ -509,7 +509,7 @@ def import_members_from_file(empty_tables_first=False):
                             sh = Share(
                                 name=new_addr,
                                 share_type=ShareType.objects.get(
-                                    category=ShareTypeCategory.NON_REPAYABLE
+                                    category=ShareTypeCategory.NON_REPAYABLE, active=True
                                 ),
                                 date=datetime.datetime.today(),
                                 quantity=1,
@@ -524,11 +524,11 @@ def import_members_from_file(empty_tables_first=False):
                     else:
                         if ass == "AS2":
                             share_type = ShareType.objects.get(
-                                category=ShareTypeCategory.SHARE, membership_type=""
+                                category=ShareTypeCategory.SHARE, membership_type="", active=True
                             )
                         else:
                             share_type = ShareType.objects.get(
-                                category=ShareTypeCategory.SHARE, membership_type="flag_02"
+                                category=ShareTypeCategory.SHARE, membership_type="flag_02", active=True
                             )
                         if att_as[ass]["date"]:
                             pay_state = "bezahlt"

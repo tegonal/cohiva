@@ -380,16 +380,16 @@ def share_interest_calc(address, year, enddate=None):
         period_end = year_end
     year_days = (year_end - period_start).days
 
-    stype_share = list(ShareType.objects.filter(category=ShareTypeCategory.SHARE))  ## type index 0
+    stype_share = list(ShareType.objects.filter(category=ShareTypeCategory.SHARE, active=True))  ## type index 0
     stype_loan_noint = list(
-        ShareType.objects.filter(category=ShareTypeCategory.LOAN, is_interest_bearing=False)
+        ShareType.objects.filter(category=ShareTypeCategory.LOAN, is_interest_bearing=False, active=True)
     )  ## type index 1
     stype_loan_int = list(
-        ShareType.objects.filter(category=ShareTypeCategory.LOAN, is_interest_bearing=True)
+        ShareType.objects.filter(category=ShareTypeCategory.LOAN, is_interest_bearing=True, active=True)
     )  ## type index 2
-    stype_deposit = list(ShareType.objects.filter(category=ShareTypeCategory.DEPOSIT))  ## type index 3
+    stype_deposit = list(ShareType.objects.filter(category=ShareTypeCategory.DEPOSIT, active=True))  ## type index 3
     stype_loan_special = list(
-        ShareType.objects.filter(category=ShareTypeCategory.SPECIAL_LOAN)
+        ShareType.objects.filter(category=ShareTypeCategory.SPECIAL_LOAN, active=True)
     )  ## type index 4
 
     total_interest_alltypes = 0
@@ -668,7 +668,7 @@ def create_interest_transactions_execute(book_date):
                     new_shares.append(
                         Share(
                             name=adr,
-                            share_type=ShareType.objects.get(category=ShareTypeCategory.DEPOSIT),
+                            share_type=ShareType.objects.get(category=ShareTypeCategory.DEPOSIT, active=True),
                             payment_date=book_date,
                             quantity=1,
                             value=interest["pay"][3],
@@ -738,7 +738,7 @@ def share_get_donations(address, year, enddate=None):
         period_end = enddate + datetime.timedelta(days=1)
     else:
         period_end = datetime.date(year + 1, 1, 1)
-    stype_non_repayable = ShareType.objects.filter(category=ShareTypeCategory.NON_REPAYABLE).first()
+    stype_non_repayable = ShareType.objects.filter(category=ShareTypeCategory.NON_REPAYABLE, active=True).first()
     total = 0
     for share in (
         Share.objects.filter(name=address)
@@ -752,16 +752,16 @@ def share_get_donations(address, year, enddate=None):
 
 
 def check_rental_shares_report():
-    stype_share = list(ShareType.objects.filter(category=ShareTypeCategory.SHARE))  ## type index 0
+    stype_share = list(ShareType.objects.filter(category=ShareTypeCategory.SHARE, active=True))  ## type index 0
     stype_loan_noint = list(
-        ShareType.objects.filter(category=ShareTypeCategory.LOAN, is_interest_bearing=False)
+        ShareType.objects.filter(category=ShareTypeCategory.LOAN, is_interest_bearing=False, active=True)
     )  ## type index 1
     stype_loan_int = list(
-        ShareType.objects.filter(category=ShareTypeCategory.LOAN, is_interest_bearing=True)
+        ShareType.objects.filter(category=ShareTypeCategory.LOAN, is_interest_bearing=True, active=True)
     )  ## type index 2
-    stype_deposit = list(ShareType.objects.filter(category=ShareTypeCategory.DEPOSIT))  ## type index 3
+    stype_deposit = list(ShareType.objects.filter(category=ShareTypeCategory.DEPOSIT, active=True))  ## type index 3
     stype_loan_special = list(
-        ShareType.objects.filter(category=ShareTypeCategory.SPECIAL_LOAN)
+        ShareType.objects.filter(category=ShareTypeCategory.SPECIAL_LOAN, active=True)
     )  ## type index 4
 
     # Build lookup sets for category membership
@@ -771,7 +771,7 @@ def check_rental_shares_report():
     share_types_loan_special = set(stype_loan_special)
     share_types_loan_all = share_types_loan | share_types_loan_special
     share_types_requiring_due_date = set(
-        ShareType.objects.filter(requires_due_date=True)
+        ShareType.objects.filter(requires_due_date=True, active=True)
     )
 
     ## Get shares per person, excluding shares that are explicitly attached to a contract

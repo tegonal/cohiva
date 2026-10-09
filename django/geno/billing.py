@@ -1379,7 +1379,7 @@ def add_transaction_shares(book: AccountingBook, date, amount, address, use_clea
     share = Share(
         name=address,
         share_type=ShareType.objects.get(
-            category=ShareTypeCategory.SHARE, membership_type="all"
+            category=ShareTypeCategory.SHARE, membership_type="all", active=True
         ),
         payment_date=date,
         quantity=count,
@@ -1417,7 +1417,7 @@ def add_transaction_shares_entry(book: AccountingBook, date, amount, address, us
         share = Share(
             name=address,
             share_type=ShareType.objects.get(
-                category=ShareTypeCategory.SHARE, membership_type="all"
+                category=ShareTypeCategory.SHARE, membership_type="all", active=True
             ),
             payment_date=date,
             quantity=count,
@@ -1454,12 +1454,12 @@ def add_transaction_interest(book: AccountingBook, date, amount, address, book_t
     if book_to == "loan":
         text = "Anrechnung Darlehenszins an Darlehen"
         stype = ShareType.objects.get(
-            category=ShareTypeCategory.LOAN, is_interest_bearing=True
+            category=ShareTypeCategory.LOAN, is_interest_bearing=True, active=True
         )
         shares_account = Account.from_settings(AccountKey.SHARES_LOAN_INTEREST)
     elif book_to == "deposit":
         text = "Anrechnung Darlehenszins an Depositenkasse"
-        stype = ShareType.objects.get(category=ShareTypeCategory.DEPOSIT)
+        stype = ShareType.objects.get(category=ShareTypeCategory.DEPOSIT, active=True)
         shares_account = Account.from_settings(AccountKey.SHARES_DEPOSIT)
     else:
         raise ValueError(f"Invalid value for book_to: {book_to}")

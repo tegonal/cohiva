@@ -894,6 +894,7 @@ class ShareTypeAdmin(GenoBaseAdmin):
         "is_excluded_from_mailings",
         "membership_type",
         "display_order",
+        "active",
     ]
     list_display = [
         "name",
@@ -902,6 +903,7 @@ class ShareTypeAdmin(GenoBaseAdmin):
         "is_interest_bearing",
         "membership_type",
         "display_order",
+        "active",
     ]
     list_filter = [
         "category",
@@ -910,6 +912,7 @@ class ShareTypeAdmin(GenoBaseAdmin):
         "is_excluded_from_reports",
         "is_excluded_from_mailings",
         "membership_type",
+        "active",
     ]
     search_fields = ["name", "description"]
 

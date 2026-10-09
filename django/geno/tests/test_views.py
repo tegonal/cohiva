@@ -406,7 +406,7 @@ class ShareStatementViewTest(GenoAdminTestCase):
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
-        stype_as = ShareType.objects.get(name="Anteilschein")
+        stype_as = ShareType.objects.get(name="Anteilschein", active=True)
         Share.objects.all().delete()
         Share.objects.create(
             value=200,
@@ -453,7 +453,7 @@ class ShareStatementViewTest(GenoAdminTestCase):
             Share.objects.create(
                 value=500,
                 quantity=1,
-                share_type=ShareType.objects.get(name="Depositenkasse"),
+                share_type=ShareType.objects.get(name="Depositenkasse", active=True),
                 payment_date=datetime.date(2020, 1, 1),
                 name=self.addresses[1],
             )

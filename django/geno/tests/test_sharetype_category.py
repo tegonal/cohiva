@@ -37,6 +37,7 @@ class ShareTypeCategoryTests(TestCase):
             name="Test Share",
             category=ShareTypeCategory.SHARE,
             membership_type="all",
+            active=True,
         )
         self.assertEqual(st.category, ShareTypeCategory.SHARE)
         self.assertEqual(st.membership_type, "all")
@@ -50,6 +51,7 @@ class ShareTypeCategoryTests(TestCase):
             is_interest_bearing=True,
             requires_due_date=True,
             standard_interest=2.5,
+            active=True,
         )
         self.assertTrue(st.is_interest_bearing)
         self.assertTrue(st.requires_due_date)
@@ -62,6 +64,7 @@ class ShareTypeCategoryTests(TestCase):
             category=ShareTypeCategory.MORTGAGE,
             is_excluded_from_reports=True,
             is_excluded_from_mailings=True,
+            active=True,
         )
         self.assertTrue(st.is_excluded_from_reports)
         self.assertTrue(st.is_excluded_from_mailings)
@@ -72,6 +75,7 @@ class ShareTypeCategoryTests(TestCase):
             name="Test Member Share",
             category=ShareTypeCategory.SHARE,
             membership_type="flag_02",
+            active=True,
         )
         self.assertEqual(st.membership_type, "flag_02")
 
@@ -81,6 +85,7 @@ class ShareTypeCategoryTests(TestCase):
             name="Test Voluntary",
             category=ShareTypeCategory.SHARE,
             membership_type="",
+            active=True,
         )
         self.assertEqual(st.membership_type, "")
 
@@ -97,6 +102,7 @@ class ShareTypeBehaviorTests(TestCase):
             name="Anteilschein",
             category=ShareTypeCategory.SHARE,
             membership_type="all",
+            active=True,
         )
         cls.share_type_loan = ShareType.objects.create(
             name="Darlehen verzinst",
@@ -104,22 +110,26 @@ class ShareTypeBehaviorTests(TestCase):
             is_interest_bearing=True,
             requires_due_date=True,
             standard_interest=1.0,
+            active=True,
         )
         cls.share_type_deposit = ShareType.objects.create(
             name="Depositenkasse",
             category=ShareTypeCategory.DEPOSIT,
             is_interest_bearing=True,
             standard_interest=0.75,
+            active=True,
         )
         cls.share_type_non_repayable = ShareType.objects.create(
             name="Entwicklungsbeitrag",
             category=ShareTypeCategory.NON_REPAYABLE,
+            active=True,
         )
         cls.share_type_mortgage = ShareType.objects.create(
             name="Hypothek",
             category=ShareTypeCategory.MORTGAGE,
             is_excluded_from_reports=True,
             is_excluded_from_mailings=True,
+            active=True,
         )
 
     def test_filter_by_category(self):
@@ -193,7 +203,7 @@ class ShareTypeBehaviorTests(TestCase):
 
     def test_filter_by_is_excluded_from_reports(self):
         """ShareTypes can be filtered by is_excluded_from_reports."""
-        excluded = ShareType.objects.filter(is_excluded_from_reports=True)
+        excluded = ShareType.objects.filter(is_excluded_from_reports=True, active=True)
         self.assertEqual(excluded.count(), 1)
         self.assertEqual(excluded.first(), self.share_type_mortgage)
 
@@ -208,16 +218,19 @@ class ShareTypeBehaviorTests(TestCase):
             name="Flag 02 Share",
             category=ShareTypeCategory.SHARE,
             membership_type="flag_02",
+            active=True,
         )
         st_not_flag_02 = ShareType.objects.create(
             name="Not Flag 02 Share",
             category=ShareTypeCategory.SHARE,
             membership_type="not_flag_02",
+            active=True,
         )
         st_all = ShareType.objects.create(
             name="All Members Share",
             category=ShareTypeCategory.SHARE,
             membership_type="all",
+            active=True,
         )
 
         # Member without flag_02
@@ -234,14 +247,16 @@ class ShareTypeBehaviorTests(TestCase):
             name="Share Type 1",
             category=ShareTypeCategory.SHARE,
             membership_type="all",
+            active=True,
         )
         st2 = ShareType.objects.create(
             name="Share Type 2",
             category=ShareTypeCategory.SHARE,
             membership_type="",
+            active=True,
         )
 
-        share_types = list(ShareType.objects.filter(category=ShareTypeCategory.SHARE))
+        share_types = list(ShareType.objects.filter(category=ShareTypeCategory.SHARE, active=True))
         self.assertIn(st1, share_types)
         self.assertIn(st2, share_types)
         self.assertIn(self.share_type_share, share_types)
@@ -252,13 +267,41 @@ class ShareTypeBehaviorTests(TestCase):
             name="Z Last",
             category=ShareTypeCategory.SHARE,
             display_order=1,
+            active=True,
         )
         st2 = ShareType.objects.create(
             name="A First",
             category=ShareTypeCategory.SHARE,
             display_order=0,
+            active=True,
         )
 
-        share_types = list(ShareType.objects.filter(category=ShareTypeCategory.SHARE))
+        share_types = list(ShareType.objects.filter(category=ShareTypeCategory.SHARE, active=True))
         # A First should come before Z Last due to display_order
         self.assertLess(share_types.index(st2), share_types.index(st1))
+
+    def test_active_field_filters_inactive_share_types(self):
+        """Only active ShareTypes are used in processing."""
+        active_st = ShareType.objects.create(
+            name="Active Share",
+            category=ShareTypeCategory.SHARE,
+            active=True,
+        )
+        inactive_st = ShareType.objects.create(
+            name="Inactive Share",
+            category=ShareTypeCategory.SHARE,
+            active=False,
+        )
+
+        # Only active share types should be returned
+        active_share_types = list(ShareType.objects.filter(category=ShareTypeCategory.SHARE, active=True))
+        self.assertIn(active_st, active_share_types)
+        self.assertNotIn(inactive_st, active_share_types)
+
+    def test_share_type_default_active(self):
+        """ShareType defaults to active=True."""
+        st = ShareType.objects.create(
+            name="Default Active",
+            category=ShareTypeCategory.SHARE,
+        )
+        self.assertTrue(st.active)

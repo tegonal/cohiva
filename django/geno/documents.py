@@ -184,7 +184,7 @@ class DocumentTemplate:
         ):
             c[self.context_options["share_count_context_var"]] = 0
             stype = ShareType.objects.filter(
-                name=self.context_options["share_count_sharetype"]
+                name=self.context_options["share_count_sharetype"], active=True
             ).first()
             if stype:
                 for share in Share.objects.filter(name=recipient.address).filter(share_type=stype):
@@ -1014,27 +1014,27 @@ def get_context_data(doctype, obj_id, extra_context):
             c["is_first_share"] = False
 
         try:
-            share_types_share = list(ShareType.objects.filter(category=ShareTypeCategory.SHARE))
+            share_types_share = list(ShareType.objects.filter(category=ShareTypeCategory.SHARE, active=True))
         except ShareType.DoesNotExist:
             share_types_share = []
         try:
             stype_loan_noint = ShareType.objects.get(
-                category=ShareTypeCategory.LOAN, is_interest_bearing=False
+                category=ShareTypeCategory.LOAN, is_interest_bearing=False, active=True
             )
         except ShareType.DoesNotExist:
             stype_loan_noint = "Nonexistent"
         try:
             stype_loan_int = ShareType.objects.get(
-                category=ShareTypeCategory.LOAN, is_interest_bearing=True
+                category=ShareTypeCategory.LOAN, is_interest_bearing=True, active=True
             )
         except ShareType.DoesNotExist:
             stype_loan_int = "Nonexistent"
         try:
-            stype_loan_special = ShareType.objects.get(category=ShareTypeCategory.SPECIAL_LOAN)
+            stype_loan_special = ShareType.objects.get(category=ShareTypeCategory.SPECIAL_LOAN, active=True)
         except ShareType.DoesNotExist:
             stype_loan_special = "Nonexistent"
         try:
-            stype_deposit = ShareType.objects.get(category=ShareTypeCategory.DEPOSIT)
+            stype_deposit = ShareType.objects.get(category=ShareTypeCategory.DEPOSIT, active=True)
         except ShareType.DoesNotExist:
             stype_deposit = "Nonexistent"
 

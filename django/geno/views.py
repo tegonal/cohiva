@@ -300,11 +300,11 @@ class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
         total_value = 0
 
         try:
-            stype_share_all = list(ShareType.objects.filter(category=ShareTypeCategory.SHARE))
+            stype_share_all = list(ShareType.objects.filter(category=ShareTypeCategory.SHARE, active=True))
         except ShareType.DoesNotExist:
             stype_share_all = []
 
-        for share_type in ShareType.objects.all():
+        for share_type in ShareType.objects.filter(active=True):
             stat = {"quantity": 0, "value": 0, "last_date": None}
             for s in Share.get_active(date=reference_date).filter(share_type=share_type):
                 stat["quantity"] += s.quantity
@@ -440,12 +440,12 @@ def share_overview_boxplot(request):
         raise Http404("Plot not found")
 
     today = datetime.datetime.today()
-    excluded_types = list(ShareType.objects.filter(is_excluded_from_reports=True))
+    excluded_types = list(ShareType.objects.filter(is_excluded_from_reports=True, active=True))
 
     ## Statisik: Beteiligung pro Typ und Mitglieder
     stat = []
     labels = []
-    for share_type in ShareType.objects.filter(is_excluded_from_reports=False):
+    for share_type in ShareType.objects.filter(is_excluded_from_reports=False, active=True):
         stat_share = []
         for m in Member.objects.filter(Q(date_leave=None) | Q(date_leave__gt=today)):
             total = 0
@@ -749,7 +749,7 @@ def address_export(request, show_wohnung=True):
         matt_type = None
     try:
         stype_single_member = ShareType.objects.get(
-            category=ShareTypeCategory.SHARE, membership_type="flag_02"
+            category=ShareTypeCategory.SHARE, membership_type="flag_02", active=True
         )
     except:
         stype_single_member = None
@@ -1119,7 +1119,7 @@ def check_payments(request):
     now = datetime.datetime.now()
     members = Member.objects.exclude(date_leave__isnull=False)
     share_types_mandatory = list(
-        ShareType.objects.filter(category=ShareTypeCategory.SHARE).exclude(membership_type="")
+        ShareType.objects.filter(category=ShareTypeCategory.SHARE, active=True).exclude(membership_type="")
     )
     for member in members:
         warn = []
@@ -1399,8 +1399,8 @@ class ShareConfirmationLetterView(DocumentGeneratorView):
 
     def get_objects(self):
         # Find shares without documents (ignore single AS)
-        share_types_share = list(ShareType.objects.filter(category=ShareTypeCategory.SHARE))
-        excluded_types = list(ShareType.objects.filter(is_excluded_from_reports=True))
+        share_types_share = list(ShareType.objects.filter(category=ShareTypeCategory.SHARE, active=True))
+        excluded_types = list(ShareType.objects.filter(is_excluded_from_reports=True, active=True))
         objects = []
         for s in (
             Share.get_active(interest=False)
@@ -2966,23 +2966,23 @@ def send_member_mail_filter_shares(form, member_list):
     stype_exclude = None
 
     if form.cleaned_data["select_sharetype"] == "shares":
-        stype_filter = list(ShareType.objects.filter(category=ShareTypeCategory.SHARE))
+        stype_filter = list(ShareType.objects.filter(category=ShareTypeCategory.SHARE, active=True))
         if not stype_filter:
             return [_("Share types not found.")]
     elif form.cleaned_data["select_sharetype"] == "loan_deposit":
         stype_filter = list(
             ShareType.objects.filter(
-                category__in=[ShareTypeCategory.LOAN, ShareTypeCategory.DEPOSIT]
+                category__in=[ShareTypeCategory.LOAN, ShareTypeCategory.DEPOSIT], active=True
             )
         )
         if not stype_filter:
             return [_("Share types not found.")]
     elif form.cleaned_data["select_sharetype"] == "with_interest":
-        stype_filter = list(ShareType.objects.filter(is_interest_bearing=True))
+        stype_filter = list(ShareType.objects.filter(is_interest_bearing=True, active=True))
         if not stype_filter:
             return [_("Share types not found.")]
     else:
-        stype_exclude = list(ShareType.objects.filter(is_excluded_from_mailings=True))
+        stype_exclude = list(ShareType.objects.filter(is_excluded_from_mailings=True, active=True))
 
     # print(stype_filter)
 
@@ -3044,7 +3044,7 @@ def send_member_mail_filter_members(form, member_list, only_active=True):
         members = members.filter(flag_05=False)
     ## Get all mandatory share types grouped by membership_type
     mandatory_share_types = list(
-        ShareType.objects.filter(category=ShareTypeCategory.SHARE).exclude(membership_type="")
+        ShareType.objects.filter(category=ShareTypeCategory.SHARE, active=True).exclude(membership_type="")
     )
     # Build a mapping from membership_type to share types for quick lookup
     share_types_by_membership = {}
@@ -3514,21 +3514,21 @@ class TransactionManualView(CohivaAdminViewMixin, FormView):
         if form.cleaned_data["transaction"] == "development":
             count = 1
             value = form.cleaned_data["amount"]
-            share_type = ShareType.objects.get(category=ShareTypeCategory.NON_REPAYABLE)
+            share_type = ShareType.objects.get(category=ShareTypeCategory.NON_REPAYABLE, active=True)
         elif form.cleaned_data["amount"] and float(form.cleaned_data["amount"]) % 200.00 == 0.0:
             value = 200
             count = int(form.cleaned_data["amount"] / value)
             if form.cleaned_data["transaction"] == "as_single":
                 share_type = ShareType.objects.get(
-                    category=ShareTypeCategory.SHARE, membership_type="flag_02"
+                    category=ShareTypeCategory.SHARE, membership_type="flag_02", active=True
                 )
             elif form.cleaned_data["transaction"] == "as_founder":
                 share_type = ShareType.objects.get(
-                    category=ShareTypeCategory.SHARE, membership_type="not_flag_02"
+                    category=ShareTypeCategory.SHARE, membership_type="not_flag_02", active=True
                 )
             else:
                 share_type = ShareType.objects.get(
-                    category=ShareTypeCategory.SHARE, membership_type=""
+                    category=ShareTypeCategory.SHARE, membership_type="", active=True
                 )
         else:
             messages.error(self.request, _("Amount is not a multiple of 200.-!"))

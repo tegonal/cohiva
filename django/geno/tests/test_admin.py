@@ -636,7 +636,7 @@ class ShareAdminFilterTest(GenoAdminTestCase):
     def setUpTestData(cls):
         super().setUpTestData()
 
-        stype = ShareType.objects.create(name="ShareFilterTest", category=ShareTypeCategory.SHARE)
+        stype = ShareType.objects.create(name="ShareFilterTest", category=ShareTypeCategory.SHARE, active=True)
 
         cls.building_A = Building.objects.create(name="A")
         cls.building_B = Building.objects.create(name="B")

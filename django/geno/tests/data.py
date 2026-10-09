@@ -530,6 +530,7 @@ def create_sharetypes(cls: "type[GenoAdminTestCase]"):
             name="Anteilschein",
             category=ShareTypeCategory.SHARE,
             membership_type="all",
+            active=True,
         )
     )
     cls.sharetypes.append(
@@ -537,6 +538,7 @@ def create_sharetypes(cls: "type[GenoAdminTestCase]"):
             name="Darlehen zinslos",
             category=ShareTypeCategory.LOAN,
             requires_due_date=True,
+            active=True,
         )
     )
     cls.sharetypes.append(
@@ -546,6 +548,7 @@ def create_sharetypes(cls: "type[GenoAdminTestCase]"):
             standard_interest=1.0,
             is_interest_bearing=True,
             requires_due_date=True,
+            active=True,
         )
     )
     cls.sharetypes.append(
@@ -554,6 +557,7 @@ def create_sharetypes(cls: "type[GenoAdminTestCase]"):
             category=ShareTypeCategory.DEPOSIT,
             standard_interest=0.75,
             is_interest_bearing=True,
+            active=True,
         )
     )
     cls.sharetypes.append(
@@ -563,6 +567,7 @@ def create_sharetypes(cls: "type[GenoAdminTestCase]"):
             standard_interest=1.5,
             is_interest_bearing=True,
             requires_due_date=True,
+            active=True,
         )
     )
     cls.sharetypes.append(
@@ -571,6 +576,7 @@ def create_sharetypes(cls: "type[GenoAdminTestCase]"):
             category=ShareTypeCategory.MORTGAGE,
             is_excluded_from_reports=True,
             is_excluded_from_mailings=True,
+            active=True,
         )
     )
     cls.sharetypes.append(
@@ -578,6 +584,7 @@ def create_sharetypes(cls: "type[GenoAdminTestCase]"):
             name="Anteilschein Einzelmitglied",
             category=ShareTypeCategory.SHARE,
             membership_type="flag_02",
+            active=True,
         )
     )
     cls.sharetypes.append(
@@ -585,6 +592,7 @@ def create_sharetypes(cls: "type[GenoAdminTestCase]"):
             name="Anteilschein Gründungsmitglied",
             category=ShareTypeCategory.SHARE,
             membership_type="not_flag_02",
+            active=True,
         )
     )
     cls.sharetypes.append(
@@ -592,6 +600,7 @@ def create_sharetypes(cls: "type[GenoAdminTestCase]"):
             name="Anteilschein freiwillig",
             category=ShareTypeCategory.SHARE,
             membership_type="",
+            active=True,
         )
     )
 

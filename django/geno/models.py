@@ -1030,6 +1030,7 @@ class ShareType(GenoBase):
         default="",
     )
     display_order = models.PositiveIntegerField(_("Display order"), default=0)
+    active = models.BooleanField(_("Active"), default=True)
 
     class Meta:
         verbose_name = _("Share type")
@@ -1303,7 +1304,7 @@ class Share(GenoBase):
         total_shares_by_type = {}
         sum_shares_pension_fund_quantity = 0
         sum_shares_pension_fund_value = 0
-        for share_type in ShareType.objects.all():
+        for share_type in ShareType.objects.filter(active=True):
             sum_quantity = 0
             sum_value = 0
             related_buildings = []
