@@ -1,4 +1,4 @@
-#@ Version: 1.2.0
+#@ Version: 1.3.0
 tag	file	relativeTarget	tagFilter	hasPlaceholder	sha512
 v6.0.1	src/.github/CODE_OF_CONDUCT.md	../.github/CODE_OF_CONDUCT.md	.*	false	771033cf97913872f3ca50a758fb5f4facba3cf28603eae43c32d3712bc954bce35d04d55ca1e53d71181151067493a3898669944e5ccc381fa608edf07088ce
 v6.0.1	src/.github/PULL_REQUEST_TEMPLATE.md	../.github/PULL_REQUEST_TEMPLATE.md	.*	false	9112d1ea1f72ea250cdfe686fc152e63f2e0cdcea9c46935289471d7a3f54c35af8a3f283570f5d863e936c7782939c7b1548cb7d4ccda712bbf9314926f58cb
