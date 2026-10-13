@@ -66,7 +66,7 @@ from .billing import (
     process_sepa_transactions,
     process_transaction,
 )
-from .documents import context_format, create_documents, get_context_data, send_member_mail_process
+from .documents import DocumentCreationResult, DocumentTypeError, context_format, create_documents, get_context_data, send_member_mail_process
 from .exporter import (
     export_addresses_carddav,
     export_adit_file,
@@ -1247,24 +1247,29 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
         elif self.should_generate():
             options = self.get_options()
             options["makezip"] = request.GET.get("makezip", "") == "yes"
-            if not options.get("link_url", None) and url_has_allowed_host_and_scheme(
-                request.path, allowed_hosts=None
-            ):
-                options["link_url"] = request.path
-            # TODO: create and persist Documents as a primary action
-            self.result = create_documents(self.doctype, self.get_objects(), options)
-            if isinstance(self.result, HttpResponse):
-                return self.result
-        return super().get(request, *args, **kwargs)
+            options["link_url"] = request.path
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        if self.error_message:
-            context["response"] = [{"info": self.error_message}]
-        else:
-            context["response"] = self.result
-        context["title"] = "Dokumente erzeugen - %s" % self.get_options().get("beschreibung", "")
-        return context
+            try:
+                results = create_documents(self.doctype, self.get_objects(), options)
+            except DocumentTypeError as e:
+                # Handle fatal misconfiguration once, at the view boundary
+                self.error_message = str(e)
+                return super().get(request, *args, **kwargs)
+
+            if options["makezip"] and any(r.status == "info" for r in results):
+                # Zip response built explicitly by the view
+                return self._zip_response(results)
+
+            self.result = results
+            return super().get(request, *args, **kwargs)
+
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            if self.error_message:
+                context["response"] = [DocumentCreationResult(status="error", label=self.error_message)]
+            else:
+                context["response"] = self.result   # a list of DocumentCreationResult
+            return context
 
 
 class DryRunActionView(CohivaAdminViewMixin, TemplateView):
