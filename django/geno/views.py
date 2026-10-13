@@ -1261,15 +1261,15 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
                 return self._zip_response(results)
 
             self.result = results
-            return super().get(request, *args, **kwargs)
+        return super().get(request, *args, **kwargs)
 
-        def get_context_data(self, **kwargs):
-            context = super().get_context_data(**kwargs)
-            if self.error_message:
-                context["response"] = [DocumentCreationResult(status="error", label=self.error_message)]
-            else:
-                context["response"] = self.result   # a list of DocumentCreationResult
-            return context
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.error_message:
+            context["response"] = [DocumentCreationResult(status="error", label=self.error_message)]
+        else:
+            context["response"] = self.result   # a list of DocumentCreationResult
+        return context
 
 
 class DryRunActionView(CohivaAdminViewMixin, TemplateView):
@@ -1412,7 +1412,7 @@ class MemberLetterView(DocumentGeneratorView):
         # Build table data from response
         if self.result and not self.error_message:
             # Filter out the "Dokumente:" item
-            member_items = [item for item in self.result if item.get("info") != "Dokumente:"]
+            member_items = [item for item in self.result if item.label != "Dokumente:"]
 
             if member_items:
                 headers = [_("Mitglied"), _("Beitrittsdatum")]
@@ -1422,13 +1422,13 @@ class MemberLetterView(DocumentGeneratorView):
                     # Extract member name and join date from info string
                     # Format is: "Name, Beitritt DD.MM.YYYY"
                     details = (
-                        ", ".join(str(o) for o in item.get("objects", []))
-                        if item.get("objects")
+                        ", ".join(str(o) for o in item.detail)
+                        if item.detail
                         else "—"
                     )
                     rows.append(
                         [
-                            str(item.get("info", "")),
+                            str(item.label),
                             details,
                         ]
                     )
@@ -1491,7 +1491,7 @@ class ShareConfirmationLetterView(DocumentGeneratorView):
         # Build table data from response
         if self.result and not self.error_message:
             # Filter out the "Dokumente:" item
-            share_items = [item for item in self.result if item.get("info") != "Dokumente:"]
+            share_items = [item for item in self.result if item.label != "Dokumente:"]
 
             if share_items:
                 headers = [_("Name/Adresse"), _("Details")]
@@ -1499,13 +1499,13 @@ class ShareConfirmationLetterView(DocumentGeneratorView):
 
                 for item in share_items:
                     details = (
-                        ", ".join(str(o) for o in item.get("objects", []))
-                        if item.get("objects")
+                        ", ".join(str(o) for o in item.detail)
+                        if item.detail
                         else "—"
                     )
                     rows.append(
                         [
-                            str(item.get("info", "")),
+                            str(item.label),
                             details,
                         ]
                     )
@@ -1645,7 +1645,7 @@ class ShareReminderLetterView(DocumentGeneratorView):
         # Build table data from response
         if self.result and not self.error_message:
             # Filter out the "Dokumente:" item
-            reminder_items = [item for item in self.result if item.get("info") != "Dokumente:"]
+            reminder_items = [item for item in self.result if item.label != "Dokumente:"]
 
             if reminder_items:
                 headers = [_("Name/Adresse"), _("Darlehen Details")]
@@ -1653,13 +1653,13 @@ class ShareReminderLetterView(DocumentGeneratorView):
 
                 for item in reminder_items:
                     details = (
-                        ", ".join(str(o) for o in item.get("objects", []))
-                        if item.get("objects")
+                        ", ".join(str(o) for o in item.detail)
+                        if item.detail
                         else "—"
                     )
                     rows.append(
                         [
-                            str(item.get("info", "")),
+                            str(item.label),
                             details,
                         ]
                     )
