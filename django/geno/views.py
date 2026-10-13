@@ -66,7 +66,7 @@ from .billing import (
     process_sepa_transactions,
     process_transaction,
 )
-from .documents import DocumentCreationResult, DocumentTypeError, context_format, create_documents, get_context_data, send_member_mail_process
+from .documents import DocumentCreationResult, DocumentTypeError, context_format, create_documents, get_context_data, make_zip, send_member_mail_process
 from .exporter import (
     export_addresses_carddav,
     export_adit_file,
@@ -1240,6 +1240,20 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
 
     def get_options(self):
         return {"beschreibung": "Dokumente"}
+
+    def _zip_response(self, results):
+        """Build and return an HttpResponse containing a ZIP of generated documents."""
+        files_to_zip = [
+            {"file": r.file_path, "filename": r.filename}
+            for r in results
+            if r.file_path and r.filename
+        ]
+        zip_bytes = make_zip(files_to_zip)
+        response = HttpResponse(
+            zip_bytes.getvalue(), content_type="application/x-zip-compressed"
+        )
+        response["Content-Disposition"] = "attachment; filename=%s" % "output.zip"
+        return response
 
     def get(self, request, *args, **kwargs):
         if not self.doctype:

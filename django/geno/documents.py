@@ -1050,13 +1050,12 @@ def create_documents(default_doctype, objects=None, options=None):
             save_document_file(d, filename)
         results.append(DocumentCreationResult(
             status="info",
-            label=str(o["obj"]), detail=detail
+            label=str(o["obj"]),
+            detail=detail,
+            file_path=filename,
+            filename=output_filename,
         ))
         files_to_zip.append({"obj": o, "doctype": doctype, "doctype_obj": doctype_obj})
-
-    if makezip and files_to_zip:
-        zip_bytes = make_zip(zipfile_content)
-        return results
 
     if files_to_zip:
         link_text = "%s erstellen und herunterladen" % options["beschreibung"]
@@ -1080,7 +1079,7 @@ def create_documents(default_doctype, objects=None, options=None):
     return results
 
 
-def make_zip(files_to_zip: dict[str, str]) -> BytesIO:
+def make_zip(files_to_zip: list[dict[str, str]]) -> BytesIO:
     bytes = BytesIO()
     zipfile = ZipFile(bytes, "w")
     for file in files_to_zip:
