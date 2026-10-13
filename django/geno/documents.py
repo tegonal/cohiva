@@ -1054,30 +1054,30 @@ def create_documents(default_doctype, objects=None, options=None):
         ))
         files_to_zip.append({"obj": o, "doctype": doctype, "doctype_obj": doctype_obj})
 
-        if makezip and files_to_zip:
-            zip_bytes = make_zip(zipfile_content)
-            return results
-
-        if files_to_zip:
-            link_text = "%s erstellen und herunterladen" % options["beschreibung"]
-            link_url = options.get("link_url", "")
-            results.append(
-                DocumentCreationResult(
-                    status="info",
-                    label="Dokumente:",
-                    detail=[
-                        '<a href="%s?makezip=yes">%s (%d LibreOffice Dokumente in ZIP)</a>'
-                        % (link_url, link_text, len(files_to_zip))
-                    ],
-                )
-            )
-        else:
-            results.append(
-                DocumentCreationResult(
-                    status="warning", label="No Documents to be created."
-                )
-            )
+    if makezip and files_to_zip:
+        zip_bytes = make_zip(zipfile_content)
         return results
+
+    if files_to_zip:
+        link_text = "%s erstellen und herunterladen" % options["beschreibung"]
+        link_url = options.get("link_url", "")
+        results.append(
+            DocumentCreationResult(
+                status="info",
+                label="Dokumente:",
+                detail=[
+                    '<a href="%s?makezip=yes">%s (%d LibreOffice Dokumente in ZIP)</a>'
+                    % (link_url, link_text, len(files_to_zip))
+                ],
+            )
+        )
+    else:
+        results.append(
+            DocumentCreationResult(
+                status="warning", label="No Documents to be created."
+            )
+        )
+    return results
 
 
 def make_zip(files_to_zip: dict[str, str]) -> BytesIO:
