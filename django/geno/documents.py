@@ -5,8 +5,10 @@ import logging
 import os
 import re
 import time
+from dataclasses import dataclass, field
 from decimal import Decimal
 from io import BytesIO
+from typing import Literal
 from zipfile import ZipFile
 
 from dateutil.relativedelta import relativedelta
@@ -17,6 +19,7 @@ from django.db.models import Model, Q
 from django.http import HttpResponse
 from django.template import Context, Template, loader
 from django.utils.html import escape
+from django.utils.translation import gettext as _
 from html2text import html2text
 
 import geno.settings as geno_settings
@@ -943,25 +946,37 @@ def send_member_mail_process(data):
     process.cleanup()
     return result
 
+@dataclass
+class DocumentCreationResult:
+    status: Literal["success", "error", "warning"]
+    label: str
+    detail: list[str] = field(default_factory=list)
+    file_path: str | None = None
+    filename: str | None = None
+
+
+class DocumentTypeError(Exception):
+    pass
+
 
 def create_documents(default_doctype, objects=None, options=None):
     """
     Create Documents in the DocumentGeneratorView.
     """
-    ret = []
-    files_to_zip = 0
-    zipfile_content = []
     makezip = options.get("makezip", False)
+    results: list[DocumentCreationResult] = []
+    files_to_zip = []
+    zipfile_content = []
 
-    # Check early-exit conditions
+    # Early exit: no default DocumentType available
     try:
         default_doctype_obj = DocumentType.objects.get(name=default_doctype)
     except DocumentType.DoesNotExist:
         return [
-            {
-                "info": 'FEHLER: Dokumenttyp "%s" existiert nicht. Bitte zuerst erstellen.'
-                % default_doctype
-            }
+            DocumentCreationResult(
+                status="error",
+                label=(_("The Document type '{doctype}' doesn't exist.")),
+            )
         ]
 
     if not options:
@@ -973,100 +988,97 @@ def create_documents(default_doctype, objects=None, options=None):
     # Create the Documents
     filenames = []
     for o in objects:
-        item_objects = []
+        detail = []
         if "info" in o:
-            item_objects.append(o["info"])
+            detail.append(o["info"])
+
+        # Resolve DocumentType for this object
+        doctype = o["doctype"]
         if "doctype" in o:
-            # Get the DocumentType if it exsists
-            doctype = o["doctype"]
             try:
                 doctype_obj = DocumentType.objects.get(name=doctype)
             except DocumentType.DoesNotExist:
-                ret.append(
-                    {
-                        "info": "FEHLER: Dokumenttyp '%s' nicht gefunden." % doctype,
-                        "objects": [],
-                    }
+                results.append(
+                    DocumentCreationResult(
+                        status="error",
+                        label=(_(f"Document type '{doctype}' not found."))
+                    )
                 )
                 break
         else:
             # No DocumentType found, use the default
-            doctype = default_doctype
             doctype_obj = default_doctype_obj
 
-        # Check if template has a file attached
-        content_template: ContentTemplate | None = doctype_obj.templates.filter(active=True).first()
+        # Validate the template
+        content_template = doctype_obj.templates.filter(active=True).first()
         if not content_template or not content_template.file:
-            ret.append(
-                {
-                    "info": "FEHLER: Keine Vorlage-Datei für Dokumenttyp '%s' konfiguriert."
-                    % doctype,
-                    "objects": [],
-                }
+            raise DocumentTypeError(
+                _(f"No template file configured for '{doctype}'")
             )
-            break
 
-        ret.append({"info": str(o["obj"]), "objects": item_objects})
-        files_to_zip += 1
-
-        if makezip:
-            if "extra_context" in o:
-                data = get_context_data(doctype, o["obj"].pk, o["extra_context"])
-            else:
-                data = get_context_data(doctype, o["obj"].pk, {})
-            filename = fill_template_pod(
-                content_template.file.path,
-                context_format(data["context"]),
-                output_format="odt",
+        if "extra_context" in o:
+            data = get_context_data(doctype, o["obj"].pk, o["extra_context"])
+        else:
+            data = get_context_data(doctype, o["obj"].pk, {})
+        filename = fill_template_pod(
+            content_template.file.path,
+            context_format(data["context"]),
+            output_format="odt",
+        )
+        if not filename:
+            raise RuntimeError("Could not fill template")
+        output_filename = data["visible_filename"]
+        file_count = 0
+        # Deduplicate filenames that will be put into the .zip
+        while output_filename in filenames:
+            file_count += 1
+            filename_stem, file_extension = os.path.splitext(data["visible_filename"])
+            output_filename = "%s_%s.%s" % (filename_stem, file_count, file_extension)
+        zipfile_content.append({"file": filename, "filename": output_filename})
+        filenames.append(output_filename)
+        if "content_object" in data:
+            # TODO: call generic create and persist Document function
+            d = Document(
+                name=output_filename,
+                doctype=doctype_obj,
+                data=json.dumps(data["context"]),
+                content_object=data["content_object"],
             )
-            if not filename:
-                raise RuntimeError("Could not fill template")
-            output_filename = data["visible_filename"]
-            file_count = 0
-            # Deduplicate filenames that will be put into the .zip
-            while output_filename in filenames:
-                file_count += 1
-                filename, file_extension = os.path.splitext(data["visible_filename"])
-                output_filename = "%s_%s.%s" % (filename, file_count, file_extension)
-            zipfile_content.append({"file": filename, "filename": output_filename})
-            filenames.append(output_filename)
-            if "content_object" in data:
-                # TODO: call generic create and persist Document function
-                d = Document(
-                    name=output_filename,
-                    doctype=doctype_obj,
-                    data=json.dumps(data["context"]),
-                    content_object=data["content_object"],
+            # Save the created Document to the database
+            d.save()
+            # Persist the created file
+            save_document_file(d, filename)
+        results.append(DocumentCreationResult(
+            status="info",
+            label=str(o["obj"]), detail=detail
+        ))
+        files_to_zip.append({"obj": o, "doctype": doctype, "doctype_obj": doctype_obj})
+
+        if makezip and files_to_zip:
+            zip_bytes = make_zip(zipfile_content)
+            return results
+
+        if files_to_zip:
+            link_text = "%s erstellen und herunterladen" % options["beschreibung"]
+            link_url = options.get("link_url", "")
+            results.append(
+                DocumentCreationResult(
+                    status="info",
+                    label="Dokumente:",
+                    detail=[
+                        '<a href="%s?makezip=yes">%s (%d LibreOffice Dokumente in ZIP)</a>'
+                        % (link_url, link_text, len(files_to_zip))
+                    ],
                 )
-                # Save the created Document to the database
-                d.save()
-                # Persist the created file
-                save_document_file(d, filename)
+            )
+        else:
+            results.append(
+                DocumentCreationResult(
+                    status="warning", label="No Documents to be created."
+                )
+            )
+        return results
 
-    if makezip and files_to_zip > 0:
-        zip_bytes = make_zip(zipfile_content)
-        resp = HttpResponse(
-            zip_bytes.getvalue(), content_type="application/x-zip-compressed"
-        )
-        resp["Content-Disposition"] = "attachment; filename=%s" % "output.zip"
-        return resp
-    # Display a download link, if necessary
-    if files_to_zip > 0:
-        link_text = "%s erstellen und herunterladen" % options["beschreibung"]
-        link_url = options.get("link_url", "")
-        ret.append(
-            {
-                "info": "Dokumente:",
-                "objects": [
-                    '<a href="%s?makezip=yes">%s (%d LibreOffice Dokumente in ZIP)</a>'
-                    % (link_url, link_text, files_to_zip)
-                ],
-            }
-        )
-    else:
-        ret.append({"info": "Keine zu erstellenden Dokumente gefunden."})
-
-    return ret
 
 def make_zip(files_to_zip: dict[str, str]) -> BytesIO:
     bytes = BytesIO()
