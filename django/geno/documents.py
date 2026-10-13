@@ -11,6 +11,7 @@ from zipfile import ZipFile
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
+from django.core.files import File
 from django.core.mail import EmailMultiAlternatives
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Model, Q
@@ -537,7 +538,7 @@ class ProcessDocuments:
             )
         )
 
-    def add_recipient(self, member_or_address, contract=None, extra_info=None):
+    def add_recipient(self, member_or_address: Member | Address, contract: Contract=None, extra_info: str=None):
         if isinstance(member_or_address, Member):
             recip = Recipient(
                 member_or_address.name,
@@ -552,7 +553,7 @@ class ProcessDocuments:
         self.validate_recipient(recip)
         self.recipients.append(recip)
 
-    def validate_recipient(self, recipient):
+    def validate_recipient(self, recipient: Recipient) -> None:
         if self.mail_template and not recipient.address.email:
             recipient.skip_reason = "Keine Email-Adresse vorhanden."
         if (
@@ -560,7 +561,7 @@ class ProcessDocuments:
         ):  ## TODO: rename address.paymentslip to more generic special_case or similar
             recipient.skip_reason = "Spezialfall (manuelle Bearbeitung)"
 
-    def generate_documents(self):
+    def generate_documents(self) -> None:
         if not self.output_format:
             return
         logger.info("Generating documents from the following templates:")
@@ -593,7 +594,7 @@ class ProcessDocuments:
             for doc in recipient.documents:
                 self.zipfile_ob.write(doc.file, doc.filename)
             if not self.dry_run:
-                self._save_documents(recipient)
+                save_documents(recipient)
 
     def send_output_mails(self):
         logger.info("Start sending mails")
@@ -621,39 +622,8 @@ class ProcessDocuments:
                     logger.info(f" > Email an {mail_recipient} geschickt.")
                     recipient.log.append(f"Email an {escape(mail_recipient)} geschickt.")
                     if not self.dry_run:
-                        self._save_documents(recipient)
+                        save_documents(recipient)
                 self.throttle()
-
-    # TODO: move save_documents() function to be a top-level function -- we need to access it
-    # from both the send_member_mail_process() and create_documents() functions
-    def _save_documents(self, recipient):
-        if recipient.content_object is None:
-            return
-        if recipient.content_object == "address":
-            content_obj = recipient.address
-        else:
-            logger.warning(f"Unknown content_object type '{recipient.content_object}' for {recipient}, skipping Document creation.")
-            return
-        for doc in recipient.documents:
-            if doc.doctype is None or doc.context is None:
-                continue
-            try:
-                # Create the Document
-                d = Document.objects.create(
-                    name=doc.filename,
-                    doctype=doc.doctype,
-                    template=doc.content_template,
-                    data=json.dumps(doc.context, cls=_ContextEncoder),
-                    content_object=content_obj,
-                )
-                # Persist the Document
-                if doc.file and os.path.exists(doc.file):
-                    save_document_file(d, doc.file)
-            except Exception as e:
-                msg = f"Konnte Dokument '{doc.filename}' für {recipient} nicht speichern. Fehler: {e}"
-                logger.error(msg)
-                recipient.failure = True
-                recipient.log.append(msg)
 
     def throttle(self):
         if not getattr(settings, "IS_RUNNING_TESTS", False):
@@ -861,6 +831,34 @@ class ProcessDocuments:
         for template in self.templates:
             template.cleanup()
 
+def save_documents(recipient: Recipient=None):
+    if recipient.content_object is None:
+        return
+    if recipient.content_object == "address":
+        content_obj = recipient.address
+    else:
+        logger.warning(f"Unknown content_object type '{recipient.content_object}' for {recipient}, skipping Document creation.")
+        return
+    for doc in recipient.documents:
+        if doc.doctype is None or doc.context is None:
+            continue
+        try:
+            # Create the Document
+            d = Document.objects.create(
+                name=doc.filename,
+                doctype=doc.doctype,
+                template=doc.content_template,
+                data=json.dumps(doc.context, cls=_ContextEncoder),
+                content_object=content_obj,
+            )
+            # Persist the Document
+            save_document_file(d, doc.file)
+        except Exception as e:
+            msg = f"Konnte Dokument '{doc.filename}' für {recipient} nicht speichern. Fehler: {e}"
+            logger.error(msg)
+            recipient.failure = True
+            recipient.log.append(msg)
+
 
 def send_member_mail_process(data):
     """
@@ -1001,7 +999,7 @@ def create_documents(default_doctype, objects=None, options=None):
             counter = 1
             while output_filename in filenames:
                 counter += 1
-                # TODO: explain this and/or remove magic numbers
+                # TODO: use a util to get the extension and filename
                 output_filename = "%s_%s%s" % (
                     data["visible_filename"][0:-4],
                     counter,
@@ -1017,8 +1015,10 @@ def create_documents(default_doctype, objects=None, options=None):
                     data=json.dumps(data["context"]),
                     content_object=data["content_object"],
                 )
-                # TODO: what does .save() actually do here?
+                # Save the created Document to the database
                 d.save()
+                # Persist the created file
+                save_document_file(d, filename)
 
     if zipcount and makezip:
         ## Build ZIP-file from list of files

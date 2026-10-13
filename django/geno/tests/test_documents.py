@@ -7,7 +7,7 @@ from django.core import mail
 from django.http import HttpResponse
 from django.test import tag
 
-from geno.documents import send_member_mail_process
+from geno.documents import save_documents, send_member_mail_process
 from geno.forms import MemberMailActionForm
 from geno.models import (
     Address,
@@ -1256,11 +1256,11 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.setup_members()
         self.send_with_templates("Bill", action="mail")
         self.assertEmailSent(4)
-        # Bill renders but never sets content_object, so _save_documents returns early
+        # Bill renders but never sets content_object, so save_documents returns early
         self.assertEqual(Document.objects.count(), 0)
 
     def test_documents_not_saved_for_unknown_content_object(self):
-        """_save_documents skips unknown content_object types with a warning."""
+        """save_documents skips unknown content_object types with a warning."""
         from geno.documents import ProcessDocuments, Recipient, RenderedDocument
 
         process = ProcessDocuments(dry_run=False)
@@ -1275,11 +1275,11 @@ class DocumentProcessTest(GenoAdminTestCase):
         recipient.documents = [doc]
 
         self.assertEqual(Document.objects.count(), 0)
-        process._save_documents(recipient)
+        save_documents(recipient)
         self.assertEqual(Document.objects.count(), 0)
 
     def test_document_not_saved_if_doctype_missing(self):
-        """_save_documents skips individual documents without a doctype."""
+        """save_documents skips individual documents without a doctype."""
         from geno.documents import ProcessDocuments, Recipient, RenderedDocument
 
         process = ProcessDocuments(dry_run=False)
@@ -1294,11 +1294,11 @@ class DocumentProcessTest(GenoAdminTestCase):
         recipient.documents = [doc]
 
         self.assertEqual(Document.objects.count(), 0)
-        process._save_documents(recipient)
+        save_documents(recipient)
         self.assertEqual(Document.objects.count(), 0)
 
     def test_document_not_saved_if_context_missing(self):
-        """_save_documents skips individual documents without a context."""
+        """save_documents skips individual documents without a context."""
         from geno.documents import ProcessDocuments, Recipient, RenderedDocument
 
         process = ProcessDocuments(dry_run=False)
@@ -1313,7 +1313,7 @@ class DocumentProcessTest(GenoAdminTestCase):
         recipient.documents = [doc]
 
         self.assertEqual(Document.objects.count(), 0)
-        process._save_documents(recipient)
+        save_documents(recipient)
         self.assertEqual(Document.objects.count(), 0)
 
     def test_add_document_type_without_active_template_raises(self):
@@ -1412,10 +1412,10 @@ class DocumentProcessTest(GenoAdminTestCase):
 
         self.assertIsNone(output.doctype)
 
-        # Consequently _save_documents should skip this document
+        # Consequently save_documents should skip this document
         process = ProcessDocuments(dry_run=False)
         recipient.documents = [output]
-        process._save_documents(recipient)
+        save_documents(recipient)
         self.assertEqual(Document.objects.count(), 0)
 
     def test_context_encoder_serializes_model_instance(self):
