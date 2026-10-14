@@ -22,7 +22,7 @@ from geno.models import (
     Share,
 )
 from geno.tests import data as geno_testdata
-from geno.utils import fill_template_pod, odt2pdf
+from geno.utils import fill_pod_template, odt2pdf
 
 from .base import (
     DocumentCreationMockMixin,
@@ -190,7 +190,7 @@ class DocumentCreationTest(GenoAdminTestCase):
         ctx = self.members[1].name.get_context()
 
         tmp_dir = f"/tmp/django_pod_{settings.GENO_ID}"
-        output_odt_file = fill_template_pod(content_template.file.path, ctx, output_format="odt")
+        output_odt_file = fill_pod_template(content_template.file.path, ctx, output_format="odt")
         self.assertRegex(output_odt_file, rf"^{tmp_dir}/django_pod_\w+\.odt$")
 
         output_pdf_file = odt2pdf(output_odt_file, "document_creation_test")

@@ -56,7 +56,7 @@ from .models import (
 )
 from .utils import (
     ensure_dir_exists,
-    fill_template_pod,
+    fill_pod_template,
     nformat,
     odt2pdf,
     remove_temp_files,
@@ -1981,7 +1981,7 @@ def render_qrbill(
 ):
     temp_files = []
     if template and not base_pdf_file:
-        filename = fill_template_pod(template.file.path, context, output_format="odt")
+        filename = fill_pod_template(template.file.path, context, output_format="odt")
         if not filename:
             raise RuntimeError("Could not fill template")
         base_pdf_file = odt2pdf(filename, "render_qrbill")
