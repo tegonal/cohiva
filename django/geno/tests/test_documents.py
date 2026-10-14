@@ -34,7 +34,7 @@ from .base import (
 
 class DocumentSendTest(DocumentCreationMockMixin, GenoAdminTestCase):
     # Specify correct import paths for patching
-    patch_target_fill_template = "geno.documents.fill_template_pod"
+    patch_target_fill_template = "geno.documents.fill_pod_template"
     patch_target_odt2pdf = "geno.documents.odt2pdf"
 
     def test_select_without_session(self):
@@ -1583,13 +1583,13 @@ class DocumentProcessTest(GenoAdminTestCase):
 
 class DocumentFilePersistenceTest(DocumentCreationMockMixin, GenoAdminTestCase):
     """Tests for persistent Document file storage, re-download and re-creation."""
-    patch_target_fill_template = "geno.documents.fill_template_pod"
+    patch_target_fill_template = "geno.documents.fill_pod_template"
     patch_target_odt2pdf = "geno.documents.odt2pdf"
 
     def setUp(self):
         super().setUp()
         # Patch download and re-create functions to use mock files in tests
-        fill_template_patcher = patch("geno.views.fill_template_pod")
+        fill_template_patcher = patch("geno.views.fill_pod_template")
         self.mock_fill_template_views = fill_template_patcher.start()
         self.mock_fill_template_views.side_effect = fill_template_effect
         self.addCleanup(fill_template_patcher.stop)
