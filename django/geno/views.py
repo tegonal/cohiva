@@ -1265,9 +1265,10 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
 
             try:
                 # TODO: instantiate a DocumentGenerator and perform the generation
-                document_generator: DocumentGenerator = None
-                document_generator.create_documents()
-                results = create_documents(self.doctype, self.get_objects(), options)
+                document_generator: DocumentGenerator = DocumentGenerator(
+                    default_document_type = self.doctype
+                )
+                results = document_generator.create_documents()
             except DocumentTypeError as e:
                 # Handle fatal misconfiguration once, at the view boundary
                 self.error_message = str(e)
