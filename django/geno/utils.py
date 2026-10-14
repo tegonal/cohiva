@@ -74,11 +74,21 @@ def save_document_file(document, tmp_file_path):
     with open(tmp_file_path, "rb") as f:
         document.file.save(document.name, File(f), save=True)
 
-def fill_template_pod(template, context, output_format="odt"):
+def fill_pod_template(template, context, output_format="odt"):
+    """
+    Fill the POD (Python Open Document) template with the values provided via
+    the context.
+
+    template: path to the template file.
+    context: dictionary of variables to inject into the template.
+    output_format: file extension for the output (default "odt").
+
+    Returns the path to the generated temporary file.
+    """
     media_path = pathlib.Path(settings.MEDIA_ROOT)
+    # Check whether the path is absolute or relative, to ensure django-filer's
+    # `smedia/` and siblings of `MEDIA_ROOT` are included.
     if template.startswith(str(media_path.parent)):
-        ## Absoulute path starting with parent of MEDIA_ROOT
-        ## (to include django-filer's smedia or other sibling folder of MEDIA_ROOT)
         template_file = template
     else:
         template_file = os.path.join(settings.BASE_DIR, "geno/templates/%s" % template)

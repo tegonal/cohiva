@@ -41,7 +41,7 @@ from geno.models import (
 )
 from geno.shares import get_share_statement_data
 from geno.utils import (
-    fill_template_pod,
+    fill_pod_template,
     nformat,
     odt2pdf,
     remove_temp_files,
@@ -386,7 +386,7 @@ class DocumentTemplate:
                     ctx["organisation"],
                 )
             )
-            output.file = fill_template_pod(
+            output.file = fill_pod_template(
                 self.content_template.file.path, ctx, output_format="odt"
             )
             self.temp_files.append(output.file)
@@ -850,9 +850,11 @@ class DocumentGenerator:
             data=json.dumps(context),
             content_object=content_object,
         )
+        # TODO: persist the document
         return document
 
     def create_documents():
+        # TODO: implement
         return
 
 
@@ -948,7 +950,7 @@ def send_member_mail_process(data):
 
 @dataclass
 class DocumentCreationResult:
-    status: Literal["success", "error", "warning"]
+    status: Literal["success", "info", "error", "warning"]
     label: str
     detail: list[str] = field(default_factory=list)
     file_path: str | None = None
@@ -987,14 +989,14 @@ def create_documents(default_doctype, objects=None, options=None):
 
     # Create the Documents
     filenames = []
-    for o in objects:
+    for object in objects:
         detail = []
-        if "info" in o:
-            detail.append(o["info"])
+        if "info" in object:
+            detail.append(object["info"])
 
         # Resolve DocumentType for this object
-        doctype = o["doctype"]
-        if "doctype" in o:
+        doctype = object["doctype"]
+        if "doctype" in object:
             try:
                 doctype_obj = DocumentType.objects.get(name=doctype)
             except DocumentType.DoesNotExist:
@@ -1016,11 +1018,11 @@ def create_documents(default_doctype, objects=None, options=None):
                 _(f"No template file configured for '{doctype}'")
             )
 
-        if "extra_context" in o:
-            data = get_context_data(doctype, o["obj"].pk, o["extra_context"])
+        if "extra_context" in object:
+            data = get_context_data(doctype, object["obj"].pk, object["extra_context"])
         else:
-            data = get_context_data(doctype, o["obj"].pk, {})
-        filename = fill_template_pod(
+            data = get_context_data(doctype, object["obj"].pk, {})
+        filename = fill_pod_template(
             content_template.file.path,
             context_format(data["context"]),
             output_format="odt",
@@ -1050,12 +1052,12 @@ def create_documents(default_doctype, objects=None, options=None):
             save_document_file(d, filename)
         results.append(DocumentCreationResult(
             status="info",
-            label=str(o["obj"]),
+            label=str(object["obj"]),
             detail=detail,
             file_path=filename,
             filename=output_filename,
         ))
-        files_to_zip.append({"obj": o, "doctype": doctype, "doctype_obj": doctype_obj})
+        files_to_zip.append({"obj": object, "doctype": doctype, "doctype_obj": doctype_obj})
 
     if files_to_zip:
         link_text = "%s erstellen und herunterladen" % options["beschreibung"]

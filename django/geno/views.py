@@ -132,7 +132,7 @@ from .tables import (
     MemberTable,
     MemberTableAdmin,
 )
-from .utils import fill_template_pod, nformat, odt2pdf, save_document_file
+from .utils import fill_pod_template, nformat, odt2pdf, save_document_file
 
 if "portal" in settings.INSTALLED_APPS:
     import portal.auth as portal_auth
@@ -251,7 +251,7 @@ def documents(request, doctype, obj_id, action):
                     _("The template '{template}' has no file linked to it.").format(template=template)
                 )
             # Render the "recreated" file
-            filename = fill_template_pod(
+            filename = fill_pod_template(
                 template.file.path,
                 context_format(data["context"]),
                 output_format="odt",
@@ -284,7 +284,7 @@ def documents(request, doctype, obj_id, action):
             raise RuntimeError(
                 _("The template '{template}' has no file linked to it.").format(template=template)
             )
-        filename = fill_template_pod(
+        filename = fill_pod_template(
             template.file.path, context_format(data["context"]), output_format="odt"
         )
         if not filename:
@@ -4123,7 +4123,7 @@ def rental_unit_list_create_documents(request, doc="mailbox"):
         zipcount += 1
         ret.append({"info": context["title"], "objects": context["mietpartei"]})
         if makezip:
-            filename = fill_template_pod(template.file.path, context, output_format="odt")
+            filename = fill_pod_template(template.file.path, context, output_format="odt")
             if not filename:
                 raise RuntimeError("Could not fill template")
             zipfile_content.append(
