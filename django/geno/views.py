@@ -66,7 +66,7 @@ from .billing import (
     process_sepa_transactions,
     process_transaction,
 )
-from .documents import DocumentCreationResult, DocumentTypeError, context_format, create_documents, get_context_data, make_zip, send_member_mail_process
+from .documents import DocumentCreationResult, DocumentGenerator, DocumentTypeError, context_format, create_documents, get_context_data, make_zip, send_member_mail_process
 from .exporter import (
     export_addresses_carddav,
     export_adit_file,
@@ -1264,6 +1264,9 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
             options["link_url"] = request.path
 
             try:
+                # TODO: instantiate a DocumentGenerator and perform the generation
+                document_generator: DocumentGenerator = None
+                document_generator.create_documents()
                 results = create_documents(self.doctype, self.get_objects(), options)
             except DocumentTypeError as e:
                 # Handle fatal misconfiguration once, at the view boundary
@@ -1394,22 +1397,24 @@ class MemberLetterView(DocumentGeneratorView):
     template_name = "geno/member_letter.html"
 
     def get_objects(self):
+        """Get all Members with missing Member Letter documents after the cutoff date."""
         objects = []
-        ## Find members with missing documents (after cutoff date 2020-01-01)
-        for m in Member.objects.filter(
-            date_join__gt=settings.GENO_MEMBER_LETTER_CUTOFF_DATE
-        ).exclude(date_leave__isnull=False):
-            doc = (
-                Document.objects.filter(object_id=m.pk)
-                .filter(content_type=ContentType.objects.get(app_label="geno", model="member"))
-                .filter(doctype__name=self.doctype)
-            )
+        members = (Member
+                    .objects
+                    .filter(date_join__gt=settings.GENO_MEMBER_LETTER_CUTOFF_DATE)
+                    .exclude(date_leave__isnull=False))
+        for member in members:
+            doc = (Document
+                    .objects
+                    .filter(object_id=member.pk)
+                    .filter(content_type=ContentType.objects.get(app_label="geno", model="member"))
+                    .filter(doctype__name=self.doctype))
             if doc.count() == 0:
                 objects.append(
                     {
-                        "obj": m,
+                        "obj": member,
                         "doctype": self.doctype,
-                        "info": "%s, Beitritt %s" % (m, m.date_join.strftime("%d.%m.%Y")),
+                        "info": "%s, Beitritt %s" % (member, member.date_join.strftime("%d.%m.%Y")),
                     }
                 )
         return objects
