@@ -840,7 +840,12 @@ class DocumentGenerator:
     Builder class to create Documents. As a rule, Documents should be persisted
     at creation time, so that they remain accessible with re-generation.
     """
-    def __init__(self):
+    default_document_type: DocumentType = None
+    document_objects: list[dict]
+
+    def __init__(self, default_document_type: DocumentType, document_objects: list[dict]):
+        self.default_document_type = default_document_type
+        self.document_objects = document_objects
         return
 
     def create_document(name: str, document_type: DocumentType, context, content_object) -> Document:
@@ -851,114 +856,71 @@ class DocumentGenerator:
             content_object=content_object,
         )
         # TODO: persist the document
+        document.save()
+        save_document_file()
         return document
 
-    def create_documents():
+    def create_documents(self):
         # TODO: implement
-        return
-
-
-def save_documents(recipient: Recipient=None):
-    if recipient.content_object is None:
-        return
-    if recipient.content_object == "address":
-        content_obj = recipient.address
-    else:
-        logger.warning(f"Unknown content_object type '{recipient.content_object}' for {recipient}, skipping Document creation.")
-        return
-    for doc in recipient.documents:
-        if doc.doctype is None or doc.context is None:
-            continue
+        results: list[DocumentCreationResult] = []
+        # Early exit: the default DocumentType is not available
         try:
-            # Create the Document
-            d = Document.objects.create(
-                name=doc.filename,
-                doctype=doc.doctype,
-                template=doc.content_template,
-                data=json.dumps(doc.context, cls=_ContextEncoder),
-                content_object=content_obj,
+            default_document_type = DocumentType.objects.get(name=self.default_document_type)
+        except DocumentType.DoesNotExist:
+            return [ DocumentCreationResult(
+                status="error",
+                label=(_(f"The document type '{self.default_document_type}' does not exist."))
+            )]
+        # Create the Documents
+        filenames = []
+        for object in self.document_objects:
+            # Resolve DocumentType for this object
+            document_type_name = object["doctype"]
+            if "doctype" in object:
+                try:
+                    document_type = DocumentType.objects.get(name=document_type_name)
+                except DocumentType.DoesNotExist:
+                    results.append(
+                        DocumentCreationResult(
+                            status="error",
+                            label=(_(f"Document type '{document_type}' not found."))
+                        )
+                    )
+                    break
+            else:
+                # No DocumentType found, use the default
+                document_type = default_document_type
+
+            # Validate the template
+            content_template = document_type.templates.filer(active=True).first()
+            if not content_template or not content_template.file:
+                raise DocumentTypeError(_(f"No template file configured for '{document_type_name}'"))
+            # TODO: handle "extra_context" in Object
+            data = get_context_data(document_type_name, object["obj"].pk, {})
+            temporary_filename = fill_pod_template(
+                content_template.file.path,
+                context_format(data["context"]),
+                output_format="odt",
             )
-            # Persist the Document
-            save_document_file(d, doc.file)
-        except Exception as e:
-            msg = f"Konnte Dokument '{doc.filename}' für {recipient} nicht speichern. Fehler: {e}"
-            logger.error(msg)
-            recipient.failure = True
-            recipient.log.append(msg)
-
-
-def send_member_mail_process(data):
-    """
-    Process and create Documents for sending to Members.
-    """
-    is_test = data["action"] == "mail_test"
-    process = ProcessDocuments(dry_run=is_test)
-    if data["action"] in ("mail", "mail_test"):
-        mail_template = MailTemplate(data["template_mail"], data["subject"], data["email_sender"])
-        process.setup_mail(mail_template, bcc=data["email_copy"])
-    if data["action"] in ("makezip", "makezip_pdf"):
-        process.setup_zip()
-    if data["action"] == "makezip":
-        process.set_output_format("odt")
-    elif data["template_files"]:
-        process.set_output_format("pdf")
-
-    try:
-        for template in data["template_files"]:
-            process.add_document_template(template)
-    except Exception as e:
-        return {"errors": [{"info": f"Fehler: Konte Dokumentvorlage nicht hinzufügen: {e}"}]}
-
-    for m in data["members"]:
-        if "contract_id" in m:
-            contract = Contract.objects.get(id=m["contract_id"])
-        else:
-            contract = None
-        if m["member_type"] == "member":
-            recip = Member.objects.get(pk=m["id"])
-        else:
-            recip = Address.objects.get(pk=m["id"])
-        process.add_recipient(recip, contract, m["extra_info"])
-
-    try:
-        process.generate_documents()
-    except Exception as e:
-        logger.error(f"Fehler beim Erstellen der Dokumente: {e}")
-        return {"errors": [{"info": f"Fehler beim Erstellen der Dokumente: {e}"}]}
-    process.send_output()
-    process.rollback_failed_recipients()
-
-    if not is_test:
-        if data["change_attribute"]:
-            process.update_member_attributes(
-                data["change_attribute"], data["change_attribute_value"]
-            )
-
-        if data["change_genattribute"]:
-            process.update_generic_attributes(
-                data["change_genattribute"], data["change_genattribute_value"]
-            )
-
-    if data["action"] in ("makezip", "makezip_pdf"):
-        result = process.get_zipfile()
-    elif data["action"] == "list_xls":
-        result = process.get_xls_list()
-    else:
-        result = process.get_status_report()
-    process.cleanup()
-    return result
-
-@dataclass
-class DocumentCreationResult:
-    status: Literal["success", "info", "error", "warning"]
-    label: str
-    detail: list[str] = field(default_factory=list)
-    file_path: str | None = None
-    filename: str | None = None
-
-
-class DocumentTypeError(Exception):
-    pass
+            if not temporary_filename:
+                raise RuntimeError("Could not fill template.")
+            output_filename = data["visible_filename"]
+            file_count = 0
+            # Deduplicate filenames that will be put into the .zip
+            while output_filename in filenames:
+                file_count += 1
+                filename_stem, file_extension = os.path.splitext(data["visible_filename"])
+                output_filename = "%s_%s.%s" % (filename_stem, file_count, file_extension)
+            filenames.append(output_filename)
+            if "content_object" in data:
+                document = self.create_document()
+                # Save the created Document to the database
+                document.save()
+                # Persist the created file
+                save_document_file(document, temporary_filename)
+            # TODO: append the result to the results list
+            # TODO: handle the creation of the .zip
+        return
 
 
 def create_documents(default_doctype, objects=None, options=None):
@@ -1079,6 +1041,110 @@ def create_documents(default_doctype, objects=None, options=None):
             )
         )
     return results
+
+
+def save_documents(recipient: Recipient=None):
+    if recipient.content_object is None:
+        return
+    if recipient.content_object == "address":
+        content_obj = recipient.address
+    else:
+        logger.warning(f"Unknown content_object type '{recipient.content_object}' for {recipient}, skipping Document creation.")
+        return
+    for doc in recipient.documents:
+        if doc.doctype is None or doc.context is None:
+            continue
+        try:
+            # Create the Document
+            d = Document.objects.create(
+                name=doc.filename,
+                doctype=doc.doctype,
+                template=doc.content_template,
+                data=json.dumps(doc.context, cls=_ContextEncoder),
+                content_object=content_obj,
+            )
+            # Persist the Document
+            save_document_file(d, doc.file)
+        except Exception as e:
+            msg = f"Konnte Dokument '{doc.filename}' für {recipient} nicht speichern. Fehler: {e}"
+            logger.error(msg)
+            recipient.failure = True
+            recipient.log.append(msg)
+
+
+def send_member_mail_process(data):
+    """
+    Process and create Documents for sending to Members.
+    """
+    is_test = data["action"] == "mail_test"
+    process = ProcessDocuments(dry_run=is_test)
+    if data["action"] in ("mail", "mail_test"):
+        mail_template = MailTemplate(data["template_mail"], data["subject"], data["email_sender"])
+        process.setup_mail(mail_template, bcc=data["email_copy"])
+    if data["action"] in ("makezip", "makezip_pdf"):
+        process.setup_zip()
+    if data["action"] == "makezip":
+        process.set_output_format("odt")
+    elif data["template_files"]:
+        process.set_output_format("pdf")
+
+    try:
+        for template in data["template_files"]:
+            process.add_document_template(template)
+    except Exception as e:
+        return {"errors": [{"info": f"Fehler: Konte Dokumentvorlage nicht hinzufügen: {e}"}]}
+
+    for m in data["members"]:
+        if "contract_id" in m:
+            contract = Contract.objects.get(id=m["contract_id"])
+        else:
+            contract = None
+        if m["member_type"] == "member":
+            recip = Member.objects.get(pk=m["id"])
+        else:
+            recip = Address.objects.get(pk=m["id"])
+        process.add_recipient(recip, contract, m["extra_info"])
+
+    try:
+        process.generate_documents()
+    except Exception as e:
+        logger.error(f"Fehler beim Erstellen der Dokumente: {e}")
+        return {"errors": [{"info": f"Fehler beim Erstellen der Dokumente: {e}"}]}
+    process.send_output()
+    process.rollback_failed_recipients()
+
+    if not is_test:
+        if data["change_attribute"]:
+            process.update_member_attributes(
+                data["change_attribute"], data["change_attribute_value"]
+            )
+
+        if data["change_genattribute"]:
+            process.update_generic_attributes(
+                data["change_genattribute"], data["change_genattribute_value"]
+            )
+
+    if data["action"] in ("makezip", "makezip_pdf"):
+        result = process.get_zipfile()
+    elif data["action"] == "list_xls":
+        result = process.get_xls_list()
+    else:
+        result = process.get_status_report()
+    process.cleanup()
+    return result
+
+@dataclass
+class DocumentCreationResult:
+    status: Literal["success", "info", "error", "warning"]
+    label: str
+    detail: list[str] = field(default_factory=list)
+    file_path: str | None = None
+    filename: str | None = None
+
+
+class DocumentTypeError(Exception):
+    pass
+
 
 
 def make_zip(files_to_zip: list[dict[str, str]]) -> BytesIO:
