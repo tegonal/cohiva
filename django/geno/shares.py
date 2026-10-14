@@ -7,6 +7,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.db.models import Q
+from django.utils.translation import gettext as _
 
 from finance.accounting import (
     Account,
@@ -17,7 +18,7 @@ from finance.accounting import (
     Transaction,
 )
 
-from .models import Address, Contract, RentalUnit, Share, ShareType
+from .models import Address, Contract, RentalUnit, Share, ShareType, ShareTypeCategory
 from .utils import nformat
 
 
@@ -380,11 +381,25 @@ def share_interest_calc(address, year, enddate=None):
         period_end = year_end
     year_days = (year_end - period_start).days
 
-    stype_share = list(ShareType.objects.filter(name__startswith="Anteilschein"))  ## type index 0
-    stype_loan_noint = list(ShareType.objects.filter(name="Darlehen zinslos"))  ## type index 1
-    stype_loan_int = list(ShareType.objects.filter(name="Darlehen verzinst"))  ## type index 2
-    stype_deposit = list(ShareType.objects.filter(name="Depositenkasse"))  ## type index 3
-    stype_loan_special = list(ShareType.objects.filter(name="Darlehen spezial"))  ## type index 4
+    stype_share = list(
+        ShareType.objects.filter(category=ShareTypeCategory.SHARE, active=True)
+    )  ## type index 0
+    stype_loan_noint = list(
+        ShareType.objects.filter(
+            category=ShareTypeCategory.LOAN, is_interest_bearing=False, active=True
+        )
+    )  ## type index 1
+    stype_loan_int = list(
+        ShareType.objects.filter(
+            category=ShareTypeCategory.LOAN, is_interest_bearing=True, active=True
+        )
+    )  ## type index 2
+    stype_deposit = list(
+        ShareType.objects.filter(category=ShareTypeCategory.DEPOSIT, active=True)
+    )  ## type index 3
+    stype_loan_special = list(
+        ShareType.objects.filter(category=ShareTypeCategory.SPECIAL_LOAN, active=True)
+    )  ## type index 4
 
     total_interest_alltypes = 0
     list_dates = []
@@ -662,7 +677,9 @@ def create_interest_transactions_execute(book_date):
                     new_shares.append(
                         Share(
                             name=adr,
-                            share_type=ShareType.objects.get(name="Depositenkasse"),
+                            share_type=ShareType.objects.filter(
+                                category=ShareTypeCategory.DEPOSIT, active=True
+                            ).first(),
                             payment_date=book_date,
                             quantity=1,
                             value=interest["pay"][3],
@@ -732,11 +749,13 @@ def share_get_donations(address, year, enddate=None):
         period_end = enddate + datetime.timedelta(days=1)
     else:
         period_end = datetime.date(year + 1, 1, 1)
-    stype_donation = ShareType.objects.filter(name="Entwicklungsbeitrag").first()
+    stype_non_repayable = list(
+        ShareType.objects.filter(category=ShareTypeCategory.NON_REPAYABLE, active=True)
+    )
     total = 0
     for share in (
         Share.objects.filter(name=address)
-        .filter(share_type=stype_donation)
+        .filter(share_type__in=stype_non_repayable)
         .filter(Q(repayment_date__isnull=True) | Q(repayment_date__gt=period_start))
         .filter(payment_date__gte=period_start)
         .filter(payment_date__lt=period_end)
@@ -746,19 +765,10 @@ def share_get_donations(address, year, enddate=None):
 
 
 def check_rental_shares_report():
-    stype_share = ShareType.objects.filter(name="Anteilschein").first()  ## type index 0
-    stype_loan_noint = ShareType.objects.filter(name="Darlehen zinslos").first()  ## type index 1
-    stype_loan_int = ShareType.objects.filter(name="Darlehen verzinst").first()  ## type index 2
-    stype_deposit = ShareType.objects.filter(name="Depositenkasse").first()  ## type index 3
-    stype_loan_special = ShareType.objects.filter(name="Darlehen spezial").first()  ## type index 4
-
     ## Get shares per person, excluding shares that are explicitly attached to a contract
     shares = {}
     shares_contract = {}
-    stype_share = ShareType.objects.filter(name="Anteilschein").first()
-    for share in (
-        Share.get_active()
-    ):  # .filter(attached_to_contract=None): #.filter(share_type=stype_share):
+    for share in Share.get_active().filter(share_type__is_excluded_from_rental_units=False):
         amount = 0
         amount_loan = 0
         amount_loan_5yr = 0
@@ -773,12 +783,10 @@ def check_rental_shares_report():
             duedate = share.date + relativedelta(years=share.duration)
         else:
             duedate = None
-            if (
-                share.share_type == stype_loan_noint
-                or share.share_type == stype_loan_int
-                or share.share_type == stype_loan_special
-            ) and not share.is_interest_credit:
-                raise Exception("ERROR: Loan without due date: %s" % share)
+            if share.share_type.requires_due_date and not share.is_interest_credit:
+                raise ValueError(
+                    _("Shares of this type require a due date: {share}").format(share=share)
+                )
         if duedate and duedate > duedate_cutoff_5yr:
             # print("%s > %s" % (duedate, duedate_cutoff_5yr))
             flag_5yr = False
@@ -786,21 +794,21 @@ def check_rental_shares_report():
             # print("%s <= %s" % (duedate, duedate_cutoff_5yr))
             flag_5yr = True
 
-        if share.share_type == stype_share:
+        if share.share_type.category == ShareTypeCategory.SHARE:
             amount = share.quantity * share.value
-        elif share.share_type == stype_loan_noint or share.share_type == stype_loan_int:
+        elif share.share_type.category == ShareTypeCategory.LOAN:
             amount_loan = share.quantity * share.value
             if flag_5yr:
                 amount_loan_5yr = share.quantity * share.value
-        elif share.share_type == stype_deposit:
+        elif share.share_type.category == ShareTypeCategory.DEPOSIT:
             amount_deposit = share.quantity * share.value
-        elif share.share_type == stype_loan_special:
+        elif share.share_type.category == ShareTypeCategory.SPECIAL_LOAN:
             amount_loan_special = share.quantity * share.value
             if flag_5yr:
                 amount_loan_special_5yr = share.quantity * share.value
         if share.attached_to_contract:
             ## Shares that are directly assigned to contract
-            if share.share_type != stype_share:
+            if share.share_type.category != ShareTypeCategory.SHARE:
                 raise RuntimeError("Unsupported directly assigned share_type in check_shares()!")
             if share.attached_to_contract.id in shares_contract:
                 shares_contract[share.attached_to_contract.id]["amount"] += amount

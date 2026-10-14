@@ -40,9 +40,9 @@ class TestBilling(GenoAdminTestCase):
     def setUpTestData(cls):
         super().setUpTestData()
         geno_testdata.create_contracts(cls)
-        cls.share_type_member_share = ShareType.objects.get(name="Anteilschein")
-        cls.share_type_loan = ShareType.objects.get(name="Darlehen verzinst")
-        cls.share_type_deposit = ShareType.objects.get(name="Depositenkasse")
+        cls.share_type_member_share = ShareType.objects.get(name="Anteilschein", active=True)
+        cls.share_type_loan = ShareType.objects.get(name="Darlehen verzinst", active=True)
+        cls.share_type_deposit = ShareType.objects.get(name="Depositenkasse", active=True)
         cls.member_attribute_2001 = MemberAttributeType.objects.create(
             name="Mitgliederbeitrag 2001"
         )
