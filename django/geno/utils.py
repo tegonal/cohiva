@@ -10,7 +10,6 @@ from subprocess import PIPE, Popen
 from appy.pod.renderer import Renderer
 from django.conf import settings
 from django.contrib import auth
-from django.core.files import File
 from django.core.mail import mail_admins
 from django.db.models import Q
 
@@ -63,16 +62,6 @@ def odt2pdf(odtfile, instance_tag="default"):
         raise Exception("odt2pdf failed")
 
     return pdf_file
-
-def save_document_file(document, tmp_file_path):
-    """
-    Helper to copy a temporary file into the Document.file field.
-
-    document: the models.Document object that will store the file.
-    tmp_file_path: path to the temporary File data.
-    """
-    with open(tmp_file_path, "rb") as f:
-        document.file.save(document.name, File(f), save=True)
 
 def fill_pod_template(template, context, output_format="odt"):
     """

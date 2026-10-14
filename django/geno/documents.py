@@ -13,6 +13,7 @@ from zipfile import ZipFile
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
+from django.core.files import File
 from django.core.mail import EmailMultiAlternatives
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Model, Q
@@ -46,7 +47,6 @@ from geno.utils import (
     odt2pdf,
     remove_temp_files,
     sanitize_filename,
-    save_document_file,
 )
 
 logger = logging.getLogger("geno")
@@ -870,11 +870,22 @@ class DocumentGenerator:
         )
         return document
 
-    def _persist_document(document: Document) -> None:
+    def _persist_document(self, document: Document) -> None:
+        """
+        Persist a Document object in the database.
+        """
         document.save()
-        # TODO: implement Document persistence
-        save_document_file()
-        return
+
+    def _save_document_file(document, temporary_filename):
+        """
+        Copy a file from temporary storage into the Document object's File field
+
+        document: the Document object that will store the file.
+        temporary_filename: path to the temporary File data.
+        """
+        with open(temporary_filename, "rb") as f:
+            document.file.save(document.name, File(f), save=True)
+
 
     def create_documents(self, options: list[dict] | None):
         results: list[DocumentCreationResult] = []
@@ -931,8 +942,11 @@ class DocumentGenerator:
             # De-duplicate filenames that will be put into the .zip
             output_filename = self._deduplicate_filename(data["visible_filename"])
             if "content_object" in data:
+                # Create the Document
                 document = self._create_document()
+                # Save the Document
                 self._persist_document(document)
+                self._save_document_file(document, temporary_filename)
                 result = DocumentCreationResult(
                     status="info",
                     label=str(object["obj"]),
@@ -941,12 +955,12 @@ class DocumentGenerator:
                     filename=output_filename,
                 )
                 results.append(result)
-            # If objects only contains one Document, we don't need to create a .zip
             if not make_zip:
+                # Exit early: we do not need to create a .zip for one Document
                 return results
             else:
+                # Track the files that will be placed into a .zip
                 filenames.append(output_filename)
-                # TODO: handle the creation of the .zip
                 files_to_zip.append({"obj": object, "doctype": document_type_name, "doctype_obj": document_type})
         # TODO: pass this off to a helper function
         if files_to_zip:

@@ -66,7 +66,15 @@ from .billing import (
     process_sepa_transactions,
     process_transaction,
 )
-from .documents import DocumentCreationResult, DocumentGenerator, DocumentTypeError, context_format, create_documents, get_context_data, make_zip, send_member_mail_process
+from .documents import (
+    DocumentCreationResult,
+    DocumentGenerator,
+    DocumentTypeError,
+    context_format,
+    get_context_data,
+    make_zip,
+    send_member_mail_process,
+)
 from .exporter import (
     export_addresses_carddav,
     export_adit_file,
@@ -132,7 +140,7 @@ from .tables import (
     MemberTable,
     MemberTableAdmin,
 )
-from .utils import fill_pod_template, nformat, odt2pdf, save_document_file
+from .utils import fill_pod_template, nformat, odt2pdf
 
 if "portal" in settings.INSTALLED_APPS:
     import portal.auth as portal_auth
@@ -1266,7 +1274,8 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
             try:
                 # TODO: instantiate a DocumentGenerator and perform the generation
                 document_generator: DocumentGenerator = DocumentGenerator(
-                    default_document_type = self.doctype
+                    default_document_type = self.doctype,
+                    document_objects=self.get_objects()
                 )
                 results = document_generator.create_documents()
             except DocumentTypeError as e:
