@@ -834,6 +834,18 @@ class ProcessDocuments:
         for template in self.templates:
             template.cleanup()
 
+@dataclass
+class DocumentCreationResult:
+    status: Literal["success", "info", "error", "warning"]
+    label: str
+    detail: list[str] = field(default_factory=list)
+    file_path: str | None = None
+    filename: str | None = None
+
+
+class DocumentTypeError(Exception):
+    pass
+
 
 class DocumentGenerator:
     """
@@ -848,21 +860,30 @@ class DocumentGenerator:
         self.document_objects = document_objects
         return
 
-    def create_document(name: str, document_type: DocumentType, context, content_object) -> Document:
+    def create_document(name: str, document_type: DocumentType, context, content_object) -> DocumentCreationResult:
+        # TODO: implement
         document = Document(
             name=name,
             doctype=document_type,
             data=json.dumps(context),
             content_object=content_object,
         )
-        # TODO: persist the document
+        result = DocumentCreationResult(
+            status="success",
+            label=(_(f"Document '{name}' successfully created.")),
+        )
+        return result
+
+    def _persist_document(document: Document) -> None:
+        # TODO: implement Document persistence
         document.save()
         save_document_file()
-        return document
+        return
 
-    def create_documents(self):
-        # TODO: implement
+    def create_documents(self, options: list[dict] | None):
         results: list[DocumentCreationResult] = []
+        zipfile_content = []
+        make_zip = options.get("make_zip", False)
         # Early exit: the default DocumentType is not available
         try:
             default_document_type = DocumentType.objects.get(name=self.default_document_type)
@@ -872,7 +893,8 @@ class DocumentGenerator:
                 label=(_(f"The document type '{self.default_document_type}' does not exist."))
             )]
         # Create the Documents
-        filenames = []
+        filenames: list[str] = []
+        # TODO: if objects only contains one object, we don't need to create a .zip
         for object in self.document_objects:
             # Resolve DocumentType for this object
             document_type_name = object["doctype"]
@@ -897,30 +919,33 @@ class DocumentGenerator:
                 raise DocumentTypeError(_(f"No template file configured for '{document_type_name}'"))
             # TODO: handle "extra_context" in Object
             data = get_context_data(document_type_name, object["obj"].pk, {})
-            temporary_filename = fill_pod_template(
+            temp_file_location = fill_pod_template(
                 content_template.file.path,
                 context_format(data["context"]),
                 output_format="odt",
             )
-            if not temporary_filename:
+            if not temp_file_location:
                 raise RuntimeError("Could not fill template.")
-            output_filename = data["visible_filename"]
-            file_count = 0
-            # Deduplicate filenames that will be put into the .zip
-            while output_filename in filenames:
-                file_count += 1
-                filename_stem, file_extension = os.path.splitext(data["visible_filename"])
-                output_filename = "%s_%s.%s" % (filename_stem, file_count, file_extension)
-            filenames.append(output_filename)
+
+            # De-duplicate filenames that will be put into the .zip
+            output_filename = self._deduplicate_filename(data["visible_filename"])
             if "content_object" in data:
-                document = self.create_document()
-                # Save the created Document to the database
-                document.save()
-                # Persist the created file
-                save_document_file(document, temporary_filename)
-            # TODO: append the result to the results list
+                # TODO: create the Document
+                result = self.create_document()
+                results.append(result)
+            if not make_zip:
+                return results
+            filenames.append(output_filename)
             # TODO: handle the creation of the .zip
-        return
+            zipfile_content.append({"file": temp_file_location, "filename": output_filename})
+        return results
+
+    def _deduplicate_filename(filename: str) -> str:
+        # TODO: implement the counter
+        file_count = 0
+        filename_stem, file_extension = os.path.splitext(filename)
+        output_filename = "%s_%s.%s" % (filename_stem, file_count, file_extension)
+        return output_filename
 
 
 def create_documents(default_doctype, objects=None, options=None):
@@ -1132,19 +1157,6 @@ def send_member_mail_process(data):
         result = process.get_status_report()
     process.cleanup()
     return result
-
-@dataclass
-class DocumentCreationResult:
-    status: Literal["success", "info", "error", "warning"]
-    label: str
-    detail: list[str] = field(default_factory=list)
-    file_path: str | None = None
-    filename: str | None = None
-
-
-class DocumentTypeError(Exception):
-    pass
-
 
 
 def make_zip(files_to_zip: list[dict[str, str]]) -> BytesIO:
