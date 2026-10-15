@@ -277,7 +277,7 @@ def documents(request, doctype, obj_id, action):
         # Create a new Document record, to provide an audit trail
         # TODO: clean up Document generation
         new_document = document_generator.create_document(
-                name=filename,
+                name=data["visible_filename"],
                 document_type=document_type,
                 template=template,
                 data=json.dumps(data["context"]),
@@ -287,7 +287,9 @@ def documents(request, doctype, obj_id, action):
         # TODO: save via DocumentGenerator
         if os.path.exists(filename):
             with open(filename, "rb") as f:
-                new_document.file.save(new_document.name, File(f), save=True)
+                new_document.file.save(
+                    os.path.basename(new_document.name), File(f), save=True
+                )
  
         resp = FileResponse(
             open(filename, "rb"),

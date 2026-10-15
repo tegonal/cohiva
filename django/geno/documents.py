@@ -870,6 +870,7 @@ class DocumentGenerator:
         return
 
     def create_document(
+            self,
             name: str,
             document_type: DocumentType,
             template: DocumentTemplate,
@@ -941,7 +942,7 @@ class DocumentGenerator:
         """
         document.save()
 
-    def _save_document_file(document, temporary_filename):
+    def _save_document_file(self, document, temporary_filename):
         """
         Copy a file from temporary storage into the Document object's File field
 
