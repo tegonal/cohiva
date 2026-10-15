@@ -35,7 +35,6 @@ urlpatterns = [
         geno_views.ShareStatementFormView.as_view(),
         name="share-statement-form",
     ),
-    path("share/mailing/", geno_views.share_mailing),
     path("share/interest/", geno_views.ShareInterestView.as_view(), name="share-interest"),
     path(
         "share/interest/download/",
@@ -122,8 +121,6 @@ urlpatterns = [
         geno_views.DebtorView.as_view(action="detail"),
         name="debtor-detail",
     ),
-    path("contract/create/", geno_views.create_contracts),
-    path("contract/create_letter/", geno_views.create_contracts, {"letter": True}),
     path(
         "contract/check_forms/",
         geno_views.ContractCheckFormsView.as_view(),
