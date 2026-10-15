@@ -7,7 +7,6 @@ import re
 import time
 from dataclasses import dataclass, field
 from decimal import Decimal
-from io import BytesIO
 from typing import Literal
 from zipfile import ZipFile
 
@@ -895,7 +894,17 @@ class DocumentGenerator:
 
     def create_documents(self,
                          document_objects: list[dict],
-                         options: list[dict] | None):
+                         options: list[dict] | None) -> list[DocumentCreationResult]:
+        """
+        Given a list of Document objects, creates individual Documents, and
+        persists the result to the database and filesystem.
+
+        document_objects: list of dictionaries, containing a Model object, a
+            DocumentType, and additional "info".
+
+        Returns a list of DocumentCreationResults, which can be consumed to
+        create Views.
+        """
         results: list[DocumentCreationResult] = []
         files_to_zip = []
         make_zip = options.get("make_zip", False)
@@ -1067,15 +1076,6 @@ def send_member_mail_process(data):
         result = process.get_status_report()
     process.cleanup()
     return result
-
-
-def make_zip(files_to_zip: list[dict[str, str]]) -> BytesIO:
-    bytes = BytesIO()
-    zipfile = ZipFile(bytes, "w")
-    for file in files_to_zip:
-        zipfile.write(file["file"], file["filename"])
-    zipfile.close()
-    return bytes
 
 
 def get_context_data(doctype, obj_id, extra_context: dict=None):
