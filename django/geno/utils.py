@@ -1,4 +1,5 @@
 import datetime
+from io import BytesIO
 import json
 import logging
 import os
@@ -6,6 +7,7 @@ import pathlib
 import re
 import tempfile
 from subprocess import PIPE, Popen
+from zipfile import ZipFile
 
 from appy.pod.renderer import Renderer
 from django.conf import settings
@@ -62,6 +64,23 @@ def odt2pdf(odtfile, instance_tag="default"):
         raise Exception("odt2pdf failed")
 
     return pdf_file
+
+
+def make_zip(files_to_zip: list[dict[str, str]]) -> BytesIO:
+    """
+    Create a zipfile.
+
+    files_to_zip: a dictionary mapping filenames to Files objects.
+
+    Returns bytes representing the zipfile.
+    """
+    bytes = BytesIO()
+    zipfile = ZipFile(bytes, "w")
+    for file in files_to_zip:
+        zipfile.write(file["file"], file["filename"])
+    zipfile.close()
+    return bytes
+
 
 def fill_pod_template(template, context, output_format="odt"):
     """

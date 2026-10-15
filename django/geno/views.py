@@ -72,7 +72,6 @@ from .documents import (
     DocumentTypeError,
     context_format,
     get_context_data,
-    make_zip,
     send_member_mail_process,
 )
 from .exporter import (
@@ -140,7 +139,7 @@ from .tables import (
     MemberTable,
     MemberTableAdmin,
 )
-from .utils import fill_pod_template, nformat, odt2pdf
+from .utils import fill_pod_template, makme_zip, nformat, odt2pdf
 
 if "portal" in settings.INSTALLED_APPS:
     import portal.auth as portal_auth
@@ -1254,7 +1253,7 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
     def get_options(self):
         return {"beschreibung": "Dokumente"}
 
-    def _zip_response(self, results):
+    def _zip_response(self, results: list[DocumentCreationResult]):
         """Build and return an HttpResponse containing a ZIP of generated documents."""
         files_to_zip = [
             {"file": r.file_path, "filename": r.filename}
