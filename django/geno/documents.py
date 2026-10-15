@@ -596,7 +596,8 @@ class ProcessDocuments:
             for doc in recipient.documents:
                 self.zipfile_ob.write(doc.file, doc.filename)
             if not self.dry_run:
-                save_documents(recipient)
+                # TODO: save via DocumentGenerator
+                pass
 
     def send_output_mails(self):
         logger.info("Start sending mails")
@@ -624,7 +625,8 @@ class ProcessDocuments:
                     logger.info(f" > Email an {mail_recipient} geschickt.")
                     recipient.log.append(f"Email an {escape(mail_recipient)} geschickt.")
                     if not self.dry_run:
-                        save_documents(recipient)
+                        # TODO: save via DocumentGenerator
+                        pass
                 self.throttle()
 
     def throttle(self):
@@ -668,9 +670,8 @@ class ProcessDocuments:
             bcc_recipients,
         )
         for att in attachments:
-            # logger.info(" > attaching %s as %s" % (att['file'], att['filename']))
             attfile = open(att.file, "rb")
-            mail.attach(att.filename, attfile.read())  # , 'application/pdf')
+            mail.attach(att.filename, attfile.read())
             attfile.close()
         if mail_template.is_html:
             mail.attach_alternative(mail_text_html, "text/html")
@@ -854,18 +855,23 @@ class DocumentGenerator:
     at creation time, so that they remain accessible with re-generation.
     """
     default_document_type: DocumentType = None
-    document_objects: list[dict]
 
-    def __init__(self, default_document_type: DocumentType, document_objects: list[dict]):
+    def __init__(self, default_document_type: DocumentType):
         self.default_document_type = default_document_type
-        self.document_objects = document_objects
         return
 
-    def _create_document(name: str, document_type: DocumentType, context, content_object) -> Document:
+    def create_document(
+            name: str,
+            document_type: DocumentType,
+            template: DocumentTemplate,
+            data,
+            content_object) -> Document:
+        # TODO: receive Context directly, handle it, and perform error-checking here
         document = Document(
             name=name,
             doctype=document_type,
-            data=json.dumps(context),
+            template=template,
+            data=json.dumps(data),
             content_object=content_object,
         )
         return document
@@ -887,7 +893,9 @@ class DocumentGenerator:
             document.file.save(document.name, File(f), save=True)
 
 
-    def create_documents(self, options: list[dict] | None):
+    def create_documents(self,
+                         document_objects: list[dict],
+                         options: list[dict] | None):
         results: list[DocumentCreationResult] = []
         files_to_zip = []
         make_zip = options.get("make_zip", False)
@@ -902,7 +910,7 @@ class DocumentGenerator:
         # Create the Documents
         filenames: list[str] = []
 
-        for object in self.document_objects:
+        for object in document_objects:
             # Resolve DocumentType for this object
             document_type_name = object["doctype"]
             if "doctype" in object:
@@ -930,31 +938,38 @@ class DocumentGenerator:
             if not content_template or not content_template.file:
                 raise DocumentTypeError(_(f"No template file configured for '{document_type_name}'"))
             # TODO: handle "extra_context" in Object
-            data = get_context_data(document_type_name, object["obj"].pk, {})
+            # TODO: pass Context directly to create_document() and let it deal with the details
+            context = get_context_data(document_type_name, object["obj"].pk)
+            content = context["content_object"]
             temporary_filename = fill_pod_template(
                 content_template.file.path,
-                context_format(data["context"]),
+                context_format(context["context"]),
                 output_format="odt",
             )
             if not temporary_filename:
                 raise RuntimeError("Could not fill template.")
 
             # De-duplicate filenames that will be put into the .zip
-            output_filename = self._deduplicate_filename(data["visible_filename"])
-            if "content_object" in data:
-                # Create the Document
-                document = self._create_document()
-                # Save the Document
-                self._persist_document(document)
-                self._save_document_file(document, temporary_filename)
-                result = DocumentCreationResult(
-                    status="info",
-                    label=str(object["obj"]),
-                    detail=detail,
-                    file_path=temporary_filename,
-                    filename=output_filename,
-                )
-                results.append(result)
+            output_filename = self._deduplicate_filename(context["visible_filename"])
+            # Create the Document
+            document = self.create_document(
+                name=output_filename,
+                doctype=document_type,
+                template=content_template,
+                data=json.dumps(context, cls=_ContextEncoder),
+                content_object=content,
+            )
+            # Save the Document
+            self._persist_document(document)
+            self._save_document_file(document, temporary_filename)
+            result = DocumentCreationResult(
+                status="info",
+                label=str(object["obj"]),
+                detail=detail,
+                file_path=temporary_filename,
+                filename=output_filename,
+            )
+            results.append(result)
             if not make_zip:
                 # Exit early: we do not need to create a .zip for one Document
                 return results
@@ -990,35 +1005,6 @@ class DocumentGenerator:
         filename_stem, file_extension = os.path.splitext(filename)
         output_filename = "%s_%s.%s" % (filename_stem, file_count, file_extension)
         return output_filename
-
-
-def save_documents(recipient: Recipient=None):
-    if recipient.content_object is None:
-        return
-    if recipient.content_object == "address":
-        content_obj = recipient.address
-    else:
-        logger.warning(f"Unknown content_object type '{recipient.content_object}' for {recipient}, skipping Document creation.")
-        return
-    for doc in recipient.documents:
-        if doc.doctype is None or doc.context is None:
-            continue
-        try:
-            # Create the Document
-            d = Document.objects.create(
-                name=doc.filename,
-                doctype=doc.doctype,
-                template=doc.content_template,
-                data=json.dumps(doc.context, cls=_ContextEncoder),
-                content_object=content_obj,
-            )
-            # Persist the Document
-            save_document_file(d, doc.file)
-        except Exception as e:
-            msg = f"Konnte Dokument '{doc.filename}' für {recipient} nicht speichern. Fehler: {e}"
-            logger.error(msg)
-            recipient.failure = True
-            recipient.log.append(msg)
 
 
 def send_member_mail_process(data):
@@ -1092,8 +1078,9 @@ def make_zip(files_to_zip: list[dict[str, str]]) -> BytesIO:
     return bytes
 
 
-def get_context_data(doctype, obj_id, extra_context):
-    c = extra_context
+def get_context_data(doctype, obj_id, extra_context: dict=None):
+    if extra_context is None:
+        extra_context = dict()
     filename_prefix = {
         "memberletter": "Brief_Bestätigung_Mitgliedschaft",
         "memberfinanz": "Brief_Finanzielle_Unterstützung",
@@ -1114,15 +1101,15 @@ def get_context_data(doctype, obj_id, extra_context):
     if "member" in doctype:
         obj = Member.objects.get(pk=obj_id)
         adr = obj.name
-        c["datum_eintritt"] = obj.date_join.strftime("%d.%m.%Y")
+        extra_context["datum_eintritt"] = obj.date_join.strftime("%d.%m.%Y")
     elif "share" in doctype:
         obj = Share.objects.get(pk=obj_id)
         adr = obj.name
         # TODO: consider refactoring this
         if Share.objects.filter(name=adr).filter(share_type=obj.share_type).count() == 1:
-            c["is_first_share"] = True
+            extra_context["is_first_share"] = True
         else:
-            c["is_first_share"] = False
+            extra_context["is_first_share"] = False
         # TODO: consider refactoring this
         try:
             stype_share = ShareType.objects.get(name="Anteilschein")
@@ -1156,89 +1143,89 @@ def get_context_data(doctype, obj_id, extra_context):
         else:
             duedate_text = ""
 
-        c["betrag_text_zusatz"] = None
+        extra_context["betrag_text_zusatz"] = None
         if obj.share_type == stype_share:
             if hasattr(adr, "member"):
-                c["datum_eintritt"] = adr.member.date_join.strftime("%d.%m.%Y")
+                extra_context["datum_eintritt"] = adr.member.date_join.strftime("%d.%m.%Y")
             else:
-                c["datum_eintritt"] = None
-            if c["datum_eintritt"] and c["is_first_share"]:
-                c["betreff"] = "Bestätigung Anteilscheine/Mitgliedschaft"
+                extra_context["datum_eintritt"] = None
+            if extra_context["datum_eintritt"] and extra_context["is_first_share"]:
+                extra_context["betreff"] = "Bestätigung Anteilscheine/Mitgliedschaft"
             else:
-                c["betreff"] = "Bestätigung Anteilscheine"
+                extra_context["betreff"] = "Bestätigung Anteilscheine"
             if obj.quantity == 1:
-                c["betrag_text"] = "1 Anteilschein zu CHF %s" % (nformat(obj.value))
+                extra_context["betrag_text"] = "1 Anteilschein zu CHF %s" % (nformat(obj.value))
             else:
-                c["betrag_text"] = "%s Anteilscheine zu CHF %s in Summe CHF %s" % (
+                extra_context["betrag_text"] = "%s Anteilscheine zu CHF %s in Summe CHF %s" % (
                     nformat(obj.quantity, 0),
                     nformat(obj.value),
                     nformat(obj.quantity * obj.value),
                 )
             if obj.is_pension_fund:
-                c["betrag_text"] = "%s (aus Mitteln der beruflichen Vorsorge)" % (c["betrag_text"])
-                c["bvg"] = True
+                extra_context["betrag_text"] = "%s (aus Mitteln der beruflichen Vorsorge)" % (extra_context["betrag_text"])
+                extra_context["bvg"] = True
             else:
-                c["bvg"] = False
+                extra_context["bvg"] = False
             count = 0
             amount = 0
             for s in Share.get_active().filter(name=obj.name).filter(share_type=stype_share):
                 count += s.quantity
                 amount += s.quantity * s.value
             if count == 1:
-                c["total_anzahl"] = "1 Anteilschein"
+                extra_context["total_anzahl"] = "1 Anteilschein"
             else:
-                c["total_anzahl"] = "%s Anteilscheine" % (nformat(count, 0))
-            c["total_summe"] = "%s" % (nformat(amount))
+                extra_context["total_anzahl"] = "%s Anteilscheine" % (nformat(count, 0))
+            extra_context["total_summe"] = "%s" % (nformat(amount))
         elif obj.share_type == stype_loan_noint:
-            c["betrag_text"] = "Zinsloses Darlehen von CHF %s%s" % (
+            extra_context["betrag_text"] = "Zinsloses Darlehen von CHF %s%s" % (
                 nformat(obj.value, 2),
                 duedate_text,
             )
         elif obj.share_type == stype_loan_int:
-            c["betrag_text"] = "Darlehen von CHF %s%s" % (
+            extra_context["betrag_text"] = "Darlehen von CHF %s%s" % (
                 nformat(obj.value, 2),
                 duedate_text,
             )
-            c["betrag_text_zusatz"] = "Aktueller Zinssatz: %s%%" % (nformat(obj.interest(), 2))
+            extra_context["betrag_text_zusatz"] = "Aktueller Zinssatz: %s%%" % (nformat(obj.interest(), 2))
         elif obj.share_type == stype_deposit:
-            c["betrag_text"] = "Einlage in die Depositenkasse von CHF %s" % (nformat(obj.value, 2))
-            c["betrag_text_zusatz"] = "Aktueller Zinssatz: %s%%" % (nformat(obj.interest(), 2))
+            extra_context["betrag_text"] = "Einlage in die Depositenkasse von CHF %s" % (nformat(obj.value, 2))
+            extra_context["betrag_text_zusatz"] = "Aktueller Zinssatz: %s%%" % (nformat(obj.interest(), 2))
         elif obj.share_type == stype_loan_special:
-            c["betrag_text"] = "Darlehen von CHF %s%s" % (
+            extra_context["betrag_text"] = "Darlehen von CHF %s%s" % (
                 nformat(obj.value, 2),
                 duedate_text,
             )
-            c["betrag_text_zusatz"] = "Zinssatz: %s%% (gemäss Darlehensvertrag)" % (
+            extra_context["betrag_text_zusatz"] = "Zinssatz: %s%% (gemäss Darlehensvertrag)" % (
                 nformat(obj.interest(), 2)
             )
         else:
-            c["betrag_text"] = "%s von CHF %s" % (
+            extra_context["betrag_text"] = "%s von CHF %s" % (
                 obj.share_type.name,
                 nformat(obj.value, 2),
             )
 
-        c["datum_zahlung"] = obj.payment_date.strftime("%d.%m.%Y")
-        c.update(obj.get_context(include_related_shares=True))
+        extra_context["datum_zahlung"] = obj.payment_date.strftime("%d.%m.%Y")
+        extra_context.update(obj.get_context(include_related_shares=True))
     elif doctype == "statement" or doctype == "mailing" or doctype == "loanreminder":
         obj = Address.objects.get(pk=obj_id)
         adr = obj
     elif doctype[0:8] == "contract":
         obj = Contract.objects.get(pk=obj_id)
         adr = obj.get_contact_address()
-        c.update(obj.get_context())
+        extra_context.update(obj.get_context())
     else:
         raise RuntimeError("Doctype not implemented.")
 
     adr_filename_str = ""
     if adr:
-        c.update(adr.get_context())
+        extra_context.update(adr.get_context())
         adr_filename_str = adr.get_filename_str()
-    if "filename_tag" in c:
-        filename_tag = "_%s" % c["filename_tag"]
+    if "filename_tag" in extra_context:
+        filename_tag = "_%s" % extra_context["filename_tag"]
     else:
         filename_tag = ""
-    if c["roomnr"]:
-        adr_filename_str = "%s_%s" % (c["roomnr"], adr_filename_str)
+    if extra_context["roomnr"]:
+        adr_filename_str = "%s_%s" % (extra_context["roomnr"], adr_filename_str)
     filename = "%s_%s%s%s" % (
         filename_prefix[doctype],
         adr_filename_str,
@@ -1249,7 +1236,7 @@ def get_context_data(doctype, obj_id, extra_context):
     return {
         "content_object": obj,
         "visible_filename": filename.replace(" ", "").replace("+", "-").replace("/", "-"),
-        "context": c,
+        "context": extra_context,
     }
 
 

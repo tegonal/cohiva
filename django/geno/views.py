@@ -221,103 +221,108 @@ def export_generic(request, what):
 
 @login_required
 def documents(request, doctype, obj_id, action):
-    try:
-        doctype_obj = DocumentType.objects.get(name=doctype)
-        if action == "create":
-            if not request.user.has_perm("geno.add_document"):
-                return unauthorized(request)
-            template_pk = request.GET.get("template")
-            if not template_pk:
-                raise RuntimeError("Keine Vorlage angegeben.")
-            template = doctype_obj.templates.get(pk=template_pk)
-            data = get_context_data(doctype, obj_id, {})
-
-        elif action == "download":
-            if not request.user.has_perm("geno.regenerate_document"):
-                return unauthorized(request)
-            doc = Document.objects.select_related("template").get(pk=obj_id)
-            if doc.file:
-                return FileResponse(
-                    doc.file.open(), as_attachment=True, filename=smart_str(doc.name)
-                )
-            # Fallback for legacy Documents without a stored file
-            template = doc.template or doctype_obj.templates.filter(active=True).first()
-            if not template:
-                raise RuntimeError("Vorlage nicht gefunden.")
-            data = {"visible_filename": doc.name, "context": json.loads(doc.data)}
-
-        elif action == "recreate":
-            if not request.user.has_perm("geno.add_document"):
-                return unauthorized(request)
-            doc = Document.objects.select_related("template").get(pk=obj_id)
-            template = doc.template or doctype_obj.templates.filter(active=True).first()
-            if not template:
-                raise RuntimeError("Vorlage nicht gefunden.")
-            data = get_context_data(doctype, doc.content_object.pk, {})
-            if not template.file:
-                raise RuntimeError(
-                    _("The template '{template}' has no file linked to it.").format(template=template)
-                )
-            # Render the "recreated" file
-            filename = fill_pod_template(
-                template.file.path,
-                context_format(data["context"]),
-                output_format="odt",
+    document_type = DocumentType.objects.get(name=doctype)
+    document_generator = DocumentGenerator(
+        default_document_type=document_type
+    )
+    if action == "create":
+        if not request.user.has_perm("geno.add_document"):
+            return unauthorized(request)
+        template_pk = request.GET.get("template")
+        if not template_pk:
+            raise RuntimeError("Keine Vorlage angegeben.")
+        template = document_type.templates.get(pk=template_pk)
+        data = get_context_data(doctype, obj_id, {})
+        # TODO: create the Document
+        document_generator.create_document(
+            name=None,
+            document_type=None,
+            template=None,
+            data=None,
+            content_object=None,
+        )
+    elif action == "download":
+        if not request.user.has_perm("geno.regenerate_document"):
+            return unauthorized(request)
+        doc = Document.objects.select_related("template").get(pk=obj_id)
+        if doc.file:
+            return FileResponse(
+                doc.file.open(), as_attachment=True, filename=smart_str(doc.name)
             )
-            if not filename:
-                raise RuntimeError(_("Could not fill the template."))
-            # Create a new Document record, to provide an audit trail
-            new_doc = Document.objects.create(
-                name=data["visible_filename"],
-                doctype=doctype_obj,
-                template=template,
-                data=json.dumps(data["context"]),
-                content_object=doc.content_object,
-            )
-            # Persist the newly created Document
-            if os.path.exists(filename):
-                save_document_file(new_doc, filename)
-
-            resp = FileResponse(
-                open(filename, "rb"),
-                as_attachment=True,
-                filename=smart_str(data["visible_filename"]),
-            )
-            os.remove(filename)
-            return resp
-
-        else:
-            raise RuntimeError(_("Action '{action}' is not implemented.").format(action=action))
+        # Fallback for legacy Documents without a stored file
+        template = doc.template or document_type.templates.filter(active=True).first()
+        if not template:
+            raise RuntimeError("Vorlage nicht gefunden.")
+        data = {"visible_filename": doc.name, "context": json.loads(doc.data)}
+    elif action == "recreate":
+        if not request.user.has_perm("geno.add_document"):
+            return unauthorized(request)
+        doc = Document.objects.select_related("template").get(pk=obj_id)
+        template = doc.template or document_type.templates.filter(active=True).first()
+        if not template:
+            raise RuntimeError("Vorlage nicht gefunden.")
+        data = get_context_data(doctype, doc.content_object.pk, {})
         if not template.file:
             raise RuntimeError(
                 _("The template '{template}' has no file linked to it.").format(template=template)
             )
+        # Render the "recreated" file
         filename = fill_pod_template(
-            template.file.path, context_format(data["context"]), output_format="odt"
+            template.file.path,
+            context_format(data["context"]),
+            output_format="odt",
         )
         if not filename:
-            raise RuntimeError(_("Could not fill the template"))
-        if "content_object" in data:
-            d = Document(
+            raise RuntimeError(_("Could not fill the template."))
+        # Create a new Document record, to provide an audit trail
+        # TODO: clean up Document generation
+        new_document = document_generator.create_document(
                 name=data["visible_filename"],
-                doctype=doctype_obj,
+                document_type=document_type,
                 template=template,
                 data=json.dumps(data["context"]),
-                content_object=data["content_object"],
-            )
-            d.save()
-            if os.path.exists(filename):
-                save_document_file(d, filename)
+                content_object=doc.content_object
+        )
+        # Persist the newly created Document
+        if os.path.exists(filename):
+            # TODO: save the file
+            pass
         resp = FileResponse(
-            open(filename, "rb"), as_attachment=True, filename=smart_str(data["visible_filename"])
-        )  # content_type = "application/pdf")
+            open(filename, "rb"),
+            as_attachment=True,
+            filename=smart_str(data["visible_filename"]),
+        )
         os.remove(filename)
         return resp
-    except (RuntimeError, DocumentType.DoesNotExist, ContentTemplate.DoesNotExist) as e:
-        error = "Fehler beim Erzeugen des Dokuments: %s" % e
-    ret = [
-        {"info": "ERROR: %s" % error},
-    ]
+    else:
+        raise RuntimeError(_("Action '{action}' is not implemented.").format(action=action))
+    if not template.file:
+        raise RuntimeError(
+            _("The template '{template}' has no file linked to it.").format(template=template)
+        )
+
+    filename = fill_pod_template(
+        template.file.path, context_format(data["context"]), output_format="odt"
+    )
+    if not filename:
+        raise RuntimeError(_("Could not fill the template"))
+    if "content_object" in data:
+        d = Document(
+            name=data["visible_filename"],
+            doctype=document_type,
+            template=template,
+            data=json.dumps(data["context"]),
+            content_object=data["content_object"],
+        )
+        d.save()
+        if os.path.exists(filename):
+            # TODO: save the file
+            save_document_file(d, filename)
+    resp = FileResponse(
+        open(filename, "rb"), as_attachment=True, filename=smart_str(data["visible_filename"])
+    )  # content_type = "application/pdf")
+    os.remove(filename)
+    return resp
     return render(request, "geno/default.html", {"response": ret, "title": "Document error"})
 
 
@@ -1277,7 +1282,7 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
                     default_document_type = self.doctype,
                     document_objects=self.get_objects()
                 )
-                results = document_generator.create_documents()
+                results = document_generator.create_documents(options=options)
             except DocumentTypeError as e:
                 # Handle fatal misconfiguration once, at the view boundary
                 self.error_message = str(e)
