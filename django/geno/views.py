@@ -311,23 +311,26 @@ def documents(request, doctype, obj_id, action):
     if not filename:
         raise RuntimeError(_("Could not fill the template"))
     if "content_object" in data:
-        d = Document(
+        document = Document(
             name=data["visible_filename"],
             doctype=document_type,
             template=template,
             data=json.dumps(data["context"]),
             content_object=data["content_object"],
         )
-        d.save()
+        document.save()
         if os.path.exists(filename):
-            # TODO: save the file
-            save_document_file(d, filename)
+            # TODO: save via DocumentGenerator
+            if os.path.exists(filename):
+                with open(filename, "rb") as f:
+                    document.file.save(
+                        os.path.basename(document.name), File(f), save=True
+                    )
     resp = FileResponse(
         open(filename, "rb"), as_attachment=True, filename=smart_str(data["visible_filename"])
     )  # content_type = "application/pdf")
     os.remove(filename)
     return resp
-    return render(request, "geno/default.html", {"response": ret, "title": "Document error"})
 
 
 class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
