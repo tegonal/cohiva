@@ -139,7 +139,7 @@ from .tables import (
     MemberTable,
     MemberTableAdmin,
 )
-from .utils import fill_pod_template, makme_zip, nformat, odt2pdf
+from .utils import fill_pod_template, make_zip, nformat, odt2pdf
 
 if "portal" in settings.INSTALLED_APPS:
     import portal.auth as portal_auth
@@ -1279,9 +1279,8 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
                 # TODO: instantiate a DocumentGenerator and perform the generation
                 document_generator: DocumentGenerator = DocumentGenerator(
                     default_document_type = self.doctype,
-                    document_objects=self.get_objects()
                 )
-                results = document_generator.create_documents(options=options)
+                results = document_generator.create_documents(document_objects=self.get_objects(), options=options)
             except DocumentTypeError as e:
                 # Handle fatal misconfiguration once, at the view boundary
                 self.error_message = str(e)
