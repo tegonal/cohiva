@@ -100,6 +100,8 @@ class SkipRecipient(Exception):
 
 
 class DocumentTemplate:
+    SUPPORTED_OUTPUT_TYPES = ("odt", "pdf")
+
     def __init__(self, template, doctype=None, output_format=None, dry_run=False):
         self.content_template = template
         self.doctype = doctype
@@ -367,15 +369,73 @@ class DocumentTemplate:
         logger.info(f"   > Added Invoice object: {invoice}")
         return invoice
 
-    def render(self, recipient):
-        output = RenderedDocument()
-        output.file = self.content_template.file.path
-        filename_tag = sanitize_filename(
-            self.content_template.name
-        )  # use template name as filename tag
+    def render(self, recipient) -> RenderedDocument:
+        rendered_document = RenderedDocument()
+        rendered_document.file = self.content_template.file.path
+        filename_tag = sanitize_filename(self.content_template.name)
         if self.content_template.template_type == "OpenDocument":
-            ctx = self.get_context(recipient)
-            logger.info(
+            context = self.get_context(recipient)
+            self.log_template_rendering(context)
+            temporary_filename = fill_pod_template(
+                self.content_template.file.path,
+                context,
+                output_format="odt"
+            )
+            rendered_document.file = temporary_filename
+            self.temp_files.append(rendered_document.file)
+            if not filename_tag:
+                # TODO: smells funny
+                filename_tag = os.path.splitext(os.path.basename(self.content_template.file.path))[
+                    0
+                ]
+                logger.warning(
+                    "No filename_tag using default: %s" % self.content_template.file.path
+                )
+            rendered_document.filename = (
+                f"{recipient.address.get_filename_str()}_{filename_tag}.{self.output_format}"
+            )
+            if self.output_format not in self.SUPPORTED_OUTPUT_FORMATS:
+                raise ValueError(f"Unsupported output format: {self.output_format}")
+            if self.output_format == "pdf":
+                self.render_document_as_pdf(rendered_document, context)
+            if not rendered_document.file:
+                raise RuntimeError("Could not fill template")
+            rendered_document.context = context
+            rendered_document.doctype = self.doctype
+            # Fallback if the doctype has not been set explicitly
+            if not rendered_document.doctype and self.content_template:
+                rendered_document.doctype = self.content_template.document_types.filter(active=True).first()
+            rendered_document.content_template = self.content_template
+        else:
+            # ContentTemplate is not an OpenDocument
+            logger.info(" > appending file without rendering: %s" % (rendered_document.file))
+            # append file ending of output.file to filename_tag
+            if not filename_tag.endswith(os.path.splitext(rendered_document.file)[1]):
+                filename_tag += os.path.splitext(rendered_document.file)[1]
+            rendered_document.filename = filename_tag
+        return rendered_document
+
+    def render_document_as_pdf(self, rendered_document, context):
+        logger.info(" > odt2pdf(%s) -> %s" % (rendered_document.file, rendered_document.filename))
+        rendered_document.file = odt2pdf(rendered_document.file, "send_member_mail")
+        self.temp_files.append(rendered_document.file)
+        if context["qr_account"]:
+            output_dir = f"/tmp/documents_render_qrbill_{settings.GENO_ID}"
+            logger.info(f" > render_qrbill({output_dir}/{rendered_document.filename}")
+            render_qrbill(
+                        None,
+                        context,
+                        rendered_document.filename,
+                        base_pdf_file=rendered_document.file,
+                        append_pdf_file=None,
+                        output_dir=output_dir,
+                    )
+            rendered_document.linked_invoice = context["invoice"]
+            rendered_document.file = f"{output_dir}/{rendered_document.filename}"
+            self.temp_files.append(rendered_document.file)
+
+    def log_template_rendering(self, ctx) -> None:
+        logger.info(
                 " > fill template %s with context: anrede=%s, name=%s, vorname=%s, org=%s"
                 % (
                     self.content_template.file.path,
@@ -385,56 +445,6 @@ class DocumentTemplate:
                     ctx["organisation"],
                 )
             )
-            output.file = fill_pod_template(
-                self.content_template.file.path, ctx, output_format="odt"
-            )
-            self.temp_files.append(output.file)
-            if not filename_tag:
-                filename_tag = os.path.splitext(os.path.basename(self.content_template.file.path))[
-                    0
-                ]
-                logger.warning(
-                    "No filename_tag using default: %s" % self.content_template.file.path
-                )
-            output.filename = (
-                f"{recipient.address.get_filename_str()}_{filename_tag}.{self.output_format}"
-            )
-            if self.output_format == "pdf":
-                logger.info(" > odt2pdf(%s) -> %s" % (output.file, output.filename))
-                output.file = odt2pdf(output.file, "send_member_mail")
-                self.temp_files.append(output.file)
-                if ctx["qr_account"]:
-                    output_dir = f"/tmp/documents_render_qrbill_{settings.GENO_ID}"
-                    logger.info(f" > render_qrbill({output_dir}/{output.filename}")
-                    render_qrbill(
-                        None,
-                        ctx,
-                        output.filename,
-                        base_pdf_file=output.file,
-                        append_pdf_file=None,
-                        output_dir=output_dir,
-                    )
-                    output.linked_invoice = ctx["invoice"]
-                    output.file = f"{output_dir}/{output.filename}"
-                    self.temp_files.append(output.file)
-            elif self.output_format != "odt":
-                raise ValueError(f"Unsupported output format: {self.output_format}")
-            if not output.file:
-                raise RuntimeError("Could not fill template")
-            output.context = ctx
-            output.doctype = self.doctype
-            # Fallback if the doctype has not been set explicitly
-            if not output.doctype and self.content_template:
-                output.doctype = self.content_template.document_types.filter(active=True).first()
-            output.content_template = self.content_template
-        else:
-            ## Just append
-            logger.info(" > appending file without rendering: %s" % (output.file))
-            # append file ending of output.file to filename_tag
-            if not filename_tag.endswith(os.path.splitext(output.file)[1]):
-                filename_tag += os.path.splitext(output.file)[1]
-            output.filename = filename_tag
-        return output
 
     def cleanup(self):
         remove_temp_files(self.temp_files)
@@ -485,7 +495,7 @@ class ProcessDocuments:
         self.mail_test = True
         self.zipfile_ob = None
         self.output_format = None
-        self.templates = []
+        self.templates: list[DocumentTemplate] = []
         self.recipients = []
         self.contexts = {}
         self.test_email_address = None
@@ -874,6 +884,56 @@ class DocumentGenerator:
             content_object=content_object,
         )
         return document
+
+    def create_documents(self, recipient: Recipient) -> list[DocumentCreationResult]:
+        """
+        Create Documents for an e-mail recipient. A single Recipient
+        can receive multiple Documents in a single e-mail.
+
+        recipient: planned e-mail recipient.
+
+        Returns a list of DocumentCreationResults
+        """
+        results: list[DocumentCreationResult] = []
+
+        if recipient.content_object is None:
+            return
+        if recipient.content_object == "address":
+            content_obj = recipient.address
+        else:
+            logger.warning(f"Unknown content_object type '{recipient.content_object}' for {recipient}, skipping Document creation.")
+            return
+        for rendered_document in recipient.documents:
+            if rendered_document.doctype is None or rendered_document.context is None:
+                continue
+            try:
+                # Create the Document
+                document = self.create_document(
+                    name=rendered_document.filename,
+                    document_type=rendered_document.doctype,
+                    template=rendered_document.content_template,
+                    data=json.dumps(rendered_document.context, cls=_ContextEncoder),
+                    content_object=content_obj,
+                )
+                # Persist the Document
+                self._persist_document(document)
+                # TODO: should we be using .file or .filename for saving?
+                self._save_document_file(document, rendered_document.file)
+                # TODO: return the results
+                result = DocumentCreationResult(
+                    status="info",
+                    label=str(object["obj"]),
+                    detail=rendered_document,
+                    file_path=None,
+                    filename=None
+                )
+                results.append(result)
+            except Exception as e:
+                msg = f"Konnte Dokument '{rendered_document.filename}' für {recipient} nicht speichern. Fehler: {e}"
+                logger.error(msg)
+                recipient.failure = True
+                recipient.log.append(msg)
+        return
 
     def _persist_document(self, document: Document) -> None:
         """
