@@ -16,6 +16,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
+from django.core.files import File
 from django.db.models import Q
 from django.forms import formset_factory
 from django.http import FileResponse, Http404, HttpResponse, HttpResponseRedirect
@@ -276,16 +277,18 @@ def documents(request, doctype, obj_id, action):
         # Create a new Document record, to provide an audit trail
         # TODO: clean up Document generation
         new_document = document_generator.create_document(
-                name=data["visible_filename"],
+                name=filename,
                 document_type=document_type,
                 template=template,
                 data=json.dumps(data["context"]),
                 content_object=doc.content_object
         )
         # Persist the newly created Document
+        # TODO: save via DocumentGenerator
         if os.path.exists(filename):
-            # TODO: save the file
-            pass
+            with open(filename, "rb") as f:
+                new_document.file.save(new_document.name, File(f), save=True)
+ 
         resp = FileResponse(
             open(filename, "rb"),
             as_attachment=True,
@@ -1276,7 +1279,6 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
             options["link_url"] = request.path
 
             try:
-                # TODO: instantiate a DocumentGenerator and perform the generation
                 document_generator: DocumentGenerator = DocumentGenerator(
                     default_document_type = self.doctype,
                 )

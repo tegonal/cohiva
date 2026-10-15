@@ -885,7 +885,7 @@ class DocumentGenerator:
         )
         return document
 
-    def create_documents(self, recipient: Recipient) -> list[DocumentCreationResult]:
+    def create_documents_for_recipient(self, recipient: Recipient) -> list[DocumentCreationResult]:
         """
         Create Documents for an e-mail recipient. A single Recipient
         can receive multiple Documents in a single e-mail.
@@ -1076,6 +1076,7 @@ class DocumentGenerator:
         return output_filename
 
 
+# TODO: move to a Mail class
 def send_member_mail_process(data):
     """
     Process and create Documents for sending to Members.
