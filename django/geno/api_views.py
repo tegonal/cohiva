@@ -79,6 +79,7 @@ class ContractViewSet(viewsets.ReadOnlyModelViewSet):
     # permission_classes = [permissions.IsAuthenticated]
 
 
+# TODO: This is now done directly in report/nk/contract.py => Remove together with legacy code in report/nk_report.py
 class Akonto(APIView):
     """
     Get paid akonto amount for contract and billing period.
@@ -162,6 +163,7 @@ class Akonto(APIView):
         return akonto_total
 
 
+# TODO: This is now done directly in report/nk/bill.py => Remove together with legacy code in report/nk_report.py
 class QRBill(APIView):
     """
     Create and return QRBill and execute corresponding accounting transactions.
