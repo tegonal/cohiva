@@ -32,7 +32,7 @@ async-timeout==5.0.1
     # via redis
 atomicwrites==1.4.1
     # via vdirsyncer
-attrs==25.3.0
+attrs==26.1.0
     # via aiohttp
 beautifulsoup4==4.11.2
     # via wagtail
@@ -40,11 +40,11 @@ billiard==4.2.2
     # via celery
 btrees==6.1
     # via zodb
-caldav==1.4.0
+caldav==3.1.0
     # via -r requirements.in
 celery==5.5.3
     # via -r requirements.in
-certifi==2025.4.26
+certifi==2026.2.25
     # via requests
 cffi==2.1.1
     # via
@@ -87,7 +87,7 @@ cssselect2==0.8.0
     # via svglib
 cycler==0.12.1
     # via matplotlib
-datetime==5.5
+datetime==6.0
     # via appy
 defusedxml==0.7.1
     # via
@@ -95,7 +95,7 @@ defusedxml==0.7.1
     #   willow
 dj-rest-auth==7.0.1
     # via -r requirements.in
-django==5.2.17
+django==6.0.3
     # via
     #   -r requirements.in
     #   dj-rest-auth
@@ -137,7 +137,7 @@ django-email-obfuscator==0.1.5
     # via -r requirements.in
 django-filer==3.4.4
     # via -r requirements.in
-django-filter==23.5
+django-filter==25.2
     # via wagtail
 django-modelcluster==6.4
     # via wagtail
@@ -151,7 +151,7 @@ django-select2-forms==3.1.0
     # via -r requirements.in
 django-sortedm2m==4.0.0
     # via django-select2-forms
-django-stubs-ext==5.2.7
+django-stubs-ext==6.0.2
     # via django-tasks
 django-tables2==2.7.5
     # via -r requirements.in
@@ -161,7 +161,7 @@ django-tasks==0.7.0
     # via wagtail
 django-test-migrations==1.5.0
     # via -r requirements.in
-django-treebeard==4.7.1
+django-treebeard==5.0.5
     # via wagtail
 django-unfold==0.78.1
     # via -r requirements.in
@@ -172,11 +172,11 @@ djangorestframework==3.17.2
     #   wagtail
 djangosaml2idp==0.7.2
     # via -r requirements.in
-draftjs-exporter==2.1.7
+draftjs-exporter==5.2.0
     # via wagtail
 easy-thumbnails==2.10.1
     # via django-filer
-elementpath==4.8.0
+elementpath==5.1.1
     # via xmlschema
 et-xmlfile==2.0.0
     # via openpyxl
@@ -190,11 +190,11 @@ frozenlist==1.6.0
     #   aiosignal
 greenlet==3.2.4
     # via sqlalchemy
-gunicorn==22.0.0
+gunicorn==25.3.0
     # via -r requirements.in
 html2text==2025.4.15
     # via -r requirements.in
-icalendar==6.3.1
+icalendar==7.0.3
     # via
     #   caldav
     #   recurring-ical-events
@@ -209,7 +209,7 @@ json-with-comments==1.2.10
     # via -r requirements.in
 jwcrypto==1.5.7
     # via django-oauth-toolkit
-kaleido==0.2.1
+kaleido==1.2.0
     # via -r requirements.in
 kiwisolver==1.4.9
     # via matplotlib
@@ -231,7 +231,7 @@ multidict==6.4.3
     #   yarl
 mysqlclient==2.2.7
     # via -r requirements.in
-narwhals==1.39.1
+narwhals==2.18.1
     # via plotly
 numpy==2.3.3
     # via
@@ -245,7 +245,7 @@ openpyxl==3.1.5
     # via
     #   -r requirements.in
     #   wagtail
-packaging==25.0
+packaging==26.0
     # via
     #   gunicorn
     #   kombu
@@ -275,9 +275,9 @@ propcache==0.3.2
     # via
     #   aiohttp
     #   yarl
-pycountry==24.6.1
+pycountry==26.2.16
     # via -r requirements.in
-pycparser==2.22
+pycparser==3.0
     # via cffi
 pyopenssl==26.4.0
     # via pysaml2
@@ -299,7 +299,7 @@ python-dateutil==2.9.0.post0
     #   vobject
 python-stdnum==2.1
     # via qrbill
-pytz==2025.2
+pytz==2026.1.post1
     # via
     #   datetime
     #   django-datetime-widget
@@ -313,7 +313,7 @@ qrcode==8.2
     # via qrbill
 recurring-ical-events==3.7.0
     # via caldav
-redis==5.2.1
+redis==7.4.0
     # via kombu
 reportlab==4.4.4
     # via
@@ -331,7 +331,7 @@ requests==2.33.1
     #   wagtail
 requests-oauthlib==2.0.0
     # via -r requirements.in
-rocketchat-api==1.35.1
+rocketchat-api==3.4.0
     # via -r requirements.in
 six==1.17.0
     # via
@@ -339,7 +339,7 @@ six==1.17.0
     #   vobject
 soupsieve==2.9.2
     # via beautifulsoup4
-sqlalchemy==1.4.54
+sqlalchemy==2.0.49
     # via
     #   piecash
     #   sqlalchemy-utils
@@ -371,7 +371,7 @@ typing-extensions==4.13.2
     #   django-tasks
     #   django-test-migrations
     #   jwcrypto
-tzdata==2025.2
+tzdata==2026.1
     # via
     #   icalendar
     #   kombu
@@ -410,11 +410,11 @@ willow==1.11.0
     #   willow
 x-wr-timezone==2.0.1
     # via recurring-ical-events
-xmlschema==2.5.1
+xmlschema==4.3.1
     # via pysaml2
 yarl==1.20.1
     # via aiohttp
-zc-lockfile==3.0.post1
+zc-lockfile==4.0
     # via zodb
 zconfig==4.2
     # via zodb
@@ -422,9 +422,9 @@ zodb==6.0.1
     # via appy
 zodbpickle==4.2
     # via zodb
-zope-deferredimport==5.0
+zope-deferredimport==6.1.1
     # via persistent
-zope-interface==7.2
+zope-interface==8.2
     # via
     #   btrees
     #   datetime
@@ -432,7 +432,7 @@ zope-interface==7.2
     #   transaction
     #   zodb
     #   zope-proxy
-zope-proxy==6.1
+zope-proxy==7.1
     # via zope-deferredimport
 
 # The following packages are considered to be unsafe in a requirements file:
