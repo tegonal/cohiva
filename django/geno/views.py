@@ -3171,6 +3171,8 @@ def send_member_mail_filter_by_invoice(form, member_list):
         if query.count():
             if form.cleaned_data["filter_invoice"] == "exclude":
                 member["id"] = None  # exclude
+            else:
+                member["invoice_ids"] = list(query.values_list("id", flat=True))
         else:
             if form.cleaned_data["filter_invoice"] == "include":
                 member["id"] = None  # exclude
@@ -4157,6 +4159,34 @@ class InvoiceBatchGenerateView(DryRunActionView):
             return resp
         ret.extend(invoices)
         return ret
+
+
+class InvoiceRegenerateView(CohivaAdminViewMixin, TemplateView):
+    title = "Rechnung neu erstellen"
+    permission_required = ("geno.invoice", "geno.transaction_invoice")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "response": [{"variant": "error", "info": self.error_msg}],
+            }
+        )
+        return context
+
+    def get(self, *args, **kwargs):
+        invoice = Invoice.objects.get(pk=kwargs["key"])
+        logger.info(f"Regenerating invoice {invoice.id}")
+        try:
+            output = invoice.regenerate_invoice_document()
+            pdf_file = open(output.file, "rb")
+            resp = FileResponse(pdf_file, content_type="application/pdf")
+            resp["Content-Disposition"] = "attachment; filename=%s" % output.filename
+            return resp
+        except Exception as e:
+            logger.error(f"Could not create PDF for invoice {invoice.id}: {e}")
+            self.error_msg = f'Konnte PDF für Rechnung "{invoice}" nicht erstellen: {e}'
+            return super().get(*args, **kwargs)
 
 
 class ResidentUnitListView(CohivaAdminViewMixin, TemplateView):
