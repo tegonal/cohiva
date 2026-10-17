@@ -1,6 +1,6 @@
 certifi==2025.11.12
-charset-normalizer==3.4.4
-FreeSimpleGUI==5.2.0.post1
-idna==3.15
-requests==2.33.1
+charset-normalizer==3.5.1
+FreeSimpleGUI==5.3.0.post1
+idna==3.19
+requests==2.34.2
 urllib3==2.7.0
