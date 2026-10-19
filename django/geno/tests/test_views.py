@@ -14,7 +14,14 @@ from django.test import RequestFactory, tag
 from django.urls import reverse
 
 import geno.tests.data as geno_testdata
-from geno.models import Document, DocumentType, Invoice, InvoiceCategory, Share, ShareType
+from geno.models import (
+    Document,
+    DocumentType,
+    Invoice,
+    InvoiceCategory,
+    Share,
+    ShareType,
+)
 from geno.views import InvoiceBatchGenerateView, ShareStatementView
 
 from .base import GenoAdminTestCase, fill_template_effect

@@ -849,7 +849,7 @@ class DocumentCreationResult:
     status: Literal["success", "info", "error", "warning"]
     label: str
     detail: list[str] = field(default_factory=list)
-    file_path: str | None = None
+    temporary_file_location: str | None = None
     filename: str | None = None
 
 
@@ -874,7 +874,8 @@ class DocumentGenerator:
             document_type: DocumentType,
             template: DocumentTemplate,
             context: dict,
-            filename: str=None) -> Document:
+            filename: str=None,
+        ) -> DocumentCreationResult:
         # TODO: perform error-checking here
         if filename:
             output_filename = filename
@@ -890,7 +891,18 @@ class DocumentGenerator:
             data=json.dumps(data),
             content_object=content,
         )
-        return document
+        temporary_file_location = self._fill_template(template, context)
+        self._persist_document(document)
+        self._save_document_file(document, temporary_file_location)
+        # TODO: are we passing back everything that we require?
+        result = DocumentCreationResult(
+            status="success",
+            label=str(document),
+            detail=None,
+            temporary_file_location=temporary_file_location,
+            filename=output_filename
+        )
+        return result
 
     def create_documents_for_recipient(self, recipient: Recipient) -> list[DocumentCreationResult]:
         """
@@ -915,23 +927,11 @@ class DocumentGenerator:
                 continue
             try:
                 # Create the Document
-                document = self.create_document(
+                result = self.create_document(
                     document_type=rendered_document.doctype,
                     template=rendered_document.content_template,
                     context=rendered_document.context,
                     filename=rendered_document.filename,
-                )
-                # Persist the Document
-                self.persist_document(document)
-                # TODO: should we be using .file or .filename for saving?
-                self.save_document_file(document, rendered_document.file)
-                # TODO: return the results
-                result = DocumentCreationResult(
-                    status="info",
-                    label=str(object["obj"]),
-                    detail=rendered_document,
-                    file_path=None,
-                    filename=None
                 )
                 results.append(result)
             except Exception as e:
@@ -940,22 +940,6 @@ class DocumentGenerator:
                 recipient.failure = True
                 recipient.log.append(msg)
         return
-
-    def persist_document(self, document: Document) -> None:
-        """
-        Persist a Document object in the database.
-        """
-        document.save()
-
-    def save_document_file(self, document, temporary_filename):
-        """
-        Copy a file from temporary storage into the Document object's File field
-
-        document: the Document object that will store the file.
-        temporary_filename: path to the temporary File data.
-        """
-        with open(temporary_filename, "rb") as f:
-            document.file.save(document.name, File(f), save=True)
 
 
     def create_documents(self,
@@ -1009,7 +993,7 @@ class DocumentGenerator:
                 detail.append(object["info"])
 
             # Validate the template
-            content_template = self.get_template(self, document_type)
+            content_template = self._get_template(self, document_type)
             # TODO: handle "extra_context" in Object
             # TODO: pass Context directly to create_document() and let it deal with the details
             context = get_context_data(document_type_name, object["obj"].pk)
@@ -1028,13 +1012,13 @@ class DocumentGenerator:
                 context=context
             )
             # Save the Document
-            self.persist_document(document)
-            self.save_document_file(document, temporary_filename)
+            self._persist_document(document)
+            self._save_document_file(document, temporary_filename)
             result = DocumentCreationResult(
                 status="info",
                 label=str(object["obj"]),
                 detail=detail,
-                file_path=temporary_filename,
+                temporary_file_location=temporary_filename,
                 filename=document.name,
             )
             results.append(result)
@@ -1067,6 +1051,7 @@ class DocumentGenerator:
             )
         return results
 
+
     def _deduplicate_filename(filename: str) -> str:
         # TODO: implement the counter
         file_count = 0
@@ -1074,13 +1059,48 @@ class DocumentGenerator:
         output_filename = "%s_%s.%s" % (filename_stem, file_count, file_extension)
         return output_filename
 
-    def get_template(self, document_type, doc=None, template_pk=None):
+    def _persist_document(self, document: Document) -> None:
+        """
+        Persist a Document object in the database.
+        """
+        document.save()
+
+    def _save_document_file(self, document, temporary_filename):
+        """
+        Copy a file from temporary storage into the Document object's File field
+
+        document: the Document object that will store the file.
+        temporary_filename: path to the temporary File data.
+        """
+        with open(temporary_filename, "rb") as f:
+            document.file.save(document.name, File(f), save=True)
+
+
+    def _get_template(self, document_type, doc=None, template_pk=None):
         """Resolve template: explicit pk first, then doc.template, then first active."""
         if template_pk:
             return document_type.templates.get(pk=template_pk)
         if doc:
             return doc.template or document_type.templates.filter(active=True).first()
         return None
+
+    def _assert_template_file(self, template):
+        if not template.file:
+            raise RuntimeError(
+                _("The template '{template}' has no file linked to it.").format(template=template)
+            )
+
+    def _fill_template(self, template, data):
+        """Render the template and return the temporary file path."""
+        self._assert_template_file(template)
+        temporary_filename = fill_pod_template(
+            template.file.path, context_format(data["context"]), output_format="odt"
+        )
+        if not temporary_filename:
+            raise RuntimeError(_("Could not fill the template"))
+        return temporary_filename
+
+
 
 
 # TODO: move to a Mail class

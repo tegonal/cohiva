@@ -24,9 +24,9 @@ from django.shortcuts import redirect, render
 from django.template import Context
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
+from django.utils.decorators import method_decorator
 from django.utils.encoding import smart_str
 from django.utils.http import url_has_allowed_host_and_scheme
-from django.utils.decorators import method_decorator
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import FormView, TemplateView, View
 from django_tables2 import RequestConfig
@@ -69,7 +69,6 @@ from .billing import (
     process_transaction,
 )
 from .documents import (
-    DocumentCreationResult,
     DocumentGenerator,
     DocumentTypeError,
     context_format,
@@ -288,15 +287,11 @@ class DocumentCreateView(DocumentActionBase):
         context = get_context_data(doctype, obj_id, {})
         # Create the Document object
         document_generator = DocumentGenerator(default_document_type=document_type)
-        document = document_generator.create_document(
+        result = document_generator.create_document(
             document_type=document_type, template=template, context=context
         )
         # Create the temporary File
-        temporary_filename = self._fill_template(template, context)
-        document_generator.persist_document(document)
-        document_generator.save_document_file(document, temporary_filename)
-
-        return self._file_response(temporary_filename, context["visible_filename"])
+        return self._file_response(result.temporary_file_location, result.filename)
 
 
 class DocumentDownloadView(DocumentActionBase):
@@ -353,18 +348,15 @@ class DocumentRecreateView(DocumentActionBase):
             raise RuntimeError(_("Vorlage nicht gefunden."))
 
         context = get_context_data(doctype, doc.content_object.pk, {})
-        temporary_filename = self._fill_template(template, context)
 
         document_generator = DocumentGenerator(default_document_type=document_type)
-        new_document = document_generator.create_document(
+        result = document_generator.create_document(
             document_type=document_type,
             template=template,
-            context=context
+            context=context,
         )
-        document_generator.persist_document(new_document)
-        document_generator.save_document_file(new_document, temporary_filename)
 
-        return self._file_response(temporary_filename, context["visible_filename"])
+        return self._file_response(result.temporary_file_location, result.filename)
 
 
 class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
@@ -1295,7 +1287,7 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
     def get_options(self):
         return {"beschreibung": "Dokumente"}
 
-    def _zip_response(self, results: list[DocumentCreationResult]):
+    def _zip_response(self, results: list[Document]):
         """Build and return an HttpResponse containing a ZIP of generated documents."""
         files_to_zip = [
             {"file": r.file_path, "filename": r.filename}
@@ -1337,7 +1329,7 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.error_message:
-            context["response"] = [DocumentCreationResult(status="error", label=self.error_message)]
+            context["response"] = [Document(status="error", label=self.error_message)]
         else:
             context["response"] = self.result   # a list of DocumentCreationResult
         return context
