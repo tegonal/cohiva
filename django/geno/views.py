@@ -283,35 +283,20 @@ class DocumentCreateView(DocumentActionBase):
         template_pk = request.GET.get("template")
         if not template_pk:
             raise RuntimeError("Keine Vorlage angegeben.")
-        template = document_type.templates.get(pk=template_pk)
-
-        data = get_context_data(doctype, obj_id, {})
-
-        # TODO: integrate with DocumentGenerator
+        # Get the File template
+        template = self.get_template(document_type=document_type, template_pk=template_pk)
+        context = get_context_data(doctype, obj_id, {})
+        # Create the Document object
         document_generator = DocumentGenerator(default_document_type=document_type)
-        document_generator.create_document(
-            name=None, document_type=None, template=None, data=None, content_object=None
+        document = document_generator.create_document(
+            document_type=document_type, template=template, context=context
         )
+        # Create the temporary File
+        temporary_filename = self._fill_template(template, context)
+        document_generator.persist_document(document)
+        document_generator.save_document_file(document, temporary_filename)
 
-        filename = self._fill_template(template, data)
-
-        if "content_object" in data:
-            document = Document(
-                name=data["visible_filename"],
-                doctype=document_type,
-                template=template,
-                data=json.dumps(data["context"]),
-                content_object=data["content_object"],
-            )
-            # TODO: use document persistence helper
-            document.save()
-            if os.path.exists(filename):
-                with open(filename, "rb") as f:
-                    document.file.save(
-                        os.path.basename(document.name), File(f), save=True
-                    )
-
-        return self._file_response(filename, data["visible_filename"])
+        return self._file_response(temporary_filename, context["visible_filename"])
 
 
 class DocumentDownloadView(DocumentActionBase):
@@ -361,30 +346,25 @@ class DocumentRecreateView(DocumentActionBase):
             return unauthorized_response
 
         document_type = self.get_document_type(doctype)
+        # TODO: get template via helper
         doc = Document.objects.select_related("template").get(pk=obj_id)
         template = self.get_template(document_type, doc=doc)
         if not template:
             raise RuntimeError(_("Vorlage nicht gefunden."))
 
-        data = get_context_data(doctype, doc.content_object.pk, {})
-        filename = self._fill_template(template, data)
+        context = get_context_data(doctype, doc.content_object.pk, {})
+        temporary_filename = self._fill_template(template, context)
 
         document_generator = DocumentGenerator(default_document_type=document_type)
         new_document = document_generator.create_document(
-            name=data["visible_filename"],
             document_type=document_type,
             template=template,
-            data=json.dumps(data["context"]),
-            content_object=doc.content_object,
+            context=context
         )
-        # TODO: use document persistence helper
-        if os.path.exists(filename):
-            with open(filename, "rb") as f:
-                new_document.file.save(
-                    os.path.basename(new_document.name), File(f), save=True
-                )
+        document_generator.persist_document(new_document)
+        document_generator.save_document_file(new_document, temporary_filename)
 
-        return self._file_response(filename, data["visible_filename"])
+        return self._file_response(temporary_filename, context["visible_filename"])
 
 
 class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
