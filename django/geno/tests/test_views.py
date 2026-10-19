@@ -514,6 +514,11 @@ class DocumentViewTest(GenoAdminTestCase):
         self.mock_fill_template.side_effect = fill_template_effect
         self.addCleanup(patcher.stop)
 
+        documents_patcher = patch("geno.documents.fill_pod_template")
+        self.mock_fill_template_documents = documents_patcher.start()
+        self.mock_fill_template_documents.side_effect = fill_template_effect
+        self.addCleanup(documents_patcher.stop)
+
     def test_document_create_view(self):
         from django.contrib.contenttypes.models import ContentType
 
