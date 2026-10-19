@@ -7,7 +7,7 @@ from django.core import mail
 from django.http import HttpResponse
 from django.test import tag
 
-from geno.documents import save_documents, send_member_mail_process
+from geno.documents import send_member_mail_process
 from geno.forms import MemberMailActionForm
 from geno.models import (
     Address,

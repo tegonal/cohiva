@@ -871,18 +871,24 @@ class DocumentGenerator:
 
     def create_document(
             self,
-            name: str,
             document_type: DocumentType,
             template: DocumentTemplate,
-            data,
-            content_object) -> Document:
-        # TODO: receive Context directly, handle it, and perform error-checking here
+            context: dict,
+            filename: str=None) -> Document:
+        # TODO: perform error-checking here
+        if filename:
+            output_filename = filename
+        else:
+            output_filename = context["visible_filename"]
+        content = context["content_object"]
+        data = json.dumps(context, cls=_ContextEncoder)
+        # TODO: deduplicate filename
         document = Document(
-            name=name,
+            name=output_filename,
             doctype=document_type,
             template=template,
             data=json.dumps(data),
-            content_object=content_object,
+            content_object=content,
         )
         return document
 
@@ -910,16 +916,15 @@ class DocumentGenerator:
             try:
                 # Create the Document
                 document = self.create_document(
-                    name=rendered_document.filename,
                     document_type=rendered_document.doctype,
                     template=rendered_document.content_template,
-                    data=json.dumps(rendered_document.context, cls=_ContextEncoder),
-                    content_object=content_obj,
+                    context=rendered_document.context,
+                    filename=rendered_document.filename,
                 )
                 # Persist the Document
-                self._persist_document(document)
+                self.persist_document(document)
                 # TODO: should we be using .file or .filename for saving?
-                self._save_document_file(document, rendered_document.file)
+                self.save_document_file(document, rendered_document.file)
                 # TODO: return the results
                 result = DocumentCreationResult(
                     status="info",
@@ -936,13 +941,13 @@ class DocumentGenerator:
                 recipient.log.append(msg)
         return
 
-    def _persist_document(self, document: Document) -> None:
+    def persist_document(self, document: Document) -> None:
         """
         Persist a Document object in the database.
         """
         document.save()
 
-    def _save_document_file(self, document, temporary_filename):
+    def save_document_file(self, document, temporary_filename):
         """
         Copy a file from temporary storage into the Document object's File field
 
@@ -1004,13 +1009,10 @@ class DocumentGenerator:
                 detail.append(object["info"])
 
             # Validate the template
-            content_template = document_type.templates.filer(active=True).first()
-            if not content_template or not content_template.file:
-                raise DocumentTypeError(_(f"No template file configured for '{document_type_name}'"))
+            content_template = self.get_template(self, document_type)
             # TODO: handle "extra_context" in Object
             # TODO: pass Context directly to create_document() and let it deal with the details
             context = get_context_data(document_type_name, object["obj"].pk)
-            content = context["content_object"]
             temporary_filename = fill_pod_template(
                 content_template.file.path,
                 context_format(context["context"]),
@@ -1019,25 +1021,21 @@ class DocumentGenerator:
             if not temporary_filename:
                 raise RuntimeError("Could not fill template.")
 
-            # De-duplicate filenames that will be put into the .zip
-            output_filename = self._deduplicate_filename(context["visible_filename"])
             # Create the Document
             document = self.create_document(
-                name=output_filename,
                 doctype=document_type,
                 template=content_template,
-                data=json.dumps(context, cls=_ContextEncoder),
-                content_object=content,
+                context=context
             )
             # Save the Document
-            self._persist_document(document)
-            self._save_document_file(document, temporary_filename)
+            self.persist_document(document)
+            self.save_document_file(document, temporary_filename)
             result = DocumentCreationResult(
                 status="info",
                 label=str(object["obj"]),
                 detail=detail,
                 file_path=temporary_filename,
-                filename=output_filename,
+                filename=document.name,
             )
             results.append(result)
             if not make_zip:
@@ -1045,7 +1043,7 @@ class DocumentGenerator:
                 return results
             else:
                 # Track the files that will be placed into a .zip
-                filenames.append(output_filename)
+                filenames.append(document.name)
                 files_to_zip.append({"obj": object, "doctype": document_type_name, "doctype_obj": document_type})
         # TODO: pass this off to a helper function
         if files_to_zip:
@@ -1075,6 +1073,14 @@ class DocumentGenerator:
         filename_stem, file_extension = os.path.splitext(filename)
         output_filename = "%s_%s.%s" % (filename_stem, file_count, file_extension)
         return output_filename
+
+    def get_template(self, document_type, doc=None, template_pk=None):
+        """Resolve template: explicit pk first, then doc.template, then first active."""
+        if template_pk:
+            return document_type.templates.get(pk=template_pk)
+        if doc:
+            return doc.template or document_type.templates.filter(active=True).first()
+        return None
 
 
 # TODO: move to a Mail class
@@ -1140,7 +1146,7 @@ def send_member_mail_process(data):
     return result
 
 
-def get_context_data(doctype, obj_id, extra_context: dict=None):
+def get_context_data(doctype, obj_id, extra_context: dict=None) -> dict:
     if extra_context is None:
         extra_context = dict()
     filename_prefix = {
