@@ -6,7 +6,21 @@ app_name = "geno"
 urlpatterns = [
     re_path(r"^import/([a-z_-]+)/?$", geno_views.import_generic),
     re_path(r"^export/([a-z_-]+)/?$", geno_views.export_generic, name="generic-export"),
-    re_path(r"^documents/([a-z_-]+)/([0-9]+)/([a-z_-]+)/?$", geno_views.documents),
+    re_path(
+        r"^documents/([a-z_-]+)/([0-9]+)/create/?$",
+        geno_views.DocumentCreateView.as_view(),
+        name="document-create",
+    ),
+    re_path(
+        r"^documents/([a-z_-]+)/([0-9]+)/download/?$",
+        geno_views.DocumentDownloadView.as_view(),
+        name="document-download",
+    ),
+    re_path(
+        r"^documents/([a-z_-]+)/([0-9]+)/recreate/?$",
+        geno_views.DocumentRecreateView.as_view(),
+        name="document-recreate",
+    ),
     path("share/overview/", geno_views.ShareOverviewView.as_view(), name="share_overview"),
     path("share/overview/plot/", geno_views.share_overview_boxplot),
     path("share/export/", geno_views.share_export, name="share-export"),
