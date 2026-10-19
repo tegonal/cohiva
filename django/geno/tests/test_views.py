@@ -16,7 +16,15 @@ from django.utils.translation import gettext_lazy as _
 
 import geno.tests.data as geno_testdata
 from geno.billing import parse_reference_nr
-from geno.models import Contract, Document, DocumentType, Invoice, InvoiceCategory, Share, ShareType
+from geno.models import (
+    Contract,
+    Document,
+    DocumentType,
+    Invoice,
+    InvoiceCategory,
+    Share,
+    ShareType,
+)
 from geno.views import InvoiceBatchGenerateView, ShareStatementView
 
 from .base import GenoAdminTestCase, fill_template_effect
