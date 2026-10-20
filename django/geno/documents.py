@@ -815,6 +815,78 @@ class DocumentMailer:
                 )
         return ret
 
+    def send_member_mail_process(self, data):
+        """
+        Process and create Documents for sending to Members.
+        """
+        is_test = data["action"] == "mail_test"
+        if data["action"] in ("mail", "mail_test"):
+            mail_template = MailTemplate(data["template_mail"], data["subject"], data["email_sender"])
+            self.setup_mail(mail_template, bcc=data["email_copy"])
+        if data["action"] in ("makezip", "makezip_pdf"):
+            self.setup_zip()
+        if data["action"] == "makezip":
+            self.set_output_format("odt")
+        elif data["template_files"]:
+            self.set_output_format("pdf")
+
+        try:
+            for template in data["template_files"]:
+                self.add_document_template(template)
+        except Exception as e:
+            return {"errors": [{"info": f"Fehler: Konte Dokumentvorlage nicht hinzufügen: {e}"}]}
+
+        for member in data["members"]:
+            if "contract_id" in member:
+                contract = Contract.objects.get(id=member["contract_id"])
+            else:
+                contract = None
+            if member["member_type"] == "member":
+                recipient = Member.objects.get(pk=member["id"])
+            else:
+                recipient = Address.objects.get(pk=member["id"])
+            self.add_recipient(recipient, contract, member["extra_info"])
+
+        document_generator = DocumentGenerator(dry_run=is_test)
+        try:
+            for recipient in self.recipients:
+                document_generator.render_documents_for_recipient(recipient, self.templates)
+        except Exception as e:
+            logger.error(f"Fehler beim Erstellen der Dokumente: {e}")
+            self.cleanup()
+            document_generator.cleanup()
+            return {"errors": [{"info": f"Fehler beim Erstellen der Dokumente: {e}"}]}
+
+        self.send_output()
+        self.rollback_failed_recipients()
+
+        if not is_test:
+            if data["change_attribute"]:
+                self.update_member_attributes(
+                    data["change_attribute"], data["change_attribute_value"]
+                )
+
+            if data["change_genattribute"]:
+                self.update_generic_attributes(
+                    data["change_genattribute"], data["change_genattribute_value"]
+                )
+
+            if data["action"] in ("mail",):
+                for recipient in self.recipients:
+                    if not recipient.failure and not recipient.skip_reason:
+                        document_generator.create_documents_for_recipient(recipient)
+
+        if data["action"] in ("makezip", "makezip_pdf"):
+            result = self.get_zipfile()
+        elif data["action"] == "list_xls":
+            result = self.get_xls_list()
+        else:
+            result = self.get_status_report()
+        self.cleanup()
+        document_generator.cleanup()
+        return result
+
+
     def cleanup(self):
         for template in self.templates:
             template.cleanup()
@@ -1080,78 +1152,6 @@ class DocumentGenerator:
         return temporary_filename
 
 
-# TODO: move to a Mail class
-def send_member_mail_process(data):
-    """
-    Process and create Documents for sending to Members.
-    """
-    is_test = data["action"] == "mail_test"
-    document_mailer = DocumentMailer(dry_run=is_test)
-    if data["action"] in ("mail", "mail_test"):
-        mail_template = MailTemplate(data["template_mail"], data["subject"], data["email_sender"])
-        document_mailer.setup_mail(mail_template, bcc=data["email_copy"])
-    if data["action"] in ("makezip", "makezip_pdf"):
-        document_mailer.setup_zip()
-    if data["action"] == "makezip":
-        document_mailer.set_output_format("odt")
-    elif data["template_files"]:
-        document_mailer.set_output_format("pdf")
-
-    try:
-        for template in data["template_files"]:
-            document_mailer.add_document_template(template)
-    except Exception as e:
-        return {"errors": [{"info": f"Fehler: Konte Dokumentvorlage nicht hinzufügen: {e}"}]}
-
-    for member in data["members"]:
-        if "contract_id" in member:
-            contract = Contract.objects.get(id=member["contract_id"])
-        else:
-            contract = None
-        if member["member_type"] == "member":
-            recipient = Member.objects.get(pk=member["id"])
-        else:
-            recipient = Address.objects.get(pk=member["id"])
-        document_mailer.add_recipient(recipient, contract, member["extra_info"])
-
-    document_generator = DocumentGenerator(dry_run=is_test)
-    try:
-        for recipient in document_mailer.recipients:
-            document_generator.render_documents_for_recipient(recipient, document_mailer.templates)
-    except Exception as e:
-        logger.error(f"Fehler beim Erstellen der Dokumente: {e}")
-        document_mailer.cleanup()
-        document_generator.cleanup()
-        return {"errors": [{"info": f"Fehler beim Erstellen der Dokumente: {e}"}]}
-
-    document_mailer.send_output()
-    document_mailer.rollback_failed_recipients()
-
-    if not is_test:
-        if data["change_attribute"]:
-            document_mailer.update_member_attributes(
-                data["change_attribute"], data["change_attribute_value"]
-            )
-
-        if data["change_genattribute"]:
-            document_mailer.update_generic_attributes(
-                data["change_genattribute"], data["change_genattribute_value"]
-            )
-
-        if data["action"] in ("mail",):
-            for recipient in document_mailer.recipients:
-                if not recipient.failure and not recipient.skip_reason:
-                    document_generator.create_documents_for_recipient(recipient)
-
-    if data["action"] in ("makezip", "makezip_pdf"):
-        result = document_mailer.get_zipfile()
-    elif data["action"] == "list_xls":
-        result = document_mailer.get_xls_list()
-    else:
-        result = document_mailer.get_status_report()
-    document_mailer.cleanup()
-    document_generator.cleanup()
-    return result
 
 
 def get_context_data(doctype, obj_id, extra_context: dict=None) -> dict:

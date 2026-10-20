@@ -73,7 +73,6 @@ from .documents import (
     DocumentTypeError,
     context_format,
     get_context_data,
-    send_member_mail_process,
 )
 from .exporter import (
     export_addresses_carddav,
