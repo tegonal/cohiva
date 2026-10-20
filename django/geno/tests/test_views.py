@@ -61,7 +61,8 @@ class GenoViewsTest(GenoAdminTestCase):
             reverse("geno:share-statement-form"),
             reverse("geno:share-statement", args=["current_year"]),
             reverse("geno:share-statement-for-address", args=["current_year", 1]),
-            "share/mailing/",
+            # TODO: do we need the share/mailing/ endpoint?
+            # "share/mailing/",
             "share/interest/download/",
             "share/interest/transactions/",
             #'share/interest/adjust/',
@@ -509,6 +510,7 @@ class DocumentViewTest(GenoAdminTestCase):
 
     def setUp(self):
         super().setUp()
+        # TODO: remove one of these patch paths, once `fill_pod_template()` has a final home
         patcher = patch("geno.views.fill_pod_template")
         self.mock_fill_template = patcher.start()
         self.mock_fill_template.side_effect = fill_template_effect

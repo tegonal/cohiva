@@ -1261,9 +1261,9 @@ class DocumentProcessTest(GenoAdminTestCase):
 
     def test_documents_not_saved_for_unknown_content_object(self):
         """save_documents skips unknown content_object types with a warning."""
-        from geno.documents import ProcessDocuments, Recipient, RenderedDocument
+        from geno.documents import DocumentMailer, Recipient, RenderedDocument
 
-        process = ProcessDocuments(dry_run=False)
+        process = DocumentMailer(dry_run=False)
         recipient = Recipient(self.addresses[0])
         recipient.content_object = "contract"
 
@@ -1280,9 +1280,9 @@ class DocumentProcessTest(GenoAdminTestCase):
 
     def test_document_not_saved_if_doctype_missing(self):
         """save_documents skips individual documents without a doctype."""
-        from geno.documents import ProcessDocuments, Recipient, RenderedDocument
+        from geno.documents import DocumentMailer, Recipient, RenderedDocument
 
-        process = ProcessDocuments(dry_run=False)
+        process = DocumentMailer(dry_run=False)
         recipient = Recipient(self.addresses[0])
         recipient.content_object = "address"
 
@@ -1299,9 +1299,9 @@ class DocumentProcessTest(GenoAdminTestCase):
 
     def test_document_not_saved_if_context_missing(self):
         """save_documents skips individual documents without a context."""
-        from geno.documents import ProcessDocuments, Recipient, RenderedDocument
+        from geno.documents import DocumentMailer, Recipient, RenderedDocument
 
-        process = ProcessDocuments(dry_run=False)
+        process = DocumentMailer(dry_run=False)
         recipient = Recipient(self.addresses[0])
         recipient.content_object = "address"
 
@@ -1318,13 +1318,13 @@ class DocumentProcessTest(GenoAdminTestCase):
 
     def test_add_document_type_without_active_template_raises(self):
         """A DocumentType with no active template raises ValueError."""
-        from geno.documents import ProcessDocuments
+        from geno.documents import DocumentMailer
 
         # Create a DocumentType with no templates at all
         from geno.models import DocumentType
         doctype_no_template = DocumentType.objects.create(name="no_template_test", description="Test")
 
-        process = ProcessDocuments()
+        process = DocumentMailer()
         with self.assertRaises(ValueError) as cm:
             process.add_document_template(f"DocumentType:{doctype_no_template.pk}")
 
@@ -1332,7 +1332,7 @@ class DocumentProcessTest(GenoAdminTestCase):
 
     def test_add_document_type_template_without_file_raises(self):
         """A DocumentType whose active template lacks a file raises ValueError."""
-        from geno.documents import ProcessDocuments
+        from geno.documents import DocumentMailer
         from geno.models import ContentTemplate, DocumentType
 
         # Create a template with no file attached
@@ -1340,7 +1340,7 @@ class DocumentProcessTest(GenoAdminTestCase):
         doctype_bad = DocumentType.objects.create(name="bad_template_test", description="Test")
         doctype_bad.templates.add(template_no_file)
 
-        process = ProcessDocuments()
+        process = DocumentMailer()
         with self.assertRaises(ValueError) as cm:
             process.add_document_template(f"DocumentType:{doctype_bad.pk}")
 
@@ -1348,12 +1348,12 @@ class DocumentProcessTest(GenoAdminTestCase):
 
     def test_add_content_template_without_file_raises(self):
         """A ContentTemplate with no file raises ValueError."""
-        from geno.documents import ProcessDocuments
+        from geno.documents import DocumentMailer
         from geno.models import ContentTemplate
 
         template_no_file = ContentTemplate.objects.create(name="NoFileContentTemplate", template_type="OpenDocument")
 
-        process = ProcessDocuments()
+        process = DocumentMailer()
         with self.assertRaises(ValueError) as cm:
             process.add_document_template(f"ContentTemplate:{template_no_file.pk}")
 
@@ -1398,7 +1398,7 @@ class DocumentProcessTest(GenoAdminTestCase):
 
     def test_render_fallback_no_active_document_type(self):
         """If no doctype is set and the template has no active DocumentType, output.doctype stays None."""
-        from geno.documents import DocumentTemplate, ProcessDocuments, Recipient
+        from geno.documents import DocumentMailer, DocumentTemplate, Recipient
 
         ct_bill = ContentTemplate.objects.get(name="Bill")
         # Ensure Bill has no document types linked
@@ -1413,7 +1413,7 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.assertIsNone(output.doctype)
 
         # Consequently save_documents should skip this document
-        process = ProcessDocuments(dry_run=False)
+        process = DocumentMailer(dry_run=False)
         recipient.documents = [output]
         save_documents(recipient)
         self.assertEqual(Document.objects.count(), 0)
@@ -1471,7 +1471,7 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.setup_members()
         self.data["action"] = "mail"
         self.data["template_mail"] = f"template_id_{self.email_templates[0].pk}"
-        with patch("geno.documents.ProcessDocuments.send_email") as mock_send_email:
+        with patch("geno.documents.DocumentMailer.send_email") as mock_send_email:
             mock_send_email.side_effect = RuntimeError("SMTP connection refused")
             ret = send_member_mail_process(self.data)
         # 4 recipients with email fail; Harry is skipped for no email
@@ -1571,7 +1571,7 @@ class DocumentProcessTest(GenoAdminTestCase):
             )
 
         with patch("geno.documents.add_invoice", side_effect=mock_add_invoice):
-            with patch("geno.documents.ProcessDocuments.send_email") as mock_send_email:
+            with patch("geno.documents.DocumentMailer.send_email") as mock_send_email:
                 mock_send_email.side_effect = RuntimeError("SMTP connection refused")
                 ret = self.send_with_templates("QR-Bill Ref")
         # 4 recipients with email fail; Harry is skipped for no email
