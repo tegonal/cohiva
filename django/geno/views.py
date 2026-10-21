@@ -3027,6 +3027,7 @@ class MailWizardActionView(MailWizardView):
         for m in self.request.session["members"]:
             if str(m["id"]) in self.request.session["select_members"]:
                 form.cleaned_data["members"].append(m)
+        # TODO: trigger via DocumentMailer
         self.result = send_member_mail_process(form.cleaned_data)
         if isinstance(self.result, HttpResponse):
             return self.result

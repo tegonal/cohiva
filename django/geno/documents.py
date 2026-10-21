@@ -871,7 +871,7 @@ class DocumentMailer:
                     data["change_genattribute"], data["change_genattribute_value"]
                 )
 
-            if data["action"] in ("mail",):
+            if data["action"] in ("mail", "makezip", "makezip_pdf"):
                 for recipient in self.recipients:
                     if not recipient.failure and not recipient.skip_reason:
                         document_generator.create_documents_for_recipient(recipient)
