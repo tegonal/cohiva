@@ -258,6 +258,7 @@ class DocumentActionBase(View):
 
     def _file_response(self, filename, visible_filename):
         """Build a FileResponse and clean up the temporary file from disk."""
+        # TODO: process non-success results and provide an error message
         resp = FileResponse(
             open(filename, "rb"), as_attachment=True, filename=smart_str(visible_filename)
         )
@@ -289,7 +290,7 @@ class DocumentCreateView(DocumentActionBase):
         result = document_generator.create_document(
             document_type=document_type, template=template, context=context
         )
-        # Create the temporary File
+
         return self._file_response(result.temporary_file_location, result.filename)
 
 
@@ -347,7 +348,7 @@ class DocumentRecreateView(DocumentActionBase):
             raise RuntimeError(_("Vorlage nicht gefunden."))
 
         context = get_context_data(doctype, doc.content_object.pk, {})
-
+        # TODO: ensure that the old File is accessible
         document_generator = DocumentGenerator(default_document_type=document_type)
         result = document_generator.create_document(
             document_type=document_type,
@@ -1300,27 +1301,65 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
         response["Content-Disposition"] = "attachment; filename=%s" % "output.zip"
         return response
 
+    def _get_documents_for_view(self):
+        result = []
+        item_objects = []
+
+        for object in self.get_objects():
+            if "info" in object:
+                item_objects.append(object["info"])
+            if "doctype" in object:
+                doctype = object["doctype"]
+                try:
+                    doctype_obj = DocumentType.objects.get(name=doctype)
+                except DocumentType.DoesNotExist:
+                    result.append(
+                        {
+                            "info": "FEHLER: Dokumenttyp '%s' nicht gefunden." % doctype,
+                            "objects": [],
+                        }
+                    )
+                    break
+            template: ContentTemplate | None = doctype_obj.templates.filter(active=True).first()
+            if not template or not template.file:
+                result.append(
+                    {
+                        "info": "FEHLER: Keine Vorlage-Datei für Dokumenttyp '%s' konfiguriert."
+                        % doctype,
+                        "objects": [],
+                    }
+                )
+                break
+
+            result.append({"info": str(object["obj"]), "objects": item_objects})
+            # TODO: return the results as a response
+            return result
+
     def get(self, request, *args, **kwargs):
         if not self.doctype:
             self.error_message = "Dokumententyp fehlt!"
         elif self.should_generate():
+            makezip = request.GET.get("makezip", "") == "yes"
             options = self.get_options()
-            options["makezip"] = request.GET.get("makezip", "") == "yes"
+            options["makezip"] = makezip
             options["link_url"] = request.path
 
-            try:
-                document_generator: DocumentGenerator = DocumentGenerator(
-                    default_document_type = self.doctype,
-                )
-                results = document_generator.create_documents(document_objects=self.get_objects(), options=options)
-            except DocumentTypeError as e:
-                # Handle fatal misconfiguration once, at the view boundary
-                self.error_message = str(e)
-                return super().get(request, *args, **kwargs)
-
-            if options["makezip"] and any(r.status == "info" for r in results):
-                # Zip response built explicitly by the view
-                return self._zip_response(results)
+            # TODO: handle the case when makezip=False
+            if not makezip:
+                results = self._get_documents_for_view()
+            else:
+                try:
+                    document_generator: DocumentGenerator = DocumentGenerator(
+                        default_document_type=self.doctype,
+                    )
+                    results = document_generator.create_documents(document_objects=self.get_objects(), options=options)
+                except DocumentTypeError as e:
+                    # Handle fatal misconfiguration once, at the view boundary
+                    self.error_message = str(e)
+                    return super().get(request, *args, **kwargs)
+                if any(r.status == "info" for r in results):
+                    # Zip response built explicitly by the view
+                    return self._zip_response(results)
 
             self.result = results
         return super().get(request, *args, **kwargs)
