@@ -69,6 +69,8 @@ from .billing import (
     process_transaction,
 )
 from .documents import (
+    DocumentCreationResult,
+    DocumentFetchResult,
     DocumentGenerator,
     DocumentTypeError,
     context_format,
@@ -1287,12 +1289,12 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
     def get_options(self):
         return {"beschreibung": "Dokumente"}
 
-    def _zip_response(self, results: list[Document]):
+    def _zip_response(self, results: list[DocumentCreationResult]):
         """Build and return an HttpResponse containing a ZIP of generated documents."""
         files_to_zip = [
-            {"file": r.file_path, "filename": r.filename}
+            {"file": r.temporary_file_location, "filename": r.filename}
             for r in results
-            if r.file_path and r.filename
+            if r.temporary_file_location and r.filename
         ]
         zip_bytes = make_zip(files_to_zip)
         response = HttpResponse(
@@ -1301,11 +1303,11 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
         response["Content-Disposition"] = "attachment; filename=%s" % "output.zip"
         return response
 
-    def _get_documents_for_view(self):
-        result = []
-        item_objects = []
+    def _get_documents_for_view(self) -> list[DocumentFetchResult]:
+        results = []
 
         for object in self.get_objects():
+            item_objects = []
             if "info" in object:
                 item_objects.append(object["info"])
             if "doctype" in object:
@@ -1313,7 +1315,7 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
                 try:
                     doctype_obj = DocumentType.objects.get(name=doctype)
                 except DocumentType.DoesNotExist:
-                    result.append(
+                    results.append(
                         {
                             "info": "FEHLER: Dokumenttyp '%s' nicht gefunden." % doctype,
                             "objects": [],
@@ -1322,18 +1324,20 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
                     break
             template: ContentTemplate | None = doctype_obj.templates.filter(active=True).first()
             if not template or not template.file:
-                result.append(
-                    {
-                        "info": "FEHLER: Keine Vorlage-Datei für Dokumenttyp '%s' konfiguriert."
-                        % doctype,
-                        "objects": [],
-                    }
+                result = DocumentFetchResult(
+                    status="error",
+                    label="FEHLER: Keine Vorlage-Datei für Dokumenttyp '%s' konfiguriert." % doctype,
+                    detail=object["info"]
                 )
+                results.append(result)
                 break
-
-            result.append({"info": str(object["obj"]), "objects": item_objects})
-            # TODO: return the results as a response
-            return result
+            result = DocumentFetchResult(
+                status="success",
+                label=str(object["obj"]),
+                detail=item_objects
+            )
+            results.append(result)
+        return results
 
     def get(self, request, *args, **kwargs):
         if not self.doctype:

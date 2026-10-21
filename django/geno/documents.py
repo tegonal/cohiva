@@ -892,7 +892,16 @@ class DocumentMailer:
             template.cleanup()
 
 @dataclass
+class DocumentFetchResult:
+    """A Result indicating the status of a Document fetching action."""
+    status: Literal["success", "error"]
+    label: str
+    detail: list[str] = field(default_factory=list)
+
+
+@dataclass
 class DocumentCreationResult:
+    """A Result indicating the status of a Document creation action."""
     status: Literal["success", "info", "error", "warning"]
     label: str
     detail: list[str] = field(default_factory=list)
@@ -1026,7 +1035,7 @@ class DocumentGenerator:
         """
         results: list[DocumentCreationResult] = []
         files_to_zip = []
-        make_zip = options.get("make_zip", False)
+        make_zip = options.get("makezip", False)
         filenames: list[str] = []
         # Early exit: the default DocumentType is not available
         try:
