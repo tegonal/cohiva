@@ -1303,7 +1303,21 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
         response["Content-Disposition"] = "attachment; filename=%s" % "output.zip"
         return response
 
-    def _get_documents_for_view(self) -> list[DocumentFetchResult]:
+    def _get_data_for_document_creation_view(self) -> list[DocumentFetchResult]:
+        """
+        Process a generic Object (e.g. a Member, a Share) and verify that it has
+        a valid DocumentType and Template for subsequent Document creation.
+
+        For example the MemberLetterView assums Objects of the form:
+        {
+            'obj': <Member>,
+            'doctype': 'memberletter',
+            'info': 'Name of Member, Beitritt 01.01.2026'
+        }
+
+        Returns a list of Results containing data pulled from the generic
+        Object, which are consumed by the relevant View's `get_context_data()`
+        """
         results = []
 
         for object in self.get_objects():
@@ -1324,18 +1338,18 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
                     break
             template: ContentTemplate | None = doctype_obj.templates.filter(active=True).first()
             if not template or not template.file:
+                # TODO: do we really continue here, or should be raise?
                 result = DocumentFetchResult(
                     status="error",
                     label="FEHLER: Keine Vorlage-Datei für Dokumenttyp '%s' konfiguriert." % doctype,
                     detail=object["info"]
                 )
-                results.append(result)
-                break
-            result = DocumentFetchResult(
-                status="success",
-                label=str(object["obj"]),
-                detail=item_objects
-            )
+            else:
+                result = DocumentFetchResult(
+                    status="success",
+                    label=str(object["obj"]),
+                    detail=item_objects
+                )
             results.append(result)
         return results
 
@@ -1348,9 +1362,8 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
             options["makezip"] = makezip
             options["link_url"] = request.path
 
-            # TODO: handle the case when makezip=False
             if not makezip:
-                results = self._get_documents_for_view()
+                results = self._get_data_for_document_creation_view()
             else:
                 try:
                     document_generator: DocumentGenerator = DocumentGenerator(
