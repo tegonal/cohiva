@@ -963,6 +963,7 @@ class DocumentGenerator:
             data=data,
             content_object=context.get("content_object"),
         )
+        # TODO: error handling to catch error results
         temporary_file_location = self._fill_template(template, {"context": context})
         self.temp_files.append(temporary_file_location)
         self._persist_document(document)
@@ -1060,12 +1061,12 @@ class DocumentGenerator:
                 detail.append(object["info"])
 
             # Validate the template
-            content_template = self._get_template(self, document_type)
+            content_template = self._get_template(document_type=document_type)
             # TODO: handle "extra_context" in Object
             context = get_context_data(document_type_name, object["obj"].pk)
             # Create the Document
             result = self.create_document(
-                doctype=document_type,
+                document_type=document_type,
                 template=content_template,
                 context=context
             )
@@ -1127,13 +1128,15 @@ class DocumentGenerator:
         remove_temp_files(self.temp_files)
         self.temp_files = []
 
-    def _get_template(self, document_type, doc=None, template_pk=None):
+    def _get_template(self, document_type, document=None, template_pk=None):
         """Resolve template: explicit pk first, then doc.template, then first active."""
+        # TODO: check these execution paths
         if template_pk:
             return document_type.templates.get(pk=template_pk)
-        if doc:
-            return doc.template or document_type.templates.filter(active=True).first()
-        return None
+        if document:
+            return document.template
+        else:
+            return document_type.templates.filter(active=True).first()
 
     def _assert_template_file(self, template):
         if not template.file:
