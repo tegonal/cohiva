@@ -7,7 +7,6 @@ from django.core import mail
 from django.http import HttpResponse
 from django.test import tag
 
-from geno.documents import send_member_mail_process
 from geno.forms import MemberMailActionForm
 from geno.models import (
     Address,
@@ -565,12 +564,12 @@ class DocumentProcessTest(GenoAdminTestCase):
         raise AssertionError(f"Result {info} not found in {results}.")
 
     def test_empty_list(self):
-        ret = send_member_mail_process(self.data)
+        ret = self.run_mailer()
         self.assertResultCount(ret, 0, 0, 0)
 
     def test_list(self):
         self.setup_members()
-        ret = send_member_mail_process(self.data)
+        ret = self.run_mailer()
         self.assertResultCount(ret, len(self.data["members"]) - 1, 1, 0)
         self.assertInResults(
             ret["success"], "Muster, Hans - EXTRA_INFO_TEST (hans.muster@example.com)"
@@ -584,7 +583,7 @@ class DocumentProcessTest(GenoAdminTestCase):
     def test_list_xls(self):
         self.setup_members()
         self.data["action"] = "list_xls"
-        ret = send_member_mail_process(self.data)
+        ret = self.run_mailer()
         self.assertTrue(isinstance(ret, HttpResponse))
         self.assertEqual(
             ret.headers["Content-Type"],
@@ -611,7 +610,7 @@ class DocumentProcessTest(GenoAdminTestCase):
 
         self.setup_members()
         self.data["change_attribute"] = at
-        ret = send_member_mail_process(self.data)
+        ret = self.run_mailer()
         self.assertResultCount(ret, len(self.data["members"]) - 1, 1, 0)
         self.assertInResults(
             ret["success"],
@@ -641,7 +640,7 @@ class DocumentProcessTest(GenoAdminTestCase):
 
         self.setup_addresses()
         self.data["change_genattribute"] = "GenTestAttr"
-        ret = send_member_mail_process(self.data)
+        ret = self.run_mailer()
         self.assertResultCount(ret, len(self.data["members"]) - 1, 1, 0)
         self.assertInResults(
             ret["success"],
@@ -668,7 +667,7 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.setup_members()
         self.data["action"] = "mail_test"
         self.data["template_mail"] = f"template_id_{self.email_templates[0].pk}"
-        ret = send_member_mail_process(self.data)
+        ret = self.run_mailer()
         self.assertResultCount(ret, len(self.data["members"]) - 1, 1, 0)
         self.assertInResults(
             ret["success"],
@@ -696,7 +695,7 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.setup_members()
         self.data["action"] = "mail"
         self.data["template_mail"] = f"template_id_{self.email_templates[0].pk}"
-        ret = send_member_mail_process(self.data)
+        ret = self.run_mailer()
         self.assertInResults(
             ret["success"],
             "Muster, Hans - EXTRA_INFO_TEST (hans.muster@example.com)",
@@ -718,7 +717,7 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.setup_members()
         self.data["action"] = "mail"
         self.data["template_mail"] = f"template_id_{self.email_templates[1].pk}"
-        send_member_mail_process(self.data)
+        self.run_mailer()
         self.assertEmailSent(
             4,
             4 * ["DocumentProcessTest Subject"],
@@ -739,7 +738,15 @@ class DocumentProcessTest(GenoAdminTestCase):
             f"ContentTemplate:{ContentTemplate.objects.get(name=name).pk}"
             for name in template_list
         ]
-        return send_member_mail_process(self.data)
+        return self.run_mailer()
+
+    def run_mailer(self, data=None):
+        if data is None:
+            data = self.data
+        from geno.documents import DocumentMailer
+        dry_run = data.get("action") == "mail_test"
+        mailer = DocumentMailer(dry_run=dry_run)
+        return mailer.send_member_mail_process(data)
 
     def test_send_mail_singlefile(self):
         """One PDF files attached."""
@@ -1126,7 +1133,7 @@ class DocumentProcessTest(GenoAdminTestCase):
 
         self.data["action"] = "mail_test"
         self.data["template_mail"] = f"template_id_{self.email_templates[0].pk}"
-        ret = send_member_mail_process(self.data)
+        ret = self.run_mailer()
         self.assertResultCount(ret, len(self.data["members"]) - 1, 1, 0)
         self.assertInResults(
             ret["success"],
@@ -1155,7 +1162,7 @@ class DocumentProcessTest(GenoAdminTestCase):
             f"ContentTemplate:{ContentTemplate.objects.get(name='Simple').pk}"
         ]
         self.data["action"] = "makezip"
-        ret = send_member_mail_process(self.data)
+        ret = self.run_mailer()
         self.assertTrue(isinstance(ret, HttpResponse))
         self.assertEqual(ret.status_code, 200)
         self.assertEqual(ret.headers["Content-Type"], "application/x-zip-compressed")
@@ -1216,7 +1223,7 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.data["template_files"] = [
             f"ContentTemplate:{ContentTemplate.objects.get(name='Simple').pk}"
         ]
-        ret = send_member_mail_process(self.data)
+        ret = self.run_mailer()
         self.assertEmailSent(0)
         self.assertTrue(isinstance(ret, HttpResponse))
         self.assertEqual(ret.status_code, 200)
@@ -1230,7 +1237,7 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.data["template_files"] = [
             f"ContentTemplate:{ContentTemplate.objects.get(name='Simple').pk}"
         ]
-        ret = send_member_mail_process(self.data)
+        ret = self.run_mailer()
         self.assertEmailSent(0)
         self.assertTrue(isinstance(ret, HttpResponse))
         self.assertEqual(ret.status_code, 200)
@@ -1275,7 +1282,7 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.data["template_files"] = [
             f"ContentTemplate:{ct_statement.pk}"
         ]
-        ret = send_member_mail_process(self.data)
+        ret = self.run_mailer()
         self.assertTrue(isinstance(ret, HttpResponse))
         # All 5 members get documents (zip mode does not skip missing emails)
         self.assertEqual(Document.objects.count(), 5)
@@ -1295,7 +1302,7 @@ class DocumentProcessTest(GenoAdminTestCase):
         """save_documents skips unknown content_object types with a warning."""
         from geno.documents import DocumentMailer, Recipient, RenderedDocument
 
-        process = DocumentMailer(dry_run=False)
+        mailer = DocumentMailer(dry_run=False)
         recipient = Recipient(self.addresses[0])
         recipient.content_object = "contract"
 
@@ -1307,14 +1314,14 @@ class DocumentProcessTest(GenoAdminTestCase):
         recipient.documents = [doc]
 
         self.assertEqual(Document.objects.count(), 0)
-        save_documents(recipient)
+        mailer.send_member_mail_process(self.data)
         self.assertEqual(Document.objects.count(), 0)
 
     def test_document_not_saved_if_doctype_missing(self):
         """save_documents skips individual documents without a doctype."""
         from geno.documents import DocumentMailer, Recipient, RenderedDocument
 
-        process = DocumentMailer(dry_run=False)
+        mailer = DocumentMailer(dry_run=False)
         recipient = Recipient(self.addresses[0])
         recipient.content_object = "address"
 
@@ -1326,14 +1333,14 @@ class DocumentProcessTest(GenoAdminTestCase):
         recipient.documents = [doc]
 
         self.assertEqual(Document.objects.count(), 0)
-        save_documents(recipient)
+        mailer.send_member_mail_process(self.data)
         self.assertEqual(Document.objects.count(), 0)
 
     def test_document_not_saved_if_context_missing(self):
         """save_documents skips individual documents without a context."""
         from geno.documents import DocumentMailer, Recipient, RenderedDocument
 
-        process = DocumentMailer(dry_run=False)
+        mailer = DocumentMailer(dry_run=False)
         recipient = Recipient(self.addresses[0])
         recipient.content_object = "address"
 
@@ -1345,7 +1352,7 @@ class DocumentProcessTest(GenoAdminTestCase):
         recipient.documents = [doc]
 
         self.assertEqual(Document.objects.count(), 0)
-        save_documents(recipient)
+        mailer.send_member_mail_process(self.data)
         self.assertEqual(Document.objects.count(), 0)
 
     def test_add_document_type_without_active_template_raises(self):
@@ -1445,9 +1452,9 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.assertIsNone(output.doctype)
 
         # Consequently save_documents should skip this document
-        process = DocumentMailer(dry_run=False)
+        mailer = DocumentMailer(dry_run=False)
         recipient.documents = [output]
-        save_documents(recipient)
+        mailer.send_member_mail_process(self.data)
         self.assertEqual(Document.objects.count(), 0)
 
     def test_context_encoder_serializes_model_instance(self):
@@ -1500,12 +1507,14 @@ class DocumentProcessTest(GenoAdminTestCase):
 
     def test_mail_sending_failure(self):
         """Recipients are marked as failed when email sending raises an exception."""
+        from geno.documents import DocumentMailer
         self.setup_members()
         self.data["action"] = "mail"
         self.data["template_mail"] = f"template_id_{self.email_templates[0].pk}"
+        mailer = DocumentMailer(dry_run=False)
         with patch("geno.documents.DocumentMailer.send_email") as mock_send_email:
             mock_send_email.side_effect = RuntimeError("SMTP connection refused")
-            ret = send_member_mail_process(self.data)
+            ret = mailer.send_member_mail_process(self.data)
         # 4 recipients with email fail; Harry is skipped for no email
         self.assertResultCount(ret, 0, 1, 4)
         self.assertEmailSent(0)
@@ -1523,8 +1532,9 @@ class DocumentProcessTest(GenoAdminTestCase):
         )
 
     def test_document_create_failure_does_not_stop_zip_processing(self):
-        """A Document.objects.create failure for one recipient does not abort
+        """A Document creation failure for one recipient does not abort
         ZIP processing: later recipients' documents are still created."""
+        from geno.documents import DocumentGenerator, DocumentMailer
         ct_statement = ContentTemplate.objects.get(name="Statement")
         self.documenttypes[0].templates.add(ct_statement)
 
@@ -1534,26 +1544,29 @@ class DocumentProcessTest(GenoAdminTestCase):
             f"ContentTemplate:{ct_statement.pk}"
         ]
 
-        real_create = Document.objects.create
+        real_create = DocumentGenerator.create_document
         state = {"n": 0}
 
-        def failing_create(*args, **kwargs):
+        def failing_create(self, *args, **kwargs):
             state["n"] += 1
             if state["n"] == 1:
                 raise RuntimeError("simulated DB failure")
-            return real_create(*args, **kwargs)
+            return real_create(self, *args, **kwargs)
 
-        with patch("geno.documents.Document.objects.create") as mock_create:
+        mailer = DocumentMailer(dry_run=False)
+
+        with patch("geno.documents.DocumentGenerator.create_document") as mock_create:
             mock_create.side_effect = failing_create
-            ret = send_member_mail_process(self.data)
+            ret = mailer.send_member_mail_process(self.data)
 
         self.assertTrue(isinstance(ret, HttpResponse))
         # Check that four of the five documents were successfully created
         self.assertEqual(Document.objects.count(), 4)
 
     def test_document_create_failure_does_not_stop_mail_processing(self):
-        """A Document.objects.create failure for one recipient does not abort
+        """A Document creation failure for one recipient does not abort
         mail sending: later recipients still get their mails sent and docs saved."""
+        from geno.documents import DocumentGenerator, DocumentMailer
         ct_statement = ContentTemplate.objects.get(name="Statement")
         self.documenttypes[0].templates.add(ct_statement)
 
@@ -1564,19 +1577,20 @@ class DocumentProcessTest(GenoAdminTestCase):
             f"ContentTemplate:{ct_statement.pk}"
         ]
 
-        real_create = Document.objects.create
+        real_create = DocumentGenerator.create_document
         state = {"n": 0}
 
-        def failing_create(*args, **kwargs):
+        def failing_create(self, *args, **kwargs):
             state["n"] += 1
             if state["n"] == 1:
                 raise RuntimeError("simulated DB failure")
-            return real_create(*args, **kwargs)
+            return real_create(self, *args, **kwargs)
 
+        mailer = DocumentMailer(dry_run=False)
         with patch(
-            "geno.documents.Document.objects.create", side_effect=failing_create
+            "geno.documents.DocumentGenerator.create_document", side_effect=failing_create
         ):
-            ret = send_member_mail_process(self.data)
+            ret = mailer.send_member_mail_process(self.data)
 
         # Confirm that all four e-mails are successfully sent
         self.assertEmailSent(4)
@@ -1642,6 +1656,7 @@ class DocumentFilePersistenceTest(DocumentCreationMockMixin, GenoAdminTestCase):
 
     def test_document_file_persisted_after_mail_send(self):
         """After sending mail, created Documents have a stored file."""
+        from geno.documents import DocumentMailer
         ct_statement = ContentTemplate.objects.get(name="Statement")
         self.documenttypes[0].templates.add(ct_statement)
 
@@ -1666,7 +1681,8 @@ class DocumentFilePersistenceTest(DocumentCreationMockMixin, GenoAdminTestCase):
                 "member_type": "member",
             })
 
-        send_member_mail_process(data)
+        mailer = DocumentMailer(dry_run=False)
+        mailer.send_member_mail_process(data)
 
         docs = Document.objects.all()
         self.assertGreater(len(docs), 0)
