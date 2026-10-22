@@ -43,6 +43,7 @@ class MailTemplate:
             self.is_html = re.search(r"<html", templ.text, re.IGNORECASE)
         elif isinstance(templ, str):
             self.template = loader.get_template(templ)
+            # TODO: get file extension using utility
             if templ[-5:] == ".html":
                 self.is_html = True
         else:
@@ -89,7 +90,6 @@ class SkipRecipientException(Exception):
 
 @dataclass
 class MailSendResult:
-    # TODO: implement a Result class
     status: Literal["success", "error", "warning"]
     label: str
     detail: list[str] = field(default_factory=list)
@@ -245,7 +245,7 @@ class DocumentMailer:
         return context
 
     ## TODO: Move/merge this with generic send-mail function?
-    # TODO: complete method signature type-hints
+    # TODO: complete method signature type-hints -- what does context contain?
     def send_email(
         self,
         address: Address,
@@ -370,7 +370,7 @@ class DocumentMailer:
             "Beitrittsdatum",
             "Austrittsdatum",
         ]
-        # TODO: why this range, specifically?
+        # TODO: remove magic numbers -- iterate over flags more explicitly
         for i in range(1, 6):
             export_data_header.append(geno_settings.MEMBER_FLAGS[i])
         export_data_header.append("Info")

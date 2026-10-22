@@ -416,12 +416,6 @@ class DocumentTemplate:
         remove_temp_files(self.temp_files)
 
 
-## TODO: Make subclasses of Document
-# class QRBillDocument(Document):
-#    def render(self, recipient):
-
-
-
 
 @dataclass
 class DocumentFetchResult:
@@ -429,7 +423,6 @@ class DocumentFetchResult:
     status: Literal["success", "error"]
     label: str
     detail: list[str] = field(default_factory=list)
-
 
 @dataclass
 class DocumentCreationResult:
@@ -440,11 +433,9 @@ class DocumentCreationResult:
     temporary_file_location: str | None = None
     filename: str | None = None
 
-
 class DocumentTypeError(Exception):
     # TODO: implement
     pass
-
 
 class DocumentGenerator:
     """
@@ -511,7 +502,7 @@ class DocumentGenerator:
         self.temp_files.append(temporary_file_location)
         self._persist_document(document)
         self._save_document_file(document, temporary_file_location)
-        # TODO: are we passing back everything that we require?
+
         result = DocumentCreationResult(
             status="success",
             label=str(document),
@@ -556,7 +547,6 @@ class DocumentGenerator:
                 recipient.failure = True
                 recipient.log.append(msg)
         return results
-
 
     def create_documents(self,
                          document_objects: list[dict],
@@ -647,7 +637,6 @@ class DocumentGenerator:
             )
         return results
 
-
     def _deduplicate_filename(filename: str) -> str:
         # TODO: implement the counter
         file_count = 0
@@ -700,8 +689,6 @@ class DocumentGenerator:
         if not temporary_filename:
             raise RuntimeError(_("Could not fill the template"))
         return temporary_filename
-
-
 
 
 def get_context_data(doctype, obj_id, extra_context: dict=None) -> dict:
@@ -865,10 +852,15 @@ def get_context_data(doctype, obj_id, extra_context: dict=None) -> dict:
         "context": extra_context,
     }
 
-
 def context_format(context, output_format="odt"):
+    # TODO: implement
     # for k,v in context.items():
     #    if output_format == 'odt':
     #        if isinstance(context[k], basestring):
     #            context[k] = mark_safe(v.replace('\n', '<text:line-break />'))
     return context
+
+## TODO: Make subclasses of Document
+# class QRBillDocument(Document):
+#    def render(self, recipient):
+
