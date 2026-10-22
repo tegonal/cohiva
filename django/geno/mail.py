@@ -199,14 +199,9 @@ class DocumentMailer:
             self.add_documents_to_zip()
 
     def add_documents_to_zip(self):
-        from geno.documents import DocumentGenerator
         for recipient in self.recipients:
             for doc in recipient.documents:
                 self.zipfile.write(doc.file, doc.filename)
-            if not self.dry_run:
-                # TODO: verify that Documents are persisted
-                document_generator = DocumentGenerator
-                document_generator.create_documents_for_recipient(self, recipient)
 
     def send_output_mails(self):
         logger.info("Start sending e-mails.")
