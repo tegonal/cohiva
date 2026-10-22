@@ -1328,6 +1328,21 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
                 doctype = object["doctype"]
                 try:
                     doctype_obj = DocumentType.objects.get(name=doctype)
+                    template = doctype_obj.templates.filter(active=True).first()
+                    if not template or not template.file:
+                        # TODO: do we really continue here, or should be raise?
+                        result = DocumentFetchResult(
+                            status="error",
+                            label="FEHLER: Keine Vorlage-Datei für Dokumenttyp '%s' konfiguriert." % doctype,
+                            detail=object["info"]
+                        )
+                    else:
+                        result = DocumentFetchResult(
+                            status="success",
+                            label=str(object["obj"]),
+                            detail=item_objects
+                        )
+                    results.append(result)
                 except DocumentType.DoesNotExist:
                     results.append(
                         {
@@ -1336,21 +1351,6 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
                         }
                     )
                     break
-            template: ContentTemplate | None = doctype_obj.templates.filter(active=True).first()
-            if not template or not template.file:
-                # TODO: do we really continue here, or should be raise?
-                result = DocumentFetchResult(
-                    status="error",
-                    label="FEHLER: Keine Vorlage-Datei für Dokumenttyp '%s' konfiguriert." % doctype,
-                    detail=object["info"]
-                )
-            else:
-                result = DocumentFetchResult(
-                    status="success",
-                    label=str(object["obj"]),
-                    detail=item_objects
-                )
-            results.append(result)
         return results
 
     def get(self, request, *args, **kwargs):
