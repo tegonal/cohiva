@@ -298,38 +298,38 @@ class DocumentMailer:
         for recipient in self.recipients:
             if not recipient.failure and recipient.member:
                 try:
-                    attribute = MemberAttribute.objects.get(
+                    member_attribute = MemberAttribute.objects.get(
                         member=recipient.member, attribute_type=attribute
                     )
-                    old_value = attribute.value
+                    old_value = member_attribute.value
                 except MemberAttribute.DoesNotExist:
-                    attribute = MemberAttribute(member=recipient.member, attribute_type=attribute)
+                    member_attribute = MemberAttribute(member=recipient.member, attribute_type=attribute)
                     old_value = "(Kein)"
-                attribute.value = value
-                attribute.date = datetime.date.today()
-                attribute.save()
+                member_attribute.value = value
+                member_attribute.date = datetime.date.today()
+                member_attribute.save()
                 recipient.log.append(
-                    f'Mitglieder-Attribut "{attribute}" geändert: "{old_value}" -> "{attribute.value}"'
+                    f'Mitglieder-Attribut "{attribute}" geändert: "{old_value}" -> "{member_attribute.value}"'
                 )
 
     def update_generic_attributes(self, attribute, value):
         for recipient in self.recipients:
             if not recipient.failure and recipient.address:
                 try:
-                    attribute = (GenericAttribute
+                    generic_attribute = (GenericAttribute
                                     .objects
                                     .filter(addresses=recipient.address)
                                     .get(name=attribute)
                     )
-                    old_value = attribute.value
+                    old_value = generic_attribute.value
                 except GenericAttribute.DoesNotExist:
-                    attribute = GenericAttribute(content_object=recipient.address, name=attribute)
+                    generic_attribute = GenericAttribute(content_object=recipient.address, name=attribute)
                     old_value = "(Kein)"
-                attribute.value = value
-                attribute.date = datetime.date.today()
-                attribute.save()
+                generic_attribute.value = value
+                generic_attribute.date = datetime.date.today()
+                generic_attribute.save()
                 recipient.log.append(
-                    f'Allg.Attribut "{attribute}" geändert: "{old_value}" -> "{attribute.value}"'
+                    f'Allg.Attribut "{attribute}" geändert: "{old_value}" -> "{generic_attribute.value}"'
                 )
 
     def get_zipfile(self):
