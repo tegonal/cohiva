@@ -711,7 +711,7 @@ class DocumentProcessTest(GenoAdminTestCase):
     def run_mailer(self, data=None):
         if data is None:
             data = self.data
-        from geno.documents import DocumentMailer
+        from geno.mail import DocumentMailer
         dry_run = data.get("action") == "mail_test"
         mailer = DocumentMailer(dry_run=dry_run)
         return mailer.send_member_mail_process(data)
@@ -1268,7 +1268,8 @@ class DocumentProcessTest(GenoAdminTestCase):
 
     def test_documents_not_saved_for_unknown_content_object(self):
         """save_documents skips unknown content_object types with a warning."""
-        from geno.documents import DocumentMailer, Recipient, RenderedDocument
+        from geno.documents import RenderedDocument
+        from geno.mail import DocumentMailer, Recipient
 
         mailer = DocumentMailer(dry_run=False)
         recipient = Recipient(self.addresses[0])
@@ -1287,7 +1288,8 @@ class DocumentProcessTest(GenoAdminTestCase):
 
     def test_document_not_saved_if_doctype_missing(self):
         """save_documents skips individual documents without a doctype."""
-        from geno.documents import DocumentMailer, Recipient, RenderedDocument
+        from geno.documents import RenderedDocument
+        from geno.mail import DocumentMailer, Recipient
 
         mailer = DocumentMailer(dry_run=False)
         recipient = Recipient(self.addresses[0])
@@ -1306,7 +1308,8 @@ class DocumentProcessTest(GenoAdminTestCase):
 
     def test_document_not_saved_if_context_missing(self):
         """save_documents skips individual documents without a context."""
-        from geno.documents import DocumentMailer, Recipient, RenderedDocument
+        from geno.documents import RenderedDocument
+        from geno.mail import DocumentMailer, Recipient
 
         mailer = DocumentMailer(dry_run=False)
         recipient = Recipient(self.addresses[0])
@@ -1325,7 +1328,7 @@ class DocumentProcessTest(GenoAdminTestCase):
 
     def test_add_document_type_without_active_template_raises(self):
         """A DocumentType with no active template raises ValueError."""
-        from geno.documents import DocumentMailer
+        from geno.mail import DocumentMailer
 
         # Create a DocumentType with no templates at all
         from geno.models import DocumentType
@@ -1339,7 +1342,7 @@ class DocumentProcessTest(GenoAdminTestCase):
 
     def test_add_document_type_template_without_file_raises(self):
         """A DocumentType whose active template lacks a file raises ValueError."""
-        from geno.documents import DocumentMailer
+        from geno.mail import DocumentMailer
         from geno.models import ContentTemplate, DocumentType
 
         # Create a template with no file attached
@@ -1355,7 +1358,7 @@ class DocumentProcessTest(GenoAdminTestCase):
 
     def test_add_content_template_without_file_raises(self):
         """A ContentTemplate with no file raises ValueError."""
-        from geno.documents import DocumentMailer
+        from geno.mail import DocumentMailer
         from geno.models import ContentTemplate
 
         template_no_file = ContentTemplate.objects.create(name="NoFileContentTemplate", template_type="OpenDocument")
@@ -1405,7 +1408,8 @@ class DocumentProcessTest(GenoAdminTestCase):
 
     def test_render_fallback_no_active_document_type(self):
         """If no doctype is set and the template has no active DocumentType, output.doctype stays None."""
-        from geno.documents import DocumentMailer, DocumentTemplate, Recipient
+        from geno.documents import DocumentTemplate
+        from geno.mail import DocumentMailer, Recipient
 
         ct_bill = ContentTemplate.objects.get(name="Bill")
         # Ensure Bill has no document types linked
@@ -1475,12 +1479,12 @@ class DocumentProcessTest(GenoAdminTestCase):
 
     def test_mail_sending_failure(self):
         """Recipients are marked as failed when email sending raises an exception."""
-        from geno.documents import DocumentMailer
+        from geno.mail import DocumentMailer
         self.setup_members()
         self.data["action"] = "mail"
         self.data["template_mail"] = f"template_id_{self.email_templates[0].pk}"
         mailer = DocumentMailer(dry_run=False)
-        with patch("geno.documents.DocumentMailer.send_email") as mock_send_email:
+        with patch("geno.mail.DocumentMailer.send_email") as mock_send_email:
             mock_send_email.side_effect = RuntimeError("SMTP connection refused")
             ret = mailer.send_member_mail_process(self.data)
         # 4 recipients with email fail; Harry is skipped for no email
@@ -1502,7 +1506,8 @@ class DocumentProcessTest(GenoAdminTestCase):
     def test_document_create_failure_does_not_stop_zip_processing(self):
         """A Document creation failure for one recipient does not abort
         ZIP processing: later recipients' documents are still created."""
-        from geno.documents import DocumentGenerator, DocumentMailer
+        from geno.documents import DocumentGenerator
+        from geno.mail import DocumentMailer
         ct_statement = ContentTemplate.objects.get(name="Statement")
         self.documenttypes[0].templates.add(ct_statement)
 
@@ -1534,7 +1539,8 @@ class DocumentProcessTest(GenoAdminTestCase):
     def test_document_create_failure_does_not_stop_mail_processing(self):
         """A Document creation failure for one recipient does not abort
         mail sending: later recipients still get their mails sent and docs saved."""
-        from geno.documents import DocumentGenerator, DocumentMailer
+        from geno.documents import DocumentGenerator
+        from geno.mail import DocumentMailer
         ct_statement = ContentTemplate.objects.get(name="Statement")
         self.documenttypes[0].templates.add(ct_statement)
 
@@ -1585,7 +1591,7 @@ class DocumentProcessTest(GenoAdminTestCase):
             )
 
         with patch("geno.documents.add_invoice", side_effect=mock_add_invoice):
-            with patch("geno.documents.DocumentMailer.send_email") as mock_send_email:
+            with patch("geno.mail.DocumentMailer.send_email") as mock_send_email:
                 mock_send_email.side_effect = RuntimeError("SMTP connection refused")
                 ret = self.send_with_templates("QR-Bill Ref")
         # 4 recipients with email fail; Harry is skipped for no email
@@ -1624,7 +1630,7 @@ class DocumentFilePersistenceTest(DocumentCreationMockMixin, GenoAdminTestCase):
 
     def test_document_file_persisted_after_mail_send(self):
         """After sending mail, created Documents have a stored file."""
-        from geno.documents import DocumentMailer
+        from geno.mail import DocumentMailer
         ct_statement = ContentTemplate.objects.get(name="Statement")
         self.documenttypes[0].templates.add(ct_statement)
 
