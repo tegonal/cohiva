@@ -30,7 +30,7 @@ def send_info_mail(subject, msg):
 
 def odt2pdf(odtfile, instance_tag="default"):
     tmpdir = "/tmp/odt2pdf_%s_%s" % (settings.GENO_ID, instance_tag)
-    soffice_bin = "/Applications/LibreOffice.app/Contents/MacOS/soffice"
+    soffice_bin = "/usr/lib/libreoffice/program/soffice.bin"
 
     path, basename = os.path.split(odtfile)
     outfile = os.path.splitext(basename)
