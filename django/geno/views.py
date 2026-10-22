@@ -38,6 +38,7 @@ from stdnum.ch import esr
 
 from cohiva.views.generic import UploadedFileProcessorMixin
 from finance.accounting import Account, AccountingManager, AccountKey
+from geno.mail import DocumentMailer
 
 if hasattr(settings, "SHARE_PLOT") and settings.SHARE_PLOT:
     import io
@@ -2704,7 +2705,8 @@ def send_member_mail_filter_rental(form, member_list):
         if rental:
             for adr in contract.contractors.all():
                 if adr.pk not in adr_list:
-                    ## Filter by generic attribute: TODO: move this filter to be additive...
+                    ## Filter by generic attribute:
+                    # TODO: move this filter to be additive...
                     include = True
                     if form.cleaned_data["filter_genattribute"] != "none":
                         genatt = (
@@ -3083,8 +3085,8 @@ class MailWizardActionView(MailWizardView):
         for m in self.request.session["members"]:
             if str(m["id"]) in self.request.session["select_members"]:
                 form.cleaned_data["members"].append(m)
-        # TODO: trigger via DocumentMailer
-        self.result = send_member_mail_process(form.cleaned_data)
+        mailer = DocumentMailer()
+        self.result = mailer.send_member_mail_process(form.cleaned_data)
         if isinstance(self.result, HttpResponse):
             return self.result
         self.result["show_results"] = True

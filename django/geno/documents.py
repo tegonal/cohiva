@@ -530,6 +530,10 @@ class DocumentGenerator:
 
         Returns a list of DocumentCreationResults
         """
+        # Early exit: ensure no Documents are created when content is not available
+        if recipient.content_object is None:
+            return []
+
         results: list[DocumentCreationResult] = []
 
         for rendered_document in recipient.documents:

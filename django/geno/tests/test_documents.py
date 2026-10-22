@@ -1528,8 +1528,7 @@ class DocumentProcessTest(GenoAdminTestCase):
 
         mailer = DocumentMailer(dry_run=False)
 
-        with patch("geno.documents.DocumentGenerator.create_document") as mock_create:
-            mock_create.side_effect = failing_create
+        with patch("geno.documents.DocumentGenerator.create_document", new=failing_create):
             ret = mailer.send_member_mail_process(self.data)
 
         self.assertTrue(isinstance(ret, HttpResponse))
@@ -1562,7 +1561,7 @@ class DocumentProcessTest(GenoAdminTestCase):
 
         mailer = DocumentMailer(dry_run=False)
         with patch(
-            "geno.documents.DocumentGenerator.create_document", side_effect=failing_create
+            "geno.documents.DocumentGenerator.create_document", new=failing_create
         ):
             ret = mailer.send_member_mail_process(self.data)
 
