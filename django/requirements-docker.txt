@@ -165,7 +165,7 @@ django-treebeard==4.7.1
     # via wagtail
 django-unfold==0.78.1
     # via -r requirements.in
-djangorestframework==3.17.2
+djangorestframework==3.18.2
     # via
     #   -r requirements.in
     #   dj-rest-auth
