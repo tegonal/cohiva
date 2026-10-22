@@ -16,6 +16,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
+from django.core.files import File
 from django.db.models import Q
 from django.forms import formset_factory
 from django.http import FileResponse, Http404, HttpResponse, HttpResponseRedirect
@@ -23,10 +24,11 @@ from django.shortcuts import redirect, render
 from django.template import Context
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
+from django.utils.decorators import method_decorator
 from django.utils.encoding import smart_str
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy as _
-from django.views.generic import FormView, TemplateView
+from django.views.generic import FormView, TemplateView, View
 from django_tables2 import RequestConfig
 from oauthlib.oauth2 import TokenExpiredError
 
@@ -36,10 +38,9 @@ from stdnum.ch import esr
 
 from cohiva.views.generic import UploadedFileProcessorMixin
 from finance.accounting import Account, AccountingManager, AccountKey
+from geno.mail import DocumentMailer
 
 if hasattr(settings, "SHARE_PLOT") and settings.SHARE_PLOT:
-    ## For Plotting
-    # from matplotlib import pyplot as plt
     import io
 
     from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
@@ -68,7 +69,14 @@ from .billing import (
     process_sepa_transactions,
     process_transaction,
 )
-from .documents import context_format, create_documents, get_context_data, send_member_mail_process
+from .documents import (
+    DocumentCreationResult,
+    DocumentFetchResult,
+    DocumentGenerator,
+    DocumentTypeError,
+    context_format,
+    get_context_data,
+)
 from .exporter import (
     export_addresses_carddav,
     export_adit_file,
@@ -134,9 +142,7 @@ from .tables import (
     MemberTable,
     MemberTableAdmin,
 )
-from .utils import fill_template_pod, nformat, odt2pdf
-
-# from .decorators import login_required
+from .utils import fill_pod_template, make_zip, nformat, odt2pdf
 
 if "portal" in settings.INSTALLED_APPS:
     import portal.auth as portal_auth
@@ -215,57 +221,145 @@ def export_generic(request, what):
     return render(request, "geno/default.html", c)
 
 
-@login_required
-def documents(request, doctype, obj_id, action):
-    try:
-        doctype_obj = DocumentType.objects.get(name=doctype)
-        if action == "create":
-            if not request.user.has_perm("geno.add_document"):
-                return unauthorized(request)
-            template_pk = request.GET.get("template")
-            if not template_pk:
-                raise RuntimeError("Keine Vorlage angegeben.")
-            template = doctype_obj.templates.get(pk=template_pk)
-            data = get_context_data(doctype, obj_id, {})
-        elif action == "download":
-            if not request.user.has_perm("geno.regenerate_document"):
-                return unauthorized(request)
-            doc = Document.objects.select_related("template").get(pk=obj_id)
-            template = doc.template or doctype_obj.templates.filter(active=True).first()
-            if not template:
-                raise RuntimeError("Vorlage nicht gefunden.")
-            data = {"visible_filename": doc.name, "context": json.loads(doc.data)}
-        else:
-            raise RuntimeError(_("Action '{action}' is not implemented.").format(action=action))
+class DocumentActionBase(View):
+    """Shared scaffolding for document create/download/recreate views."""
+
+    permission_required = None
+
+    def check_permission(self, request):
+        """Verify that a user has the required permission for the request."""
+        if self.permission_required and not request.user.has_perm(self.permission_required):
+            return unauthorized(request)
+        return None
+
+    def get_document_type(self, doctype):
+        return DocumentType.objects.get(name=doctype)
+
+    def get_template(self, document_type, doc=None, template_pk=None):
+        """Resolve template: explicit pk first, then doc.template, then first active."""
+        if template_pk:
+            return document_type.templates.get(pk=template_pk)
+        if doc:
+            return doc.template or document_type.templates.filter(active=True).first()
+        return None
+
+    def _assert_template_file(self, template):
         if not template.file:
             raise RuntimeError(
                 _("The template '{template}' has no file linked to it.").format(template=template)
             )
-        filename = fill_template_pod(
+
+    def _fill_template(self, template, data):
+        """Render the template and return the temporary file path."""
+        self._assert_template_file(template)
+        temporary_filename = fill_pod_template(
             template.file.path, context_format(data["context"]), output_format="odt"
         )
-        if not filename:
+        if not temporary_filename:
             raise RuntimeError(_("Could not fill the template"))
-        if "content_object" in data:
-            d = Document(
-                name=data["visible_filename"],
-                doctype=doctype_obj,
-                template=template,
-                data=json.dumps(data["context"]),
-                content_object=data["content_object"],
-            )
-            d.save()
+        return temporary_filename
+
+    def _file_response(self, filename, visible_filename):
+        """Build a FileResponse and clean up the temporary file from disk."""
+        # TODO: process non-success results and provide an error message
         resp = FileResponse(
-            open(filename, "rb"), as_attachment=True, filename=smart_str(data["visible_filename"])
-        )  # content_type = "application/pdf")
-        os.remove(filename)
+            open(filename, "rb"), as_attachment=True, filename=smart_str(visible_filename)
+        )
+        if os.path.exists(filename):
+            os.remove(filename)
         return resp
-    except (RuntimeError, DocumentType.DoesNotExist, ContentTemplate.DoesNotExist) as e:
-        error = "Fehler beim Erzeugen des Dokuments: %s" % e
-    ret = [
-        {"info": "ERROR: %s" % error},
-    ]
-    return render(request, "geno/default.html", {"response": ret, "title": "Document error"})
+
+
+class DocumentCreateView(DocumentActionBase):
+    """Create a new Document from a template for the given object."""
+
+    permission_required = "geno.add_document"
+
+    @method_decorator(login_required)
+    def get(self, request, doctype, obj_id):
+        unauthorized_response = self.check_permission(request)
+        if unauthorized_response:
+            return unauthorized_response
+
+        document_type = self.get_document_type(doctype)
+        template_pk = request.GET.get("template")
+        if not template_pk:
+            raise RuntimeError("Keine Vorlage angegeben.")
+        # Get the File template
+        template = self.get_template(document_type=document_type, template_pk=template_pk)
+        context = get_context_data(doctype, obj_id, {})
+        # Create the Document object
+        document_generator = DocumentGenerator(default_document_type=document_type)
+        result = document_generator.create_document(
+            document_type=document_type, template=template, context=context
+        )
+
+        return self._file_response(result.temporary_file_location, result.filename)
+
+
+class DocumentDownloadView(DocumentActionBase):
+    """
+    Download an existing Document. For legacy Documents, created before
+    persist-at-creation was implemented, the Document is re-rendered, and the
+    resulting file is stored.
+    """
+
+    permission_required = "geno.regenerate_document"
+
+    @method_decorator(login_required)
+    def get(self, request, doctype, obj_id):
+        unauthorized_response = self.check_permission(request)
+        if unauthorized_response:
+            return unauthorized_response
+
+        document_type = self.get_document_type(doctype)
+        doc = Document.objects.select_related("template").get(pk=obj_id)
+
+        if doc.file:
+            return FileResponse(
+                doc.file.open(), as_attachment=True, filename=smart_str(doc.name)
+            )
+
+        template = self.get_template(document_type, doc=doc)
+        if not template:
+            raise RuntimeError("Vorlage nicht gefunden.")
+        data = {"visible_filename": doc.name, "context": json.loads(doc.data)}
+
+        filename = self._fill_template(template, data)
+        return self._file_response(filename, data["visible_filename"])
+
+
+class DocumentRecreateView(DocumentActionBase):
+    """
+    Recreate a Document with fresh context data. The old file record is retained
+    in the audit log.
+    """
+
+    permission_required = "geno.add_document"
+
+    @method_decorator(login_required)
+    def get(self, request, doctype, obj_id):
+        unauthorized_response = self.check_permission(request)
+        if unauthorized_response:
+            return unauthorized_response
+
+        document_type = self.get_document_type(doctype)
+        # TODO: get template via helper
+        doc = Document.objects.select_related("template").get(pk=obj_id)
+        template = self.get_template(document_type, doc=doc)
+        if not template:
+            raise RuntimeError(_("Vorlage nicht gefunden."))
+
+        context = get_context_data(doctype, doc.content_object.pk, {})
+        # TODO: ensure that the old File is accessible
+        document_generator = DocumentGenerator(default_document_type=document_type)
+        result = document_generator.create_document(
+            document_type=document_type,
+            template=template,
+            context=context,
+        )
+
+        return self._file_response(result.temporary_file_location, result.filename)
 
 
 class ShareOverviewView(CohivaAdminViewMixin, TemplateView):
@@ -1196,28 +1290,104 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
     def get_options(self):
         return {"beschreibung": "Dokumente"}
 
+    def _zip_response(self, results: list[DocumentCreationResult]):
+        """Build and return an HttpResponse containing a ZIP of generated documents."""
+        files_to_zip = [
+            {"file": r.temporary_file_location, "filename": r.filename}
+            for r in results
+            if r.temporary_file_location and r.filename
+        ]
+        zip_bytes = make_zip(files_to_zip)
+        response = HttpResponse(
+            zip_bytes.getvalue(), content_type="application/x-zip-compressed"
+        )
+        response["Content-Disposition"] = "attachment; filename=%s" % "output.zip"
+        return response
+
+    def _get_data_for_document_creation_view(self) -> list[DocumentFetchResult]:
+        """
+        Process a generic Object (e.g. a Member, a Share) and verify that it has
+        a valid DocumentType and Template for subsequent Document creation.
+
+        For example the MemberLetterView assums Objects of the form:
+        {
+            'obj': <Member>,
+            'doctype': 'memberletter',
+            'info': 'Name of Member, Beitritt 01.01.2026'
+        }
+
+        Returns a list of Results containing data pulled from the generic
+        Object, which are consumed by the relevant View's `get_context_data()`
+        """
+        results = []
+
+        for object in self.get_objects():
+            item_objects = []
+            if "info" in object:
+                item_objects.append(object["info"])
+            if "doctype" in object:
+                doctype = object["doctype"]
+                try:
+                    doctype_obj = DocumentType.objects.get(name=doctype)
+                    template = doctype_obj.templates.filter(active=True).first()
+                    if not template or not template.file:
+                        # TODO: do we really continue here, or should be raise?
+                        result = DocumentFetchResult(
+                            status="error",
+                            label="FEHLER: Keine Vorlage-Datei für Dokumenttyp '%s' konfiguriert." % doctype,
+                            detail=object["info"]
+                        )
+                    else:
+                        result = DocumentFetchResult(
+                            status="success",
+                            label=str(object["obj"]),
+                            detail=item_objects
+                        )
+                    results.append(result)
+                except DocumentType.DoesNotExist:
+                    results.append(
+                        {
+                            "info": "FEHLER: Dokumenttyp '%s' nicht gefunden." % doctype,
+                            "objects": [],
+                        }
+                    )
+                    break
+        return results
+
     def get(self, request, *args, **kwargs):
         if not self.doctype:
             self.error_message = "Dokumententyp fehlt!"
         elif self.should_generate():
+            makezip = request.GET.get("makezip", "") == "yes"
             options = self.get_options()
-            options["makezip"] = request.GET.get("makezip", "") == "yes"
-            if not options.get("link_url", None) and url_has_allowed_host_and_scheme(
-                request.path, allowed_hosts=None
-            ):
-                options["link_url"] = request.path
-            self.result = create_documents(self.doctype, self.get_objects(), options)
-            if isinstance(self.result, HttpResponse):
-                return self.result
+            options["makezip"] = makezip
+            options["link_url"] = request.path
+
+            if not makezip:
+                results = self._get_data_for_document_creation_view()
+            else:
+                try:
+                    document_generator: DocumentGenerator = DocumentGenerator(
+                        default_document_type=self.doctype,
+                    )
+                    results = document_generator.create_documents(document_objects=self.get_objects(), options=options)
+                except DocumentTypeError as e:
+                    # Handle fatal misconfiguration once, at the view boundary
+                    self.error_message = str(e)
+                    return super().get(request, *args, **kwargs)
+                if any(r.status == "info" for r in results):
+                    # Zip response built explicitly by the view
+                    return self._zip_response(results)
+
+            self.result = results
         return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.error_message:
-            context["response"] = [{"info": self.error_message}]
+            context["response"] = [Document(status="error", label=self.error_message)]
         else:
-            context["response"] = self.result
-        context["title"] = "Dokumente erzeugen - %s" % self.get_options().get("beschreibung", "")
+            context["response"] = self.result   # a list of DocumentCreationResult
         return context
 
 
@@ -1329,22 +1499,24 @@ class MemberLetterView(DocumentGeneratorView):
     template_name = "geno/member_letter.html"
 
     def get_objects(self):
+        """Get all Members with missing Member Letter documents after the cutoff date."""
         objects = []
-        ## Find members with missing documents (after cutoff date 2020-01-01)
-        for m in Member.objects.filter(
-            date_join__gt=settings.GENO_MEMBER_LETTER_CUTOFF_DATE
-        ).exclude(date_leave__isnull=False):
-            doc = (
-                Document.objects.filter(object_id=m.pk)
-                .filter(content_type=ContentType.objects.get(app_label="geno", model="member"))
-                .filter(doctype__name=self.doctype)
-            )
+        members = (Member
+                    .objects
+                    .filter(date_join__gt=settings.GENO_MEMBER_LETTER_CUTOFF_DATE)
+                    .exclude(date_leave__isnull=False))
+        for member in members:
+            doc = (Document
+                    .objects
+                    .filter(object_id=member.pk)
+                    .filter(content_type=ContentType.objects.get(app_label="geno", model="member"))
+                    .filter(doctype__name=self.doctype))
             if doc.count() == 0:
                 objects.append(
                     {
-                        "obj": m,
+                        "obj": member,
                         "doctype": self.doctype,
-                        "info": "%s, Beitritt %s" % (m, m.date_join.strftime("%d.%m.%Y")),
+                        "info": "%s, Beitritt %s" % (member, member.date_join.strftime("%d.%m.%Y")),
                     }
                 )
         return objects
@@ -1361,7 +1533,7 @@ class MemberLetterView(DocumentGeneratorView):
         # Build table data from response
         if self.result and not self.error_message:
             # Filter out the "Dokumente:" item
-            member_items = [item for item in self.result if item.get("info") != "Dokumente:"]
+            member_items = [item for item in self.result if item.label != "Dokumente:"]
 
             if member_items:
                 headers = [_("Mitglied"), _("Beitrittsdatum")]
@@ -1371,13 +1543,13 @@ class MemberLetterView(DocumentGeneratorView):
                     # Extract member name and join date from info string
                     # Format is: "Name, Beitritt DD.MM.YYYY"
                     details = (
-                        ", ".join(str(o) for o in item.get("objects", []))
-                        if item.get("objects")
+                        ", ".join(str(o) for o in item.detail)
+                        if item.detail
                         else "—"
                     )
                     rows.append(
                         [
-                            str(item.get("info", "")),
+                            str(item.label),
                             details,
                         ]
                     )
@@ -1440,7 +1612,7 @@ class ShareConfirmationLetterView(DocumentGeneratorView):
         # Build table data from response
         if self.result and not self.error_message:
             # Filter out the "Dokumente:" item
-            share_items = [item for item in self.result if item.get("info") != "Dokumente:"]
+            share_items = [item for item in self.result if item.label != "Dokumente:"]
 
             if share_items:
                 headers = [_("Name/Adresse"), _("Details")]
@@ -1448,13 +1620,13 @@ class ShareConfirmationLetterView(DocumentGeneratorView):
 
                 for item in share_items:
                     details = (
-                        ", ".join(str(o) for o in item.get("objects", []))
-                        if item.get("objects")
+                        ", ".join(str(o) for o in item.detail)
+                        if item.detail
                         else "—"
                     )
                     rows.append(
                         [
-                            str(item.get("info", "")),
+                            str(item.label),
                             details,
                         ]
                     )
@@ -1594,7 +1766,7 @@ class ShareReminderLetterView(DocumentGeneratorView):
         # Build table data from response
         if self.result and not self.error_message:
             # Filter out the "Dokumente:" item
-            reminder_items = [item for item in self.result if item.get("info") != "Dokumente:"]
+            reminder_items = [item for item in self.result if item.label != "Dokumente:"]
 
             if reminder_items:
                 headers = [_("Name/Adresse"), _("Darlehen Details")]
@@ -1602,13 +1774,13 @@ class ShareReminderLetterView(DocumentGeneratorView):
 
                 for item in reminder_items:
                     details = (
-                        ", ".join(str(o) for o in item.get("objects", []))
-                        if item.get("objects")
+                        ", ".join(str(o) for o in item.detail)
+                        if item.detail
                         else "—"
                     )
                     rows.append(
                         [
-                            str(item.get("info", "")),
+                            str(item.label),
                             details,
                         ]
                     )
@@ -1804,125 +1976,6 @@ class ShareInterestView(CohivaAdminViewMixin, TemplateView):
 
         wb.save(response)
         return response
-
-
-@login_required
-def share_mailing(request):
-    if not request.user.has_perm("geno.canview_share") or not request.user.has_perm(
-        "geno.canview_billing"
-    ):
-        return unauthorized(request)
-
-    ret = []
-    objects = []
-    for adr in Address.objects.filter(active=True).order_by("name"):
-        if not adr.is_member(date_mode="end_date"):
-            ## Nichtmitglied
-            # ret.append({'info': str(adr), 'objects': ['Ohne Mitgliedschaft']})
-            continue
-
-        if not adr.city:
-            ret.append({"info": str(adr), "objects": ["KEINE ADRESSE!"]})
-            continue
-
-        ## Flags
-        share_mini = False
-        loan = False
-        deposit = False
-
-        obj = []
-        try:
-            inter = share_interest_calc(adr, datetime.datetime.now().year)
-        except Exception as e:
-            messages.error(request, "FEHLER bei der Zinsberechnung: %s" % str(e))
-            return HttpResponseRedirect("/admin/")
-        deposit_betrag = ""
-        if inter["end_amount"][0] > 1000:
-            ## Anteilscheine > 5
-            obj.append("AS: %d" % inter["end_amount"][0])
-        else:
-            ## Anteilscheine < 6
-            obj.append("AS: %d [mini]" % inter["end_amount"][0])
-            share_mini = True
-        if inter["end_amount"][1]:
-            ## Zinslose Darlehen
-            obj.append("Darlehen zinslos: %d" % inter["end_amount"][1])
-            loan = True
-        if inter["end_amount"][2]:
-            ## Verzinste Darlehen
-            obj.append("Darlehen verzinst: %d" % inter["end_amount"][2])
-            loan = True
-        if inter["end_amount"][3]:
-            ## Depositenkasse
-            obj.append("Depositenkasse: %d" % inter["end_amount"][3])
-            deposit_betrag = nformat(inter["end_amount"][3])
-            deposit = True
-        if inter["end_amount"][4]:
-            ## Darlehen spezial
-            obj.append("Darlehen spezial: %d" % inter["end_amount"][4])
-            loan = True
-
-        loan_info = []
-        # loan_values = []
-        # loan_due = []
-        # loan_duenew = []
-        if loan:
-            letter = "mitDarlehen"
-            for d in (
-                Share.get_active()
-                .filter(name=adr)
-                .filter(
-                    Q(share_type=ShareType.objects.get(name="Darlehen zinslos"))
-                    | Q(share_type=ShareType.objects.get(name="Darlehen verzinst"))
-                )
-                .filter(is_interest_credit=False)
-            ):
-                # loan_values.append(nformat(d.value))
-                duedate = d.payment_date + relativedelta(years=d.duration)
-                duedate_new = d.payment_date + relativedelta(years=(d.duration + 5))
-                # loan_due.append(duedate.strftime("%d.%m.%Y"))
-                # loan_duenew.append(duedate_new.strftime("%d.%m.%Y"))
-                loan_info.append(
-                    {
-                        "betrag": nformat(d.value),
-                        "due": duedate.strftime("%d.%m.%Y"),
-                        "duenew": duedate_new.strftime("%d.%m.%Y"),
-                    }
-                )
-                obj.append(
-                    "Darlehen-INFO: CHF %s,  %s  -> %s"
-                    % (
-                        nformat(d.value),
-                        duedate.strftime("%d.%m.%Y"),
-                        duedate_new.strftime("%d.%m.%Y"),
-                    )
-                )
-        elif deposit:
-            letter = "mitDeposito"
-        elif share_mini:
-            letter = "ohneBeitrag"
-        else:
-            letter = "mitAnteilsscheinen"
-        obj.append("-> %s" % letter)
-
-        ret.append({"info": str(adr), "objects": obj})
-        objects.append(
-            {
-                "obj": adr,
-                "info": "%s" % (letter),
-                "extra_context": {
-                    "loan_info": loan_info,
-                    "deposit_betrag": deposit_betrag,
-                    "filename_tag": letter,
-                },
-            }
-        )
-
-    options = {
-        "beschreibung": "Mailings",
-        "link_url": "/geno/share/mailing",
-    }
-    return create_documents_deprecated(request, "mailing", objects, options)
 
 
 class ShareStatementView(DocumentGeneratorView):
@@ -2234,253 +2287,6 @@ class ContractCheckFormsView(DocumentGeneratorView):
             }
 
         return context
-
-
-## TODO: Refactor to ClassBased view
-@login_required
-def create_contracts(request, letter=False):
-    if not request.user.has_perm("geno.canview_share") or not request.user.has_perm(
-        "geno.canview_billing"
-    ):
-        return unauthorized(request)
-
-    stock = {}
-    stock["EG"] = "Erdgeschoss"
-    stock["1.OG"] = "1. Obergeschoss"
-    stock["2.OG"] = "2. Obergeschoss"
-    stock["3.OG"] = "3. Obergeschoss"
-    stock["4.OG"] = "4. Obergeschoss"
-    stock["5.OG"] = "5. Obergeschoss"
-    stock["6.OG"] = "6. Obergeschoss"
-    stock["7.OG"] = "7. Obergeschoss"
-    stock["8.OG"] = "8. Obergeschoss"
-    stock["9.OG"] = "9. Obergeschoss"
-    stock["1.UG"] = "1. Untergeschoss"
-    stock["2.UG"] = "2. Untergeschoss"
-    stock["3.UG"] = "3. Untergeschoss"
-    stock["4.UG"] = "4. Untergeschoss"
-    stock["5.UG"] = "5. Untergeschoss"
-    stock["6.UG"] = "6. Untergeschoss"
-    stock["7.UG"] = "7. Untergeschoss"
-    stock["8.UG"] = "8. Untergeschoss"
-    stock["9.UG"] = "9. Untergeschoss"
-
-    objects = []
-    for contract in Contract.objects.all():
-        data = {"mietobjekt": ""}
-        for rental_unit in contract.rental_units.filter(rental_type="Wohnung"):
-            if data["mietobjekt"] != "":
-                raise Exception("Currently only one rental unit is supported!")
-            floor_str = stock.get(rental_unit.floor, rental_unit.floor)
-            if floor_str:
-                data["mietobjekt"] = "%s-Zimmer-Wohnung Nr. %s im %s" % (
-                    rental_unit.rooms,
-                    rental_unit.name,
-                    floor_str,
-                )
-            else:
-                data["mietobjekt"] = "%s-Zimmer-Wohnung Nr. %s" % (
-                    rental_unit.rooms,
-                    rental_unit.name,
-                )
-            data["filename_tag"] = "Wohnung_%s" % rental_unit.name
-            data["miete_netto"] = nformat(rental_unit.rent_netto, 0)
-            data["miete_brutto"] = nformat(
-                (rental_unit.rent_netto if rental_unit.rent_netto else 0.0)
-                + (rental_unit.nk if rental_unit.nk else 0.0)
-                + (rental_unit.nk_flat if rental_unit.nk_flat else 0.0)
-                + (rental_unit.nk_electricity if rental_unit.nk_electricity else 0.0),
-                0,
-            )
-            data["nk_akonto"] = nformat(rental_unit.nk, 0)
-            data["nk_pauschal"] = nformat(rental_unit.nk_flat, 0)
-            data["nk_strom"] = nformat(rental_unit.nk_electricity, 0)
-            data["mindestbelegung"] = nformat(rental_unit.min_occupancy, 0)
-            data["pflichtanteil"] = nformat(rental_unit.share, 0)
-            data["rate1"] = nformat(rental_unit.share / 2, 0)
-            data["rate2"] = nformat(rental_unit.share / 2, 0)
-        if data["mietobjekt"] == "":
-            continue
-        for rental_unit in contract.rental_units.filter(rental_type="Kellerabteil"):
-            data["mietobjekt"] = (
-                "%s, Kellerabteil Nr. %s (ungeheizt, kein kontrolliertes Raumklima)"
-                % (data["mietobjekt"], rental_unit.name)
-            )
-        info = "%s" % (data["mietobjekt"])
-        mieter = []
-        mieter_txt = []
-        for m in contract.contractors.all():
-            mieter.append(
-                {
-                    "name": "%s %s" % (m.first_name, m.name),
-                    "address": "%s, %s" % (m.street, m.city),
-                }
-            )
-            mieter_txt.append(
-                "%s %s\tBisherige Adresse: %s, %s" % (m.first_name, m.name, m.street, m.city)
-            )
-        data["mieter_txt"] = "\n".join(mieter_txt)
-        data["mieter"] = mieter
-        if len(mieter) == 1:
-            data["MieterInnen"] = "Mieter*in"
-        else:
-            data["MieterInnen"] = "Mieter*innen"
-
-        objects.append({"obj": contract, "info": "%s" % (info), "extra_context": data})
-
-    if letter:
-        options = {
-            "beschreibung": "Mietverträge Begleitbrief",
-            "link_url": "/geno/contract/create_letter",
-        }
-        return create_documents_deprecated(request, "contract_letter", objects, options)
-    else:
-        options = {
-            "beschreibung": "Mietverträge",
-            "link_url": "/geno/contract/create",
-        }
-        return create_documents_deprecated(request, "contract", objects, options)
-
-
-## Remove this after all views use DocumentGeneratorBaseView
-@login_required
-def create_documents_deprecated(request, default_doctype, objects=None, options=None):
-    if request.GET.get("makezip", "") == "yes":
-        makezip = True
-    else:
-        makezip = False
-
-    ret = []
-    zipcount = 0
-    zipfile_content = []
-
-    try:
-        default_doctype_obj = DocumentType.objects.get(name=default_doctype)
-    except DocumentType.DoesNotExist:
-        return render(
-            request,
-            "geno/default.html",
-            {
-                "response": [
-                    {
-                        "info": 'FEHLER: Dokumenttyp "%s" existiert nicht. Bitte zuerst erstellen.'
-                        % default_doctype
-                    }
-                ],
-                "title": "Dokumente erzeugen",
-            },
-        )
-
-    if not options:
-        options = {"beschreibung": default_doctype_obj.description}
-
-    if not objects:
-        if default_doctype == "contract_check":
-            objects = []
-            for c in Contract.get_active():
-                for ru in c.rental_units.all():
-                    if ru.rental_type not in ("Gewerbe", "Lager", "Hobby", "Parkplatz"):
-                        objects.append({"obj": c})
-                        break
-        else:
-            return render(
-                request,
-                "geno/default.html",
-                {
-                    "response": [
-                        {"info": 'Keine Objekte gefunden (Dokumenttyp "%s").' % default_doctype}
-                    ],
-                    "title": "Dokumente erzeugen - %s" % options["beschreibung"],
-                },
-            )
-
-    filenames = []
-    for o in objects:
-        zipcount += 1
-        objects = []
-        if "info" in o:
-            objects.append(o["info"])
-        ret.append({"info": str(o["obj"]), "objects": objects})
-        if makezip:
-            if "doctype" in o:
-                doctype = o["doctype"]
-                doctype_obj = DocumentType.objects.get(name=doctype)
-            else:
-                doctype = default_doctype
-                doctype_obj = default_doctype_obj
-            ## Create document
-            if "extra_context" in o:
-                data = get_context_data(doctype, o["obj"].pk, o["extra_context"])
-            else:
-                data = get_context_data(doctype, o["obj"].pk, {})
-            template: ContentTemplate | None = doctype_obj.templates.filter(active=True).first()
-            if not template or not template.file:
-                raise RuntimeError("Documenttype has no template file")
-            filename = fill_template_pod(
-                template.file.path,
-                context_format(data["context"]),
-                output_format="odt",
-            )
-            if not filename:
-                raise RuntimeError("Could not fill template")
-            output_filename = data["visible_filename"]
-            counter = 1
-            while output_filename in filenames:
-                counter += 1
-                output_filename = "%s_%s%s" % (
-                    data["visible_filename"][0:-4],
-                    counter,
-                    data["visible_filename"][-4:],
-                )
-            zipfile_content.append({"file": filename, "filename": output_filename})
-            filenames.append(output_filename)
-            if "content_object" in data:
-                ## Attach document data to object
-                d = Document(
-                    name=output_filename,
-                    doctype=doctype_obj,
-                    data=json.dumps(data["context"]),
-                    content_object=data["content_object"],
-                )
-                d.save()
-
-    if makezip:
-        ## Build ZIP-file from list of files
-        file_like_object = io.BytesIO()
-        zipfile_ob = zipfile.ZipFile(file_like_object, "w")
-        for f in zipfile_content:
-            # print "%s -> %s_%s" % (f['file'], f['member'].name.name,f['member'].name.first_name)
-            zipfile_ob.write(f["file"], f["filename"])
-        zipfile_ob.close()
-        resp = HttpResponse(
-            file_like_object.getvalue(), content_type="application/x-zip-compressed"
-        )
-        resp["Content-Disposition"] = "attachment; filename=%s" % "output.zip"
-        return resp
-
-    if zipcount > 0:
-        link_text = "%s erstellen und herunterladen" % options["beschreibung"]
-        if url_has_allowed_host_and_scheme(request.path, allowed_hosts=None):
-            link_url = options.get("link_url", request.path)
-        else:
-            link_url = options.get("link_url", "")
-        ret.append(
-            {
-                "info": "Dokumente:",
-                "objects": [
-                    '<a href="%s?makezip=yes">%s (%d LibreOffice Dokumente in ZIP)</a>'
-                    % (link_url, link_text, zipcount)
-                ],
-            }
-        )
-    else:
-        ret.append({"info": "Keine zu erstellenden Dokumente gefunden."})
-
-    return render(
-        request,
-        "geno/default.html",
-        {"response": ret, "title": "Dokumente erzeugen - %s" % options["beschreibung"]},
-    )
 
 
 class CheckMailinglistsView(CohivaAdminViewMixin, TemplateView):
@@ -2899,7 +2705,8 @@ def send_member_mail_filter_rental(form, member_list):
         if rental:
             for adr in contract.contractors.all():
                 if adr.pk not in adr_list:
-                    ## Filter by generic attribute: TODO: move this filter to be additive...
+                    ## Filter by generic attribute:
+                    # TODO: move this filter to be additive...
                     include = True
                     if form.cleaned_data["filter_genattribute"] != "none":
                         genatt = (
@@ -3278,7 +3085,8 @@ class MailWizardActionView(MailWizardView):
         for m in self.request.session["members"]:
             if str(m["id"]) in self.request.session["select_members"]:
                 form.cleaned_data["members"].append(m)
-        self.result = send_member_mail_process(form.cleaned_data)
+        mailer = DocumentMailer()
+        self.result = mailer.send_member_mail_process(form.cleaned_data)
         if isinstance(self.result, HttpResponse):
             return self.result
         self.result["show_results"] = True
@@ -4424,7 +4232,7 @@ def rental_unit_list_create_documents(request, doc="mailbox"):
         zipcount += 1
         ret.append({"info": context["title"], "objects": context["mietpartei"]})
         if makezip:
-            filename = fill_template_pod(template.file.path, context, output_format="odt")
+            filename = fill_pod_template(template.file.path, context, output_format="odt")
             if not filename:
                 raise RuntimeError("Could not fill template")
             zipfile_content.append(

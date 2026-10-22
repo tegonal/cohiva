@@ -1,66 +1,52 @@
 import datetime
-import io
 import json
 import logging
 import os
-import re
-import time
-import zipfile
+from dataclasses import dataclass, field
 from decimal import Decimal
-from zipfile import ZipFile
+from typing import Literal
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives
-from django.db.models import Q
-from django.http import HttpResponse
-from django.template import Context, Template, loader
-from django.utils.html import escape
-from html2text import html2text
+from django.core.files import File
+from django.core.serializers.json import DjangoJSONEncoder
+from django.db.models import Model, Q
+from django.template import Context, Template
+from django.utils.translation import gettext as _
 
-import geno.settings as geno_settings
 from geno.billing import add_invoice, get_reference_nr, render_qrbill
-from geno.exporter import export_data_to_xls
+from geno.mail import Recipient
 from geno.models import (
     Address,
-    ContentTemplate,
     Contract,
     Document,
     DocumentType,
-    GenericAttribute,
     InvoiceCategory,
     Member,
-    MemberAttribute,
-    MemberAttributeType,
     Share,
     ShareType,
 )
 from geno.shares import get_share_statement_data
-from geno.utils import fill_template_pod, nformat, odt2pdf, remove_temp_files, sanitize_filename
+from geno.utils import (
+    fill_pod_template,
+    nformat,
+    odt2pdf,
+    remove_temp_files,
+    sanitize_filename,
+)
 
 logger = logging.getLogger("geno")
 
+class _ContextEncoder(DjangoJSONEncoder):
+    """
+    Custom JSON encoder that serializes Django Model instances to their string representation.
+    Used to dump JSON data during Document creation
+    """
 
-class MailTemplate:
-    def __init__(self, template, subject, sender):
-        self.is_html = False
-        if isinstance(template, str) and template.startswith("template_id_"):
-            templ = ContentTemplate.objects.get(id=template[12:])
-        else:
-            templ = template
-        if isinstance(templ, ContentTemplate):
-            self.template = Template(
-                "%s%s%s" % ("{% autoescape off %}", templ.text, "{% endautoescape %}")
-            )
-            self.is_html = re.search(r"<html", templ.text, re.IGNORECASE)
-        elif isinstance(templ, str):
-            self.template = loader.get_template(templ)
-            if templ[-5:] == ".html":
-                self.is_html = True
-        else:
-            raise TypeError(f"Unsupported type: {templ}")
-        self.subject = subject
-        self.sender = sender
+    def default(self, obj):
+        if isinstance(obj, Model):
+            return str(obj)
+        return super().default(obj)
 
 
 class RenderedDocument:
@@ -68,23 +54,27 @@ class RenderedDocument:
         self.file = None
         self.filename = None
         self.linked_invoice = None
-
-
-class SkipRecipient(Exception):
-    pass
+        self.context = None
+        self.doctype = None
+        self.content_template = None
 
 
 class DocumentTemplate:
-    def __init__(self, template, doctype=None, output_format=None, dry_run=False):
+    # TODO: create a DocumentOutputType class that uses Literal
+    SUPPORTED_OUTPUT_TYPES = ("odt", "pdf")
+
+    def __init__(self,
+                 template: Template,
+                 doctype: DocumentType=None,
+                 output_format: str=None,
+                 dry_run: bool=False):
         self.content_template = template
         self.doctype = doctype
         self.output_format = output_format
         self.context_options = {
             "share_statement_context": False,
             "billing_context": False,
-            #'add_qrbill': False
             "qrbill_account": None,
-            #'qrbill_use_refnr': False,
             "qrbill_invoice_type_id": None,
             "qrbill_info": "",
             "qrbill_rental_unit_in_extra_info": False,
@@ -133,6 +123,7 @@ class DocumentTemplate:
         return ctx
 
     def get_share_statement_context(self, recipient):
+        from geno.mail import SkipRecipientException
         statement_year = datetime.datetime.now().year - 1
         try:
             statement_data = get_share_statement_data(recipient.address, statement_year)
@@ -145,7 +136,7 @@ class DocumentTemplate:
         ):
             recipient.content_object = "address"
             return statement_data
-        raise SkipRecipient("Keine Beteiligungen für Kontoauszug.")
+        raise SkipRecipientException("Keine Beteiligungen für Kontoauszug.")
 
     def get_billing_context(self, recipient):
         c = {}
@@ -344,15 +335,73 @@ class DocumentTemplate:
         logger.info(f"   > Added Invoice object: {invoice}")
         return invoice
 
-    def render(self, recipient):
-        output = RenderedDocument()
-        output.file = self.content_template.file.path
-        filename_tag = sanitize_filename(
-            self.content_template.name
-        )  # use template name as filename tag
+    def render(self, recipient) -> RenderedDocument:
+        rendered_document = RenderedDocument()
+        rendered_document.file = self.content_template.file.path
+        filename_tag = sanitize_filename(self.content_template.name)
         if self.content_template.template_type == "OpenDocument":
-            ctx = self.get_context(recipient)
-            logger.info(
+            context = self.get_context(recipient)
+            self.log_template_rendering(context)
+            temporary_filename = fill_pod_template(
+                self.content_template.file.path,
+                context,
+                output_format="odt"
+            )
+            rendered_document.file = temporary_filename
+            self.temp_files.append(rendered_document.file)
+            if not filename_tag:
+                # TODO: smells funny
+                filename_tag = os.path.splitext(os.path.basename(self.content_template.file.path))[
+                    0
+                ]
+                logger.warning(
+                    "No filename_tag using default: %s" % self.content_template.file.path
+                )
+            rendered_document.filename = (
+                f"{recipient.address.get_filename_str()}_{filename_tag}.{self.output_format}"
+            )
+            if self.output_format not in self.SUPPORTED_OUTPUT_TYPES:
+                raise ValueError(f"Unsupported output format: {self.output_format}")
+            if self.output_format == "pdf":
+                self.render_document_as_pdf(rendered_document, context)
+            if not rendered_document.file:
+                raise RuntimeError("Could not fill template")
+            rendered_document.context = context
+            rendered_document.doctype = self.doctype
+            # Fallback if the doctype has not been set explicitly
+            if not rendered_document.doctype and self.content_template:
+                rendered_document.doctype = self.content_template.document_types.filter(active=True).first()
+            rendered_document.content_template = self.content_template
+        else:
+            # ContentTemplate is not an OpenDocument
+            logger.info(" > appending file without rendering: %s" % (rendered_document.file))
+            # append file ending of output.file to filename_tag
+            if not filename_tag.endswith(os.path.splitext(rendered_document.file)[1]):
+                filename_tag += os.path.splitext(rendered_document.file)[1]
+            rendered_document.filename = filename_tag
+        return rendered_document
+
+    def render_document_as_pdf(self, rendered_document, context):
+        logger.info(" > odt2pdf(%s) -> %s" % (rendered_document.file, rendered_document.filename))
+        rendered_document.file = odt2pdf(rendered_document.file, "send_member_mail")
+        self.temp_files.append(rendered_document.file)
+        if context["qr_account"]:
+            output_dir = f"/tmp/documents_render_qrbill_{settings.GENO_ID}"
+            logger.info(f" > render_qrbill({output_dir}/{rendered_document.filename}")
+            render_qrbill(
+                        None,
+                        context,
+                        rendered_document.filename,
+                        base_pdf_file=rendered_document.file,
+                        append_pdf_file=None,
+                        output_dir=output_dir,
+                    )
+            rendered_document.linked_invoice = context["invoice"]
+            rendered_document.file = f"{output_dir}/{rendered_document.filename}"
+            self.temp_files.append(rendered_document.file)
+
+    def log_template_rendering(self, ctx) -> None:
+        logger.info(
                 " > fill template %s with context: anrede=%s, name=%s, vorname=%s, org=%s"
                 % (
                     self.content_template.file.path,
@@ -362,50 +411,6 @@ class DocumentTemplate:
                     ctx["organisation"],
                 )
             )
-            output.file = fill_template_pod(
-                self.content_template.file.path, ctx, output_format="odt"
-            )
-            self.temp_files.append(output.file)
-            if not filename_tag:
-                filename_tag = os.path.splitext(os.path.basename(self.content_template.file.path))[
-                    0
-                ]
-                logger.warning(
-                    "No filename_tag using default: %s" % self.content_template.file.path
-                )
-            output.filename = (
-                f"{recipient.address.get_filename_str()}_{filename_tag}.{self.output_format}"
-            )
-            if self.output_format == "pdf":
-                logger.info(" > odt2pdf(%s) -> %s" % (output.file, output.filename))
-                output.file = odt2pdf(output.file, "send_member_mail")
-                self.temp_files.append(output.file)
-                if ctx["qr_account"]:
-                    output_dir = f"/tmp/documents_render_qrbill_{settings.GENO_ID}"
-                    logger.info(f" > render_qrbill({output_dir}/{output.filename}")
-                    render_qrbill(
-                        None,
-                        ctx,
-                        output.filename,
-                        base_pdf_file=output.file,
-                        append_pdf_file=None,
-                        output_dir=output_dir,
-                    )
-                    output.linked_invoice = ctx["invoice"]
-                    output.file = f"{output_dir}/{output.filename}"
-                    self.temp_files.append(output.file)
-            elif self.output_format != "odt":
-                raise ValueError(f"Unsupported output format: {self.output_format}")
-            if not output.file:
-                raise RuntimeError("Could not fill template")
-        else:
-            ## Just append
-            logger.info(" > appending file without rendering: %s" % (output.file))
-            # append file ending of output.file to filename_tag
-            if not filename_tag.endswith(os.path.splitext(output.file)[1]):
-                filename_tag += os.path.splitext(output.file)[1]
-            output.filename = filename_tag
-        return output
 
     def cleanup(self):
         remove_temp_files(self.temp_files)
@@ -416,571 +421,292 @@ class DocumentTemplate:
 #    def render(self, recipient):
 
 
-class Recipient:
-    def __init__(self, address, member=None, contract=None, extra_info=None):
-        self.address = address
-        self.member = member
-        self.contract = contract
-        self.extra_info = extra_info
-        self.skip_reason = None
-        self.content_object = None
-        self.documents = []
-        self.log = []
-        self.warning = False
-        self.failure = False
-
-    def __str__(self):
-        name = str(self.address)
-        if self.member:
-            name = f"{name} (member)"
-        if self.contract:
-            name = f"{name} [{self.contract}]"
-        return name
-
-    def add_address_warnings(self):
-        if len(self.address.city) < 6:
-            self.warning = True
-            self.log.append("WARNUNG: Keine Adresse/Ort vorhanden!")
-        else:
-            try:
-                int(self.address.city[0:4])
-            except ValueError:
-                self.warning = True
-                self.log.append("WARNUNG: Ungewöhnliche PLZ/Adressierung -> Adresse im Ausland?")
 
 
-class ProcessDocuments:
-    def __init__(self, dry_run=False):
-        self.mail_template = None
-        self.mail_bcc = None
-        self.mail_test = True
-        self.zipfile_ob = None
-        self.output_format = None
-        self.templates = []
-        self.recipients = []
-        self.contexts = {}
-        self.test_email_address = None
+@dataclass
+class DocumentFetchResult:
+    """A Result indicating the status of a Document fetching action."""
+    status: Literal["success", "error"]
+    label: str
+    detail: list[str] = field(default_factory=list)
+
+
+@dataclass
+class DocumentCreationResult:
+    """A Result indicating the status of a Document creation action."""
+    status: Literal["success", "info", "error", "warning"]
+    label: str
+    detail: list[str] = field(default_factory=list)
+    temporary_file_location: str | None = None
+    filename: str | None = None
+
+
+class DocumentTypeError(Exception):
+    # TODO: implement
+    pass
+
+
+class DocumentGenerator:
+    """
+    Builder class to create Documents. As a rule, Documents should be persisted
+    at creation time, so that they remain accessible with re-generation.
+    """
+    default_document_type: DocumentType = None
+
+    def __init__(self, default_document_type: DocumentType=None, dry_run: bool=False):
+        self.default_document_type = default_document_type
         self.dry_run = dry_run
+        self.temp_files = []
 
-    def setup_mail(self, template, bcc=None):
-        self.mail_template = template
-        self.mail_bcc = bcc
+    def render_documents_for_recipient(
+        self, recipient: Recipient, templates: list[DocumentTemplate]
+    ) -> None:
+        """Render DocumentTemplates for a Recipient and attach results."""
+        from geno.mail import SkipRecipientException
 
-    def setup_zip(self):
-        self.file_like_object = io.BytesIO()
-        self.zipfile_ob = ZipFile(self.file_like_object, "w")
-
-    def set_output_format(self, filetype):
-        self.output_format = filetype
-
-    def add_document_template(self, att):
-        try:
-            (att_type, att_id) = att.split(":", 1)
-        except ValueError:
-            att_type = None
-            att_id = None
-
-        content_template = None
-        doctype = None
-        if att_type == "DocumentType":
-            try:
-                doctype = DocumentType.objects.get(id=att_id)
-                content_template = doctype.templates.filter(active=True).first()
-                if not content_template:
-                    raise ValueError(f"Dokumenttyp {doctype} hat keine Vorlagen-Datei")
-            except DocumentType.DoesNotExist:
-                raise ValueError(f"Dokumenttyp mit ID {att_id} nicht gefunden.")
-        elif att_type == "ContentTemplate":
-            try:
-                content_template = ContentTemplate.objects.get(id=att_id)
-            except ContentTemplate.DoesNotExist:
-                raise ValueError(f"Vorlage mit ID {att_id} nicht gefunden.")
-        else:
-            raise TypeError(f"Unbekannter Vorlagentyp: {att}")
-        self.templates.append(
-            DocumentTemplate(
-                content_template,
-                doctype=doctype,
-                output_format=self.output_format,
-                dry_run=self.dry_run,
-            )
-        )
-
-    def add_recipient(self, member_or_address, contract=None, extra_info=None):
-        if isinstance(member_or_address, Member):
-            recip = Recipient(
-                member_or_address.name,
-                member=member_or_address,
-                contract=contract,
-                extra_info=extra_info,
-            )
-        elif isinstance(member_or_address, Address):
-            recip = Recipient(member_or_address, contract=contract, extra_info=extra_info)
-        else:
-            raise TypeError(f"{member_or_address} must be Member or Address.")
-        self.validate_recipient(recip)
-        self.recipients.append(recip)
-
-    def validate_recipient(self, recipient):
-        if self.mail_template and not recipient.address.email:
-            recipient.skip_reason = "Keine Email-Adresse vorhanden."
-        if (
-            self.mail_template and recipient.address.paymentslip
-        ):  ## TODO: rename address.paymentslip to more generic special_case or similar
-            recipient.skip_reason = "Spezialfall (manuelle Bearbeitung)"
-
-    def generate_documents(self):
-        if not self.output_format:
+        if recipient.skip_reason:
             return
-        logger.info("Generating documents from the following templates:")
-        for template in self.templates:
-            logger.info(f" - {template}")
-        for recipient in self.recipients:
-            if recipient.skip_reason:
-                logger.info(f"Skipping {recipient}: {recipient.skip_reason}")
+        for template in templates:
+            try:
+                doc = template.render(recipient)
+                recipient.documents.append(doc)
+            except SkipRecipientException as e:
+                logger.info(
+                    "Skipping recipient: No document (template=%s, reason=%s)", template, e
+                )
+                recipient.skip_reason = str(e)
+                break
+
+    def create_document(
+            self,
+            document_type: DocumentType,
+            template: DocumentTemplate,
+            context: dict,
+            filename: str=None,
+        ) -> DocumentCreationResult:
+        """
+        Create a single Document object from a known DocumentType and
+        DocumentTemplate. The Template is filled upon creation, and the
+        resulting file is persisted, s.t. it can be retrieved later.
+
+        Returns a DocumentCreationResult with an exit status and paths to the
+        created Document and its File.
+        """
+        # TODO: perform error-checking here
+        if filename:
+            output_filename = filename
+        else:
+            output_filename = context["visible_filename"]
+        data = json.dumps(context, cls=_ContextEncoder)
+        # TODO: deduplicate filename
+        document = Document(
+            name=output_filename,
+            doctype=document_type,
+            template=template,
+            data=data,
+            content_object=context.get("content_object"),
+        )
+        # TODO: error handling to catch error results
+        temporary_file_location = self._fill_template(template, {"context": context})
+        self.temp_files.append(temporary_file_location)
+        self._persist_document(document)
+        self._save_document_file(document, temporary_file_location)
+        # TODO: are we passing back everything that we require?
+        result = DocumentCreationResult(
+            status="success",
+            label=str(document),
+            detail=[str(document)],
+            temporary_file_location=temporary_file_location,
+            filename=output_filename
+        )
+        return result
+
+    def create_documents_for_recipient(self, recipient: Recipient) -> list[DocumentCreationResult]:
+        """
+        Create Documents for an e-mail recipient. A single Recipient
+        can receive multiple Documents in a single e-mail.
+
+        recipient: planned e-mail recipient.
+
+        Returns a list of DocumentCreationResults
+        """
+        # Early exit: ensure no Documents are created when content is not available
+        if recipient.content_object is None:
+            return []
+
+        results: list[DocumentCreationResult] = []
+
+        for rendered_document in recipient.documents:
+            if rendered_document.doctype is None or rendered_document.context is None:
                 continue
-            logger.info(f"Preparing data for {recipient}")
-            for template in self.templates:
-                try:
-                    doc = template.render(recipient)
-                    recipient.documents.append(doc)
-                except SkipRecipient as e:
-                    logger.info(
-                        f" - Skipping recipient: No document (template={template}, reason={e})"
-                    )
-                    recipient.skip_reason = e
-                    break
-
-    def send_output(self):
-        if self.mail_template:
-            self.send_output_mails()
-        if self.zipfile_ob:
-            self.add_documents_to_zip()
-
-    def add_documents_to_zip(self):
-        for recipient in self.recipients:
-            for doc in recipient.documents:
-                self.zipfile_ob.write(doc.file, doc.filename)
-
-    def send_output_mails(self):
-        logger.info("Start sending mails")
-        for recipient in self.recipients:
-            if recipient.skip_reason:
-                recipient.warning = True
-                recipient.log.append(f"KEIN EMAIL GESENDET! Grund: {recipient.skip_reason}")
-            else:
-                ctx = self.get_email_context(recipient)
-                try:
-                    mail_recipient = self.send_email(
-                        recipient.address,
-                        self.mail_template,
-                        ctx,
-                        bcc=self.mail_bcc,
-                        test_to_bcc=self.dry_run,
-                        attachments=recipient.documents,
-                    )
-                except Exception as e:
-                    msg = f"Konnte mail an {recipient} nicht schicken!!! Fehler: {e}"
-                    logger.error(msg)
-                    recipient.failure = True
-                    recipient.log.append(msg)
-                if not recipient.failure:
-                    logger.info(f" > Email an {mail_recipient} geschickt.")
-                    recipient.log.append(f"Email an {escape(mail_recipient)} geschickt.")
-                self.throttle()
-
-    def throttle(self):
-        if not getattr(settings, "IS_RUNNING_TESTS", False):
-            time.sleep(0.2)
-
-    def get_email_context(self, recipient):
-        ctx = recipient.address.get_context()
-        ## TODO: Make this more generic for any member attribute or generic attribute
-        if self.mail_template == "geno/member_email_ausschreibung.html":
-            atype = MemberAttributeType.objects.get(name="Ausschreibung Code")
-            code = MemberAttribute.objects.get(member=recipient.member, attribute_type=atype)
-            ctx["email_code"] = code.value
-        return ctx
-
-    ## TODO: Move/merge this with generic send-mail function?
-    def send_email(
-        self, address, mail_template, context, bcc=None, test_to_bcc=True, attachments=None
-    ):
-        if attachments is None:
-            attachments = []
-        bcc_recipients = None
-        if test_to_bcc:
-            mail_recipient = '"%s %s" <%s>' % (address.first_name, address.name, bcc)
-        else:
-            mail_recipient = address.get_mail_recipient()
-            if bcc:
-                bcc_recipients = [
-                    bcc,
-                ]
-        mail_text_html = mail_template.template.render(Context(context))
-        if mail_template.is_html:
-            mail_text = html2text(mail_text_html)
-        else:
-            mail_text = mail_text_html
-        mail = EmailMultiAlternatives(
-            mail_template.subject,
-            mail_text,
-            mail_template.sender,
-            [mail_recipient],
-            bcc_recipients,
-        )
-        for att in attachments:
-            # logger.info(" > attaching %s as %s" % (att['file'], att['filename']))
-            attfile = open(att.file, "rb")
-            mail.attach(att.filename, attfile.read())  # , 'application/pdf')
-            attfile.close()
-        if mail_template.is_html:
-            mail.attach_alternative(mail_text_html, "text/html")
-        mails_sent = mail.send()
-        if mails_sent != 1:
-            raise ValueError(f"send_email(): {mails_sent} mails sent instead of 1.")
-        return mail_recipient
-
-    def update_member_attributes(self, attribute, value):
-        for recipient in self.recipients:
-            if not recipient.failure and recipient.member:
-                try:
-                    att = MemberAttribute.objects.get(
-                        member=recipient.member, attribute_type=attribute
-                    )
-                    old_value = att.value
-                except MemberAttribute.DoesNotExist:
-                    att = MemberAttribute(member=recipient.member, attribute_type=attribute)
-                    old_value = "(Kein)"
-                att.value = value
-                att.date = datetime.date.today()
-                att.save()
-                recipient.log.append(
-                    f'Mitglieder-Attribut "{attribute}" geändert: "{old_value}" -> "{att.value}"'
+            try:
+                context = dict(rendered_document.context)
+                if "content_object" not in context:
+                    context["content_object"] = recipient.address
+                result = self.create_document(
+                    document_type=rendered_document.doctype,
+                    template=rendered_document.content_template,
+                    context=context,
+                    filename=rendered_document.filename,
                 )
+                results.append(result)
+            except Exception as e:
+                msg = f"Konnte Dokument '{rendered_document.filename}' für {recipient} nicht speichern. Fehler: {e}"
+                logger.error(msg)
+                recipient.failure = True
+                recipient.log.append(msg)
+        return results
 
-    def update_generic_attributes(self, attribute, value):
-        for recipient in self.recipients:
-            if not recipient.failure and recipient.address:
+
+    def create_documents(self,
+                         document_objects: list[dict],
+                         options: list[dict] | None) -> list[DocumentCreationResult]:
+        """
+        Given a list of Document objects, creates individual Documents, and
+        persists the result to the database and filesystem.
+
+        document_objects: list of dictionaries, containing a Model object, a
+            DocumentType, and additional "info".
+
+        Returns a list of DocumentCreationResults, which can be consumed to
+        create Views.
+        """
+        results: list[DocumentCreationResult] = []
+        files_to_zip = []
+        make_zip = options.get("makezip", False)
+        filenames: list[str] = []
+        # Early exit: the default DocumentType is not available
+        try:
+            default_document_type = DocumentType.objects.get(name=self.default_document_type)
+        except DocumentType.DoesNotExist:
+            return [ DocumentCreationResult(
+                status="error",
+                label=(_(f"The document type '{self.default_document_type}' does not exist."))
+            )]
+
+        for object in document_objects:
+            # Resolve DocumentType for this object
+            document_type_name = object["doctype"]
+            if "doctype" in object:
                 try:
-                    att = GenericAttribute.objects.filter(addresses=recipient.address).get(
-                        name=attribute
-                    )
-                    old_value = att.value
-                except GenericAttribute.DoesNotExist:
-                    att = GenericAttribute(content_object=recipient.address, name=attribute)
-                    old_value = "(Kein)"
-                att.value = value
-                att.date = datetime.date.today()
-                att.save()
-                recipient.log.append(
-                    f'Allg.Attribut "{attribute}" geändert: "{old_value}" -> "{att.value}"'
-                )
-
-    def get_zipfile(self):
-        self.zipfile_ob.close()
-        resp = HttpResponse(
-            self.file_like_object.getvalue(), content_type="application/x-zip-compressed"
-        )
-        resp["Content-Disposition"] = "attachment; filename=%s" % "output.zip"
-        return resp
-
-    def get_xls_list(self):
-        export_data = []
-        export_data_fields = [
-            "organization",
-            "name",
-            "first_name",
-            "title",
-            "email",
-            "tel1",
-            "tel2",
-            "city",
-            "street",
-            "date_join",
-            "date_leave",
-            "flag_01",
-            "flag_02",
-            "flag_03",
-            "flag_04",
-            "flag_05",
-            "info",
-            "extra_info",
-        ]
-        export_data_header = [
-            "Organisation",
-            "Nachname",
-            "Vorname",
-            "Anrede",
-            "Email",
-            "Telefon1",
-            "Telefon2",
-            "PLZ Ort",
-            "Adresse",
-            "Beitrittsdatum",
-            "Austrittsdatum",
-        ]
-        for i in range(1, 6):
-            export_data_header.append(geno_settings.MEMBER_FLAGS[i])
-        export_data_header.append("Info")
-        export_data_header.append("Zusatzinfo")
-        for recipient in self.recipients:
-            obj = lambda: None
-            obj._fields = export_data_fields
-            obj.organization = recipient.address.organization
-            obj.name = recipient.address.name
-            obj.first_name = recipient.address.first_name
-            obj.title = recipient.address.title
-            obj.email = recipient.address.email
-            obj.tel1 = recipient.address.telephone
-            obj.tel2 = recipient.address.mobile
-            obj.city = recipient.address.city
-            obj.street = recipient.address.street
-            if recipient.member:
-                obj.date_join = recipient.member.date_join
-                obj.date_leave = recipient.member.date_leave
-                obj.flag_01 = recipient.member.flag_01
-                obj.flag_02 = recipient.member.flag_02
-                obj.flag_03 = recipient.member.flag_03
-                obj.flag_04 = recipient.member.flag_04
-                obj.flag_05 = recipient.member.flag_05
-            obj.info = ", ".join(recipient.log)
-            obj.extra_info = recipient.extra_info
-            export_data.append(obj)
-        return export_data_to_xls(
-            export_data,
-            title="Mitglieder_Export",
-            header=export_data_header,
-            filename_suffix="mitglieder",
-        )
-
-    def rollback_failed_recipients(self):
-        for recipient in self.recipients:
-            if recipient.failure:
-                for doc in recipient.documents:
-                    if doc.linked_invoice:
-                        logger.warning(
-                            f"Rollback failed recipient {recipient}: Deleting invoice {doc.invoice}"
+                    document_type = DocumentType.objects.get(name=document_type_name)
+                except DocumentType.DoesNotExist:
+                    results.append(
+                        DocumentCreationResult(
+                            status="error",
+                            label=(_(f"Document type '{document_type}' not found."))
                         )
-                        doc.linked_invoice.delete()
-
-    def get_status_report(self):
-        ret = {"errors": [], "warnings": [], "success": []}
-        for recipient in self.recipients:
-            recipient.add_address_warnings()
-            if recipient.failure:
-                ret["errors"].append(
-                    {
-                        "info": f"{recipient.address} - {recipient.extra_info} ({recipient.address.email})",
-                        "objects": recipient.log,
-                    }
-                )
-            elif recipient.warning:
-                ret["warnings"].append(
-                    {
-                        "info": f"{recipient.address} - {recipient.extra_info} ({recipient.address.email})",
-                        "objects": recipient.log,
-                    }
-                )
+                    )
+                    break
             else:
-                ret["success"].append(
-                    {
-                        "info": f"{recipient.address} - {recipient.extra_info} ({recipient.address.email})",
-                        "objects": recipient.log,
-                    }
+                # No DocumentType found, use the default
+                document_type = default_document_type
+            detail = []
+
+            # Get info from the Object
+            if "info" in object:
+                detail.append(object["info"])
+
+            # Validate the template
+            content_template = self._get_template(document_type=document_type)
+            # TODO: handle "extra_context" in Object
+            context = get_context_data(document_type_name, object["obj"].pk)
+            # Create the Document
+            result = self.create_document(
+                document_type=document_type,
+                template=content_template,
+                context=context
+            )
+            results.append(result)
+            if not make_zip:
+                # Exit early: we do not need to create a .zip for one Document
+                return results
+            else:
+                # Track the files that will be placed into a .zip
+                filenames.append(result.filename)
+                files_to_zip.append({"obj": object, "doctype": document_type_name, "doctype_obj": document_type})
+        # TODO: pass this off to a helper function
+        if files_to_zip:
+            link_text = "%s erstellen und herunterladen" % options["beschreibung"]
+            link_url = options.get("link_url", "")
+            results.append(
+                DocumentCreationResult(
+                    status="info",
+                    label="Dokumente:",
+                    detail=[
+                        '<a href="%s?makezip=yes">%s (%d LibreOffice Dokumente in ZIP)</a>'
+                        % (link_url, link_text, len(files_to_zip))
+                    ],
                 )
-        return ret
+            )
+        else:
+            results.append(
+                DocumentCreationResult(
+                    status="warning", label="No Documents to be created."
+                )
+            )
+        return results
+
+
+    def _deduplicate_filename(filename: str) -> str:
+        # TODO: implement the counter
+        file_count = 0
+        filename_stem, file_extension = os.path.splitext(filename)
+        output_filename = "%s_%s.%s" % (filename_stem, file_count, file_extension)
+        return output_filename
+
+    def _persist_document(self, document: Document) -> None:
+        """
+        Persist a Document object in the database.
+        """
+        document.save()
+
+    def _save_document_file(self, document, temporary_filename):
+        """
+        Copy a file from temporary storage into the Document object's File field
+
+        document: the Document object that will store the file.
+        temporary_filename: path to the temporary File data.
+        """
+        with open(temporary_filename, "rb") as f:
+            document.file.save(document.name, File(f), save=True)
 
     def cleanup(self):
-        for template in self.templates:
-            template.cleanup()
+        remove_temp_files(self.temp_files)
+        self.temp_files = []
 
-
-## TODO: Add possibility to send a Document
-def send_member_mail_process(data):
-    is_test = data["action"] == "mail_test"
-    process = ProcessDocuments(dry_run=is_test)
-    if data["action"] in ("mail", "mail_test"):
-        mail_template = MailTemplate(data["template_mail"], data["subject"], data["email_sender"])
-        process.setup_mail(mail_template, bcc=data["email_copy"])
-    if data["action"] in ("makezip", "makezip_pdf"):
-        process.setup_zip()
-    if data["action"] == "makezip":
-        process.set_output_format("odt")
-    elif data["template_files"]:
-        process.set_output_format("pdf")
-
-    try:
-        for template in data["template_files"]:
-            process.add_document_template(template)
-    except Exception as e:
-        return {"errors": [{"info": f"Fehler: Konte Dokumentvorlage nicht hinzufügen: {e}"}]}
-
-    for m in data["members"]:
-        if "contract_id" in m:
-            contract = Contract.objects.get(id=m["contract_id"])
+    def _get_template(self, document_type, document=None, template_pk=None):
+        """Resolve template: explicit pk first, then doc.template, then first active."""
+        # TODO: check these execution paths
+        if template_pk:
+            return document_type.templates.get(pk=template_pk)
+        if document:
+            return document.template
         else:
-            contract = None
-        if m["member_type"] == "member":
-            recip = Member.objects.get(pk=m["id"])
-        else:
-            recip = Address.objects.get(pk=m["id"])
-        process.add_recipient(recip, contract, m["extra_info"])
+            return document_type.templates.filter(active=True).first()
 
-    try:
-        process.generate_documents()
-    except Exception as e:
-        logger.error(f"Fehler beim Erstellen der Dokumente: {e}")
-        return {"errors": [{"info": f"Fehler beim Erstellen der Dokumente: {e}"}]}
-    process.send_output()
-    process.rollback_failed_recipients()
-
-    if not is_test:
-        if data["change_attribute"]:
-            process.update_member_attributes(
-                data["change_attribute"], data["change_attribute_value"]
+    def _assert_template_file(self, template):
+        if not template.file:
+            raise RuntimeError(
+                _("The template '{template}' has no file linked to it.").format(template=template)
             )
 
-        if data["change_genattribute"]:
-            process.update_generic_attributes(
-                data["change_genattribute"], data["change_genattribute_value"]
-            )
-
-    if data["action"] in ("makezip", "makezip_pdf"):
-        result = process.get_zipfile()
-    elif data["action"] == "list_xls":
-        result = process.get_xls_list()
-    else:
-        result = process.get_status_report()
-    process.cleanup()
-    return result
-
-
-def create_documents(default_doctype, objects=None, options=None):
-    ret = []
-    zipcount = 0
-    zipfile_content = []
-    makezip = options.get("makezip", False)
-
-    try:
-        default_doctype_obj = DocumentType.objects.get(name=default_doctype)
-    except DocumentType.DoesNotExist:
-        return [
-            {
-                "info": 'FEHLER: Dokumenttyp "%s" existiert nicht. Bitte zuerst erstellen.'
-                % default_doctype
-            }
-        ]
-
-    if not options:
-        options = {"beschreibung": default_doctype_obj.description}
-
-    if not objects:
-        return []
-
-    filenames = []
-    for o in objects:
-        item_objects = []
-        if "info" in o:
-            item_objects.append(o["info"])
-        if "doctype" in o:
-            doctype = o["doctype"]
-            try:
-                doctype_obj = DocumentType.objects.get(name=doctype)
-            except DocumentType.DoesNotExist:
-                ret.append(
-                    {
-                        "info": "FEHLER: Dokumenttyp '%s' nicht gefunden." % doctype,
-                        "objects": [],
-                    }
-                )
-                break
-        else:
-            doctype = default_doctype
-            doctype_obj = default_doctype_obj
-        ## Create document
-        # Check if template has a file attached
-        template: ContentTemplate | None = doctype_obj.templates.filter(active=True).first()
-        if not template or not template.file:
-            ret.append(
-                {
-                    "info": "FEHLER: Keine Vorlage-Datei für Dokumenttyp '%s' konfiguriert."
-                    % doctype,
-                    "objects": [],
-                }
-            )
-            break
-
-        ret.append({"info": str(o["obj"]), "objects": item_objects})
-        zipcount += 1
-
-        if makezip:
-            if "extra_context" in o:
-                data = get_context_data(doctype, o["obj"].pk, o["extra_context"])
-            else:
-                data = get_context_data(doctype, o["obj"].pk, {})
-            filename = fill_template_pod(
-                template.file.path,
-                context_format(data["context"]),
-                output_format="odt",
-            )
-            if not filename:
-                raise RuntimeError("Could not fill template")
-            output_filename = data["visible_filename"]
-            counter = 1
-            while output_filename in filenames:
-                counter += 1
-                output_filename = "%s_%s%s" % (
-                    data["visible_filename"][0:-4],
-                    counter,
-                    data["visible_filename"][-4:],
-                )
-            zipfile_content.append({"file": filename, "filename": output_filename})
-            filenames.append(output_filename)
-            if "content_object" in data:
-                ## Attach document data to object
-                d = Document(
-                    name=output_filename,
-                    doctype=doctype_obj,
-                    data=json.dumps(data["context"]),
-                    content_object=data["content_object"],
-                )
-                d.save()
-
-    if zipcount and makezip:
-        ## Build ZIP-file from list of files
-        file_like_object = io.BytesIO()
-        zipfile_ob = zipfile.ZipFile(file_like_object, "w")
-        for f in zipfile_content:
-            # print "%s -> %s_%s" % (f['file'], f['member'].name.name,f['member'].name.first_name)
-            zipfile_ob.write(f["file"], f["filename"])
-        zipfile_ob.close()
-        resp = HttpResponse(
-            file_like_object.getvalue(), content_type="application/x-zip-compressed"
+    def _fill_template(self, template, data):
+        """Render the template and return the temporary file path."""
+        self._assert_template_file(template)
+        temporary_filename = fill_pod_template(
+            template.file.path, context_format(data["context"]), output_format="odt"
         )
-        resp["Content-Disposition"] = "attachment; filename=%s" % "output.zip"
-        return resp
-
-    if zipcount > 0:
-        link_text = "%s erstellen und herunterladen" % options["beschreibung"]
-        link_url = options.get("link_url", "")
-        ret.append(
-            {
-                "info": "Dokumente:",
-                "objects": [
-                    '<a href="%s?makezip=yes">%s (%d LibreOffice Dokumente in ZIP)</a>'
-                    % (link_url, link_text, zipcount)
-                ],
-            }
-        )
-    else:
-        ret.append({"info": "Keine zu erstellenden Dokumente gefunden."})
-
-    return ret
+        if not temporary_filename:
+            raise RuntimeError(_("Could not fill the template"))
+        return temporary_filename
 
 
-def get_context_data(doctype, obj_id, extra_context):
-    c = extra_context
+
+
+def get_context_data(doctype, obj_id, extra_context: dict=None) -> dict:
+    if extra_context is None:
+        extra_context = dict()
     filename_prefix = {
         "memberletter": "Brief_Bestätigung_Mitgliedschaft",
         "memberfinanz": "Brief_Finanzielle_Unterstützung",
@@ -998,19 +724,19 @@ def get_context_data(doctype, obj_id, extra_context):
     }
 
     filename_ext = ".odt"
-    if doctype[0:6] == "member":
+    if "member" in doctype:
         obj = Member.objects.get(pk=obj_id)
         adr = obj.name
-        c["datum_eintritt"] = obj.date_join.strftime("%d.%m.%Y")
-    elif doctype[0:5] == "share":
+        extra_context["datum_eintritt"] = obj.date_join.strftime("%d.%m.%Y")
+    elif "share" in doctype:
         obj = Share.objects.get(pk=obj_id)
         adr = obj.name
-
+        # TODO: consider refactoring this
         if Share.objects.filter(name=adr).filter(share_type=obj.share_type).count() == 1:
-            c["is_first_share"] = True
+            extra_context["is_first_share"] = True
         else:
-            c["is_first_share"] = False
-
+            extra_context["is_first_share"] = False
+        # TODO: consider refactoring this
         try:
             stype_share = ShareType.objects.get(name="Anteilschein")
         except ShareType.DoesNotExist:
@@ -1043,89 +769,89 @@ def get_context_data(doctype, obj_id, extra_context):
         else:
             duedate_text = ""
 
-        c["betrag_text_zusatz"] = None
+        extra_context["betrag_text_zusatz"] = None
         if obj.share_type == stype_share:
             if hasattr(adr, "member"):
-                c["datum_eintritt"] = adr.member.date_join.strftime("%d.%m.%Y")
+                extra_context["datum_eintritt"] = adr.member.date_join.strftime("%d.%m.%Y")
             else:
-                c["datum_eintritt"] = None
-            if c["datum_eintritt"] and c["is_first_share"]:
-                c["betreff"] = "Bestätigung Anteilscheine/Mitgliedschaft"
+                extra_context["datum_eintritt"] = None
+            if extra_context["datum_eintritt"] and extra_context["is_first_share"]:
+                extra_context["betreff"] = "Bestätigung Anteilscheine/Mitgliedschaft"
             else:
-                c["betreff"] = "Bestätigung Anteilscheine"
+                extra_context["betreff"] = "Bestätigung Anteilscheine"
             if obj.quantity == 1:
-                c["betrag_text"] = "1 Anteilschein zu CHF %s" % (nformat(obj.value))
+                extra_context["betrag_text"] = "1 Anteilschein zu CHF %s" % (nformat(obj.value))
             else:
-                c["betrag_text"] = "%s Anteilscheine zu CHF %s in Summe CHF %s" % (
+                extra_context["betrag_text"] = "%s Anteilscheine zu CHF %s in Summe CHF %s" % (
                     nformat(obj.quantity, 0),
                     nformat(obj.value),
                     nformat(obj.quantity * obj.value),
                 )
             if obj.is_pension_fund:
-                c["betrag_text"] = "%s (aus Mitteln der beruflichen Vorsorge)" % (c["betrag_text"])
-                c["bvg"] = True
+                extra_context["betrag_text"] = "%s (aus Mitteln der beruflichen Vorsorge)" % (extra_context["betrag_text"])
+                extra_context["bvg"] = True
             else:
-                c["bvg"] = False
+                extra_context["bvg"] = False
             count = 0
             amount = 0
             for s in Share.get_active().filter(name=obj.name).filter(share_type=stype_share):
                 count += s.quantity
                 amount += s.quantity * s.value
             if count == 1:
-                c["total_anzahl"] = "1 Anteilschein"
+                extra_context["total_anzahl"] = "1 Anteilschein"
             else:
-                c["total_anzahl"] = "%s Anteilscheine" % (nformat(count, 0))
-            c["total_summe"] = "%s" % (nformat(amount))
+                extra_context["total_anzahl"] = "%s Anteilscheine" % (nformat(count, 0))
+            extra_context["total_summe"] = "%s" % (nformat(amount))
         elif obj.share_type == stype_loan_noint:
-            c["betrag_text"] = "Zinsloses Darlehen von CHF %s%s" % (
+            extra_context["betrag_text"] = "Zinsloses Darlehen von CHF %s%s" % (
                 nformat(obj.value, 2),
                 duedate_text,
             )
         elif obj.share_type == stype_loan_int:
-            c["betrag_text"] = "Darlehen von CHF %s%s" % (
+            extra_context["betrag_text"] = "Darlehen von CHF %s%s" % (
                 nformat(obj.value, 2),
                 duedate_text,
             )
-            c["betrag_text_zusatz"] = "Aktueller Zinssatz: %s%%" % (nformat(obj.interest(), 2))
+            extra_context["betrag_text_zusatz"] = "Aktueller Zinssatz: %s%%" % (nformat(obj.interest(), 2))
         elif obj.share_type == stype_deposit:
-            c["betrag_text"] = "Einlage in die Depositenkasse von CHF %s" % (nformat(obj.value, 2))
-            c["betrag_text_zusatz"] = "Aktueller Zinssatz: %s%%" % (nformat(obj.interest(), 2))
+            extra_context["betrag_text"] = "Einlage in die Depositenkasse von CHF %s" % (nformat(obj.value, 2))
+            extra_context["betrag_text_zusatz"] = "Aktueller Zinssatz: %s%%" % (nformat(obj.interest(), 2))
         elif obj.share_type == stype_loan_special:
-            c["betrag_text"] = "Darlehen von CHF %s%s" % (
+            extra_context["betrag_text"] = "Darlehen von CHF %s%s" % (
                 nformat(obj.value, 2),
                 duedate_text,
             )
-            c["betrag_text_zusatz"] = "Zinssatz: %s%% (gemäss Darlehensvertrag)" % (
+            extra_context["betrag_text_zusatz"] = "Zinssatz: %s%% (gemäss Darlehensvertrag)" % (
                 nformat(obj.interest(), 2)
             )
         else:
-            c["betrag_text"] = "%s von CHF %s" % (
+            extra_context["betrag_text"] = "%s von CHF %s" % (
                 obj.share_type.name,
                 nformat(obj.value, 2),
             )
 
-        c["datum_zahlung"] = obj.payment_date.strftime("%d.%m.%Y")
-        c.update(obj.get_context(include_related_shares=True))
+        extra_context["datum_zahlung"] = obj.payment_date.strftime("%d.%m.%Y")
+        extra_context.update(obj.get_context(include_related_shares=True))
     elif doctype == "statement" or doctype == "mailing" or doctype == "loanreminder":
         obj = Address.objects.get(pk=obj_id)
         adr = obj
     elif doctype[0:8] == "contract":
         obj = Contract.objects.get(pk=obj_id)
         adr = obj.get_contact_address()
-        c.update(obj.get_context())
+        extra_context.update(obj.get_context())
     else:
         raise RuntimeError("Doctype not implemented.")
 
     adr_filename_str = ""
     if adr:
-        c.update(adr.get_context())
+        extra_context.update(adr.get_context())
         adr_filename_str = adr.get_filename_str()
-    if "filename_tag" in c:
-        filename_tag = "_%s" % c["filename_tag"]
+    if "filename_tag" in extra_context:
+        filename_tag = "_%s" % extra_context["filename_tag"]
     else:
         filename_tag = ""
-    if c["roomnr"]:
-        adr_filename_str = "%s_%s" % (c["roomnr"], adr_filename_str)
+    if extra_context["roomnr"]:
+        adr_filename_str = "%s_%s" % (extra_context["roomnr"], adr_filename_str)
     filename = "%s_%s%s%s" % (
         filename_prefix[doctype],
         adr_filename_str,
@@ -1136,7 +862,7 @@ def get_context_data(doctype, obj_id, extra_context):
     return {
         "content_object": obj,
         "visible_filename": filename.replace(" ", "").replace("+", "-").replace("/", "-"),
-        "context": c,
+        "context": extra_context,
     }
 
 

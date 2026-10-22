@@ -7,15 +7,24 @@ from unittest.mock import DEFAULT, Mock, patch
 import openpyxl
 from django.apps import apps as django_apps
 from django.conf import settings
+from django.contrib.auth.models import User
+from django.core.files.base import ContentFile
 from django.http import FileResponse
 from django.test import RequestFactory, tag
 from django.urls import reverse
 
 import geno.tests.data as geno_testdata
-from geno.models import Invoice, InvoiceCategory, Share, ShareType
+from geno.models import (
+    Document,
+    DocumentType,
+    Invoice,
+    InvoiceCategory,
+    Share,
+    ShareType,
+)
 from geno.views import InvoiceBatchGenerateView, ShareStatementView
 
-from .base import GenoAdminTestCase
+from .base import GenoAdminTestCase, fill_template_effect
 
 
 def create_fake_pdf(
@@ -45,8 +54,6 @@ class GenoViewsTest(GenoAdminTestCase):
         paths = [
             #'import/([a-z_-]+)/',
             "export/adit/",
-            "documents/shareconfirm/1/create/",
-            "documents/shareconfirm/1/download/",
             "share/overview/",
             # ADDED BELOW 'share/overview/plot/',
             "share/export/",
@@ -54,7 +61,8 @@ class GenoViewsTest(GenoAdminTestCase):
             reverse("geno:share-statement-form"),
             reverse("geno:share-statement", args=["current_year"]),
             reverse("geno:share-statement-for-address", args=["current_year", 1]),
-            "share/mailing/",
+            # TODO: do we need the share/mailing/ endpoint?
+            # "share/mailing/",
             "share/interest/download/",
             "share/interest/transactions/",
             #'share/interest/adjust/',
@@ -465,3 +473,134 @@ class ShareStatementViewTest(GenoAdminTestCase):
             obj = view.get_objects()
             self.assertEqual(len(obj), 1)
             self.assertIn("Anzahl ignoriert=0", view.extra_description_info)
+
+
+class DocumentViewTest(GenoAdminTestCase):
+    """Tests for DocumentCreateView, DocumentDownloadView and DocumentRecreateView."""
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        # DocumentType and templates required by the document action views
+        cls.shareconfirm_doctype = DocumentType.objects.create(
+            name="shareconfirm", description="Share Confirmation"
+        )
+        cls.shareconfirm_doctype.templates.add(cls.contenttemplates[0])
+
+        # A document with an existing file (fast-path download)
+        cls.doc_with_file = Document.objects.create(
+            name="Test_Doc_With_File.odt",
+            doctype=cls.shareconfirm_doctype,
+            template=cls.contenttemplates[0],
+            data='{"test": "data"}',
+            content_object=cls.shares[0],
+        )
+        cls.doc_with_file.file.save(
+            "Test_Doc_With_File.odt", ContentFile(b"PDF existing content")
+        )
+
+        # A legacy document without a file (forces template re-render on download)
+        cls.legacy_doc = Document.objects.create(
+            name="Test_Legacy_Doc.odt",
+            doctype=cls.shareconfirm_doctype,
+            template=cls.contenttemplates[0],
+            data='{"anrede": "Liebe Tests"}',
+            content_object=cls.shares[0],
+        )
+
+    def setUp(self):
+        super().setUp()
+        # TODO: remove one of these patch paths, once `fill_pod_template()` has a final home
+        patcher = patch("geno.views.fill_pod_template")
+        self.mock_fill_template = patcher.start()
+        self.mock_fill_template.side_effect = fill_template_effect
+        self.addCleanup(patcher.stop)
+
+        documents_patcher = patch("geno.documents.fill_pod_template")
+        self.mock_fill_template_documents = documents_patcher.start()
+        self.mock_fill_template_documents.side_effect = fill_template_effect
+        self.addCleanup(documents_patcher.stop)
+
+    def test_document_create_view(self):
+        from django.contrib.contenttypes.models import ContentType
+
+        url = reverse("geno:document-create", args=["shareconfirm", self.shares[0].pk])
+        response = self.client.get(url, {"template": self.contenttemplates[0].pk})
+        self.assertEqual(response.status_code, 200)
+        content = b"".join(response.streaming_content)
+        self.assertEqual(content, b"odt mock\n")
+        # A new Document should have been persisted for the share
+        share_ct = ContentType.objects.get_for_model(self.shares[0])
+        self.assertTrue(
+            Document.objects.filter(
+                doctype=self.shareconfirm_doctype,
+                content_type=share_ct,
+                object_id=self.shares[0].pk,
+            ).exists()
+        )
+
+    def test_document_create_view_requires_template(self):
+        url = reverse("geno:document-create", args=["shareconfirm", self.shares[0].pk])
+        with self.assertRaises(RuntimeError):
+            self.client.get(url)
+
+    def test_document_create_view_permission_denied(self):
+        self.client.logout()
+        user = User.objects.create_user(username="no_perm", password="secret")
+        self.client.login(username="no_perm", password="secret")
+        url = reverse("geno:document-create", args=["shareconfirm", self.shares[0].pk])
+        response = self.client.get(url, {"template": self.contenttemplates[0].pk})
+        self.assertContains(response, "Keine Berechtigung", status_code=200)
+
+    def test_document_download_view_with_file(self):
+        url = reverse("geno:document-download", args=["shareconfirm", self.doc_with_file.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        content = b"".join(response.streaming_content)
+        self.assertEqual(content, b"PDF existing content")
+        self.assertEqual(
+            response.headers.get("Content-Disposition"),
+            'attachment; filename="Test_Doc_With_File.odt"',
+        )
+
+    def test_document_download_view_without_file(self):
+        url = reverse("geno:document-download", args=["shareconfirm", self.legacy_doc.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        content = b"".join(response.streaming_content)
+        self.assertEqual(content, b"odt mock\n")
+        # The legacy Document itself should stay file-less
+        self.legacy_doc.refresh_from_db()
+        self.assertFalse(self.legacy_doc.file)
+
+    def test_document_download_view_permission_denied(self):
+        self.client.logout()
+        user = User.objects.create_user(username="no_perm", password="secret")
+        self.client.login(username="no_perm", password="secret")
+        url = reverse("geno:document-download", args=["shareconfirm", self.doc_with_file.pk])
+        response = self.client.get(url)
+        self.assertContains(response, "Keine Berechtigung", status_code=200)
+
+    def test_document_recreate_view(self):
+        original_count = Document.objects.count()
+        url = reverse("geno:document-recreate", args=["shareconfirm", self.legacy_doc.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        content = b"".join(response.streaming_content)
+        self.assertEqual(content, b"odt mock\n")
+        # A new Document should have been created
+        self.assertEqual(Document.objects.count(), original_count + 1)
+        new_doc = Document.objects.exclude(pk=self.legacy_doc.pk).latest("pk")
+        self.assertTrue(new_doc.file)
+        # Original document should be untouched
+        self.legacy_doc.refresh_from_db()
+        self.assertEqual(self.legacy_doc.data, '{"anrede": "Liebe Tests"}')
+        self.assertFalse(self.legacy_doc.file)
+
+    def test_document_recreate_view_permission_denied(self):
+        self.client.logout()
+        user = User.objects.create_user(username="no_perm", password="secret")
+        self.client.login(username="no_perm", password="secret")
+        url = reverse("geno:document-recreate", args=["shareconfirm", self.legacy_doc.pk])
+        response = self.client.get(url)
+        self.assertContains(response, "Keine Berechtigung", status_code=200)
