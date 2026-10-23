@@ -916,14 +916,24 @@ class Member(GenoBase):
                 )
         return actions
 
+    @classmethod
+    def get_active(cls, date=None):
+        """Get Members that are active on the reference date 'date'.
+        The default date is the current day."""
+        if date is None:
+            date = datetime.date.today()
+        select = cls.objects.filter(
+            Q(date_join__lte=date) & (Q(date_leave__isnull=True) | Q(date_leave__gte=date))
+        )
+        return select
+
     class Meta:
         ordering = ["name"]
         verbose_name = "Mitglied"
         verbose_name_plural = "Mitglieder"
         constraints = [
             models.CheckConstraint(
-                check=models.Q(date_leave__isnull=True)
-                | models.Q(date_leave__gte=models.F("date_join")),
+                condition=Q(date_leave__isnull=True) | Q(date_leave__gte=models.F("date_join")),
                 name="member_date_leave_gte_date_join",
             ),
         ]
@@ -979,20 +989,71 @@ class MemberAttribute(GenoBase):
         verbose_name_plural = "Mitglieder Attribute"
 
 
+class ShareTypeCategory(models.TextChoices):
+    SHARE = "share", _("Share")
+    LOAN = "loan", _("Loan")
+    DEPOSIT = "deposit", _("Deposit")
+    MORTGAGE = "mortgage", _("Mortgage")
+    NON_REPAYABLE = "non_repayable", _("Non-repayable Grant")
+    SPECIAL_LOAN = "special_loan", _("Special Loan")
+
+
 class ShareType(GenoBase):
-    name = models.CharField("Name", max_length=50, unique=True)
-    description = models.CharField("Beschreibung", max_length=200)
+    name = models.CharField(_("Name"), max_length=50, unique=True)
+    description = models.CharField(_("Description"), max_length=200)
     standard_interest = models.DecimalField(
-        "Standard-Zinssatz",
+        _("Standard interest rate"),
         max_digits=4,
         decimal_places=2,
         default=0.00,
-        help_text="Zinssatz gilt für alle Beteiligungen mit Zinssatz-Modus «Standard».",
+        help_text=_("Interest rate applies to all shares with interest mode «Standard»."),
     )
+    category = models.CharField(
+        _("Category"),
+        max_length=20,
+        choices=ShareTypeCategory.choices,
+        default=ShareTypeCategory.SHARE,
+    )
+    is_interest_bearing = models.BooleanField(_("Interest-bearing"), default=False)
+    requires_due_date = models.BooleanField(_("Due date required"), default=False)
+    is_excluded_from_reports = models.BooleanField(
+        _("Exclude from reports/statistics"), default=False
+    )
+    is_excluded_from_rental_units = models.BooleanField(
+        _("Should not be attributed to a rental unit"),
+        default=False,
+        help_text=_(
+            "E.g. for shares that should not be counted towards the required sum for a rental unit."
+        ),
+    )
+    is_excluded_from_mailings = models.BooleanField(_("Exclude from mailings"), default=False)
+    membership_type = models.CharField(
+        _("Membership type"),
+        max_length=20,
+        choices=[
+            ("", _("Voluntary / No mandatory share")),
+            ("all", _("All members")),
+            ("flag_01", _("Members with flag_01")),
+            ("flag_02", _("Members with flag_02")),
+            ("flag_03", _("Members with flag_03")),
+            ("flag_04", _("Members with flag_04")),
+            ("flag_05", _("Members with flag_05")),
+            ("not_flag_01", _("Members without flag_01")),
+            ("not_flag_02", _("Members without flag_02")),
+            ("not_flag_03", _("Members without flag_03")),
+            ("not_flag_04", _("Members without flag_04")),
+            ("not_flag_05", _("Members without flag_05")),
+        ],
+        blank=True,
+        default="",
+    )
+    display_order = models.PositiveIntegerField(_("Display order"), default=0)
+    active = models.BooleanField(_("Active"), default=True)
 
     class Meta:
-        verbose_name = "Beteiligungstyp"
-        verbose_name_plural = "Beteiligungstypen"
+        verbose_name = _("Share type")
+        verbose_name_plural = _("Share types")
+        ordering = ["active", "display_order", "name"]
 
 
 class Share(GenoBase):
@@ -1261,7 +1322,7 @@ class Share(GenoBase):
         total_shares_by_type = {}
         sum_shares_pension_fund_quantity = 0
         sum_shares_pension_fund_value = 0
-        for share_type in ShareType.objects.all():
+        for share_type in ShareType.objects.filter(active=True):
             sum_quantity = 0
             sum_value = 0
             related_buildings = []

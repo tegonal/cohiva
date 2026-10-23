@@ -94,15 +94,15 @@
       </div>
     </div>
 
-    {# Non-members warning #}
-    {% if non_members %}
+    {# Non-members with shares warning #}
+    {% if non_members_with_shares %}
       <div class="mb-6 bg-red-50 border border-red-200 rounded-default p-6 shadow-sm dark:border-red-800 dark:bg-red-900/20">
         <h3 class="text-lg font-semibold mb-4 text-red-800 dark:text-red-400 flex items-center gap-2">
           <span class="material-symbols-outlined">warning</span>
-          {% trans "WARNUNG: Personen ohne Mitgliedschaft mit Anteilsscheinen" %}
+          {% trans "WARNUNG: Personen ohne Mitgliedschaft mit Beteiligungen" %}
         </h3>
         <ul class="space-y-1">
-          {% for nm in non_members %}
+          {% for nm in non_members_with_shares %}
             <li class="text-sm text-red-700 dark:text-red-300">
               {{ nm.name }} ({{ nm.quantity }})
               {% if nm.date_leave %}
@@ -113,7 +113,24 @@
         </ul>
       </div>
     {% endif %}
-  </div>
+
+    {# Members without shares warning #}
+    {% if members_without_shares %}
+      <div class="mb-6 bg-red-50 border border-red-200 rounded-default p-6 shadow-sm dark:border-red-800 dark:bg-red-900/20">
+          <h3 class="text-lg font-semibold mb-4 text-red-800 dark:text-red-400 flex items-center gap-2">
+              <span class="material-symbols-outlined">warning</span>
+              {% trans "WARNUNG: Mitglieder ohne Beteiligungen" %}
+          </h3>
+          <ul class="space-y-1">
+              {% for nm in members_without_shares %}
+                  <li class="text-sm text-red-700 dark:text-red-300">
+                      {{ nm.name }} ({% trans "Mitglied seit" %} {{ nm.date_join|date:"d.m.Y" }})
+                  </li>
+              {% endfor %}
+          </ul>
+      </div>
+    {% endif %}
+    </div>
 </div>
 
 <script>
