@@ -12,9 +12,14 @@ import cohiva.base_config_for_tests as cbc
 from finance.accounting import AccountKey
 
 ## Load settings
-from .settings import *  # noqa: F403
-from .settings import DATABASES, FINANCIAL_ACCOUNTS, INSTALLED_APPS, MEDIA_ROOT, SMEDIA_ROOT
 from .settings_defaults import *  # noqa: F403
+from .settings_defaults import (
+    DATABASES,
+    FINANCIAL_ACCOUNTS,
+    INSTALLED_APPS,
+    MEDIA_ROOT,
+    SMEDIA_ROOT,
+)
 
 ## Redirect (S)MEDIA_ROOT for running tests (files will be deleted by run-tests.sh):
 (head, tail) = os.path.split(MEDIA_ROOT)
