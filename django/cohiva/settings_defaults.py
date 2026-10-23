@@ -655,6 +655,7 @@ GENO_ID = cbc.SITE_NICKNAME
 GENO_FILENAME_STR = GENO_ID
 GENO_NAME = cbc.SITE_NAME
 GENO_DEFAULT_EMAIL = "info@" + cbc.DOMAIN
+GENO_DEFAULT_BCC_EMAIL = None  # GENO_DEFAULT_EMAIL will be used if set to None. Set it to "" if the default BCC address should be empty.
 GENO_WEBSITE = "www." + cbc.DOMAIN
 GENO_FORMAL = False
 GENO_CARDDAV_URI = None

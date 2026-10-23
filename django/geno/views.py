@@ -3271,7 +3271,10 @@ class MailWizardActionView(MailWizardView):
     last_step = True
 
     def get_initial(self):
-        return {"email_copy": settings.GENO_DEFAULT_EMAIL}
+        bcc_email = settings.GENO_DEFAULT_BCC_EMAIL
+        if bcc_email is None:
+            bcc_email = settings.GENO_DEFAULT_EMAIL
+        return {"email_copy": bcc_email}
 
     def form_valid(self, form):
         form.cleaned_data["members"] = []
