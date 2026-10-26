@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Cohiva 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-11 20:21+0200\n"
+"POT-Creation-Date: 2026-10-26 13:37+0100\n"
 "PO-Revision-Date: 2025-10-21 01:30+0200\n"
 "Last-Translator: Cohiva Development Team\n"
 "Language-Team: German\n"
@@ -218,15 +218,39 @@ msgstr "%(month)d.%(year)d: %(contract)s"
 msgid "%(description)s für %(contract)s"
 msgstr "%(description)s für %(contract)s"
 
-#: geno/billing.py:807 geno/billing.py:811
+#: geno/billing.py:646 geno/billing.py:1636
+msgid "Could not add payment"
+msgstr "Konnte Zahlung nicht hinzufügen"
+
+#: geno/billing.py:811 geno/billing.py:815
 #, python-brace-format
 msgid "Account {account} does not exist."
 msgstr "Konto {account} existiert nicht."
 
-#: geno/billing.py:815
+#: geno/billing.py:819
 #, python-brace-format
 msgid "Can't access accounting backend: {error}"
 msgstr "Kann nicht auf Buchhaltung zugreifen: {error}"
+
+#: geno/billing.py:1647
+#, python-brace-format
+msgid " => {share_type} created"
+msgstr " => {share_type} erstellt"
+
+#: geno/billing.py:1651
+#, python-brace-format
+msgid " => {share_type} marked as paid"
+msgstr " => {share_type} als bezahlt markiert"
+
+#: geno/billing.py:1690
+#, python-brace-format
+msgid "Payment no. {number}"
+msgstr "Zahlung Nr. {number}"
+
+#: geno/billing.py:1725
+#, python-brace-format
+msgid "Created based on payment no. {number}"
+msgstr "Erstellt basierend auf Zahlung Nr. {number}"
 
 #: geno/exporter.py:197
 msgid "[invalid]"

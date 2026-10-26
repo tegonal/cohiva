@@ -1641,20 +1641,38 @@ def add_sepa_transaction(book, tx, errors, skipped, success):
     except Exception as e:
         errors.append(f"Buchung konnte nicht ausgeführt werden: {e} {transaction_info_txt}")
     else:
-        updated_share = update_shares_with_payment(payment_invoice)
-        if updated_share:
-            transaction_info_txt += f" => {updated_share.share_type} als bezahlt markiert"
+        share, is_created = update_shares_with_payment(payment_invoice)
+        if share:
+            if is_created:
+                transaction_info_txt += _(" => {share_type} created").format(
+                    share_type=share.share_type
+                )
+            else:
+                transaction_info_txt += _(" => {share_type} marked as paid").format(
+                    share_type=share.share_type
+                )
         success.append(transaction_info_txt)
 
 
-def update_shares_with_payment(payment: Invoice) -> Share | None:
+def update_shares_with_payment(payment: Invoice) -> tuple[Share | None, bool]:
+    """Update or create shares based on a payment.
+
+    Shares are updated by setting the payment_date. It tries to find an unpaid share by matching
+    the person, the amount, and the invoice category with the payment. This only happens if an
+    invoice category has been configured for the corresponding share type.
+    If no unpaid share is found and no share with the same amount and payment date exists already,
+    a new share is created if the option `create_new_shares` is enabled for the share type.
+
+    Return value: tuple (share, is_created)
+      - share: The updated or newly created share (or None).
+      - is_created: Will be true if a new share has been created."""
     ## TODO: Update this when COHIV-269 is ready:
     #        - exclude non-active share types
     #        - use ShareType property instead of settings.UPDATE_SHARE_WITH_PAYMENT
     #        - OR maybe associate invoice with share when creating the invoice? But the auto-creation of missing shares does not work...
     if not payment.person:
         # We can't update shares if we don't have a person to match with
-        return None
+        return None, False
     for share_type in ShareType.objects.all():  # filter(active=True):
         conf = getattr(settings, "UPDATE_SHARE_WITH_PAYMENT", {})
         if share_type.name in conf:
@@ -1669,7 +1687,7 @@ def update_shares_with_payment(payment: Invoice) -> Share | None:
                 for share in candidates:
                     if share.payment_state == "gefordert":
                         share.payment_date = payment.date
-                        note = f"Zahlung Nr. {payment.id}"
+                        note = _("Payment no. {number}").format(number=payment.id)
                         if share.note:
                             share.note = f"{share.note} / {note}"
                         else:
@@ -1679,7 +1697,7 @@ def update_shares_with_payment(payment: Invoice) -> Share | None:
                             f"Mark share {share.id} as paid by {payment.date} with "
                             f"payment {payment.id}."
                         )
-                        return share
+                        return share, False
                     elif share.payment_date == payment.date:
                         already_paid_share = share
                 if already_paid_share:
@@ -1688,8 +1706,32 @@ def update_shares_with_payment(payment: Invoice) -> Share | None:
                         f"{payment.date} when processing payment {payment.id}."
                     )
                 elif conf[share_type.name].get("create_new_shares", False):
-                    logger.warning("TODO: Create a new share from the payment")
-    return None
+                    # TODO: Get the unit amount from the ShareType instead of hardcoding it here (COHIV-269)
+                    unit_amount = 200
+                    quantity = int(payment.amount / unit_amount)
+                    if payment.amount != unit_amount * quantity:
+                        logger.warning(
+                            f"Payment {payment.id} amount {payment.amount} is not a multiple of "
+                            f"{unit_amount} for share type {share_type.name}. "
+                            "Cannot create new share."
+                        )
+                    else:
+                        new_share = Share(
+                            name=payment.person,
+                            share_type=share_type,
+                            payment_date=payment.date,
+                            amount=unit_amount,
+                            quantity=quantity,
+                            note=_("Created based on payment no. {number}").format(
+                                number=payment.id
+                            ),
+                        )
+                        new_share.save()
+                        logger.info(
+                            f"Created share {new_share.id} based on payment no. {payment.id}."
+                        )
+                        return new_share, True
+    return None, False
 
 
 ## Get invoice/bill info based on reference number
