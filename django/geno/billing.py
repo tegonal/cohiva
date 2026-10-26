@@ -11,7 +11,7 @@ from smtplib import SMTPException
 
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
-from django.db.models import Q
+from django.db.models import F, Q
 from django.http import Http404
 from django.template import Context, loader
 from django.utils.html import escape
@@ -628,7 +628,7 @@ def add_payment(date, amount, person, invoice=None, note=None, cash=False):
         description = f"Zahlung {invoice.invoice_category} {invoice.id}"
     try:
         with AccountingManager() as book:
-            add_invoice_obj(
+            payment_invoice = add_invoice_obj(
                 book,
                 "Payment",
                 invoice.invoice_category,
@@ -642,8 +642,12 @@ def add_payment(date, amount, person, invoice=None, note=None, cash=False):
                 invoice.year,
                 invoice.month,
             )
+            if not payment_invoice:
+                raise InvoiceCreationError(_("Could not add payment"))
     except Exception as e:
         return f"Konnte Rechnung nicht erstellen: {e}"
+    update_shares_with_payment(payment_invoice)
+    return None
 
 
 def get_income_account(invoice_category, account_key, contract=None):
@@ -1610,7 +1614,7 @@ def add_sepa_transaction(book, tx, errors, skipped, success):
         return
 
     try:
-        add_invoice_obj(
+        payment_invoice = add_invoice_obj(
             book,
             "Payment",  # invoice_type,
             bill_info["invoice_category"],
@@ -1628,6 +1632,8 @@ def add_sepa_transaction(book, tx, errors, skipped, success):
             additional_info="/".join(addtl_info),
             dry_run=False,
         )
+        if not payment_invoice:
+            raise InvoiceCreationError(_("Could not add payment"))
     except DuplicateInvoiceError:
         skipped.append(
             f"Buchung mit Transaktions-ID {tx['id']} existiert bereits ({transaction_info_txt})"
@@ -1635,7 +1641,97 @@ def add_sepa_transaction(book, tx, errors, skipped, success):
     except Exception as e:
         errors.append(f"Buchung konnte nicht ausgeführt werden: {e} {transaction_info_txt}")
     else:
+        share, is_created = update_shares_with_payment(payment_invoice)
+        if share:
+            if is_created:
+                transaction_info_txt += _(" => {share_type} created").format(
+                    share_type=share.share_type
+                )
+            else:
+                transaction_info_txt += _(" => {share_type} marked as paid").format(
+                    share_type=share.share_type
+                )
         success.append(transaction_info_txt)
+
+
+def update_shares_with_payment(payment: Invoice) -> tuple[Share | None, bool]:
+    """Update or create shares based on a payment.
+
+    Shares are updated by setting the payment_date. It tries to find an unpaid share by matching
+    the person, the amount, and the invoice category with the payment. This only happens if an
+    invoice category has been configured for the corresponding share type.
+    If no unpaid share is found and no share with the same amount and payment date exists already,
+    a new share is created if the option `create_new_shares` is enabled for the share type.
+
+    Return value: tuple (share, is_created)
+      - share: The updated or newly created share (or None).
+      - is_created: Will be true if a new share has been created."""
+    ## TODO: Update this when COHIV-269 is ready:
+    #        - exclude non-active share types
+    #        - use ShareType property instead of settings.UPDATE_SHARE_WITH_PAYMENT
+    #        - OR maybe associate invoice with share when creating the invoice? But the auto-creation of missing shares does not work...
+    if not payment.person:
+        # We can't update shares if we don't have a person to match with
+        return None, False
+    for share_type in ShareType.objects.all():  # filter(active=True):
+        conf = getattr(settings, "UPDATE_SHARE_WITH_PAYMENT", {})
+        if share_type.name in conf:
+            if payment.invoice_category.name == conf[share_type.name].get("invoice_category_name"):
+                # We have a payment for an invoice category that is configured to update this share type
+                candidates = (
+                    Share.objects.filter(name=payment.person, share_type=share_type)
+                    .annotate(total_amount=F("quantity") * F("value"))
+                    .filter(total_amount=payment.amount)
+                )
+                already_paid_share = None
+                for share in candidates:
+                    if share.payment_state == "gefordert":
+                        share.payment_date = payment.date
+                        note = _("Payment no. {number}").format(number=payment.id)
+                        if share.note:
+                            share.note = f"{share.note} / {note}"
+                        else:
+                            share.note = note
+                        share.save()
+                        logger.info(
+                            f"Mark share {share.id} as paid by {payment.date} with "
+                            f"payment {payment.id}."
+                        )
+                        return share, False
+                    elif share.payment_date == payment.date:
+                        already_paid_share = share
+                if already_paid_share:
+                    logger.warning(
+                        f"Share {already_paid_share.id} seems to be marked as paid already by "
+                        f"{payment.date} when processing payment {payment.id}."
+                    )
+                elif conf[share_type.name].get("create_new_shares", False):
+                    # TODO: Get the unit amount from the ShareType instead of hardcoding it here (COHIV-269)
+                    unit_amount = 200
+                    quantity = int(payment.amount / unit_amount)
+                    if payment.amount != unit_amount * quantity:
+                        logger.warning(
+                            f"Payment {payment.id} amount {payment.amount} is not a multiple of "
+                            f"{unit_amount} for share type {share_type.name}. "
+                            "Cannot create new share."
+                        )
+                    else:
+                        new_share = Share(
+                            name=payment.person,
+                            share_type=share_type,
+                            payment_date=payment.date,
+                            amount=unit_amount,
+                            quantity=quantity,
+                            note=_("Created based on payment no. {number}").format(
+                                number=payment.id
+                            ),
+                        )
+                        new_share.save()
+                        logger.info(
+                            f"Created share {new_share.id} based on payment no. {payment.id}."
+                        )
+                        return new_share, True
+    return None, False
 
 
 ## Get invoice/bill info based on reference number
