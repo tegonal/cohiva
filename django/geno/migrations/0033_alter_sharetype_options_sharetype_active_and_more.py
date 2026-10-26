@@ -8,6 +8,7 @@ from geno.models import ShareTypeCategory
 
 def guess_new_properties(apps, schema_editor):
     ShareType = apps.get_model("geno", "ShareType")
+    Share = apps.get_model("geno", "Share")
 
     for share_type in ShareType.objects.all():
         # Guess properties based on existing name
@@ -43,6 +44,15 @@ def guess_new_properties(apps, schema_editor):
             share_type.category = ShareTypeCategory.MORTGAGE
         elif "entwicklungsbeitrag" in share_type.name.lower():
             share_type.category = ShareTypeCategory.NON_REPAYABLE
+
+        ## Guess denomination_value if all shares have the same value and some have a quantity
+        ## higher than 1
+        shares = Share.objects.filter(share_type=share_type)
+        if shares.count() > 1:
+            values = shares.values_list("value", flat=True).distinct()
+            max_quantity = shares.aggregate(max_quantity=models.Max("quantity"))["max_quantity"]
+            if values.count() == 1 and max_quantity > 1:
+                share_type.denomination_value = values.first()
         share_type.save()
 
 
@@ -156,6 +166,37 @@ class Migration(migrations.Migration):
                 help_text="Interest rate applies to all shares with interest mode «Standard».",
                 max_digits=4,
                 verbose_name="Standard interest rate",
+            ),
+        ),
+        migrations.AddField(
+            model_name="sharetype",
+            name="create_new_shares_for_payments",
+            field=models.BooleanField(
+                default=False,
+                help_text="If enabled, new shares will be created when invoices are paid and no matching share exists already.",
+                verbose_name="Create new shares for payments",
+            ),
+        ),
+        migrations.AddField(
+            model_name="sharetype",
+            name="denomination_value",
+            field=models.DecimalField(
+                decimal_places=2,
+                default=0.0,
+                help_text="When set to a value higher than 0, all shares of this type must have the same fixed value specified here.",
+                max_digits=10,
+                verbose_name="Denomination value",
+            ),
+        ),
+        migrations.AddField(
+            model_name="sharetype",
+            name="invoice_category_for_payments",
+            field=models.ForeignKey(
+                help_text="When set, payments for this invoices category will be processed to mark shares as paid.",
+                null=True,
+                on_delete=models.deletion.SET_NULL,
+                to="geno.invoicecategory",
+                verbose_name="Invoice category for payments",
             ),
         ),
         migrations.RunPython(guess_new_properties, migrations.RunPython.noop),

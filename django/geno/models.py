@@ -1014,6 +1014,16 @@ class ShareType(GenoBase):
         choices=ShareTypeCategory.choices,
         default=ShareTypeCategory.SHARE,
     )
+    denomination_value = models.DecimalField(
+        _("Denomination value"),
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        help_text=_(
+            "When set to a value higher than 0, all shares of this type must have the same fixed "
+            "value specified here."
+        ),
+    )
     is_interest_bearing = models.BooleanField(_("Interest-bearing"), default=False)
     requires_due_date = models.BooleanField(_("Due date required"), default=False)
     is_excluded_from_reports = models.BooleanField(
@@ -1046,6 +1056,24 @@ class ShareType(GenoBase):
         ],
         blank=True,
         default="",
+    )
+    invoice_category_for_payments = models.ForeignKey(
+        "InvoiceCategory",
+        verbose_name=_("Invoice category for payments"),
+        null=True,
+        on_delete=models.SET_NULL,
+        help_text=_(
+            "When set, payments for this invoices category will be processed to mark shares "
+            "as paid."
+        ),
+    )
+    create_new_shares_for_payments = models.BooleanField(
+        _("Create new shares for payments"),
+        default=False,
+        help_text=_(
+            "If enabled, new shares will be created when invoices are paid and no matching share "
+            "exists already."
+        ),
     )
     display_order = models.PositiveIntegerField(_("Display order"), default=0)
     active = models.BooleanField(_("Active"), default=True)
@@ -1256,6 +1284,14 @@ class Share(GenoBase):
                 raise ValidationError(
                     _("Effective until date cannot be before effective from date.")
                 )
+
+        # If a denomination value is set for the share type, the value of the share must match it
+        if 0 < self.share_type.denomination_value != self.value:
+            raise ValidationError(
+                _("This share must have a denomination value of {value}").format(
+                    self.share_type.denomination_value
+                )
+            )
         super().clean(*args, **kwargs)
 
     def save(self, *args, **kwargs):
