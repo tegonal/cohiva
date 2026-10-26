@@ -237,7 +237,7 @@ numpy==2.3.3
     # via
     #   contourpy
     #   matplotlib
-oauthlib==3.3.1
+oauthlib==4.0.0
     # via
     #   django-oauth-toolkit
     #   requests-oauthlib
