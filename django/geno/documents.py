@@ -37,6 +37,17 @@ from geno.utils import (
 
 logger = logging.getLogger("geno")
 
+class _ContextEncoder(DjangoJSONEncoder):
+    """
+    Custom JSON encoder that serializes Django Model instances to their string representation.
+    Used to dump JSON data during Document creation
+    """
+
+    def default(self, obj):
+        if isinstance(obj, Model):
+            return str(obj)
+        return super().default(obj)
+
 class RenderedDocument:
     def __init__(self):
         self.file = None
@@ -476,7 +487,8 @@ class DocumentGenerator:
             output_filename = filename
         else:
             output_filename = context["visible_filename"]
-        data = context.get("context")
+        # data = context.get("context")
+        data = json.dumps(context, cls=_ContextEncoder)
         # TODO: deduplicate filename
         document = Document(
             name=output_filename,
