@@ -8,7 +8,7 @@ from django.http import HttpResponse
 from django.test import tag
 
 # from geno.views import send_member_mail_process
-from geno.documents import send_member_mail_process
+from geno.documents import get_context_data, send_member_mail_process
 from geno.forms import MemberMailActionForm
 from geno.models import (
     Address,
@@ -201,6 +201,38 @@ Billing context:
 <jahr>: {current_year}
 """
         self.assertInPDF(output_pdf_file, expected)
+
+
+class DocumentContextTests(GenoAdminTestCase):
+    def test_get_context_data_for_share_with_payment_date(self):
+        share = Share.objects.create(
+            name=self.addresses[0],
+            value=Decimal("100.00"),
+            quantity=1,
+            share_type=self.sharetypes[0],
+            payment_date=datetime.date(2000, 1, 2),
+            effective_from=datetime.date(2000, 1, 1),
+        )
+        ret = get_context_data("shareconfirm", share.id, {})
+        context = ret["context"]
+        self.assertEqual(context["date"], "01.01.2000")
+        self.assertEqual(context["payment_date"], "02.01.2000")
+        self.assertEqual(context["datum_zahlung"], "02.01.2000")  # legacy variable
+
+    def test_get_context_data_for_share_without_payment_date(self):
+        share = Share.objects.create(
+            name=self.addresses[0],
+            value=Decimal("100.00"),
+            quantity=1,
+            share_type=self.sharetypes[0],
+            payment_date=None,
+            effective_from=datetime.date(2000, 1, 1),
+        )
+        ret = get_context_data("shareconfirm", share.id, {})
+        context = ret["context"]
+        self.assertEqual(context["date"], "01.01.2000")
+        self.assertEqual(context["payment_date"], "")
+        self.assertEqual(context["datum_zahlung"], "")  # legacy variable
 
 
 class DocumentFormFilterTest(GenoAdminTestCase):
