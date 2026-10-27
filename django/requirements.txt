@@ -283,7 +283,7 @@ persistent==6.1.1
     #   zodb
 piecash==1.2.1
     # via -r requirements.in
-pillow==12.3.0
+pillow==13.0.0
     # via
     #   easy-thumbnails
     #   matplotlib
