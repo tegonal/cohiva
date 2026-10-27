@@ -59,7 +59,6 @@ class RenderedDocument:
 
 
 class DocumentTemplate:
-    # TODO: create a DocumentOutputType class that uses Literal
     SUPPORTED_OUTPUT_TYPES = ("odt", "pdf")
 
     def __init__(self,
@@ -447,6 +446,7 @@ class DocumentGenerator:
         self.default_document_type = default_document_type
         self.dry_run = dry_run
         self.temp_files = []
+        self.output_files = {}
 
     def render_documents_for_recipient(
         self, recipient: Recipient, templates: list[DocumentTemplate]
@@ -487,9 +487,13 @@ class DocumentGenerator:
             output_filename = filename
         else:
             output_filename = context["visible_filename"]
-        # data = context.get("context")
         data = json.dumps(context, cls=_ContextEncoder)
-        # TODO: deduplicate filename
+
+        if output_filename not in self.output_files:
+            self.output_files[output_filename] = 0
+        else:
+            self.output_files[output_filename] += 1
+            output_filename = self._deduplicate_filename(output_filename)
         document = Document(
             name=output_filename,
             doctype=document_type,
@@ -563,9 +567,9 @@ class DocumentGenerator:
         create Views.
         """
         results: list[DocumentCreationResult] = []
-        files_to_zip = []
         make_zip = options.get("makezip", False)
-        filenames: list[str] = []
+        file_count = 0
+
         # Early exit: the default DocumentType is not available
         try:
             default_document_type = DocumentType.objects.get(name=self.default_document_type)
@@ -608,39 +612,44 @@ class DocumentGenerator:
                 template=content_template,
                 context=context
             )
+            if result.status == "success":
+                file_count += 1
             results.append(result)
+
+            # Early exit: we do not need to create a .zip for one Document
             if not make_zip:
-                # Exit early: we do not need to create a .zip for one Document
                 return results
-            else:
-                # Track the files that will be placed into a .zip
-                filenames.append(result.filename)
-                files_to_zip.append({"obj": object, "doctype": document_type_name, "doctype_obj": document_type})
-        # TODO: pass this off to a helper function
-        if files_to_zip:
-            link_text = "%s erstellen und herunterladen" % options["beschreibung"]
-            link_url = options.get("link_url", "")
-            results.append(
-                DocumentCreationResult(
-                    status="info",
-                    label="Dokumente:",
-                    detail=[
-                        '<a href="%s?makezip=yes">%s (%d LibreOffice Dokumente in ZIP)</a>'
-                        % (link_url, link_text, len(files_to_zip))
-                    ],
-                )
-            )
+
+        if file_count:
+            results.append(self._build_zip_summary(options, file_count))
         else:
-            results.append(
-                DocumentCreationResult(
+            results.append(DocumentCreationResult(
                     status="warning", label="No Documents to be created."
-                )
-            )
+                ))
         return results
 
-    def _deduplicate_filename(filename: str) -> str:
-        # TODO: implement the counter
-        file_count = 0
+    def _build_zip_summary(self, options: dict, file_count: int) -> DocumentCreationResult:
+        link_text = "%s erstellen und herunterladen" % options["beschreibung"]
+        link_url = options.get("link_url", "")
+        return DocumentCreationResult(
+            status="info",
+            label="Dokumente:",
+            detail=[
+                '<a href="%s?makezip=yes">%s (%d LibreOffice Dokumente in ZIP)</a>'
+                % (link_url, link_text, file_count)
+            ],
+        )
+
+    def _deduplicate_filename(self, filename: str) -> str:
+        """
+        Append a numeric identifier to the basename of a file, in order to
+        ensure its uniqueness in a zipfiles.
+
+        filename: the full, original filename.
+
+        Returns a filename of the form "/path/to/file/filename_1.ext"
+        """
+        file_count = self.output_files[filename]
         filename_stem, file_extension = os.path.splitext(filename)
         output_filename = "%s_%s.%s" % (filename_stem, file_count, file_extension)
         return output_filename
@@ -664,10 +673,10 @@ class DocumentGenerator:
     def cleanup(self):
         remove_temp_files(self.temp_files)
         self.temp_files = []
+        self.output_files = {}
 
     def _get_template(self, document_type, document=None, template_pk=None):
         """Resolve template: explicit pk first, then doc.template, then first active."""
-        # TODO: check these execution paths
         if template_pk:
             return document_type.templates.get(pk=template_pk)
         if document:
