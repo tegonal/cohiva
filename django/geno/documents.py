@@ -1,3 +1,19 @@
+"""Document rendering and generation.
+
+This module orchestrates the creation, rendering, and persistence of
+document templates in .odt and .pdf formats. It provides:
+
+* ``DocumentTemplate``: Renders .odt templates into ``RenderedDocument``
+  objects, with support for billing context, share statements, and
+  QR-bill generation.
+
+* ``DocumentGenerator``: Builder that persists rendered documents to the
+  database and file system.
+
+* Helper functions for resolving per-doctype context data and formatting
+  template data.
+"""
+
 import datetime
 import json
 import logging
