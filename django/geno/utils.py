@@ -1,4 +1,5 @@
 import datetime
+from io import BytesIO
 import json
 import logging
 import os
@@ -6,6 +7,7 @@ import pathlib
 import re
 import tempfile
 from subprocess import PIPE, Popen
+from zipfile import ZipFile
 
 from appy.pod.renderer import Renderer
 from django.conf import settings
@@ -27,7 +29,7 @@ def send_info_mail(subject, msg):
 
 
 def odt2pdf(odtfile, instance_tag="default"):
-    tmpdir = f"/tmp/odt2pdf_{settings.GENO_ID}_{instance_tag}".replace(" ", "")
+    tmpdir = "/tmp/odt2pdf_%s_%s" % (settings.GENO_ID, instance_tag)
     soffice_bin = "/usr/lib/libreoffice/program/soffice.bin"
 
     path, basename = os.path.split(odtfile)
@@ -64,11 +66,37 @@ def odt2pdf(odtfile, instance_tag="default"):
     return pdf_file
 
 
-def fill_template_pod(template, context, output_format="odt"):
+def make_zip(files_to_zip: list[dict[str, str]]) -> BytesIO:
+    """
+    Create a zipfile.
+
+    files_to_zip: a dictionary mapping filenames to Files objects.
+
+    Returns bytes representing the zipfile.
+    """
+    bytes = BytesIO()
+    zipfile = ZipFile(bytes, "w")
+    for file in files_to_zip:
+        zipfile.write(file["file"], file["filename"])
+    zipfile.close()
+    return bytes
+
+
+def fill_pod_template(template, context, output_format="odt"):
+    """
+    Fill the POD (Python Open Document) template with the values provided via
+    the context.
+
+    template: path to the template file.
+    context: dictionary of variables to inject into the template.
+    output_format: file extension for the output (default "odt").
+
+    Returns the path to the generated temporary file.
+    """
     media_path = pathlib.Path(settings.MEDIA_ROOT)
+    # Check whether the path is absolute or relative, to ensure django-filer's
+    # `smedia/` and siblings of `MEDIA_ROOT` are included.
     if template.startswith(str(media_path.parent)):
-        ## Absoulute path starting with parent of MEDIA_ROOT
-        ## (to include django-filer's smedia or other sibling folder of MEDIA_ROOT)
         template_file = template
     else:
         template_file = os.path.join(settings.BASE_DIR, "geno/templates/%s" % template)

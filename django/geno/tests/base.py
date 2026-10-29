@@ -354,10 +354,10 @@ def odt2pdf_effect(_odtfile, instance_tag="default"):
 
 class DocumentCreationMockMixin:
     """
-    Mixin that patches `fill_template_pod` and `odt2pdf` and provides helper assertions.
+    Mixin that patches `fill_pod_template` and `odt2pdf` and provides helper assertions.
     """
 
-    patch_target_fill_template = "geno.utils.fill_template_pod"
+    patch_target_fill_template = "geno.utils.fill_pod_template"
     patch_target_odt2pdf = "geno.utils.odt2pdf"
 
     def __init__(self, *args, **kwargs):
@@ -400,14 +400,14 @@ class DocumentCreationMockMixin:
 
     def assertFillTemplateCalledWithTemplate(self, template, call_index=None):
         """
-        Assert that fill_template_pod was called with the given template.
+        Assert that fill_pod_template was called with the given template.
 
         - If call_index is None: check that *any* call used this template.
         - If call_index is an integer: check only that specific call.
         """
 
         if not self.mock_fill_template.called:
-            raise AssertionError("fill_template_pod was never called.")
+            raise AssertionError("fill_pod_template was never called.")
 
         calls = self.mock_fill_template.call_args_list
 
@@ -422,7 +422,7 @@ class DocumentCreationMockMixin:
                 call = calls[call_index]
             except IndexError:
                 raise AssertionError(
-                    f"fill_template_pod was called {len(calls)} times, "
+                    f"fill_pod_template was called {len(calls)} times, "
                     f"but call_index {call_index} was requested."
                 )
 
@@ -444,13 +444,13 @@ class DocumentCreationMockMixin:
             f"call[{i}].template = {extract_template(call)!r}" for i, call in enumerate(calls)
         )
         raise AssertionError(
-            f"No call to fill_template_pod used template {template!r}.\n\n"
+            f"No call to fill_pod_template used template {template!r}.\n\n"
             f"Templates used in calls:\n{formatted_calls}"
         )
 
     def assertFillTemplateContextContains(self, expected_items: dict, call_index=None):
         """
-        Assert that the context passed to fill_template_pod contains expected_items.
+        Assert that the context passed to fill_pod_template contains expected_items.
 
         - If call_index is None: check that *any* call contains the items.
         - If call_index is an integer: check that specific call.
@@ -468,7 +468,7 @@ class DocumentCreationMockMixin:
                 call = calls[call_index]
             except IndexError:
                 raise AssertionError(
-                    f"fill_template_pod was called {len(calls)} times, "
+                    f"fill_pod_template was called {len(calls)} times, "
                     f"but call_index {call_index} was requested."
                 )
 
@@ -505,7 +505,7 @@ class DocumentCreationMockMixin:
             f"call[{i}].context = {extract_context(call)}" for i, call in enumerate(calls)
         )
         raise AssertionError(
-            "No call to fill_template_pod had a context containing the expected items.\n\n"
+            "No call to fill_pod_template had a context containing the expected items.\n\n"
             f"Expected items: {expected_items}\n\n"
             f"All contexts:\n{formatted_calls}"
         )
