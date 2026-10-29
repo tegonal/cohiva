@@ -73,7 +73,7 @@ from .documents import (
     DocumentCreationResult,
     DocumentFetchResult,
     DocumentGenerator,
-    DocumentTypeError,
+    DocumentCreationError,
     context_format,
     get_context_data,
 )
@@ -1371,7 +1371,7 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
                         default_document_type=self.doctype,
                     )
                     results = document_generator.create_documents(document_objects=self.get_objects(), options=options)
-                except DocumentTypeError as e:
+                except DocumentCreationError as e:
                     # Handle fatal misconfiguration once, at the view boundary
                     self.error_message = str(e)
                     return super().get(request, *args, **kwargs)
