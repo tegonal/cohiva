@@ -38,8 +38,8 @@ from geno.utils import (
 logger = logging.getLogger("geno")
 
 class _ContextEncoder(DjangoJSONEncoder):
-    """
-    Custom JSON encoder that serializes Django Model instances to their string representation.
+    """Custom JSON encoder that serializes Django Model instances to their string representation.
+
     Used to dump JSON data during Document creation
     """
 
@@ -348,7 +348,7 @@ class DocumentTemplate:
             rendered_document.file = temporary_filename
             self.temp_files.append(rendered_document.file)
             if not filename_tag:
-                # TODO: smells funny
+                # FIXME: smells funny
                 filename_tag = os.path.splitext(os.path.basename(self.content_template.file.path))[
                     0
                 ]
@@ -436,9 +436,10 @@ class DocumentTypeError(Exception):
     pass
 
 class DocumentGenerator:
-    """
-    Builder class to create Documents. As a rule, Documents should be persisted
-    at creation time, so that they remain accessible with re-generation.
+    """Builder class to create Documents.
+
+    Documents are persisted at creation time, so that they remain accessible
+    without regeneration.
     """
     default_document_type: DocumentType = None
 
@@ -451,7 +452,12 @@ class DocumentGenerator:
     def render_documents_for_recipient(
         self, recipient: Recipient, templates: list[DocumentTemplate]
     ) -> None:
-        """Render DocumentTemplates for a Recipient and attach results."""
+        """Render all DocumentTemplates for a Recipient.
+
+        Args:
+            recipient: e-mail recipient for which Documents should be rendered.
+            templates: list of document templates to fill.
+        """
         from geno.mail import SkipRecipientException
 
         if recipient.skip_reason:
@@ -474,19 +480,28 @@ class DocumentGenerator:
             context: dict,
             filename: str=None,
         ) -> DocumentCreationResult:
-        """
-        Create a single Document object from a known DocumentType and
-        DocumentTemplate. The Template is filled upon creation, and the
-        resulting file is persisted, s.t. it can be retrieved later.
+        """Create a single Document object from a known DocumentType and DocumentTemplate.
 
-        Returns a DocumentCreationResult with an exit status and paths to the
-        created Document and its File.
+        The Template is filled upon creation, and the resulting file is persisted, s.t. it can be retrieved later.
+
+        Args:
+            document_type: DocumentType object for the Document to be created.
+            template: DocumentTemplate object to be filled from the Document's context.
+            context: dictionary containing data used to fill the template.
+            filename: optional filename to be used for the filled template, assumed to be provided via context.
+
+        Returns:
+            DocumentCreationResult with an exit status and paths to the created Document and its File.
         """
         # TODO: perform error-checking here
         if filename:
             output_filename = filename
         else:
             output_filename = context["visible_filename"]
+        # Early exit: no output filename is available
+        if not output_filename:
+            # TODO: error handling here
+            raise
         data = json.dumps(context, cls=_ContextEncoder)
 
         if output_filename not in self.output_files:
@@ -518,13 +533,15 @@ class DocumentGenerator:
         return result
 
     def create_documents_for_recipient(self, recipient: Recipient) -> list[DocumentCreationResult]:
-        """
-        Create Documents for an e-mail recipient. A single Recipient
-        can receive multiple Documents in a single e-mail.
+        """Create Documents for an e-mail recipient.
 
-        recipient: planned e-mail recipient.
+        A single Recipient can receive multiple Documents in a single e-mail.
 
-        Returns a list of DocumentCreationResults
+        Args:
+            recipient: e-mail recipient.
+
+        Returns:
+            list of DocumentCreationResults indicating creation status and output file paths.
         """
         # Early exit: ensure no Documents are created when content is not available
         if recipient.content_object is None:
@@ -556,15 +573,16 @@ class DocumentGenerator:
     def create_documents(self,
                          document_objects: list[dict],
                          options: list[dict] | None) -> list[DocumentCreationResult]:
-        """
-        Given a list of Document objects, creates individual Documents, and
-        persists the result to the database and filesystem.
+        """Create multiple Documents.
 
-        document_objects: list of dictionaries, containing a Model object, a
-            DocumentType, and additional "info".
+        Given a list of Document objects, create individual Documents, and persist the result to the database and filesystem.
 
-        Returns a list of DocumentCreationResults, which can be consumed to
-        create Views.
+        Args:
+            document_objects: list of dictionaries, containing a Model object, a DocumentType, and additional "info".
+            options: dictionary with keys "make_zip", "link_url", "beschreibung", indicating zipfile options.
+
+        Returns:
+            list of DocumentCreationResults, which can be consumed to create Views.
         """
         results: list[DocumentCreationResult] = []
         make_zip = options.get("makezip", False)
@@ -629,6 +647,14 @@ class DocumentGenerator:
         return results
 
     def _build_zip_summary(self, options: dict, file_count: int) -> DocumentCreationResult:
+        """Build a summary Result indicating that documents are ready to be zipped.
+
+        :param options: View-level options dict, must contain ``beschreibung``
+            and optionally ``link_url``.
+        :param file_count: Number of successfully created documents to report.
+        :return: A DocumentCreationResult with ``status="info"`` and an HTML
+            download link in ``detail``.
+        """
         link_text = "%s erstellen und herunterladen" % options["beschreibung"]
         link_url = options.get("link_url", "")
         return DocumentCreationResult(
@@ -641,13 +667,15 @@ class DocumentGenerator:
         )
 
     def _deduplicate_filename(self, filename: str) -> str:
-        """
-        Append a numeric identifier to the basename of a file, in order to
-        ensure its uniqueness in a zipfiles.
+        """Append a numeric identifier to the basename of a file.
 
-        filename: the full, original filename.
+        Used to ensure uniqueness of filenames in a zipfile.
 
-        Returns a filename of the form "/path/to/file/filename_1.ext"
+        Args:
+            filename: the full, original filename.
+
+        Returns:
+            filename in the form "/path/to/file/filename_1.ext"
         """
         file_count = self.output_files[filename]
         filename_stem, file_extension = os.path.splitext(filename)
@@ -655,17 +683,15 @@ class DocumentGenerator:
         return output_filename
 
     def _persist_document(self, document: Document) -> None:
-        """
-        Persist a Document object in the database.
-        """
+        """Persist a Document object in the database."""
         document.save()
 
-    def _save_document_file(self, document, temporary_filename):
-        """
-        Copy a file from temporary storage into the Document object's File field
+    def _save_document_file(self, document, temporary_filename) -> None:
+        """Copy a file from temporary storage into the Document object's File field.
 
-        document: the Document object that will store the file.
-        temporary_filename: path to the temporary File data.
+        Args:
+            document: the Document object that will store the file.
+            temporary_filename: path to the temporary File data.
         """
         with open(temporary_filename, "rb") as f:
             document.file.save(document.name, File(f), save=True)
