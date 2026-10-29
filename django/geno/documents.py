@@ -65,6 +65,7 @@ class _ContextEncoder(DjangoJSONEncoder):
         return super().default(obj)
 
 class RenderedDocument:
+    """Simple wrapper class for documents that have been rendered."""
     def __init__(self):
         self.file = None
         self.filename = None
@@ -351,7 +352,8 @@ class DocumentTemplate:
 
     def render(self, recipient) -> RenderedDocument:
         rendered_document = RenderedDocument()
-        rendered_document.file = self.content_template.file.path
+        content_template_path = self.content_template.file.path
+        rendered_document.file = content_template_path
         filename_tag = sanitize_filename(self.content_template.name)
         if self.content_template.template_type == "OpenDocument":
             context = self.get_context(recipient)
@@ -364,13 +366,9 @@ class DocumentTemplate:
             rendered_document.file = temporary_filename
             self.temp_files.append(rendered_document.file)
             if not filename_tag:
-                # FIXME: smells funny
-                filename_tag = os.path.splitext(os.path.basename(self.content_template.file.path))[
-                    0
-                ]
-                logger.warning(
-                    "No filename_tag using default: %s" % self.content_template.file.path
-                )
+                basename = os.path.basename(content_template_path)
+                filename_tag, _ = os.path.splitext(basename)
+                logger.warning("No filename_tag using default: %s" % filename_tag)
             rendered_document.filename = (
                 f"{recipient.address.get_filename_str()}_{filename_tag}.{self.output_format}"
             )
@@ -390,8 +388,9 @@ class DocumentTemplate:
             # ContentTemplate is not an OpenDocument
             logger.info(" > appending file without rendering: %s" % (rendered_document.file))
             # append file ending of output.file to filename_tag
-            if not filename_tag.endswith(os.path.splitext(rendered_document.file)[1]):
-                filename_tag += os.path.splitext(rendered_document.file)[1]
+            _, content_template_extension = os.path.splitext(content_template_path)
+            if not filename_tag.endswith(content_template_extension):
+                filename_tag += content_template_extension
             rendered_document.filename = filename_tag
         return rendered_document
 
@@ -447,9 +446,8 @@ class DocumentCreationResult:
     temporary_file_location: str | None = None
     filename: str | None = None
 
-class DocumentTypeError(Exception):
-    # TODO: implement
-    pass
+class DocumentCreationError(Exception):
+    """A generic error class for failures during document creation."""
 
 class DocumentGenerator:
     """Builder class to create Documents.
@@ -509,35 +507,36 @@ class DocumentGenerator:
         Returns:
             DocumentCreationResult with an exit status and paths to the created Document and its File.
         """
-        # TODO: perform error-checking here
         if filename:
             output_filename = filename
         else:
             output_filename = context["visible_filename"]
         # Early exit: no output filename is available
         if not output_filename:
-            # TODO: error handling here
-            raise
-        data = json.dumps(context, cls=_ContextEncoder)
-
+            raise DocumentCreationError("No output filename is available.")
         if output_filename not in self.output_files:
             self.output_files[output_filename] = 0
         else:
             self.output_files[output_filename] += 1
             output_filename = self._deduplicate_filename(output_filename)
-        document = Document(
-            name=output_filename,
-            doctype=document_type,
-            template=template,
-            data=data,
-            content_object=context.get("content_object"),
-        )
-        # TODO: error handling to catch error results
-        template_context = context.get("context", context)
-        temporary_file_location = self._fill_template(template, {"context": template_context})
-        self.temp_files.append(temporary_file_location)
-        self._persist_document(document)
-        self._save_document_file(document, temporary_file_location)
+
+        data = json.dumps(context, cls=_ContextEncoder)
+        try:
+            document = Document(
+                name=output_filename,
+                doctype=document_type,
+                template=template,
+                data=data,
+                content_object=context.get("content_object"),
+            )
+            template_context = context.get("context", context)
+            temporary_file_location = self._fill_template(template, {"context": template_context})
+            self.temp_files.append(temporary_file_location)
+            self._persist_document(document)
+            self._save_document_file(document, temporary_file_location)
+        except Exception as error:
+            logger.error(error)
+            raise DocumentCreationError(error)
 
         result = DocumentCreationResult(
             status="success",
@@ -595,7 +594,7 @@ class DocumentGenerator:
 
         Args:
             document_objects: list of dictionaries, containing a Model object, a DocumentType, and additional "info".
-            options: dictionary with keys "make_zip", "link_url", "beschreibung", indicating zipfile options.
+            options: dictionary with keys ``make_zip``, ``link_url``, ``beschreibung``, indicating zipfile options.
 
         Returns:
             list of DocumentCreationResults, which can be consumed to create Views.
@@ -665,11 +664,12 @@ class DocumentGenerator:
     def _build_zip_summary(self, options: dict, file_count: int) -> DocumentCreationResult:
         """Build a summary Result indicating that documents are ready to be zipped.
 
-        :param options: View-level options dict, must contain ``beschreibung``
-            and optionally ``link_url``.
-        :param file_count: Number of successfully created documents to report.
-        :return: A DocumentCreationResult with ``status="info"`` and an HTML
-            download link in ``detail``.
+        Args:
+        options: View-level options dict, must contain ``beschreibung`` and optionally ``link_url``.
+        file_count: Number of successfully created documents to report.
+
+        Returns:
+            A DocumentCreationResult with ``status="info"`` and an HTML download link in ``detail``.
         """
         link_text = "%s erstellen und herunterladen" % options["beschreibung"]
         link_url = options.get("link_url", "")
@@ -685,7 +685,9 @@ class DocumentGenerator:
     def _deduplicate_filename(self, filename: str) -> str:
         """Append a numeric identifier to the basename of a file.
 
-        Used to ensure uniqueness of filenames in a zipfile.
+        Used to ensure uniqueness of filenames in a zipfile. Assumes that the DocumentGenerator's
+        ``output_files`` dictionary contains the filename in question as a key. If not,
+        returns the original filename.
 
         Args:
             filename: the full, original filename.
@@ -693,9 +695,12 @@ class DocumentGenerator:
         Returns:
             filename in the form "/path/to/file/filename_1.ext"
         """
-        file_count = self.output_files[filename]
-        filename_stem, file_extension = os.path.splitext(filename)
-        output_filename = "%s_%s.%s" % (filename_stem, file_count, file_extension)
+        if filename in self.output_files:
+            file_count = self.output_files[filename]
+            filename_stem, file_extension = os.path.splitext(filename)
+            output_filename = "%s_%s.%s" % (filename_stem, file_count, file_extension)
+        else:
+            output_filename = filename
         return output_filename
 
     def _persist_document(self, document: Document) -> None:
@@ -744,6 +749,7 @@ class DocumentGenerator:
 
 
 def get_context_data(doctype, obj_id, extra_context: dict=None) -> dict:
+    # TODO: review and clean up this function
     if extra_context is None:
         extra_context = dict()
     filename_prefix = {
@@ -770,12 +776,10 @@ def get_context_data(doctype, obj_id, extra_context: dict=None) -> dict:
     elif "share" in doctype:
         obj = Share.objects.get(pk=obj_id)
         adr = obj.name
-        # TODO: consider refactoring this
         if Share.objects.filter(name=adr).filter(share_type=obj.share_type).count() == 1:
             extra_context["is_first_share"] = True
         else:
             extra_context["is_first_share"] = False
-        # TODO: consider refactoring this
         try:
             stype_share = ShareType.objects.get(name="Anteilschein")
         except ShareType.DoesNotExist:
@@ -915,4 +919,3 @@ def context_format(context, output_format="odt"):
 ## TODO: Make subclasses of Document
 # class QRBillDocument(Document):
 #    def render(self, recipient):
-
