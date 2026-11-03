@@ -614,9 +614,9 @@ class DocumentGenerator:
 
         for document_object in document_objects:
             # Resolve DocumentType for this object
-            document_type_name = document_object["doctype"]
             if "doctype" in document_object:
                 try:
+                    document_type_name = document_object["doctype"]
                     document_type = DocumentType.objects.get(name=document_type_name)
                 except DocumentType.DoesNotExist:
                     results.append(
@@ -628,6 +628,7 @@ class DocumentGenerator:
                     break
             else:
                 # No DocumentType found, use the default
+                document_type_name = default_document_type.name
                 document_type = default_document_type
             detail = []
 
@@ -657,7 +658,7 @@ class DocumentGenerator:
             results.append(self._build_zip_summary(options, file_count))
         else:
             results.append(DocumentCreationResult(
-                    status="warning", label="No Documents to be created."
+                    status="warning", label=_("No Documents to be created.")
                 ))
         return results
 
