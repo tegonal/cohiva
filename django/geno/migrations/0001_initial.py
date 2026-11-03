@@ -1015,7 +1015,6 @@ class Migration(migrations.Migration):
                         "share_interest_statments",
                         "Kann Zins-/Kontoauszüge erstellen und Zinsen anpassen",
                     ),
-                    ("share_mailing", "Kann Mailing zu Beteiligungen erstellen"),
                 ),
             },
         ),
