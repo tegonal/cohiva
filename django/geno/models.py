@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
+from django.core.files.storage import FileSystemStorage
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
@@ -42,6 +43,7 @@ from geno.utils import (
 
 logger = logging.getLogger("access_portal")
 
+smedia_storage = FileSystemStorage(location=settings.SMEDIA_ROOT)
 
 ## Abstract base class
 class GenoBase(models.Model):
@@ -1417,7 +1419,8 @@ class Document(GenoBase):
     # File to store generated Document data (.pdf or .odt)
     file = models.FileField(
         "Datei",
-        upload_to="documents/%Y/%m",
+        upload_to="geno/documents/%Y/%m",
+        storage=smedia_storage,
         blank=True,
         null=True,
         help_text="Gespeicherte Dokumentdatei (.pdf oder .odt)",
