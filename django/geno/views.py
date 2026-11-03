@@ -16,7 +16,6 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
-from django.core.files import File
 from django.db.models import Q
 from django.forms import formset_factory
 from django.http import FileResponse, Http404, HttpResponse, HttpResponseRedirect
@@ -70,10 +69,10 @@ from .billing import (
     process_transaction,
 )
 from .documents import (
+    DocumentCreationError,
     DocumentCreationResult,
     DocumentFetchResult,
     DocumentGenerator,
-    DocumentCreationError,
     context_format,
     get_context_data,
 )
@@ -1385,7 +1384,7 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.error_message:
-            context["response"] = [Document(status="error", label=self.error_message)]
+            context["response"] = [DocumentCreationResult(status="error", label=self.error_message)]
         else:
             context["response"] = self.result   # a list of DocumentCreationResult
         return context
