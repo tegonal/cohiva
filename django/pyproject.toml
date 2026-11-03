@@ -14,7 +14,7 @@ lint.select = [
   "T100",    # flake8-debugger
   "W",       # pycodestyle
   # docstring formatting
-  "D",       # Enable pydocstyle
+  "D1",      # Missing docstrings
   "D200",    # One-line docstring fits on one line
   "D201",    # No blank lines before docstring
   "D205",    # 1 blank line between summary and description
@@ -44,7 +44,6 @@ lint.ignore = [
   "SIM113",  # enumerate-for-loop
   "SIM105",  # suppressible-exception
   "SIM117",  # multiple-with-statements
-  "D102",    # Missing docstring in public method
   "D107",    # Missing docstring in __init__
 ]
 exclude = [
