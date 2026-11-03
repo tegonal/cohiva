@@ -612,10 +612,10 @@ class DocumentGenerator:
                 label=(_(f"The document type '{self.default_document_type}' does not exist."))
             )]
 
-        for object in document_objects:
+        for document_object in document_objects:
             # Resolve DocumentType for this object
-            document_type_name = object["doctype"]
-            if "doctype" in object:
+            document_type_name = document_object["doctype"]
+            if "doctype" in document_object:
                 try:
                     document_type = DocumentType.objects.get(name=document_type_name)
                 except DocumentType.DoesNotExist:
@@ -632,13 +632,13 @@ class DocumentGenerator:
             detail = []
 
             # Get info from the Object
-            if "info" in object:
-                detail.append(object["info"])
+            if "info" in document_object:
+                detail.append(document_object["info"])
 
             # Validate the template
             content_template = self._get_template(document_type=document_type)
             # TODO: handle "extra_context" in Object
-            context = get_context_data(document_type_name, object["obj"].pk)
+            context = get_context_data(document_type_name, document_object["obj"].pk)
             # Create the Document
             result = self.create_document(
                 document_type=document_type,
