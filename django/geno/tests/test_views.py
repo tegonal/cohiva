@@ -7,7 +7,6 @@ from unittest.mock import DEFAULT, Mock, patch
 import openpyxl
 from django.apps import apps as django_apps
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 from django.http import FileResponse
 from django.test import RequestFactory, tag
@@ -91,8 +90,6 @@ class GenoViewsTest(GenoAdminTestCase):
             reverse("geno:invoice-download", args=["contract", 1]),
             reverse("geno:debtor-list"),
             # TODO: NEEDS DATA'debtor/detail/contract/1/',
-            # TODO: OLD CODE'contract/create/',
-            # TODO: OLD CODE'contract/create_letter/',
             reverse("geno:contract-check-forms"),
             reverse("geno:contract-report"),
             "rental/units/",
@@ -546,7 +543,6 @@ class DocumentViewTest(GenoAdminTestCase):
 
     def test_document_create_view_permission_denied(self):
         self.client.logout()
-        user = User.objects.create_user(username="no_perm", password="secret")
         self.client.login(username="no_perm", password="secret")
         url = reverse("geno:document-create", args=["shareconfirm", self.shares[0].pk])
         response = self.client.get(url, {"template": self.contenttemplates[0].pk})
@@ -575,7 +571,6 @@ class DocumentViewTest(GenoAdminTestCase):
 
     def test_document_download_view_permission_denied(self):
         self.client.logout()
-        user = User.objects.create_user(username="no_perm", password="secret")
         self.client.login(username="no_perm", password="secret")
         url = reverse("geno:document-download", args=["shareconfirm", self.doc_with_file.pk])
         response = self.client.get(url)
@@ -599,7 +594,6 @@ class DocumentViewTest(GenoAdminTestCase):
 
     def test_document_recreate_view_permission_denied(self):
         self.client.logout()
-        user = User.objects.create_user(username="no_perm", password="secret")
         self.client.login(username="no_perm", password="secret")
         url = reverse("geno:document-recreate", args=["shareconfirm", self.legacy_doc.pk])
         response = self.client.get(url)

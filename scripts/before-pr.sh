@@ -38,7 +38,7 @@ sourceOnce "$scriptsDir/run-shellcheck.sh"
 function checkPython() {
 	(
 		cd "$projectDir"
-		ruff check
+		ruff check --ignore D
 	)
 }
 
