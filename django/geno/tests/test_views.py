@@ -60,8 +60,6 @@ class GenoViewsTest(GenoAdminTestCase):
             reverse("geno:share-statement-form"),
             reverse("geno:share-statement", args=["current_year"]),
             reverse("geno:share-statement-for-address", args=["current_year", 1]),
-            # TODO: do we need the share/mailing/ endpoint?
-            # "share/mailing/",
             "share/interest/download/",
             "share/interest/transactions/",
             #'share/interest/adjust/',
