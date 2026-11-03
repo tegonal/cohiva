@@ -1,11 +1,11 @@
 import datetime
-from io import BytesIO
 import json
 import logging
 import os
 import pathlib
 import re
 import tempfile
+from io import BytesIO
 from subprocess import PIPE, Popen
 from zipfile import ZipFile
 
@@ -29,7 +29,7 @@ def send_info_mail(subject, msg):
 
 
 def odt2pdf(odtfile, instance_tag="default"):
-    tmpdir = "/tmp/odt2pdf_%s_%s" % (settings.GENO_ID, instance_tag)
+    tmpdir = f"/tmp/odt2pdf_{settings.GENO_ID}_{instance_tag}".replace(" ", "")
     soffice_bin = "/usr/lib/libreoffice/program/soffice.bin"
 
     path, basename = os.path.split(odtfile)
@@ -121,7 +121,6 @@ def remove_temp_files(temp_files):
     for tmpfile in temp_files:
         try:
             os.remove(tmpfile)
-            # logger.debug(f"Deleted temporary file {tmpfile}")
         except Exception as e:
             logger.warning(f"Could not remove temporary file {tmpfile}: {e}")
 
