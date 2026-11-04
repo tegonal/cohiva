@@ -469,6 +469,61 @@ class ShareStatementViewTest(GenoAdminTestCase):
             self.assertEqual(len(obj), 1)
             self.assertIn("Anzahl ignoriert=0", view.extra_description_info)
 
+    @patch("geno.documents.fill_pod_template", return_value=None)
+    def test_fills_template_with_context(self, mock_fill_pod_template):
+        self.client.login(username="superuser", password="secret")
+        path = reverse(
+            "geno:share-statement-for-address", args=["current_year", self.addresses[0].pk]
+        )
+        _response = self.client.get(path, query_params={"makezip": "yes"})
+        mock_fill_pod_template.assert_called_once()
+        args, _kwargs = mock_fill_pod_template.call_args
+        template_context = args[1]
+        self.assertIn("n_shares", template_context)
+
+
+class ContractCheckFormsViewTest(GenoAdminTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        geno_testdata.create_contracts(cls)
+
+    @patch("geno.documents.fill_pod_template", return_value=None)
+    def test_fills_template_with_context(self, mock_fill_pod_template):
+        self.client.login(username="superuser", password="secret")
+        path = reverse("geno:contract-check-forms")
+        _response = self.client.get(path, query_params={"makezip": "yes", "generate": "yes"})
+        mock_fill_pod_template.assert_called_once()
+        args, _kwargs = mock_fill_pod_template.call_args
+        template_context = args[1]
+        self.assertIn("Mieter_Namen", template_context)
+
+
+class ShareReminderLetterViewTest(GenoAdminTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        stype_loan = ShareType.objects.get(name="Darlehen verzinst")
+        Share.objects.all().delete()
+        Share.objects.create(
+            value=10000,
+            quantity=1,
+            share_type=stype_loan,
+            payment_date=datetime.date(2020, 1, 1),
+            duration=1,
+            name=cls.addresses[0],
+        )
+
+    @patch("geno.documents.fill_pod_template", return_value=None)
+    def test_fills_template_with_context(self, mock_fill_pod_template):
+        self.client.login(username="superuser", password="secret")
+        path = reverse("geno:share-reminder-letter")
+        _response = self.client.get(path, query_params={"makezip": "yes"})
+        mock_fill_pod_template.assert_called_once()
+        args, _kwargs = mock_fill_pod_template.call_args
+        template_context = args[1]
+        self.assertIn("darlehen", template_context)
+
 
 class DocumentViewTest(GenoAdminTestCase):
     """Tests for DocumentCreateView, DocumentDownloadView and DocumentRecreateView."""
