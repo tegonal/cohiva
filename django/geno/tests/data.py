@@ -355,6 +355,15 @@ def create_documenttypes(cls: "type[GenoAdminTestCase]"):
     dt = DocumentType.objects.create(name="invoice", description="QR-Rechnung")
     dt.templates.set([cls.contenttemplates[0]])
     cls.documenttypes = [dt]
+    dt = DocumentType.objects.create(name="statement", description="Kontoauszug")
+    dt.templates.set([ContentTemplate.objects.get(name="Statement")])
+    cls.documenttypes.append(dt)
+    dt = DocumentType.objects.create(name="contract_check", description="Contrct Check Form")
+    dt.templates.set([ContentTemplate.objects.get(name="Simple")])
+    cls.documenttypes.append(dt)
+    dt = DocumentType.objects.create(name="loanreminder", description="Erinnerung Darlehen")
+    dt.templates.set([ContentTemplate.objects.get(name="Simple")])
+    cls.documenttypes.append(dt)
 
 
 def create_invoicecategories(cls: "type[GenoAdminTestCase]"):
