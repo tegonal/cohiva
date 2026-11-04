@@ -1593,6 +1593,15 @@ class ShareConfirmationLetterView(DocumentGeneratorView):
                 .filter(doctype__name__startswith="shareconfirm")
             )
             if doc.count() == 0:
+                # Skip shares whose resolved DocumentType has no usable template.
+                doctype_name = obj_data.get("doctype", self.doctype)
+                try:
+                    document_type = DocumentType.objects.get(name=doctype_name)
+                    template = document_type.templates.filter(active=True).first()
+                    if not template or not template.file:
+                        continue
+                except DocumentType.DoesNotExist:
+                    continue
                 objects.append(obj_data)
         return objects
 
