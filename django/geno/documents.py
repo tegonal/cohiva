@@ -633,8 +633,11 @@ class DocumentGenerator:
 
             # Validate the template
             content_template = self._get_template(document_type=document_type)
-            # TODO: handle "extra_context" in Object
-            context = get_context_data(document_type_name, document_object["obj"].pk)
+            if "extra_context" in document_object:
+                extra_context = document_object["extra_context"]
+            else:
+                extra_context = None
+            context = get_context_data(document_type_name, document_object["obj"].pk, extra_context)
             # Create the Document
             result = self.create_document(
                 document_type=document_type,
