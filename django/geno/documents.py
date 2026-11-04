@@ -607,25 +607,20 @@ class DocumentGenerator:
         try:
             default_document_type = DocumentType.objects.get(name=self.default_document_type)
         except DocumentType.DoesNotExist:
-            return [ DocumentCreationResult(
-                status="error",
-                label=(_(f"The document type '{self.default_document_type}' does not exist."))
-            )]
+            raise DocumentCreationError(
+                _(f"The document type '{self.default_document_type}' does not exist.")
+            )
 
         for document_object in document_objects:
             # Resolve DocumentType for this object
             if "doctype" in document_object:
+                document_type_name = document_object["doctype"]
                 try:
-                    document_type_name = document_object["doctype"]
                     document_type = DocumentType.objects.get(name=document_type_name)
                 except DocumentType.DoesNotExist:
-                    results.append(
-                        DocumentCreationResult(
-                            status="error",
-                            label=(_(f"Document type '{document_type}' not found."))
-                        )
+                    raise DocumentCreationError(
+                        _(f"Document type '{document_type_name}' not found.")
                     )
-                    break
             else:
                 # No DocumentType found, use the default
                 document_type_name = default_document_type.name

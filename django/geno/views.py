@@ -260,7 +260,6 @@ class DocumentActionBase(View):
 
     def _file_response(self, filename, visible_filename):
         """Build a FileResponse and clean up the temporary file from disk."""
-        # TODO: process non-success results and provide an error message
         resp = FileResponse(
             open(filename, "rb"), as_attachment=True, filename=smart_str(visible_filename)
         )
@@ -292,7 +291,7 @@ class DocumentCreateView(DocumentActionBase):
         result = document_generator.create_document(
             document_type=document_type, template=template, context=context
         )
-
+        # TODO: process non-success results and provide an error message
         return self._file_response(result.temporary_file_location, result.filename)
 
 
@@ -357,6 +356,7 @@ class DocumentRecreateView(DocumentActionBase):
             template=template,
             context=context,
         )
+        # TODO: process non-success results and provide an error message
 
         return self._file_response(result.temporary_file_location, result.filename)
 
@@ -1304,19 +1304,17 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
         return response
 
     def _get_data_for_document_creation_view(self) -> list[DocumentFetchResult]:
-        """
-        Process a generic Object (e.g. a Member, a Share) and verify that it has
-        a valid DocumentType and Template for subsequent Document creation.
+        """Verify that a generic Object (e.g. a Member, a Share) has a valid DocumentType and Template for subsequent Document creation.
 
-        For example the MemberLetterView assums Objects of the form:
+        For example the MemberLetterView expects Objects of the form:
         {
             'obj': <Member>,
             'doctype': 'memberletter',
             'info': 'Name of Member, Beitritt 01.01.2026'
         }
 
-        Returns a list of Results containing data pulled from the generic
-        Object, which are consumed by the relevant View's `get_context_data()`
+        Returns:
+            A list of Results containing data pulled from the generic Object, which are consumed by the relevant View's `get_context_data()`.
         """
         results = []
 
@@ -1326,31 +1324,30 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
                 item_objects.append(object["info"])
             if "doctype" in object:
                 doctype = object["doctype"]
-                try:
-                    doctype_obj = DocumentType.objects.get(name=doctype)
-                    template = doctype_obj.templates.filter(active=True).first()
-                    if not template or not template.file:
-                        # TODO: do we really continue here, or should be raise?
-                        result = DocumentFetchResult(
-                            status="error",
-                            label="FEHLER: Keine Vorlage-Datei für Dokumenttyp '%s' konfiguriert." % doctype,
-                            detail=object["info"]
-                        )
-                    else:
-                        result = DocumentFetchResult(
-                            status="success",
-                            label=str(object["obj"]),
-                            detail=item_objects
-                        )
-                    results.append(result)
-                except DocumentType.DoesNotExist:
-                    results.append(
-                        {
-                            "info": "FEHLER: Dokumenttyp '%s' nicht gefunden." % doctype,
-                            "objects": [],
-                        }
-                    )
-                    break
+            else:
+                doctype=self.doctype  # Ensure a default is available
+            try:
+                doctype_obj = DocumentType.objects.get(name=doctype)
+                template = doctype_obj.templates.filter(active=True).first()
+                if not template or not template.file:
+                    raise ContentTemplate.DoesNotExist
+                result = DocumentFetchResult(
+                    status="success",
+                    label=str(object["obj"]),
+                    detail=item_objects
+                )
+                results.append(result)
+            except DocumentType.DoesNotExist:
+                result = DocumentFetchResult(
+                    status="error",
+                    label=_("Error: DocumentType '%s' not found." % doctype),
+                    detail=[]
+                )
+                results.append(result)
+                break
+            except ContentTemplate.DoesNotExist:
+                messages.error(self.request, _("Error: Template '%s' for DocumentType '%s' not found." % (template, doctype)))
+                break
         return results
 
     def get(self, request, *args, **kwargs):
