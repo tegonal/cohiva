@@ -348,7 +348,9 @@ class DocumentRecreateView(DocumentActionBase):
         if not template:
             raise RuntimeError(_("Vorlage nicht gefunden."))
 
-        context = get_context_data(doctype, doc.content_object.pk, {})
+        original_data = json.loads(doc.data) if doc.data else {}
+        extra_context = original_data.get("context", {})
+        context = get_context_data(doctype, doc.content_object.pk, extra_context)
         # TODO: ensure that the old File is accessible
         document_generator = DocumentGenerator(default_document_type=document_type)
         result = document_generator.create_document(
