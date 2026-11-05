@@ -85,7 +85,7 @@
   },
   "packageManager": "yarn@4.10.3",
   "resolutions": {
-    "minimatch": "^10.2.3",
+    "minimatch": "^11.0.0",
     "flatted": "^3.4.2",
     "tar": "^7.5.22",
     "@babel/plugin-transform-modules-systemjs": "^7.29.4",
