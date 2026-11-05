@@ -208,8 +208,8 @@ class CohivaTestBase:
         pdf = PdfReader(self.get_filelike(pdffile_or_bytes))
         for i, page in enumerate(pdf.pages):
             if not on_page or on_page == i + 1:
-                text = page.extract_text()
-                if all(expect in text for expect in expected_text_list):
+                text = page.extract_text().replace(" ", "")
+                if all(expect.replace(" ", "") in text for expect in expected_text_list):
                     return
                 print(f"== Page {i + 1} ==")
                 print(text)
@@ -228,9 +228,9 @@ class CohivaTestBase:
         pdf = PdfReader(self.get_filelike(pdffile_or_bytes))
         for i, page in enumerate(pdf.pages):
             if not on_page or on_page == i + 1:
-                text = page.extract_text()
+                text = page.extract_text().replace(" ", "")
                 for expect in expected_text_list:
-                    if expect in text:
+                    if expect.replace(" ", "") in text:
                         if on_page:
                             raise AssertionError(
                                 f"Text found on page {on_page} in PDF: {expected_text_or_list}"
