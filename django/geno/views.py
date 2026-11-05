@@ -1340,12 +1340,7 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
                 )
                 results.append(result)
             except DocumentType.DoesNotExist:
-                result = DocumentFetchResult(
-                    status="error",
-                    label=_("Error: DocumentType '%s' not found." % doctype),
-                    detail=[]
-                )
-                results.append(result)
+                messages.error(self.request, _("Error: DocumentType '%s' not found." % doctype))
                 break
             except ContentTemplate.DoesNotExist:
                 messages.error(self.request, _("Error: Template '%s' for DocumentType '%s' not found." % (template, doctype)))
