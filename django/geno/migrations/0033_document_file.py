@@ -14,7 +14,6 @@ class Migration(migrations.Migration):
             model_name='document',
             name='file',
             field=models.FileField(blank=True, help_text='Gespeicherte Dokumentdatei (.pdf oder .odt)', null=True, storage=django.core.files.storage.FileSystemStorage(location=settings.SMEDIA_ROOT), upload_to='geno/documents/%Y/%m', verbose_name='Datei'),
-            field=models.FileField(blank=True, help_text='Gespeicherte Dokumentdatei (.pdf oder .odt)', null=True, upload_to='documents/%Y/%m', verbose_name='Datei'),
         ),
         migrations.AlterModelOptions(
             name='share',
