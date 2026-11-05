@@ -1111,6 +1111,7 @@ class DocumentAdmin(ObjectActionsMixin, GenoBaseAdmin):
         "name",
         "doctype",
         "data",
+        "file",
         "content_type",
         "comment",
         ("ts_created", "ts_modified"),

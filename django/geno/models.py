@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
+from django.core.files.storage import FileSystemStorage
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
@@ -42,6 +43,7 @@ from geno.utils import (
 
 logger = logging.getLogger("access_portal")
 
+smedia_storage = FileSystemStorage(location=settings.SMEDIA_ROOT)
 
 ## Abstract base class
 class GenoBase(models.Model):
@@ -1323,7 +1325,6 @@ class Share(GenoBase):
             ("canview_share_overview", "Can see share overview"),
             ("confirm_share", "Kann Betiligungen bestätigen"),
             ("share_interest_statements", "Kann Zins-/Kontoauszüge erstellen und Zinsen anpassen"),
-            ("share_mailing", "Kann Mailing zu Beteiligungen erstellen"),
         )
 
     @classmethod
@@ -1415,6 +1416,16 @@ class Document(GenoBase):
     doctype = models.ForeignKey(DocumentType, verbose_name="Dokumenttyp", on_delete=models.CASCADE)
     data = models.TextField("Data")
 
+    # File to store generated Document data (.pdf or .odt)
+    file = models.FileField(
+        "Datei",
+        upload_to="geno/documents/%Y/%m",
+        storage=smedia_storage,
+        blank=True,
+        null=True,
+        help_text="Gespeicherte Dokumentdatei (.pdf oder .odt)",
+    )
+
     ## Generic relation to object
     content_type = models.ForeignKey(
         ContentType, verbose_name="Verknüpft mit", on_delete=models.CASCADE
@@ -1442,8 +1453,12 @@ class Document(GenoBase):
         return [
             {
                 "path": f"/geno/documents/{self.doctype.name}/{self.pk}/download/",
-                "title": "Dokument neu erzeugen",
-            }
+                "title": "Dokument herunterladen",
+            },
+            {
+                "path": f"/geno/documents/{self.doctype.name}/{self.pk}/recreate/",
+                "title": "Dokument neu erzeugen (mit aktuellen Daten)",
+            },
         ]
 
     class Meta:
