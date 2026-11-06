@@ -12,6 +12,7 @@ from django.test import RequestFactory, tag
 from django.urls import reverse
 
 import geno.tests.data as geno_testdata
+from geno.billing import parse_reference_nr
 from geno.models import Invoice, InvoiceCategory, Share, ShareType
 from geno.views import InvoiceBatchGenerateView, ShareStatementView
 
@@ -372,6 +373,91 @@ class InvoiceBatchGenerateViewTest(GenoAdminTestCase):
         view.result = view.process_action(dry_run=True)
         context = view.get_context_data()
         self.assertEqual(context["item_count"], 10)
+
+
+class InvoiceManualViewTest(GenoAdminTestCase):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        geno_testdata.create_contracts(cls)
+
+    def test_invoice_is_linked_to_address(self):
+        """Test that the invoice created by InvoiceManualView is linked to the correct address
+        with the correct reference number."""
+        invoice_category = InvoiceCategory.objects.get(name="Member Invoice")
+        request_data = {
+            "category": invoice_category.pk,
+            "date": datetime.date.today().strftime("%d.%m.%Y"),
+            "address": self.addresses[0].pk,
+            "extra_text": "Test extra_text",
+        }
+        invoice, bill_info = self._create_invoice(request_data)
+
+        # Check if invoice has been created and linked to the correct address
+        self.assertEqual(invoice.person, self.addresses[0])
+
+        # Check if the reference number references the correct object
+        self.assertEqual(bill_info["person"], self.addresses[0])
+        self.assertEqual(bill_info["contract"], None)
+        self.assertEqual(bill_info["invoice_category"], invoice_category)
+
+    def test_invoice_is_linked_to_contract(self):
+        """Test that the invoice created by InvoiceManualView is linked to the correct contract
+        with the correct reference number."""
+
+        if self.contracts[0].id == self.contracts[0].get_contact_address().id:
+            # Avoid false-positives in case the contract's id happens to be the same as the
+            # contact address id.
+            self.contracts[0].main_contact = self.addresses[0]
+            self.contracts[0].save()
+
+        invoice_category = InvoiceCategory.objects.get(name="Contract manual")
+        request_data = {
+            "category": invoice_category.pk,
+            "date": datetime.date.today().strftime("%d.%m.%Y"),
+            "contract": self.contracts[0].pk,
+            "extra_text": "Test extra_text",
+        }
+        invoice, bill_info = self._create_invoice(request_data)
+
+        # Check if invoice has been created and linked to the correct contract
+        self.assertEqual(invoice.contract, self.contracts[0])
+
+        # Check if the reference number references the correct object
+        self.assertEqual(bill_info["person"], None)
+        self.assertEqual(bill_info["contract"], self.contracts[0])
+        self.assertEqual(bill_info["invoice_category"], invoice_category)
+
+    def _create_invoice(self, request_data: dict):
+        self.client.login(username="superuser", password="secret")
+        request_data.update(
+            {
+                "send_email": "on",
+                "submit_action_save": "",
+            }
+        )
+        request_data.update(
+            self.make_formset_data(
+                [
+                    {
+                        "date": datetime.date.today().strftime("%d.%m.%Y"),
+                        "text": "Test line 1",
+                        "amount": "100.00",
+                    },
+                ]
+            )
+        )
+        with patch("geno.views.create_qrbill", return_value=([], 1, None)) as mock_create_qrbill:
+            response = self.client.post(reverse("geno:invoice-manual"), request_data)
+            self.assertEqual(response.status_code, 200)
+            mock_create_qrbill.assert_called_once()
+            args, kwargs = mock_create_qrbill.call_args
+            ref_nr = args[0]
+
+        invoice = Invoice.objects.first()
+        bill_info = parse_reference_nr(ref_nr)
+
+        return invoice, bill_info
 
 
 class Odt2PdfViewTest(GenoAdminTestCase):

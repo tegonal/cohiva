@@ -3875,9 +3875,11 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
         if invoice_category.linked_object_type == "Contract":
             contract = form.cleaned_data["contract"]
             address = contract.get_contact_address()
+            ref_nr_obj_id = contract.id
         else:
             contract = None
             address = form.cleaned_data["address"]
+            ref_nr_obj_id = address.id
         invoice_date = form.cleaned_data["date"]
 
         lines_count = 0
@@ -3939,7 +3941,7 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
             invoice_id = 9999999999
 
         if not self.error_flag:
-            ref_number = get_reference_nr(invoice_category, address.id, invoice_id)
+            ref_number = get_reference_nr(invoice_category, ref_nr_obj_id, invoice_id)
             output_filename = "Rechnung_%s_%s_%s.pdf" % (
                 invoice_category.name,
                 invoice_date.strftime("%Y%m%d"),
@@ -3983,7 +3985,7 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
             )
 
             info = "%s CHF %s Nr. %s/%s, %s" % (
-                address,
+                contract if contract else address,
                 total_amount,
                 context["invoice_nr"],
                 context["invoice_date"],
