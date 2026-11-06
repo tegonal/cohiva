@@ -36,7 +36,9 @@ const routes: RouteRecordRaw[] = [
     props: { subpageTitleKey: 'pageTitles.reservation' },
   },
   {
-    children: [{ component: () => import('@/pages/CalendarPage.vue'), path: '' }],
+    children: [
+      { component: () => import('@/pages/CalendarPage.vue'), path: '' },
+    ],
     component: () => import('@/layouts/SubpageLayout.vue'),
     path: '/calendar',
     props: { subpageTitleKey: 'pageTitles.calendar' },

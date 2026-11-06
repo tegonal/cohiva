@@ -32,8 +32,14 @@ Development server runs at http://localhost:9000
 
 ```bash
 # Development
-yarn dev              # Standard dev server with example config (one-time setup)
+yarn dev               # Standard dev server with example config (one-time setup)
 yarn dev:tenant <path> # Dev server with custom tenant + auto-reload on config changes
+
+# Development with manual tenant-config management
+yarn setup:dev-config --config-dir <dir>  # One-time manual setup
+yarn quasar dev                           # Subsequent dev server starts (fast!)
+yarn quasar dev -m pwa                    # To develop/test PWA features
+yarn validate:config                      # If you want validation too
 
 # Build
 yarn build            # Production build (validates config first)
@@ -115,6 +121,35 @@ pwa/
 ## Docker Deployment
 
 See [README_TENANT_CONFIG.md](README_TENANT_CONFIG.md) for production deployment with tenant configs.
+
+## Static build with tenant-config (non-Docker deployment)
+
+Tenant configs are stored in `../pwa-tenant-config-generator/tenant-configs/<instance>`.
+
+Example for `<instance>=warmbaechli`
+
+### 1. Generate files and copy overlays to project root
+
+```bash
+yarn dev:tenant ../pwa-tenant-config-generator/tenant-configs/warmbaechli
+```
+
+Check http://localhost:9000/login if everything looks correct.
+
+### 2. Build
+
+```bash
+rm -rf dist/pwa   # Probably not needed, just to make sure we start in a clean state
+yarn build
+```
+
+`dist/pwa` should now contain correct settings, icons etc.
+
+### 3. Deploy and cleanup
+
+- Deploy to your webhost by copying the files.
+- If needed, update files in deployment-repo for that instance.
+- Revert unwanted temporary changes in the repo.
 
 ## Troubleshooting
 

@@ -58,7 +58,6 @@ export default defineConfig((ctx) => ({
       viteConf.resolve = viteConf.resolve || {}
       viteConf.resolve.alias = {
         ...viteConf.resolve.alias,
-        '@fullcalendar/core/vdom': '@fullcalendar/core/internal.js',
         app: path.resolve(__dirname, '.'),
       }
     },
@@ -198,7 +197,7 @@ export default defineConfig((ctx) => ({
     // store: 'src/store/index',
     pwaRegisterServiceWorker: 'src-pwa/register-service-worker',
     pwaServiceWorker: 'src-pwa/sw/custom-sw',
-    // pwaManifestFile: 'src-pwa/manifest.json',
+    pwaManifestFile: 'src-pwa/manifest.json',
     // electronMain: 'src-electron/electron-main',
     // electronPreload: 'src-electron/electron-preload'
   },

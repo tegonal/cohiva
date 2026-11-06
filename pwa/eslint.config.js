@@ -15,6 +15,7 @@ export default [
     },
     rules: {
       ...pluginPerfectionist.configs['recommended-natural'].rules,
+      // Imports: consistent ordering
       'perfectionist/sort-imports': [
         'error',
         {
@@ -28,11 +29,31 @@ export default [
             'object',
             'unknown',
           ],
-          internalPattern: [
-            '^@/',
-            '^app/',
-            '^\\.\\./',
-          ],
+          internalPattern: ['^@/', '^app/', '^\\.\\./'],
+        },
+      ],
+      // Enums: consistent ordering
+      'perfectionist/sort-enums': [
+        'error',
+        {
+          type: 'alphabetical',
+          order: 'asc',
+        },
+      ],
+      // Object types: keep properties consistent
+      'perfectionist/sort-object-types': [
+        'error',
+        {
+          type: 'alphabetical',
+          order: 'asc',
+        },
+      ],
+      // Objects: preserve developer-defined logical order
+      'perfectionist/sort-objects': [
+        'error',
+        {
+          type: 'unsorted',
+          newlinesBetween: 'ignore',
         },
       ],
     },

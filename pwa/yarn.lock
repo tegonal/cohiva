@@ -757,51 +757,36 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@fullcalendar/core@npm:^6.1.19":
-  version: 6.1.19
-  resolution: "@fullcalendar/core@npm:6.1.19"
+"@full-ui/headless-calendar@npm:7.1.4":
+  version: 7.1.4
+  resolution: "@full-ui/headless-calendar@npm:7.1.4"
+  peerDependencies:
+    temporal-polyfill: ^1.0.7
+  checksum: 10c0/1516d2a560870cdefefbaf30d000096f714f744756f1a9cb4ee9d97a5c16ba68160a33528a9008742a48e696585bfa7e6f5f671671f49c7604b3215091127cba
+  languageName: node
+  linkType: hard
+
+"@fullcalendar/core@npm:7.1.4":
+  version: 7.1.4
+  resolution: "@fullcalendar/core@npm:7.1.4"
+  peerDependencies:
+    "@full-ui/headless-calendar": 7.1.4
+    temporal-polyfill: ^1.0.7
+  checksum: 10c0/307e2b0304f9fe7b673632c5a5a96c50a956c4d02d80a2d37bbaba362fb879c012deb71560b05d69812e49c3b438a137591b53e4bf8c02da59c913e18c0a0618
+  languageName: node
+  linkType: hard
+
+"@fullcalendar/vue3@npm:^7.1.4":
+  version: 7.1.4
+  resolution: "@fullcalendar/vue3@npm:7.1.4"
   dependencies:
-    preact: "npm:~10.12.1"
-  checksum: 10c0/0baf5df761fd59f2e4c274c08badef96f41229c0b2be587ed1067f163b4eda0d4c0dec7f90aa3549db11cd60c4c0d9f77d8aa7387aa7e5c7ab02d5d4fb7b048b
-  languageName: node
-  linkType: hard
-
-"@fullcalendar/daygrid@npm:^6.1.19, @fullcalendar/daygrid@npm:~6.1.19":
-  version: 6.1.19
-  resolution: "@fullcalendar/daygrid@npm:6.1.19"
+    "@full-ui/headless-calendar": "npm:7.1.4"
+    "@fullcalendar/core": "npm:7.1.4"
+    preact: "npm:^10.29.8"
   peerDependencies:
-    "@fullcalendar/core": ~6.1.19
-  checksum: 10c0/542a1e816013dce0744dd31c3f7765379144bd5d6f6777885528e31558dead0bb21f3a5f85d75e35c48fc6216901909c58bd20fdde44ced06685ec79e1d4ed1e
-  languageName: node
-  linkType: hard
-
-"@fullcalendar/list@npm:^6.1.19":
-  version: 6.1.19
-  resolution: "@fullcalendar/list@npm:6.1.19"
-  peerDependencies:
-    "@fullcalendar/core": ~6.1.19
-  checksum: 10c0/d477f1f6aaf014933295b9aa6d0788fedb5a840889405bcdc49b03a915992d120b44a4b24e29242aaa38771c2cb2d8c9d303e7dd9010fd06ced488c8e7e299b6
-  languageName: node
-  linkType: hard
-
-"@fullcalendar/timegrid@npm:^6.1.19":
-  version: 6.1.19
-  resolution: "@fullcalendar/timegrid@npm:6.1.19"
-  dependencies:
-    "@fullcalendar/daygrid": "npm:~6.1.19"
-  peerDependencies:
-    "@fullcalendar/core": ~6.1.19
-  checksum: 10c0/83e60539a049cc7270af924cfa04efea41e35b3d9bb21bb4decc8300c5c93283670ed2132f2236c4b93a29af126c3c7b5279ba32827993d74841d8b366b8c741
-  languageName: node
-  linkType: hard
-
-"@fullcalendar/vue3@npm:^6.1.19":
-  version: 6.1.19
-  resolution: "@fullcalendar/vue3@npm:6.1.19"
-  peerDependencies:
-    "@fullcalendar/core": ~6.1.19
+    temporal-polyfill: ^1.0.7
     vue: ^3.0.11
-  checksum: 10c0/d0b2914806239bbd9747f1190a492838e826ea3f45c6392cc439e4ea678e79ebd735134196b281daf4ea97a343ef849e6e65769d989461c089a7625a2181622e
+  checksum: 10c0/d075701e8199f363fc79ecaa9000b19a8f6ac66da3ebca30a54954cfb4efa708c9b98df3cda6121c08154b1982b5ae4f0acda12b43e3372c37fefbe36fe4bca6
   languageName: node
   linkType: hard
 
@@ -5395,11 +5380,7 @@ __metadata:
   dependencies:
     "@babel/eslint-parser": "npm:^7.28.6"
     "@eslint/js": "npm:^9.39.4"
-    "@fullcalendar/core": "npm:^6.1.19"
-    "@fullcalendar/daygrid": "npm:^6.1.19"
-    "@fullcalendar/list": "npm:^6.1.19"
-    "@fullcalendar/timegrid": "npm:^6.1.19"
-    "@fullcalendar/vue3": "npm:^6.1.19"
+    "@fullcalendar/vue3": "npm:^7.1.4"
     "@intlify/unplugin-vue-i18n": "npm:^11.2.5"
     "@khmyznikov/pwa-install": "npm:^0.5.8"
     "@quasar/app-vite": "npm:^3.0.0"
@@ -5423,6 +5404,7 @@ __metadata:
     postcss: "npm:^8.5.14"
     prettier: "npm:^3.6.2"
     quasar: "npm:^2.27.0"
+    temporal-polyfill: "npm:^1.0.8"
     tippy.js: "npm:^6.3.7"
     tsx: "npm:^4.21.0"
     typescript: "npm:~5.9.3"
@@ -5844,10 +5826,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"preact@npm:~10.12.1":
-  version: 10.12.1
-  resolution: "preact@npm:10.12.1"
-  checksum: 10c0/c77a55e897dcf298b7aa13637fed29744d3cf6c083f2832856e8551dbf27303c8b6946569736de16b05cba15c0e44ad404beb236ad9e36583a6fc5e2efad7777
+"preact@npm:^10.29.8":
+  version: 10.29.8
+  resolution: "preact@npm:10.29.8"
+  peerDependencies:
+    preact-render-to-string: ">=5"
+  peerDependenciesMeta:
+    preact-render-to-string:
+      optional: true
+  checksum: 10c0/505460352139e0ce5b9c971b69d8d9f3b73ea0f316e3ff1c0b3db9a1abe206c9dff6ba385eb796253c38fcc08b5ade70cd8da3d9d6c9e9aec1a2fd59348253ae
   languageName: node
   linkType: hard
 
@@ -6820,6 +6807,30 @@ __metadata:
     minizlib: "npm:^3.1.0"
     yallist: "npm:^5.0.0"
   checksum: 10c0/1311f6be85a8157ac4c9147bae43e13923d2a1aae15e4aa1bd5239e4e03d2cf53cfe103dde7f35832fbb4c938b042856bc8e9a0afd29abd05e2d1608788c4fea
+  languageName: node
+  linkType: hard
+
+"temporal-polyfill@npm:^1.0.8":
+  version: 1.0.8
+  resolution: "temporal-polyfill@npm:1.0.8"
+  dependencies:
+    temporal-spec: "npm:1.0.1"
+    temporal-utils: "npm:1.0.4"
+  checksum: 10c0/91f225c02a39f824ce71b3710e9cbf8e28e9fb40428c42b5ee067263737a34005fa61b87822bce207e6ad4257b0ee40fb29c2cdbf540aba7fda5809f276f7f61
+  languageName: node
+  linkType: hard
+
+"temporal-spec@npm:1.0.1":
+  version: 1.0.1
+  resolution: "temporal-spec@npm:1.0.1"
+  checksum: 10c0/99f6bfe4a8e59cd0664d0e97706798a1e10d42b1b682da9b60778a4cb9a23362da01ea3d83a674ef426ed743bbab835e2e3d1acea5d2d4a9eabe33863237b014
+  languageName: node
+  linkType: hard
+
+"temporal-utils@npm:1.0.4":
+  version: 1.0.4
+  resolution: "temporal-utils@npm:1.0.4"
+  checksum: 10c0/cd5105d49f01794c5adfde697178364a70b56c28be60119922bbb1a96dd4d8de43537fa31883aff85e0c18b39cd2e1d2facfc794750e03621c6983f95b39da1b
   languageName: node
   linkType: hard
 

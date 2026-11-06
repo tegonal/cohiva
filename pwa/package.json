@@ -29,11 +29,7 @@
     "self-update": "yarn set version stable && yarn"
   },
   "dependencies": {
-    "@fullcalendar/core": "^6.1.19",
-    "@fullcalendar/daygrid": "^6.1.19",
-    "@fullcalendar/list": "^6.1.19",
-    "@fullcalendar/timegrid": "^6.1.19",
-    "@fullcalendar/vue3": "^6.1.19",
+    "@fullcalendar/vue3": "^7.1.4",
     "@khmyznikov/pwa-install": "^0.5.8",
     "@quasar/extras": "^1.17.0",
     "axios": "^1.20.0",
@@ -41,6 +37,7 @@
     "oidc-client-ts": "^3.3.0",
     "pinia": "^3.0.4",
     "quasar": "^2.27.0",
+    "temporal-polyfill": "^1.0.8",
     "tippy.js": "^6.3.7",
     "vue": "^3.5.34",
     "vue-i18n": "^11.2.8",
