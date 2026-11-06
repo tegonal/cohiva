@@ -341,7 +341,8 @@ async function generatePWAAssets(
     }
   } catch (error) {
     throw new Error(
-      `pwa-asset-generator failed: ${error instanceof Error ? error.message : String(error)}`
+      `pwa-asset-generator failed: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     )
   }
 
@@ -352,7 +353,8 @@ async function generatePWAAssets(
     await execAsync(`${iconBaseCmd} --maskable true`)
   } catch (error) {
     throw new Error(
-      `pwa-asset-generator failed: ${error instanceof Error ? error.message : String(error)}`
+      `pwa-asset-generator failed: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     )
   }
 
@@ -381,7 +383,8 @@ async function generatePWAAssets(
     }
   } catch (error) {
     throw new Error(
-      `pwa-asset-generator splash screens failed: ${error instanceof Error ? error.message : String(error)}`
+      `pwa-asset-generator splash screens failed: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     )
   }
 
@@ -421,7 +424,8 @@ async function generatePWAAssets(
       }
     } catch (error) {
       throw new Error(
-        `pwa-asset-generator dark splash screens failed: ${error instanceof Error ? error.message : String(error)}`
+        `pwa-asset-generator dark splash screens failed: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error }
       )
     }
 

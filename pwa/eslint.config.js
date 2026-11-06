@@ -26,7 +26,6 @@ export default [
             ['builtin', 'external'],
             'internal',
             ['parent', 'sibling', 'index'],
-            'object',
             'unknown',
           ],
           internalPattern: ['^@/', '^app/', '^\\.\\./'],
@@ -78,6 +77,7 @@ export default [
     },
     rules: {
       'no-unused-vars': 'off',
+      'no-useless-assignment': 'off',
       '@typescript-eslint/no-unused-vars': 'warn',
       'vue/multi-word-component-names': 'off',
       'vue/no-reserved-component-names': 'off',

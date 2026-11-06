@@ -28,34 +28,27 @@
   },
   "dependencies": {
     "fs-extra": "^11.3.2",
-    "pwa-asset-generator": "^8.1.5",
-    "sharp": "^0.35.0",
-    "svgo": "^4.0.2",
-    "zod": "^4.1.12"
+    "pwa-asset-generator": "^8.1.7",
+    "sharp": "^0.35.5",
+    "svgo": "^4.1.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.4",
+    "@eslint/js": "^10.0.1",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^25.0.8",
-    "@typescript-eslint/eslint-plugin": "^8.59.2",
-    "@typescript-eslint/parser": "^8.59.2",
-    "eslint": "9.39.4",
-    "eslint-plugin-perfectionist": "^4.15.1",
+    "@typescript-eslint/eslint-plugin": "^8.72.1",
+    "@typescript-eslint/parser": "^8.72.1",
+    "eslint": "^10.14.0",
+    "eslint-plugin-perfectionist": "^5.13.0",
     "globals": "^15.15.0",
     "prettier": "^3.6.2",
-    "tsx": "^4.23.0",
+    "tsx": "^4.23.15",
     "typescript": "~5.9.3"
   },
   "packageManager": "yarn@4.10.3",
   "resolutions": {
-    "tar": "^7.5.21",
-    "flatted": "^3.4.2",
-    "minimatch": "^10.2.3",
-    "ws": "^8.21.0",
-    "undici": "^7.29.0",
-    "js-cookie": "^3.0.7",
-    "brace-expansion": "^5.0.9",
-    "ip-address": "^10.3.1",
-    "js-yaml": "^4.3.1"
+    "source-map-js": "^1.2.2",
+    "minimatch": "^11.0.1"
   }
 }
