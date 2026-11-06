@@ -412,7 +412,7 @@ x-wr-timezone==2.0.1
     # via recurring-ical-events
 xmlschema==2.5.1
     # via pysaml2
-yarl==1.20.1
+yarl==1.25.1
     # via aiohttp
 zc-lockfile==3.0.post1
     # via zodb
