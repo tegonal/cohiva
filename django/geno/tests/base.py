@@ -297,6 +297,21 @@ class CohivaTestBase:
             # print(f"Deleting test invoice {invoice.id}")
             invoice.delete()
 
+    @staticmethod
+    def make_formset_data(forms: list[dict[str, str]], prefix: str = "form"):
+        """Helper to create POST data for a formset. `forms` is a list of dicts, each dicti
+        representing a form's fields and values."""
+        data = {
+            f"{prefix}-TOTAL_FORMS": str(len(forms)),
+            f"{prefix}-INITIAL_FORMS": "0",
+        }
+
+        for index, form in enumerate(forms):
+            for field, value in form.items():
+                data[f"{prefix}-{index}-{field}"] = value
+
+        return data
+
 
 class BaseTestCase(CohivaTestBase, TestCase):
     pass
