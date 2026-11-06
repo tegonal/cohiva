@@ -8,7 +8,7 @@
 // Configuration for your app
 // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js
 
-import { defineConfig } from '#q-app/wrappers'
+import { defineConfig } from '#q-app'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -34,7 +34,7 @@ export default defineConfig((ctx) => ({
 
   // Full list of options: https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#build
   build: {
-    env: {
+    defineEnv: {
       API: ctx.dev
         ? 'https://' + settings.testHostname + '.' + settings.domain + '/'
         : 'https://' + settings.prodHostname + '.' + settings.domain + '/',
@@ -59,8 +59,7 @@ export default defineConfig((ctx) => ({
       viteConf.resolve.alias = {
         ...viteConf.resolve.alias,
         '@fullcalendar/core/vdom': '@fullcalendar/core/internal.js',
-        boot: path.resolve(__dirname, './src/boot'),
-        src: path.resolve(__dirname, './src'),
+        app: path.resolve(__dirname, '.'),
       }
     },
 
@@ -193,16 +192,16 @@ export default defineConfig((ctx) => ({
   },
 
   // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#property-sourcefiles
-  // sourceFiles: {
-  //   rootComponent: 'src/App.vue',
-  //   router: 'src/router/index',
-  //   store: 'src/store/index',
-  //   registerServiceWorker: 'src-pwa/register-service-worker',
-  //   serviceWorker: 'src-pwa/custom-service-worker',
-  //   pwaManifestFile: 'src-pwa/manifest.json',
-  //   electronMain: 'src-electron/electron-main',
-  //   electronPreload: 'src-electron/electron-preload'
-  // },
+  sourceFiles: {
+    // rootComponent: 'src/App.vue',
+    // router: 'src/router/index',
+    // store: 'src/store/index',
+    pwaRegisterServiceWorker: 'src-pwa/register-service-worker',
+    pwaServiceWorker: 'src-pwa/sw/custom-sw',
+    // pwaManifestFile: 'src-pwa/manifest.json',
+    // electronMain: 'src-electron/electron-main',
+    // electronPreload: 'src-electron/electron-preload'
+  },
 
   eslint: {
     errors: true,
@@ -263,16 +262,16 @@ export default defineConfig((ctx) => ({
 
   // https://v2.quasar.dev/quasar-cli/developing-pwa/configuring-pwa
   pwa: {
-    injectPwaMetaTags: true,
+    injectPWAMetaTags: true,
     manifestFilename: 'manifest.json',
     swFilename: 'sw.js',
     useCredentialsForManifestTag: false,
     workboxMode: 'InjectManifest', // or "GenerateSW"
     // useFilenameHashes: true,
-    // extendGenerateSWOptions (cfg) {}
-    // extendInjectManifestOptions (cfg) {},
-    // extendManifestJson (json) {}
-    // extendPWACustomSWConf (esbuildConf) {}
+    // extendPWAGenerateSWOptions (cfg) {}
+    // extendPWAInjectManifestOptions (cfg) {},
+    // extendPWAManifestJson (json) {}
+    // extendPWACustomSWConf (rolldownConf) {}
   },
 
   // https://v2.quasar.dev/quasar-cli/developing-ssr/configuring-ssr

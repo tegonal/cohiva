@@ -1,8 +1,8 @@
-import { defineBoot } from '#q-app/wrappers'
-import { settings } from 'app/tenant-config/settings'
+import { defineBoot } from '#q-app'
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 
-import { useAuthStore } from 'stores/auth-store'
+import { settings } from '@/../tenant-config/settings'
+import { useAuthStore } from '@/stores/auth-store'
 
 interface ExtendedAxiosRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean
@@ -10,7 +10,7 @@ interface ExtendedAxiosRequestConfig extends InternalAxiosRequestConfig {
 
 // Determine API URL based on environment
 // Both development and production use direct URLs since CORS is configured on backend
-const isDevelopment = process.env.NODE_ENV === 'development'
+const isDevelopment = import.meta.env.DEV
 
 const apiBaseURL = isDevelopment
   ? `https://${settings.testHostname}.${settings.domain}/`

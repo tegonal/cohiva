@@ -29,12 +29,8 @@ export default [
             'unknown',
           ],
           internalPattern: [
-            '^src/',
-            '^boot/',
-            '^stores/',
-            '^components/',
-            '^layouts/',
-            '^pages/',
+            '^@/',
+            '^app/',
             '^\\.\\./',
           ],
         },
@@ -55,7 +51,6 @@ export default [
         __QUASAR_SSR_SERVER__: 'readonly',
         __QUASAR_SSR_CLIENT__: 'readonly',
         __QUASAR_SSR_PWA__: 'readonly',
-        process: 'readonly',
         Capacitor: 'readonly',
         chrome: 'readonly',
       },
@@ -106,6 +101,26 @@ export default [
     },
     rules: {
       ...typescriptEslint.configs.recommended.rules,
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': 'warn',
+    },
+  },
+  {
+    files: ['src-pwa/sw/**/*.ts'],
+    languageOptions: {
+      parser: typescriptParser,
+      globals: {
+        ...globals.serviceworker,
+      },
+    },
+    plugins: {
+      '@typescript-eslint': typescriptEslint,
+    },
+    rules: {
+      ...typescriptEslint.configs.recommended.rules,
+      'no-undef': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-explicit-any': 'off',

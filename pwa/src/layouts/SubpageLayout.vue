@@ -36,8 +36,8 @@ export default defineComponent({
 </script>
 
 <script setup lang="ts">
-import DevOverlay from 'components/DevOverlay.vue'
-import LanguageSwitcher from 'components/LanguageSwitcher.vue'
+import DevOverlay from '@/components/DevOverlay.vue'
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 
 defineProps<{ subpageTitleKey: string }>()
 </script>

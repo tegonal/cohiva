@@ -44,13 +44,13 @@
     "tippy.js": "^6.3.7",
     "vue": "^3.5.34",
     "vue-i18n": "^11.2.8",
-    "vue-router": "^4.6.4"
+    "vue-router": "^5.0.6"
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.28.6",
     "@eslint/js": "^9.39.4",
     "@intlify/unplugin-vue-i18n": "^11.2.5",
-    "@quasar/app-vite": "^2.6.0",
+    "@quasar/app-vite": "^3.0.0",
     "@quasar/cli": "^5.0.2",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^25.0.8",
@@ -65,18 +65,10 @@
     "globals": "^15.15.0",
     "postcss": "^8.5.14",
     "prettier": "^3.6.2",
-    "register-service-worker": "^1.7.2",
     "tsx": "^4.21.0",
     "typescript": "~5.9.3",
     "vue-eslint-parser": "^10.2.0",
     "vue-tsc": "^3.1.1",
-    "workbox-build": "^7.4.1",
-    "workbox-cacheable-response": "^7.3.0",
-    "workbox-core": "^7.4.1",
-    "workbox-expiration": "^7.3.0",
-    "workbox-precaching": "^7.3.0",
-    "workbox-routing": "^7.3.0",
-    "workbox-strategies": "^7.3.0",
     "zod": "^4.1.12"
   },
   "engines": {

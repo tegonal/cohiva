@@ -65,7 +65,7 @@ import tippy from 'tippy.js'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { api } from 'boot/axios'
+import { api } from '@/boot/axios'
 import 'tippy.js/dist/tippy.css'
 
 const { t } = useI18n()

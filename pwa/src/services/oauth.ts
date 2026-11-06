@@ -1,4 +1,3 @@
-import { settings } from 'app/tenant-config/settings'
 import {
   OidcMetadata,
   User,
@@ -6,6 +5,8 @@ import {
   UserManagerSettings,
   WebStorageStateStore,
 } from 'oidc-client-ts'
+
+import { settings } from '@/../tenant-config/settings'
 
 interface ExtraLoginParams {
   login_hint?: string
@@ -19,7 +20,7 @@ interface OAuthState {
 
 const createOAuthSettings = (): UserManagerSettings => {
   // Determine API URL based on environment
-  const isDevelopment = process.env.NODE_ENV === 'development'
+  const isDevelopment = import.meta.env.DEV
   const baseUrl = isDevelopment
     ? `https://${settings.testHostname}.${settings.domain}`
     : `https://${settings.prodHostname}.${settings.domain}`

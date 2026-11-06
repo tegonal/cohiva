@@ -14,7 +14,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { type ThemeMode, useThemeMode } from 'src/composables/use-theme-mode'
+import { type ThemeMode, useThemeMode } from '@/composables/use-theme-mode'
 
 const { currentMode, setThemeMode } = useThemeMode()
 
