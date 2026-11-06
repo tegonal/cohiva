@@ -103,7 +103,9 @@ export function validateSettings(settings: unknown): Settings {
       const errorMessages = error.issues
         .map((err) => `  - ${err.path.join('.')}: ${err.message}`)
         .join('\n')
-      throw new Error(`Settings validation failed:\n${errorMessages}`)
+      throw new Error(`Settings validation failed:\n${errorMessages}`, {
+        cause: error,
+      })
     }
     throw error
   }
@@ -117,7 +119,9 @@ export function validateTheme(theme: unknown): Theme {
       const errorMessages = error.issues
         .map((err) => `  - ${err.path.join('.')}: ${err.message}`)
         .join('\n')
-      throw new Error(`Theme validation failed:\n${errorMessages}`)
+      throw new Error(`Theme validation failed:\n${errorMessages}`, {
+        cause: error,
+      })
     }
     throw error
   }

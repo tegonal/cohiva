@@ -1,6 +1,6 @@
-import { boot } from 'quasar/wrappers'
+import { defineBoot } from '#q-app'
 
-import { useThemeMode } from 'src/composables/use-theme-mode'
+import { useThemeMode } from '@/composables/use-theme-mode'
 
 /**
  * Dark Mode Boot File
@@ -9,13 +9,13 @@ import { useThemeMode } from 'src/composables/use-theme-mode'
  * The actual logic is handled by the use-theme-mode composable.
  */
 
-export default boot(() => {
+export default defineBoot(() => {
   // Initialize theme mode from localStorage
   // This ensures the composable is loaded and applies the saved preference
   const { currentMode } = useThemeMode()
 
   // Optional: Log the initial dark mode state for debugging
-  if (process.env.DEV) {
+  if (import.meta.env.QUASAR_DEV) {
     console.log('[Theme Mode] Initialized with mode:', currentMode.value)
   }
 })

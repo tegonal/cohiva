@@ -121,10 +121,10 @@
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { api } from 'boot/axios'
-import { useThemedLogo } from 'src/composables/use-themed-logo'
-import { useAuthStore } from 'stores/auth-store'
-import { useMainStore } from 'stores/main-store'
+import { api } from '@/boot/axios'
+import { useThemedLogo } from '@/composables/use-themed-logo'
+import { useAuthStore } from '@/stores/auth-store'
+import { useMainStore } from '@/stores/main-store'
 
 import { settings } from '../../tenant-config/settings'
 

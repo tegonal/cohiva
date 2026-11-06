@@ -41,10 +41,10 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 
-import { useAuthStore } from 'stores/auth-store'
-import { useMainStore } from 'stores/main-store'
+import { useAuthStore } from '@/stores/auth-store'
+import { useMainStore } from '@/stores/main-store'
 
-const isDevelopment = process.env.NODE_ENV === 'development'
+const isDevelopment = import.meta.env.DEV
 const authStore = useAuthStore()
 const mainStore = useMainStore()
 

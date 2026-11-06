@@ -49,6 +49,7 @@ yarn-error.log*
 *.swp
 
 /.yarn
+/src-pwa/.yarn
 /.claude
 /claude-workspace
 CLAUDE.md

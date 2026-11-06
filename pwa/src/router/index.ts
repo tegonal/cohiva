@@ -1,25 +1,22 @@
-import { defineRouter } from '#q-app/wrappers'
+import { defineRouter } from '#q-app'
 import {
   createMemoryHistory,
   createRouter,
-  createWebHashHistory,
   createWebHistory,
   RouteLocationNormalized,
 } from 'vue-router'
 
-import { useAuthStore } from 'stores/auth-store'
+import { useAuthStore } from '@/stores/auth-store'
 
 import routes from './routes'
 
 export default defineRouter(function () {
-  const createHistory = process.env.SERVER
+  const createHistory = import.meta.env.QUASAR_SERVER
     ? createMemoryHistory
-    : process.env.VUE_ROUTER_MODE === 'history'
-      ? createWebHistory
-      : createWebHashHistory
+    : createWebHistory
 
   const Router = createRouter({
-    history: createHistory(process.env.VUE_ROUTER_BASE),
+    history: createHistory('/'),
     routes,
     scrollBehavior: () => ({ left: 0, top: 0 }),
   })
@@ -44,6 +41,10 @@ export default defineRouter(function () {
 
     // Allow navigation to proceed
     return true
+  })
+
+  Router.onError((error) => {
+    console.error('Router navigation error:', error)
   })
 
   return Router

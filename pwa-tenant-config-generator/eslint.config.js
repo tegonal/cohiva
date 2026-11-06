@@ -22,7 +22,6 @@ export default [
             ['builtin', 'external'],
             'internal',
             ['parent', 'sibling', 'index'],
-            'object',
             'unknown',
           ],
           internalPattern: ['^src/', '^\\.\\./'],

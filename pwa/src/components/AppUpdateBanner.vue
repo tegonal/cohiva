@@ -49,7 +49,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import { useMainStore } from 'stores/main-store'
+import { useMainStore } from '@/stores/main-store'
 
 const mainStore = useMainStore()
 const refreshing = ref(false)

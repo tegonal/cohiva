@@ -65,11 +65,6 @@ if hasattr(cbc, "DOCKER_IP"):
 # Developer hosts for debugging
 INTERNAL_IPS = ("localhost", "127.0.0.1")
 
-## For use behind a proxy
-## https://stackoverflow.com/questions/32631903/
-## django-rest-framework-reverse-relationship-breaks-when-behind-proxy
-USE_X_FORWARDED_HOST = True
-
 ## CORS for OAuth and API (https://pypi.org/project/django-cors-headers/)
 CORS_ALLOWED_ORIGINS = [
     "https://chat." + cbc.DOMAIN,

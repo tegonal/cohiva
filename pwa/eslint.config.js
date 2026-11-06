@@ -15,6 +15,7 @@ export default [
     },
     rules: {
       ...pluginPerfectionist.configs['recommended-natural'].rules,
+      // Imports: consistent ordering
       'perfectionist/sort-imports': [
         'error',
         {
@@ -25,18 +26,33 @@ export default [
             ['builtin', 'external'],
             'internal',
             ['parent', 'sibling', 'index'],
-            'object',
             'unknown',
           ],
-          internalPattern: [
-            '^src/',
-            '^boot/',
-            '^stores/',
-            '^components/',
-            '^layouts/',
-            '^pages/',
-            '^\\.\\./',
-          ],
+          internalPattern: ['^@/', '^app/', '^\\.\\./'],
+        },
+      ],
+      // Enums: consistent ordering
+      'perfectionist/sort-enums': [
+        'error',
+        {
+          type: 'alphabetical',
+          order: 'asc',
+        },
+      ],
+      // Object types: keep properties consistent
+      'perfectionist/sort-object-types': [
+        'error',
+        {
+          type: 'alphabetical',
+          order: 'asc',
+        },
+      ],
+      // Objects: preserve developer-defined logical order
+      'perfectionist/sort-objects': [
+        'error',
+        {
+          type: 'unsorted',
+          newlinesBetween: 'ignore',
         },
       ],
     },
@@ -55,13 +71,13 @@ export default [
         __QUASAR_SSR_SERVER__: 'readonly',
         __QUASAR_SSR_CLIENT__: 'readonly',
         __QUASAR_SSR_PWA__: 'readonly',
-        process: 'readonly',
         Capacitor: 'readonly',
         chrome: 'readonly',
       },
     },
     rules: {
       'no-unused-vars': 'off',
+      'no-useless-assignment': 'off',
       '@typescript-eslint/no-unused-vars': 'warn',
       'vue/multi-word-component-names': 'off',
       'vue/no-reserved-component-names': 'off',
@@ -106,6 +122,26 @@ export default [
     },
     rules: {
       ...typescriptEslint.configs.recommended.rules,
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': 'warn',
+    },
+  },
+  {
+    files: ['src-pwa/sw/**/*.ts'],
+    languageOptions: {
+      parser: typescriptParser,
+      globals: {
+        ...globals.serviceworker,
+      },
+    },
+    plugins: {
+      '@typescript-eslint': typescriptEslint,
+    },
+    rules: {
+      ...typescriptEslint.configs.recommended.rules,
+      'no-undef': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
