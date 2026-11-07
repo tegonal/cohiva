@@ -23,6 +23,6 @@ when upstream packages have not yet released fixes.
 
 Try to remove the packages from `resolutions` in `package.json`
 when the parent packages have been updated. Remove packages one by
-one and check after each package with `yarn install` if an older version
+one and check after each package with `yarn install` or `yarn why -R <package>` if an older version
 is installed or not. If an older (vulnerable) package is installed,
 revert the change in the resolutions list, since it is still needed.
