@@ -3876,6 +3876,12 @@ class InvoiceManualView(CohivaAdminViewMixin, TemplateView):
             contract = form.cleaned_data["contract"]
             address = contract.get_contact_address()
             ref_nr_obj_id = contract.id
+            if address is None:
+                messages.error(
+                    self.request,
+                    _("This contract is missing a billing address."),
+                )
+                self.error_flag = True
         else:
             contract = None
             address = form.cleaned_data["address"]

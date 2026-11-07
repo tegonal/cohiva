@@ -10,10 +10,11 @@ from django.conf import settings
 from django.http import FileResponse
 from django.test import RequestFactory, tag
 from django.urls import reverse
+from django.utils.translation import gettext_lazy as _
 
 import geno.tests.data as geno_testdata
 from geno.billing import parse_reference_nr
-from geno.models import Invoice, InvoiceCategory, Share, ShareType
+from geno.models import Contract, Invoice, InvoiceCategory, Share, ShareType
 from geno.views import InvoiceBatchGenerateView, ShareStatementView
 
 from .base import GenoAdminTestCase
@@ -405,7 +406,7 @@ class InvoiceManualViewTest(GenoAdminTestCase):
         """Test that the invoice created by InvoiceManualView is linked to the correct contract
         with the correct reference number."""
 
-        if self.contracts[0].id == self.contracts[0].get_contact_address().id:
+        if self.contracts[0].id == self.contracts[0].get_contact_address().id:  # pragma: no cover
             # Avoid false-positives in case the contract's id happens to be the same as the
             # contact address id.
             self.contracts[0].main_contact = self.addresses[0]
@@ -427,6 +428,34 @@ class InvoiceManualViewTest(GenoAdminTestCase):
         self.assertEqual(bill_info["person"], None)
         self.assertEqual(bill_info["contract"], self.contracts[0])
         self.assertEqual(bill_info["invoice_category"], invoice_category)
+
+    def test_contract_without_billing_address(self):
+        """Creating an invoice for a contract without a billing address should produce an error"""
+        contract = Contract.objects.create(date=datetime.date.today(), state="unterzeichnet")
+
+        invoice_category = InvoiceCategory.objects.get(name="Contract manual")
+        request_data = {
+            "category": invoice_category.pk,
+            "date": datetime.date.today().strftime("%d.%m.%Y"),
+            "contract": contract.pk,
+        }
+        request_data.update(
+            self.make_formset_data(
+                [
+                    {
+                        "date": datetime.date.today().strftime("%d.%m.%Y"),
+                        "text": "Test line 1",
+                        "amount": "100.00",
+                    },
+                ]
+            )
+        )
+        response = self.client.post(reverse("geno:invoice-manual"), request_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertInHTML(
+            _("This contract is missing a billing address."),
+            response.content.decode("utf-8"),
+        )
 
     def _create_invoice(self, request_data: dict):
         self.client.login(username="superuser", password="secret")
