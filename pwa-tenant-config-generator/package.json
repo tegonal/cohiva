@@ -48,6 +48,7 @@
   },
   "packageManager": "yarn@4.10.3",
   "resolutions": {
+    "glob": "^14.0.2",
     "source-map-js": "^1.2.2",
     "minimatch": "^11.0.1"
   }
