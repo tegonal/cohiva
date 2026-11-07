@@ -349,13 +349,13 @@
 </template>
 
 <script setup lang="ts">
-import { settings } from 'app/tenant-config/settings'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
-import { api } from 'boot/axios'
-import { useAuthStore } from 'stores/auth-store'
+import { settings } from '@/../tenant-config/settings'
+import { api } from '@/boot/axios'
+import { useAuthStore } from '@/stores/auth-store'
 
 const { t } = useI18n()
 const authStore = useAuthStore()

@@ -24,6 +24,13 @@ from .settings_defaults import *  # noqa: F403
 # SESSION_COOKIE_SECURE = False
 # CSRF_COOKIE_SECURE = False
 
+## Enable when a trusted proxy overwrites X-Forwarded-Host.
+# USE_X_FORWARDED_HOST = True
+
+## Enable when HTTPS terminates at a trusted proxy that strips client-supplied
+## X-Forwarded-Proto and sets it to https only for HTTPS requests.
+# SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 ## Configure outbound SMTP (here using Mailpit for local testing)
 EMAIL_HOST = "localhost"
 EMAIL_PORT = 1025

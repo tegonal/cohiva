@@ -1,5 +1,4 @@
 import { createPinia } from 'pinia'
-import { store } from 'quasar/wrappers'
 
 /*
  * If not building with SSR mode, you can
@@ -10,14 +9,12 @@ import { store } from 'quasar/wrappers'
  * with the Store instance.
  */
 
-export default store(() => {
-  const pinia = createPinia()
+const pinia = createPinia()
 
-  // You can add Pinia plugins here
-  // pinia.use(SomePiniaPlugin)
+// You can add Pinia plugins here
+// pinia.use(SomePiniaPlugin)
 
-  return pinia
-})
+export default pinia
 
 export * from './auth-store'
 export * from './main-store'

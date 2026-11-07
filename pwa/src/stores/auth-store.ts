@@ -1,9 +1,9 @@
-import { settings } from 'app/tenant-config/settings'
 import { IdTokenClaims, User } from 'oidc-client-ts'
 import { defineStore } from 'pinia'
 import { Router } from 'vue-router'
 
-import oauthService from 'src/services/oauth'
+import { settings } from '@/../tenant-config/settings'
+import oauthService from '@/services/oauth'
 
 interface AuthState {
   backendAvailable: boolean
@@ -39,7 +39,7 @@ export const useAuthStore = defineStore('auth', {
 
       try {
         // Get the backend URL from settings
-        const isDevelopment = process.env.NODE_ENV === 'development'
+        const isDevelopment = import.meta.env.DEV
         const baseUrl = isDevelopment
           ? `https://${settings.testHostname}.${settings.domain}`
           : `https://${settings.prodHostname}.${settings.domain}`
@@ -84,7 +84,7 @@ export const useAuthStore = defineStore('auth', {
         throw new Error('No access token available')
       }
 
-      const isDevelopment = process.env.NODE_ENV === 'development'
+      const isDevelopment = import.meta.env.DEV
       const baseUrl = isDevelopment
         ? `https://${settings.testHostname}.${settings.domain}`
         : `https://${settings.prodHostname}.${settings.domain}`

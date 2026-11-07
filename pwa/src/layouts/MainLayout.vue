@@ -114,19 +114,19 @@
 </template>
 
 <script setup lang="ts">
-import { settings } from 'app/tenant-config/settings'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
-import AppUpdateBanner from 'components/AppUpdateBanner.vue'
-import DevOverlay from 'components/DevOverlay.vue'
-import EssentialLink from 'components/EssentialLink.vue'
-import LanguageSwitcher from 'components/LanguageSwitcher.vue'
-import ThemeModeToggle from 'components/ThemeModeToggle.vue'
-import { useAuthStore } from 'stores/auth-store'
-import { useMainStore } from 'stores/main-store'
+import { settings } from '@/../tenant-config/settings'
+import AppUpdateBanner from '@/components/AppUpdateBanner.vue'
+import DevOverlay from '@/components/DevOverlay.vue'
+import EssentialLink from '@/components/EssentialLink.vue'
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
+import ThemeModeToggle from '@/components/ThemeModeToggle.vue'
+import { useAuthStore } from '@/stores/auth-store'
+import { useMainStore } from '@/stores/main-store'
 
 // Check if we're in dev mode
-const isDev = process.env.NODE_ENV === 'development'
+const isDev = import.meta.env.DEV
 
 // Store instances
 const authStore = useAuthStore()

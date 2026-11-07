@@ -83,8 +83,8 @@ import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import { useThemedLogo } from 'src/composables/use-themed-logo'
-import { useAuthStore } from 'stores/auth-store'
+import { useThemedLogo } from '@/composables/use-themed-logo'
+import { useAuthStore } from '@/stores/auth-store'
 
 import { settings } from '../../tenant-config/settings'
 

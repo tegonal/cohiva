@@ -47,7 +47,9 @@
       </q-select>
     </div>
 
-    <FullCalendar ref="fullCalendar" :options="calendarOptions" />
+    <div style="margin-top: 5px">
+      <FullCalendar ref="fullCalendar" :options="calendarOptions" />
+    </div>
 
     <q-page-sticky position="bottom-right" :offset="[18, 18]">
       <q-btn fab icon="add" color="accent" to="/reservation/add" />
@@ -56,17 +58,23 @@
 </template>
 
 <script setup lang="ts">
-import dayGridPlugin from '@fullcalendar/daygrid'
-import listPlugin from '@fullcalendar/list'
-import timeGridPlugin from '@fullcalendar/timegrid'
-import '@fullcalendar/core/vdom' // solves problem with Vite
 import FullCalendar from '@fullcalendar/vue3'
+import dayGridPlugin from '@fullcalendar/vue3/daygrid'
+import listPlugin from '@fullcalendar/vue3/list'
+import themePlugin from '@fullcalendar/vue3/themes/monarch' // Theme
+import timeGridPlugin from '@fullcalendar/vue3/timegrid'
+//import interactionPlugin from "@fullcalendar/vue3/interaction";
 import tippy from 'tippy.js'
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { api } from 'boot/axios'
+import { api } from '@/boot/axios'
+
+// Stylesheets
 import 'tippy.js/dist/tippy.css'
+import '@fullcalendar/vue3/skeleton.css'
+import '@fullcalendar/vue3/themes/monarch/theme.css' // Theme
+import '@fullcalendar/vue3/themes/monarch/palettes/purple.css' // Color palette for theme
 
 const { t } = useI18n()
 
@@ -130,17 +138,17 @@ function updateEventSources(): void {
 const apiError = ref('')
 
 const calendarOptions = {
-  allDayContent: {
+  allDayHeaderContent: {
     html: `<small>${t('calendarPage.calendar.allDay')}</small>`,
   },
   aspectRatio: 0.8,
   //defaultDate: '2017-11-12',
-  buttonText: {
-    day: t('calendarPage.calendar.day'),
-    list: t('calendarPage.calendar.list'),
-    month: t('calendarPage.calendar.month'),
-    today: t('calendarPage.calendar.today'),
-    week: t('calendarPage.calendar.week'),
+  buttons: {
+    dayGridMonth: { text: t('calendarPage.calendar.month') },
+    dayGridWeek: { text: t('calendarPage.calendar.week') },
+    timeGridDay: { text: t('calendarPage.calendar.day') },
+    list: { text: t('calendarPage.calendar.list') },
+    today: { text: t('calendarPage.calendar.today') },
   },
   editable: false,
   eventDidMount: function (info: any) {
@@ -154,48 +162,49 @@ const calendarOptions = {
   },
   firstDay: 1,
   headerToolbar: {
-    left: 'title',
-    right: 'today prev,next',
+    start: 'title', // timeGridDay,dayGridMonth,dayGridWeek,timeGridDay,list
+    end: 'today prev,next',
   },
   initialView: 'dayGridWeek', //"dayGridMonth",
   locale: 'de-ch',
   navLinks: true, // can click day/week names to navigate views
   noEventsContent: { html: t('calendarPage.calendar.noEvents') },
-  plugins: [dayGridPlugin, timeGridPlugin, listPlugin],
+  plugins: [themePlugin, dayGridPlugin, timeGridPlugin, listPlugin], // interactionPlugin],
   views: {
     week: {},
   },
   weekends: true,
+  weekNumbers: true,
 }
 
 const viewOptions = [
   {
     category: '1',
-    description: 'blabla Test',
+    description: 'Month view',
     label: t('calendarPage.views.month'),
     value: 'dayGridMonth',
   },
   {
     category: '1',
-    description: 'blabla Test',
+    description: 'Week view (days)',
     label: t('calendarPage.views.weekOverview'),
     value: 'dayGridWeek',
   },
   {
     category: '1',
-    description: 'blabla Test',
+    description: 'Week view (time)',
     label: t('calendarPage.views.weekTimeGrid'),
     value: 'timeGridWeek',
   },
   {
     category: '1',
-    description: 'blabla Test',
+    description: 'Day view',
     label: t('calendarPage.views.day'),
     value: 'timeGridDay',
   },
   {
     category: '1',
-    description: 'blabla Test',
+    description: 'List view',
     label: t('calendarPage.views.list'),
     value: 'listMonth',
   },
@@ -243,8 +252,5 @@ onMounted(() => {
 <style lang="css">
 .q-page-sticky {
   z-index: 100;
-}
-.fc .fc-toolbar-title {
-  font-size: 1.2em;
 }
 </style>

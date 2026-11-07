@@ -1,6 +1,6 @@
-import { defineBoot } from '#q-app/wrappers'
+import { defineBoot } from '#q-app'
 
-import { useAuthStore } from 'stores/auth-store'
+import { useAuthStore } from '@/stores/auth-store'
 
 export default defineBoot(() => {
   const authStore = useAuthStore()

@@ -3,18 +3,20 @@
 # Required system site packages:
 # aptitude install python3-tk python3-requests python3-tz
 
-INSTALL_REQUIREMENTS=0
-if [ ! -e "venv" ] ; then
-    echo "Creating virtual environment in venv..."
-    python3 -m venv venv
-    INSTALL_REQUIREMENTS=1
+VENV_DIR="venv"
+
+if [ ! -e "$VENV_DIR" ] ; then
+    echo "Creating virtual environment in ${VENV_DIR}..."
+    python3 -m venv "$VENV_DIR"
 fi
 
-. venv/bin/activate
+. ${VENV_DIR}/bin/activate
 
-if [ $INSTALL_REQUIREMENTS -eq 1 ] ; then
+MARKER_FILE=${VENV_DIR}/update_ts_marker
+if [ ! -e $MARKER_FILE -o venv-requirements.txt -nt $MARKER_FILE ] ; then
     echo "Installing additional packages from venv-requirements.txt..."
     pip install -r venv-requirements.txt
+    touch $MARKER_FILE
 fi
 
 ./depotpos.py
