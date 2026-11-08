@@ -46,12 +46,11 @@ version: [README of v1.5.3](https://github.com/tegonal/cohiva/tree/v1.5.3/README
 - See [README.md](django/README.md) for the Django component.
 - See [README.md](pwa/README.md) for the Quasar/Vue.js app component.
 
-<!--
 # Documentation
 
-No documentation yet.
-Use github-pages? <https://tegonal.github.io/cohiva>.
--->
+User documentation is available in our [wiki](https://wiki.cohiva.ch/). It is continuously improved and expanded by the community.
+
+Contributions are welcome! If you'd like to help, feel free to share your feedback or request a wiki account to contribute directly.
 
 # Contributors and contribute
 
@@ -60,7 +59,7 @@ as well as all other contributors (e.g. bug reporters, feature request creators 
 
 You are more than welcome to contribute as well:
 
-- star this repository if you like/use it
+- star this repository if you like it
 - [open a bug](https://github.com/tegonal/cohiva/issues/new?template=bug_report.md) if you find one
 - Open a [new discussion](https://github.com/tegonal/cohiva/discussions/new?category=ideas) if you are missing a
   feature

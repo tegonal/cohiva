@@ -1,6 +1,6 @@
 # Cohiva Dokumentation
 
-🚧 Hier entsteht das Cohiva-Benutzerhandbuch. Momentan gibt es noch nichts hier... 🚧
+🚧 User documentation is at https://wiki.cohiva.ch/. This is currently not used anymore. 🚧
 
 ## Erste Schritte
 - [Benutzerhandbuch](de/user-guide.md)
