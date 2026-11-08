@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Coverage for geno/billing.py: 65%</title>
+    <title>Coverage for geno/billing.py: 66%</title>
     <link rel="icon" sizes="32x32" href="favicon_32_cb_c827f16f.png">
     <link rel="stylesheet" href="style_cb_4667309f.css" type="text/css">
     <script src="coverage_html_cb_54cfdca1.js" defer></script>
@@ -12,7 +12,7 @@
     <div class="content">
         <h1>
             <span class="text">Coverage for </span><b>geno<span class="sep">/</span>billing.py</b>:
-            <span class="pc_cov">65%</span>
+            <span class="pc_cov">66%</span>
         </h1>
         <aside id="help_panel_wrapper">
             <input id="help_panel_state" type="checkbox">
@@ -55,8 +55,8 @@
         </aside>
         <h2>
             <span class="text">1056 statements &nbsp;</span>
-            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">688<span class="text"> run</span></button>
-            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">368<span class="text"> missing</span></button>
+            <button type="button" class="run button_toggle_run" value="run" data-shortcut="r" title="Toggle lines run">692<span class="text"> run</span></button>
+            <button type="button" class="mis show_mis button_toggle_mis" value="mis" data-shortcut="m" title="Toggle lines missing">364<span class="text"> missing</span></button>
             <button type="button" class="exc show_exc button_toggle_exc" value="exc" data-shortcut="x" title="Toggle lines excluded">0<span class="text"> excluded</span></button>
         </h2>
         <p class="text">
@@ -65,7 +65,7 @@
             <a id="nextFileLink" class="nav" href="z_53abe7f4e356d201_checks_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.17.0">coverage.py v7.17.0</a>,
-            created at 2026-11-08 01:07 +0000
+            created at 2026-11-08 09:51 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -1781,15 +1781,15 @@
     <p class="run"><span class="n"><a id="t1699" href="#t1699">1699</a></span><span class="t">            <span class="nam">bill_info</span><span class="op">[</span><span class="str">&quot;person&quot;</span><span class="op">]</span> <span class="op">=</span> <span class="nam">Address</span><span class="op">.</span><span class="nam">objects</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="nam">id</span><span class="op">=</span><span class="nam">int</span><span class="op">(</span><span class="nam">object_id</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t1700" href="#t1700">1700</a></span><span class="t">        <span class="key">except</span> <span class="nam">Address</span><span class="op">.</span><span class="nam">DoesNotExist</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t1701" href="#t1701">1701</a></span><span class="t">            <span class="key">return</span> <span class="op">{</span><span class="str">&quot;error&quot;</span><span class="op">:</span> <span class="str">&quot;Ung&#252;ltige Adressen-ID&quot;</span><span class="op">}</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t1702" href="#t1702">1702</a></span><span class="t">    <span class="key">elif</span> <span class="nam">invoice_category</span><span class="op">.</span><span class="nam">linked_object_type</span> <span class="op">==</span> <span class="str">&quot;Contract&quot;</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t1703" href="#t1703">1703</a></span><span class="t">        <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t1704" href="#t1704">1704</a></span><span class="t">            <span class="nam">bill_info</span><span class="op">[</span><span class="str">&quot;contract&quot;</span><span class="op">]</span> <span class="op">=</span> <span class="nam">Contract</span><span class="op">.</span><span class="nam">objects</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="nam">id</span><span class="op">=</span><span class="nam">int</span><span class="op">(</span><span class="nam">object_id</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1702" href="#t1702">1702</a></span><span class="t">    <span class="key">elif</span> <span class="nam">invoice_category</span><span class="op">.</span><span class="nam">linked_object_type</span> <span class="op">==</span> <span class="str">&quot;Contract&quot;</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1703" href="#t1703">1703</a></span><span class="t">        <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1704" href="#t1704">1704</a></span><span class="t">            <span class="nam">bill_info</span><span class="op">[</span><span class="str">&quot;contract&quot;</span><span class="op">]</span> <span class="op">=</span> <span class="nam">Contract</span><span class="op">.</span><span class="nam">objects</span><span class="op">.</span><span class="nam">get</span><span class="op">(</span><span class="nam">id</span><span class="op">=</span><span class="nam">int</span><span class="op">(</span><span class="nam">object_id</span><span class="op">)</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t1705" href="#t1705">1705</a></span><span class="t">        <span class="key">except</span> <span class="nam">Contract</span><span class="op">.</span><span class="nam">DoesNotExist</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t1706" href="#t1706">1706</a></span><span class="t">            <span class="key">return</span> <span class="op">{</span><span class="str">&quot;error&quot;</span><span class="op">:</span> <span class="str">&quot;Ung&#252;ltige Vertrags-ID&quot;</span><span class="op">}</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis show_mis"><span class="n"><a id="t1707" href="#t1707">1707</a></span><span class="t">        <span class="nam">bill_info</span><span class="op">[</span><span class="str">&quot;description&quot;</span><span class="op">]</span> <span class="op">=</span> <span class="str">&quot;%s %s&quot;</span> <span class="op">%</span> <span class="op">(</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis mis2 show_mis"><span class="n"><a id="t1708" href="#t1708">1708</a></span><span class="t">            <span class="nam">bill_info</span><span class="op">[</span><span class="str">&quot;description&quot;</span><span class="op">]</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis mis2 show_mis"><span class="n"><a id="t1709" href="#t1709">1709</a></span><span class="t">            <span class="nam">bill_info</span><span class="op">[</span><span class="str">&quot;contract&quot;</span><span class="op">]</span><span class="op">.</span><span class="nam">list_rental_units</span><span class="op">(</span><span class="nam">short</span><span class="op">=</span><span class="key">True</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="mis mis2 show_mis"><span class="n"><a id="t1710" href="#t1710">1710</a></span><span class="t">        <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1707" href="#t1707">1707</a></span><span class="t">        <span class="nam">bill_info</span><span class="op">[</span><span class="str">&quot;description&quot;</span><span class="op">]</span> <span class="op">=</span> <span class="str">&quot;%s %s&quot;</span> <span class="op">%</span> <span class="op">(</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t1708" href="#t1708">1708</a></span><span class="t">            <span class="nam">bill_info</span><span class="op">[</span><span class="str">&quot;description&quot;</span><span class="op">]</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t1709" href="#t1709">1709</a></span><span class="t">            <span class="nam">bill_info</span><span class="op">[</span><span class="str">&quot;contract&quot;</span><span class="op">]</span><span class="op">.</span><span class="nam">list_rental_units</span><span class="op">(</span><span class="nam">short</span><span class="op">=</span><span class="key">True</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t1710" href="#t1710">1710</a></span><span class="t">        <span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t1711" href="#t1711">1711</a></span><span class="t">    <span class="key">else</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t1712" href="#t1712">1712</a></span><span class="t">        <span class="key">return</span> <span class="op">{</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis mis2 show_mis"><span class="n"><a id="t1713" href="#t1713">1713</a></span><span class="t">            <span class="str">&quot;error&quot;</span><span class="op">:</span> <span class="str">&quot;Rechnung mit unbekanntem Objekt verkn&#252;pft: %s&quot;</span>&nbsp;</span><span class="r"></span></p>
@@ -2187,7 +2187,7 @@
             <a class="nav" href="z_53abe7f4e356d201_checks_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.17.0">coverage.py v7.17.0</a>,
-            created at 2026-11-08 01:07 +0000
+            created at 2026-11-08 09:51 +0000
         </p>
     </div>
 </footer>
