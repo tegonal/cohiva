@@ -486,13 +486,12 @@ Bilder im Anhang:
 
     sender = f'"Cohiva {settings.COHIVA_SITE_NICKNAME}" <{settings.GENO_DEFAULT_EMAIL}>'
     if settings.DEBUG:
-        mail_recipient = settings.TEST_MAIL_RECIPIENT
-        bcc = None
-        recipient_cc = None
+        mail_recipients = [settings.TEST_MAIL_RECIPIENT]
     else:
-        mail_recipient = settings.COHIVA_REPORT_EMAIL
-        bcc = None
-        recipient_cc = None
+        mail_recipients = report.get_notification_recipients()
+
+    bcc = None
+    recipient_cc = None
 
     images = []
     images_text = ""
@@ -519,7 +518,7 @@ Bilder im Anhang:
         mail_text = mail_text_html
 
     mail = EmailMultiAlternatives(
-        context["subject"], mail_text, sender, [mail_recipient], bcc, cc=recipient_cc
+        context["subject"], mail_text, sender, mail_recipients, bcc, cc=recipient_cc
     )
     for img in images:
         # print("Adding image: %s" % (img['file']))
@@ -530,12 +529,13 @@ Bilder im Anhang:
         mail.attach_alternative(mail_text_html, "text/html")
         # mail.content_subtype = "html"  # Main content is now text/html
     mails_sent = mail.send()
+    recipient_str = ", ".join(mail_recipients)
     if mails_sent == 1:
-        logger.info("Email '%s' an %s geschickt." % (context["subject"], mail_recipient))
+        logger.info("Email '%s' an %s geschickt." % (context["subject"], recipient_str))
     else:
         logger.error(
             "KEIN Email '%s' an %s geschickt (mails_sent=%s)."
-            % (context["subject"], mail_recipient, mails_sent)
+            % (context["subject"], recipient_str, mails_sent)
         )
 
 
