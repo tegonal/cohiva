@@ -1,8 +1,8 @@
 {
-  "name": "musterweg-app",
+  "name": "cohiva-tenant-app",
   "version": "1.6.0-SNAPSHOT",
-  "description": "App der Genossenschaft Musterweg",
-  "productName": "Musterweg App",
+  "description": "Cohiva Tenant PWA",
+  "productName": "Cohiva App",
   "author": "Marco Steinacher <marco.steinacher@tegonal.com>",
   "private": true,
   "type": "module",

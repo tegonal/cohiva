@@ -2862,6 +2862,49 @@ __metadata:
   languageName: node
   linkType: hard
 
+"cohiva-tenant-app@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "cohiva-tenant-app@workspace:."
+  dependencies:
+    "@babel/eslint-parser": "npm:^7.28.6"
+    "@eslint/js": "npm:^10.0.1"
+    "@fullcalendar/vue3": "npm:^7.1.4"
+    "@intlify/unplugin-vue-i18n": "npm:^11.2.8"
+    "@khmyznikov/pwa-install": "npm:^0.5.8"
+    "@quasar/app-vite": "npm:^3.10.3"
+    "@quasar/cli": "npm:^5.0.9"
+    "@quasar/extras": "npm:^1.17.0"
+    "@types/fs-extra": "npm:^11.0.4"
+    "@types/node": "npm:^25.0.8"
+    "@typescript-eslint/eslint-plugin": "npm:^8.72.1"
+    "@typescript-eslint/parser": "npm:^8.72.1"
+    autoprefixer: "npm:^10.6.2"
+    axios: "npm:^1.21.0"
+    chokidar: "npm:^4.0.3"
+    concurrently: "npm:^10.0.6"
+    eslint: "npm:^10.14.0"
+    eslint-plugin-perfectionist: "npm:^5.13.0"
+    eslint-plugin-vue: "npm:^10.12.0"
+    globals: "npm:^15.15.0"
+    lit: "npm:^3.3.1"
+    oidc-client-ts: "npm:^3.3.0"
+    pinia: "npm:^3.0.4"
+    postcss: "npm:^8.5.14"
+    prettier: "npm:^3.6.2"
+    quasar: "npm:^2.35.2"
+    temporal-polyfill: "npm:^1.0.8"
+    tippy.js: "npm:^6.3.7"
+    tsx: "npm:^4.23.15"
+    typescript: "npm:~5.9.3"
+    vue: "npm:^3.5.45"
+    vue-eslint-parser: "npm:^10.2.0"
+    vue-i18n: "npm:^11.4.18"
+    vue-router: "npm:^5.0.6"
+    vue-tsc: "npm:^3.1.1"
+    zod: "npm:^4.6.7"
+  languageName: unknown
+  linkType: soft
+
 "colorjs.io@npm:^0.7.0":
   version: 0.7.1
   resolution: "colorjs.io@npm:0.7.1"
@@ -4789,49 +4832,6 @@ __metadata:
   checksum: 10c0/e914b63e24cd23f97e18376ec47e4ba3aa24365e4776212b666add2e47bb158003212980d732c49abf3719568900af7861873844a6e2d3a7ca7e86952c0e99e9
   languageName: node
   linkType: hard
-
-"musterweg-app@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "musterweg-app@workspace:."
-  dependencies:
-    "@babel/eslint-parser": "npm:^7.28.6"
-    "@eslint/js": "npm:^10.0.1"
-    "@fullcalendar/vue3": "npm:^7.1.4"
-    "@intlify/unplugin-vue-i18n": "npm:^11.2.8"
-    "@khmyznikov/pwa-install": "npm:^0.5.8"
-    "@quasar/app-vite": "npm:^3.10.3"
-    "@quasar/cli": "npm:^5.0.9"
-    "@quasar/extras": "npm:^1.17.0"
-    "@types/fs-extra": "npm:^11.0.4"
-    "@types/node": "npm:^25.0.8"
-    "@typescript-eslint/eslint-plugin": "npm:^8.72.1"
-    "@typescript-eslint/parser": "npm:^8.72.1"
-    autoprefixer: "npm:^10.6.2"
-    axios: "npm:^1.21.0"
-    chokidar: "npm:^4.0.3"
-    concurrently: "npm:^10.0.6"
-    eslint: "npm:^10.14.0"
-    eslint-plugin-perfectionist: "npm:^5.13.0"
-    eslint-plugin-vue: "npm:^10.12.0"
-    globals: "npm:^15.15.0"
-    lit: "npm:^3.3.1"
-    oidc-client-ts: "npm:^3.3.0"
-    pinia: "npm:^3.0.4"
-    postcss: "npm:^8.5.14"
-    prettier: "npm:^3.6.2"
-    quasar: "npm:^2.35.2"
-    temporal-polyfill: "npm:^1.0.8"
-    tippy.js: "npm:^6.3.7"
-    tsx: "npm:^4.23.15"
-    typescript: "npm:~5.9.3"
-    vue: "npm:^3.5.45"
-    vue-eslint-parser: "npm:^10.2.0"
-    vue-i18n: "npm:^11.4.18"
-    vue-router: "npm:^5.0.6"
-    vue-tsc: "npm:^3.1.1"
-    zod: "npm:^4.6.7"
-  languageName: unknown
-  linkType: soft
 
 "nanoid@npm:^3.3.20":
   version: 3.3.20
