@@ -317,6 +317,7 @@ class DocumentDownloadView(DocumentActionBase):
             return FileResponse(
                 doc.file.open(), as_attachment=True, filename=smart_str(doc.name)
             )
+        # TODO: fallback for legacy documents -- store the created File before returning it
 
         template = self.get_template(document_type, doc=doc)
         if not template:
@@ -349,9 +350,12 @@ class DocumentRecreateView(DocumentActionBase):
             raise RuntimeError(_("Vorlage nicht gefunden."))
 
         original_data = json.loads(doc.data) if doc.data else {}
-        extra_context = original_data.get("context", {})
+        if "context" in original_data:
+            extra_context = original_data["context"]
+        else:
+            # Legacy flat format (old documents and mailer-generated docs)
+            extra_context = original_data
         context = get_context_data(doctype, doc.content_object.pk, extra_context)
-        # TODO: ensure that the old File is accessible
         document_generator = DocumentGenerator(default_document_type=document_type)
         result = document_generator.create_document(
             document_type=document_type,
