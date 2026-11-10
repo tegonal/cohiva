@@ -145,6 +145,12 @@ yarn build
 
 `dist/pwa` should now contain correct settings, icons etc.
 
+To test the build, you can run
+
+```bash
+yarn quasar serve dist/pwa/ --port 4000 --hostname 0.0.0.0 --history --cors
+```
+
 ### 3. Deploy and cleanup
 
 - Deploy to your webhost by copying the files.

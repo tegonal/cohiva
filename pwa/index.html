@@ -24,7 +24,6 @@
       content="<%= darkThemeColor %>"
       media="(prefers-color-scheme: dark)"
     />
-    <link rel="manifest" href="manifest.json" />
 
     <!-- iOS Specific -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -50,7 +49,7 @@
     <meta name="twitter:description" content="<%= productDescription %>" />
     <meta name="twitter:image" content="/twitter-card.png" />
 
-    <%- pwaMetaTags %>
+    <%= pwaMetaTags %>
   </head>
   <body>
     <!-- quasar:entry-point -->
