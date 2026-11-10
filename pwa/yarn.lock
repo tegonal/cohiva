@@ -715,7 +715,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@hono/node-server@npm:^2.1.0":
+"@hono/node-server@npm:^2.1.6":
   version: 2.1.6
   resolution: "@hono/node-server@npm:2.1.6"
   peerDependencies:
@@ -1477,24 +1477,24 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@quasar/cli@npm:^5.0.9":
-  version: 5.0.9
-  resolution: "@quasar/cli@npm:5.0.9"
+"@quasar/cli@npm:^5.0.10":
+  version: 5.0.10
+  resolution: "@quasar/cli@npm:5.0.10"
   dependencies:
     "@clack/prompts": "npm:^1.8.1"
-    "@hono/node-server": "npm:^2.1.0"
+    "@hono/node-server": "npm:^2.1.6"
     "@quasar/art": "npm:^1.0.0"
     "@quasar/ssl-certificate": "npm:^2.1.0"
     "@quasar/update-notifier": "npm:^1.1.0"
     ci-info: "npm:^4.4.0"
     cross-spawn: "npm:^7.0.6"
-    fs-extra: "npm:^11.4.0"
-    hono: "npm:^4.13.8"
+    fs-extra: "npm:^11.4.1"
+    hono: "npm:^4.13.17"
     kolorist: "npm:^1.8.0"
     open: "npm:^11.0.4"
   bin:
     quasar: ./bin/quasar.js
-  checksum: 10c0/39836338f22c2378dd5ac83e90724c96715158c6e32b9897d239b0c948227cb74eaf71f87e92b0793e7b538a5de36ddc5a3e9ef73a61698003e6c3dc59987e6e
+  checksum: 10c0/82b82b658cf9b7f3d34cab44902b6b79a0233b2026b22bd8f395bf562f60675b60f94f71bc132661e06fdcba7e9a5bd9275f4d452add42d7a58f5155ab5304a9
   languageName: node
   linkType: hard
 
@@ -2872,7 +2872,7 @@ __metadata:
     "@intlify/unplugin-vue-i18n": "npm:^11.2.8"
     "@khmyznikov/pwa-install": "npm:^0.5.8"
     "@quasar/app-vite": "npm:^3.10.3"
-    "@quasar/cli": "npm:^5.0.9"
+    "@quasar/cli": "npm:^5.0.10"
     "@quasar/extras": "npm:^1.17.0"
     "@types/fs-extra": "npm:^11.0.4"
     "@types/node": "npm:^25.0.8"
@@ -3871,7 +3871,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fs-extra@npm:^11.4.0":
+"fs-extra@npm:^11.4.0, fs-extra@npm:^11.4.1":
   version: 11.4.1
   resolution: "fs-extra@npm:11.4.1"
   dependencies:
@@ -4069,10 +4069,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"hono@npm:^4.13.8":
-  version: 4.13.16
-  resolution: "hono@npm:4.13.16"
-  checksum: 10c0/8a06f1d49bb98fd38a2bc4d5c1f5410b4c5a9fbe2dff85fbad2191a1b55fde93b64b63b2deba97d3e241630aedd800c57d1f4dc539e5f93ece81809fa63cbed9
+"hono@npm:^4.13.17":
+  version: 4.13.17
+  resolution: "hono@npm:4.13.17"
+  checksum: 10c0/63a2d834f0cf1b3858d5872883589ea48522567251bc4eb62c5f17e47cc6f793b2201150bca4822374165e92dbdcc8d3573443c7cdb8a340a933dce39e6df34d
   languageName: node
   linkType: hard
 

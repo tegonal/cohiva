@@ -1,4 +1,5 @@
 import { register } from 'register-service-worker'
+
 import { useMainStore } from '@/stores'
 
 // The ready(), registered(), cached(), updatefound() and updated()

@@ -1,6 +1,3 @@
-declare const self: ServiceWorkerGlobalScope &
-  typeof globalThis & { skipWaiting: () => void }
-
 /*
  * This file (which will be your service worker)
  * is picked up by the build system ONLY if
@@ -15,7 +12,9 @@ import {
 } from 'workbox-precaching'
 import { NavigationRoute, registerRoute } from 'workbox-routing'
 
-self.skipWaiting()
+declare const self: ServiceWorkerGlobalScope & typeof globalThis
+
+void self.skipWaiting()
 clientsClaim()
 
 // Use with precache injection
@@ -23,13 +22,18 @@ precacheAndRoute(self.__WB_MANIFEST)
 
 cleanupOutdatedCaches()
 
-// Non-SSR fallback to index.html
-// Production SSR fallback to offline.html (except for dev)
-if (import.meta.env.QUASAR_MODE !== 'ssr' || import.meta.env.QUASAR_PROD) {
+if (import.meta.env.QUASAR_PROD) {
+  // Non-SSR/SSG fallbacks to index.html
+  // Production SSR/SSG fallbacks to offline.html (except for dev)
   registerRoute(
     new NavigationRoute(
       createHandlerBoundToURL(import.meta.env.QUASAR_PWA_FALLBACK_HTML),
-      { denylist: [/sw\.js$/, /workbox-(.)*\.js$/] }
+      {
+        denylist: [
+          new RegExp(import.meta.env.QUASAR_PWA_SERVICE_WORKER_REGEX),
+          /workbox-(.)*\.js$/,
+        ],
+      }
     )
   )
 }

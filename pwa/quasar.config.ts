@@ -195,7 +195,7 @@ export default defineConfig((ctx) => ({
     // rootComponent: 'src/App.vue',
     // router: 'src/router/index',
     // store: 'src/store/index',
-    pwaRegisterServiceWorker: 'src-pwa/register-service-worker',
+    pwaRegisterServiceWorker: 'src-pwa/register-sw',
     pwaServiceWorker: 'src-pwa/sw/custom-sw',
     pwaManifestFile: 'src-pwa/manifest.json',
     // electronMain: 'src-electron/electron-main',
@@ -259,13 +259,13 @@ export default defineConfig((ctx) => ({
     themeColor: theme.primary,
   },
 
-  // https://v2.quasar.dev/quasar-cli/developing-pwa/configuring-pwa
+  // https://quasar.dev/quasar-cli-vite/developing-pwa/configuring-pwa
   pwa: {
-    injectPWAMetaTags: true,
+    injectPWAMetaTags: false, // We have meta tags in index.html
     manifestFilename: 'manifest.json',
     swFilename: 'sw.js',
     useCredentialsForManifestTag: false,
-    workboxMode: 'InjectManifest', // or "GenerateSW"
+    workboxMode: 'InjectManifest', // or 'GenerateSW'
     // useFilenameHashes: true,
     // extendPWAGenerateSWOptions (cfg) {}
     // extendPWAInjectManifestOptions (cfg) {},
