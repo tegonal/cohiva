@@ -2892,6 +2892,7 @@ __metadata:
     postcss: "npm:^8.5.14"
     prettier: "npm:^3.6.2"
     quasar: "npm:^2.35.2"
+    register-service-worker: "npm:^1.7.2"
     temporal-polyfill: "npm:^1.0.8"
     tippy.js: "npm:^6.3.7"
     tsx: "npm:^4.23.15"
@@ -5316,6 +5317,13 @@ __metadata:
   version: 0.2.2
   resolution: "reflect-metadata@npm:0.2.2"
   checksum: 10c0/1cd93a15ea291e420204955544637c264c216e7aac527470e393d54b4bb075f10a17e60d8168ec96600c7e0b9fcc0cb0bb6e91c3fbf5b0d8c9056f04e6ac1ec2
+  languageName: node
+  linkType: hard
+
+"register-service-worker@npm:^1.7.2":
+  version: 1.7.2
+  resolution: "register-service-worker@npm:1.7.2"
+  checksum: 10c0/3ce63aee5fcc601bbe8ecb83589a75787cf2796f2c01554391fa47074db6a665907a0564eca176558c8882e698825b1fca0c0189d53aca11b4d907591bb72143
   languageName: node
   linkType: hard
 

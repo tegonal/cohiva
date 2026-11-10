@@ -37,6 +37,7 @@
     "oidc-client-ts": "^3.3.0",
     "pinia": "^3.0.4",
     "quasar": "^2.35.2",
+    "register-service-worker": "^1.7.2",
     "temporal-polyfill": "^1.0.8",
     "tippy.js": "^6.3.7",
     "vue": "^3.5.45",
