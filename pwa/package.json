@@ -1,6 +1,6 @@
 {
   "name": "cohiva-tenant-app",
-  "version": "1.6.0-SNAPSHOT",
+  "version": "1.5.5",
   "description": "Cohiva Tenant PWA",
   "productName": "Cohiva App",
   "author": "Marco Steinacher <marco.steinacher@tegonal.com>",
