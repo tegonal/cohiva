@@ -16,6 +16,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
+from django.core.files import File
 from django.db.models import Q
 from django.forms import formset_factory
 from django.http import FileResponse, Http404, HttpResponse, HttpResponseRedirect
@@ -317,7 +318,6 @@ class DocumentDownloadView(DocumentActionBase):
             return FileResponse(
                 doc.file.open(), as_attachment=True, filename=smart_str(doc.name)
             )
-        # TODO: fallback for legacy documents -- store the created File before returning it
 
         template = self.get_template(document_type, doc=doc)
         if not template:
@@ -325,7 +325,13 @@ class DocumentDownloadView(DocumentActionBase):
         data = {"visible_filename": doc.name, "context": json.loads(doc.data)}
 
         filename = self._fill_template(template, data)
-        return self._file_response(filename, data["visible_filename"])
+        with open(filename, "rb") as f:
+            doc.file.save(data["visible_filename"], File(f), save=True)
+        if os.path.exists(filename):
+            os.remove(filename)
+        return FileResponse(
+            doc.file.open(), as_attachment=True, filename=smart_str(doc.name)
+        )
 
 
 class DocumentRecreateView(DocumentActionBase):
