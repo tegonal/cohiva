@@ -618,9 +618,10 @@ class DocumentViewTest(GenoAdminTestCase):
         self.assertEqual(response.status_code, 200)
         content = b"".join(response.streaming_content)
         self.assertEqual(content, b"odt mock\n")
-        # The legacy Document itself should stay file-less
+        # The generated file should now be persisted on the legacy Document
         self.legacy_doc.refresh_from_db()
-        self.assertFalse(self.legacy_doc.file)
+        self.assertTrue(self.legacy_doc.file)
+        self.assertEqual(self.legacy_doc.file.read(), b"odt mock\n")
 
     def test_document_download_view_permission_denied(self):
         self.client.logout()
