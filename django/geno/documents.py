@@ -493,6 +493,7 @@ class DocumentGenerator:
             template: DocumentTemplate,
             context: dict,
             filename: str=None,
+            existing_file_path: str=None,
         ) -> DocumentCreationResult:
         """Create a single Document object from a known DocumentType and DocumentTemplate.
 
@@ -503,6 +504,7 @@ class DocumentGenerator:
             template: DocumentTemplate object to be filled from the Document's context.
             context: dictionary containing data used to fill the template.
             filename: optional filename to be used for the filled template, assumed to be provided via context.
+            existing_file_path: path to a pre-existing, filled template, if one exists.
 
         Returns:
             DocumentCreationResult with an exit status and paths to the created Document and its File.
@@ -529,9 +531,12 @@ class DocumentGenerator:
                 data=data,
                 content_object=context.get("content_object"),
             )
-            template_context = context.get("context", context)
-            temporary_file_location = self._fill_template(template, {"context": template_context})
-            self.temp_files.append(temporary_file_location)
+            if existing_file_path:
+                temporary_file_location = existing_file_path
+            else:
+                template_context = context.get("context", context)
+                temporary_file_location = self._fill_template(template, {"context": template_context})
+                self.temp_files.append(temporary_file_location)
             self._persist_document(document)
             self._save_document_file(document, temporary_file_location)
         except Exception as error:
@@ -576,6 +581,7 @@ class DocumentGenerator:
                     template=rendered_document.content_template,
                     context=context,
                     filename=rendered_document.filename,
+                    existing_file_path=rendered_document.file,
                 )
                 results.append(result)
             except Exception as e:
