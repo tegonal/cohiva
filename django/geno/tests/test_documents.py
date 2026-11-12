@@ -1230,6 +1230,20 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.assertIsNotNone(doc.data)
         self.assertEqual(doc.content_object, self.addresses[0])
 
+    def test_saved_pdf_mail_document_has_pdf_content(self):
+        """Documents saved after PDF mail send must contain real PDF bytes, not ODT."""
+        ct_statement = ContentTemplate.objects.get(name="Statement")
+        self.documenttypes[0].templates.add(ct_statement)
+        self.setup_members()
+        self.send_with_templates("Statement", action="mail")
+        self.assertEmailSent(4)
+        self.assertEqual(Document.objects.count(), 4)
+        doc = Document.objects.first()
+        self.assertTrue(doc.name.endswith(".pdf"))
+        with doc.file.open("rb") as f:
+            header = f.read(5)
+        self.assertEqual(header, b"%PDF-")
+
     def test_documents_not_saved_during_dry_run(self):
         """Documents are not persisted during dry run (mail_test)."""
         ct_statement = ContentTemplate.objects.get(name="Statement")
@@ -1254,6 +1268,25 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.assertTrue(isinstance(ret, HttpResponse))
         # All 5 members get documents (zip mode does not skip missing emails)
         self.assertEqual(Document.objects.count(), 5)
+
+    def test_saved_pdf_zip_document_has_pdf_content(self):
+        """Documents saved after PDF ZIP creation must contain real PDF bytes, not ODT."""
+        ct_statement = ContentTemplate.objects.get(name="Statement")
+        self.documenttypes[0].templates.add(ct_statement)
+        self.setup_members()
+        self.data["action"] = "makezip_pdf"
+        self.data["template_files"] = [
+            f"ContentTemplate:{ct_statement.pk}"
+        ]
+        ret = self.run_mailer()
+        self.assertTrue(isinstance(ret, HttpResponse))
+        self.assertEqual(ret.status_code, 200)
+        self.assertEqual(Document.objects.count(), 5)
+        doc = Document.objects.first()
+        self.assertTrue(doc.name.endswith(".pdf"))
+        with doc.file.open("rb") as f:
+            header = f.read(5)
+        self.assertEqual(header, b"%PDF-")
 
     def test_documents_not_saved_without_content_object(self):
         """Documents are not saved when recipient has no content_object set."""
@@ -1705,9 +1738,10 @@ class DocumentFilePersistenceTest(DocumentCreationMockMixin, GenoAdminTestCase):
         content = b"".join(response.streaming_content)
         self.assertEqual(content, b"odt mock\n")
 
-        # The legacy document should remain file-less
+        # The generated file should now be persisted on the legacy Document
         legacy_doc.refresh_from_db()
-        self.assertFalse(legacy_doc.file)
+        self.assertTrue(legacy_doc.file)
+        self.assertEqual(legacy_doc.file.read(), b"odt mock\n")
 
     def test_recreate_creates_new_document(self):
         """Recreate action creates a new Document record with fresh data."""
