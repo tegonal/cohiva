@@ -744,6 +744,7 @@ class DocumentProcessTest(GenoAdminTestCase):
         if data is None:
             data = self.data
         from geno.mail import DocumentMailer
+
         dry_run = data.get("action") == "mail_test"
         mailer = DocumentMailer(dry_run=dry_run)
         return mailer.send_member_mail_process(data)
@@ -1293,9 +1294,7 @@ class DocumentProcessTest(GenoAdminTestCase):
 
         self.setup_members()
         self.data["action"] = "makezip"
-        self.data["template_files"] = [
-            f"ContentTemplate:{ct_statement.pk}"
-        ]
+        self.data["template_files"] = [f"ContentTemplate:{ct_statement.pk}"]
         ret = self.run_mailer()
         self.assertTrue(isinstance(ret, HttpResponse))
         # All 5 members get documents (zip mode does not skip missing emails)
@@ -1307,9 +1306,7 @@ class DocumentProcessTest(GenoAdminTestCase):
         self.documenttypes[0].templates.add(ct_statement)
         self.setup_members()
         self.data["action"] = "makezip_pdf"
-        self.data["template_files"] = [
-            f"ContentTemplate:{ct_statement.pk}"
-        ]
+        self.data["template_files"] = [f"ContentTemplate:{ct_statement.pk}"]
         ret = self.run_mailer()
         self.assertTrue(isinstance(ret, HttpResponse))
         self.assertEqual(ret.status_code, 200)
@@ -1397,7 +1394,10 @@ class DocumentProcessTest(GenoAdminTestCase):
 
         # Create a DocumentType with no templates at all
         from geno.models import DocumentType
-        doctype_no_template = DocumentType.objects.create(name="no_template_test", description="Test")
+
+        doctype_no_template = DocumentType.objects.create(
+            name="no_template_test", description="Test"
+        )
 
         process = DocumentMailer()
         with self.assertRaises(ValueError) as cm:
@@ -1411,7 +1411,9 @@ class DocumentProcessTest(GenoAdminTestCase):
         from geno.models import ContentTemplate, DocumentType
 
         # Create a template with no file attached
-        template_no_file = ContentTemplate.objects.create(name="NoFileTemplate", template_type="OpenDocument")
+        template_no_file = ContentTemplate.objects.create(
+            name="NoFileTemplate", template_type="OpenDocument"
+        )
         doctype_bad = DocumentType.objects.create(name="bad_template_test", description="Test")
         doctype_bad.templates.add(template_no_file)
 
@@ -1426,7 +1428,9 @@ class DocumentProcessTest(GenoAdminTestCase):
         from geno.mail import DocumentMailer
         from geno.models import ContentTemplate
 
-        template_no_file = ContentTemplate.objects.create(name="NoFileContentTemplate", template_type="OpenDocument")
+        template_no_file = ContentTemplate.objects.create(
+            name="NoFileContentTemplate", template_type="OpenDocument"
+        )
 
         process = DocumentMailer()
         with self.assertRaises(ValueError) as cm:
@@ -1458,14 +1462,18 @@ class DocumentProcessTest(GenoAdminTestCase):
 
         ct_statement = ContentTemplate.objects.get(name="Statement")
         # Create an additional DocumentType which will be linked to the template
-        doctype_linked = DocumentType.objects.create(name="linked_doctype", description="Linked DocumentType")
+        doctype_linked = DocumentType.objects.create(
+            name="linked_doctype", description="Linked DocumentType"
+        )
         doctype_linked.templates.add(ct_statement)
 
         recipient = Recipient(self.members[0].name, member=self.members[0])
         recipient.content_object = "address"
 
         # Pass the first DocumentType explicitly
-        template = DocumentTemplate(ct_statement, doctype=self.documenttypes[0], output_format="odt")
+        template = DocumentTemplate(
+            ct_statement, doctype=self.documenttypes[0], output_format="odt"
+        )
         output = template.render(recipient)
 
         # Should keep the explicit doctype, not fall back to the linked DocumentType
@@ -1545,6 +1553,7 @@ class DocumentProcessTest(GenoAdminTestCase):
     def test_mail_sending_failure(self):
         """Recipients are marked as failed when email sending raises an exception."""
         from geno.mail import DocumentMailer
+
         self.setup_members()
         self.data["action"] = "mail"
         self.data["template_mail"] = f"template_id_{self.email_templates[0].pk}"
@@ -1573,14 +1582,13 @@ class DocumentProcessTest(GenoAdminTestCase):
         ZIP processing: later recipients' documents are still created."""
         from geno.documents import DocumentGenerator
         from geno.mail import DocumentMailer
+
         ct_statement = ContentTemplate.objects.get(name="Statement")
         self.documenttypes[0].templates.add(ct_statement)
 
         self.setup_members()
         self.data["action"] = "makezip"
-        self.data["template_files"] = [
-            f"ContentTemplate:{ct_statement.pk}"
-        ]
+        self.data["template_files"] = [f"ContentTemplate:{ct_statement.pk}"]
 
         real_create = DocumentGenerator.create_document
         state = {"n": 0}
@@ -1605,15 +1613,14 @@ class DocumentProcessTest(GenoAdminTestCase):
         mail sending: later recipients still get their mails sent and docs saved."""
         from geno.documents import DocumentGenerator
         from geno.mail import DocumentMailer
+
         ct_statement = ContentTemplate.objects.get(name="Statement")
         self.documenttypes[0].templates.add(ct_statement)
 
         self.setup_members()
         self.data["action"] = "mail"
         self.data["template_mail"] = f"template_id_{self.email_templates[0].pk}"
-        self.data["template_files"] = [
-            f"ContentTemplate:{ct_statement.pk}"
-        ]
+        self.data["template_files"] = [f"ContentTemplate:{ct_statement.pk}"]
 
         real_create = DocumentGenerator.create_document
         state = {"n": 0}
@@ -1625,21 +1632,15 @@ class DocumentProcessTest(GenoAdminTestCase):
             return real_create(self, *args, **kwargs)
 
         mailer = DocumentMailer(dry_run=False)
-        with patch(
-            "geno.documents.DocumentGenerator.create_document", new=failing_create
-        ):
+        with patch("geno.documents.DocumentGenerator.create_document", new=failing_create):
             ret = mailer.send_member_mail_process(self.data)
 
         # Confirm that all four e-mails are successfully sent
         self.assertEmailSent(4)
         # One Document should have failed to save, and the recipient should be logged
         self.assertEqual(Document.objects.count(), 3)
-        error_entry = next(
-            e for e in ret["errors"] if "Muster, Hans" in e["info"]
-        )
-        self.assertTrue(
-            any("simulated DB failure" in entry for entry in error_entry["objects"])
-        )
+        error_entry = next(e for e in ret["errors"] if "Muster, Hans" in e["info"])
+        self.assertTrue(any("simulated DB failure" in entry for entry in error_entry["objects"]))
 
     def test_mail_sending_failure_with_invoice_rollback(self):
         """Invoices created during rendering are deleted when mail sending fails."""
@@ -1667,6 +1668,7 @@ class DocumentProcessTest(GenoAdminTestCase):
 
 class DocumentFilePersistenceTest(DocumentCreationMockMixin, GenoAdminTestCase):
     """Tests for persistent Document file storage, re-download and re-creation."""
+
     patch_target_fill_template = "geno.documents.fill_pod_template"
     patch_target_odt2pdf = "geno.documents.odt2pdf"
 
@@ -1695,6 +1697,7 @@ class DocumentFilePersistenceTest(DocumentCreationMockMixin, GenoAdminTestCase):
     def test_document_file_persisted_after_mail_send(self):
         """After sending mail, created Documents have a stored file."""
         from geno.mail import DocumentMailer
+
         ct_statement = ContentTemplate.objects.get(name="Statement")
         self.documenttypes[0].templates.add(ct_statement)
 
@@ -1712,12 +1715,14 @@ class DocumentFilePersistenceTest(DocumentCreationMockMixin, GenoAdminTestCase):
             "change_genattribute_value": "",
         }
         for member in self.members[0:3]:
-            data["members"].append({
-                "id": member.pk,
-                "member": str(member),
-                "extra_info": "",
-                "member_type": "member",
-            })
+            data["members"].append(
+                {
+                    "id": member.pk,
+                    "member": str(member),
+                    "extra_info": "",
+                    "member_type": "member",
+                }
+            )
 
         mailer = DocumentMailer(dry_run=False)
         mailer.send_member_mail_process(data)

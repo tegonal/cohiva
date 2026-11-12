@@ -48,7 +48,7 @@ def sum_if_list(values):
         return values
 
 
-def fill_template_pod(template_file, context, output_format="odt"):
+def fill_pod_template(template_file, context, output_format="odt"):
     tmpdir = nk.output_dir + "/nk_pod"
     if not os.path.isdir(tmpdir):
         os.mkdir(tmpdir)
@@ -2426,7 +2426,7 @@ def create_bills(regenerate_invoice_id=None):
                 context["has_graph"] = True
                 obj["has_graph"] = True
 
-            tmp_filename = fill_template_pod(
+            tmp_filename = fill_pod_template(
                 nk.config["Vorlage:Abrechnung"], context, output_format="odt"
             )
             filename = "%s/bills/parts/%s_object_%s.odt" % (nk.output_dir, contract_str, o_id)
@@ -2506,7 +2506,7 @@ def create_bills(regenerate_invoice_id=None):
                 round(context["total_amount"] / sum(nk.monthly_weights["default"])) * 6, 0
             )
 
-            tmp_filename2 = fill_template_pod(
+            tmp_filename2 = fill_pod_template(
                 nk.config["Vorlage:EmpfehlungAkonto"], context, output_format="odt"
             )
             filename2 = "%s/bills/parts/%s_EmpfehlungAkonto.odt" % (nk.output_dir, contract_str)
@@ -3334,8 +3334,9 @@ class NebenkostenReportGenerator(ReportGenerator):
 
     def add_output_files_to_report(self, update=False):
         for outfile in self._output_files:
-            filename = os.path.basename(outfile["temp_file"])
-            ext = os.path.splitext(filename)[1][1:]
+            filename, ext = os.path.splitext(outfile["temp_file"])
+            filename = os.path.basename(filename)  # Remove the path
+            ext = ext[1:]  # Remove the period, e.g. ".csv" -> "csv"
             if outfile["temp_file"].startswith(self.output_dir):
                 ## Move temporary file
                 os.replace(outfile["temp_file"], f"{self.root}/{filename}")

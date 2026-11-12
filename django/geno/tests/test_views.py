@@ -656,9 +656,7 @@ class DocumentViewTest(GenoAdminTestCase):
 
         # A user with no special permissions for permission-denied tests
         User = get_user_model()
-        cls.no_perm_user = User.objects.create_user(
-            username="no_perm", password="secret"
-        )
+        cls.no_perm_user = User.objects.create_user(username="no_perm", password="secret")
 
         # A document with an existing file (fast-path download)
         cls.doc_with_file = Document.objects.create(
@@ -668,9 +666,7 @@ class DocumentViewTest(GenoAdminTestCase):
             data='{"test": "data"}',
             content_object=cls.shares[0],
         )
-        cls.doc_with_file.file.save(
-            "Test_Doc_With_File.odt", ContentFile(b"PDF existing content")
-        )
+        cls.doc_with_file.file.save("Test_Doc_With_File.odt", ContentFile(b"PDF existing content"))
 
         # A legacy document without a file (forces template re-render on download)
         cls.legacy_doc = Document.objects.create(

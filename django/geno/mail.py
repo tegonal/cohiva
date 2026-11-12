@@ -29,6 +29,7 @@ from geno.models import (
 
 logger = logging.getLogger("geno")
 
+
 class MailTemplate:
     def __init__(self, template, subject, sender):
         self.is_html = False
@@ -88,15 +89,18 @@ class Recipient:
 class SkipRecipientException(Exception):
     pass
 
+
 @dataclass
 class MailSendResult:
     status: Literal["success", "error", "warning"]
     label: str
     detail: list[str] = field(default_factory=list)
 
+
 class DocumentMailer:
     def __init__(self, dry_run=False):
         from geno.documents import DocumentTemplate
+
         self.mail_template = None
         self.mail_bcc = None
         self.mail_test = True
@@ -121,6 +125,7 @@ class DocumentMailer:
 
     def add_document_template(self, att):
         from geno.documents import DocumentTemplate
+
         # TODO: what does att contain?
         try:
             (att_type, att_id) = att.split(":", 1)
@@ -145,7 +150,9 @@ class DocumentMailer:
             try:
                 content_template = ContentTemplate.objects.get(id=att_id)
                 if not content_template.file:
-                    raise ValueError(f"Vorlage '{content_template.name}' hat keine Datei hinterlegt")
+                    raise ValueError(
+                        f"Vorlage '{content_template.name}' hat keine Datei hinterlegt"
+                    )
             except ContentTemplate.DoesNotExist:
                 raise ValueError(f"Vorlage mit ID {att_id} nicht gefunden.")
         else:
@@ -159,10 +166,9 @@ class DocumentMailer:
             )
         )
 
-    def add_recipient(self,
-                      addressee: Member | Address,
-                      contract: Contract=None,
-                      extra_info: str=None) -> None:
+    def add_recipient(
+        self, addressee: Member | Address, contract: Contract = None, extra_info: str = None
+    ) -> None:
         """
         Creates a new Recipient and appends it to the DocumentMailer's list of
         Recipients.
@@ -251,9 +257,9 @@ class DocumentMailer:
         address: Address,
         mail_template: MailTemplate,
         context,
-        bcc: list=None,
+        bcc: list = None,
         test_to_bcc=True,
-        attachments=None
+        attachments=None,
     ):
         if attachments is None:
             attachments = []
@@ -298,7 +304,9 @@ class DocumentMailer:
                     )
                     old_value = member_attribute.value
                 except MemberAttribute.DoesNotExist:
-                    member_attribute = MemberAttribute(member=recipient.member, attribute_type=attribute)
+                    member_attribute = MemberAttribute(
+                        member=recipient.member, attribute_type=attribute
+                    )
                     old_value = "(Kein)"
                 member_attribute.value = value
                 member_attribute.date = datetime.date.today()
@@ -311,14 +319,14 @@ class DocumentMailer:
         for recipient in self.recipients:
             if not recipient.failure and recipient.address:
                 try:
-                    generic_attribute = (GenericAttribute
-                                    .objects
-                                    .filter(addresses=recipient.address)
-                                    .get(name=attribute)
-                    )
+                    generic_attribute = GenericAttribute.objects.filter(
+                        addresses=recipient.address
+                    ).get(name=attribute)
                     old_value = generic_attribute.value
                 except GenericAttribute.DoesNotExist:
-                    generic_attribute = GenericAttribute(content_object=recipient.address, name=attribute)
+                    generic_attribute = GenericAttribute(
+                        content_object=recipient.address, name=attribute
+                    )
                     old_value = "(Kein)"
                 generic_attribute.value = value
                 generic_attribute.date = datetime.date.today()
@@ -329,9 +337,7 @@ class DocumentMailer:
 
     def get_zipfile(self):
         self.zipfile.close()
-        resp = HttpResponse(
-            self.zip_bytes.getvalue(), content_type="application/x-zip-compressed"
-        )
+        resp = HttpResponse(self.zip_bytes.getvalue(), content_type="application/x-zip-compressed")
         resp["Content-Disposition"] = "attachment; filename=%s" % "output.zip"
         return resp
 
@@ -447,9 +453,12 @@ class DocumentMailer:
         Process and create Documents for sending to Members.
         """
         from geno.documents import DocumentGenerator
+
         is_test = data["action"] == "mail_test"
         if data["action"] in ("mail", "mail_test"):
-            mail_template = MailTemplate(data["template_mail"], data["subject"], data["email_sender"])
+            mail_template = MailTemplate(
+                data["template_mail"], data["subject"], data["email_sender"]
+            )
             self.setup_mail(mail_template, bcc=data["email_copy"])
         if data["action"] in ("makezip", "makezip_pdf"):
             self.setup_zip()
@@ -513,7 +522,6 @@ class DocumentMailer:
         self.cleanup()
         document_generator.cleanup()
         return result
-
 
     def cleanup(self):
         for template in self.templates:
