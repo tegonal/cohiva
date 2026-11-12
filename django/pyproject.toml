@@ -46,6 +46,7 @@ lint.ignore = [
   "SIM117",  # multiple-with-statements
   "D107",    # Missing docstring in __init__
 ]
+lint.pydocstyle.convention = "google"
 exclude = [
    "NON_PUBLIC",
    "geno/python-sepa",  ## third party code
@@ -72,5 +73,3 @@ preserve_blank_lines = true
 format_css = true
 format_js = true
 
-[tool.ruff.pydocstyle]
-convention = "google"
