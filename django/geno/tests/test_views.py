@@ -7,6 +7,7 @@ from unittest.mock import DEFAULT, Mock, patch
 import openpyxl
 from django.apps import apps as django_apps
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from django.http import FileResponse
 from django.test import RequestFactory, tag
@@ -536,6 +537,12 @@ class DocumentViewTest(GenoAdminTestCase):
             name="shareconfirm", description="Share Confirmation"
         )
         cls.shareconfirm_doctype.templates.add(cls.contenttemplates[0])
+
+        # A user with no special permissions for permission-denied tests
+        User = get_user_model()
+        cls.no_perm_user = User.objects.create_user(
+            username="no_perm", password="secret"
+        )
 
         # A document with an existing file (fast-path download)
         cls.doc_with_file = Document.objects.create(
