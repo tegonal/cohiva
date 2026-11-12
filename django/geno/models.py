@@ -45,6 +45,7 @@ logger = logging.getLogger("access_portal")
 
 smedia_storage = FileSystemStorage(location=settings.SMEDIA_ROOT)
 
+
 ## Abstract base class
 class GenoBase(models.Model):
     comment = models.CharField("Kommentar", max_length=500, blank=True)

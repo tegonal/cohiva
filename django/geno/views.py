@@ -315,9 +315,7 @@ class DocumentDownloadView(DocumentActionBase):
         doc = Document.objects.select_related("template").get(pk=obj_id)
 
         if doc.file:
-            return FileResponse(
-                doc.file.open(), as_attachment=True, filename=smart_str(doc.name)
-            )
+            return FileResponse(doc.file.open(), as_attachment=True, filename=smart_str(doc.name))
 
         template = self.get_template(document_type, doc=doc)
         if not template:
@@ -329,9 +327,7 @@ class DocumentDownloadView(DocumentActionBase):
             doc.file.save(data["visible_filename"], File(f), save=True)
         if os.path.exists(filename):
             os.remove(filename)
-        return FileResponse(
-            doc.file.open(), as_attachment=True, filename=smart_str(doc.name)
-        )
+        return FileResponse(doc.file.open(), as_attachment=True, filename=smart_str(doc.name))
 
 
 class DocumentRecreateView(DocumentActionBase):
@@ -1309,9 +1305,7 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
             if r.temporary_file_location and r.filename
         ]
         zip_bytes = make_zip(files_to_zip)
-        response = HttpResponse(
-            zip_bytes.getvalue(), content_type="application/x-zip-compressed"
-        )
+        response = HttpResponse(zip_bytes.getvalue(), content_type="application/x-zip-compressed")
         response["Content-Disposition"] = "attachment; filename=%s" % "output.zip"
         return response
 
@@ -1337,23 +1331,27 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
             if "doctype" in object:
                 doctype = object["doctype"]
             else:
-                doctype=self.doctype  # Ensure a default is available
+                doctype = self.doctype  # Ensure a default is available
             try:
                 doctype_obj = DocumentType.objects.get(name=doctype)
                 template = doctype_obj.templates.filter(active=True).first()
                 if not template or not template.file:
                     raise ContentTemplate.DoesNotExist
                 result = DocumentFetchResult(
-                    status="success",
-                    label=str(object["obj"]),
-                    detail=item_objects
+                    status="success", label=str(object["obj"]), detail=item_objects
                 )
                 results.append(result)
             except DocumentType.DoesNotExist:
                 messages.error(self.request, _("Error: DocumentType '%s' not found." % doctype))
                 break
             except ContentTemplate.DoesNotExist:
-                messages.error(self.request, _("Error: Template '%s' for DocumentType '%s' not found." % (template, doctype)))
+                messages.error(
+                    self.request,
+                    _(
+                        "Error: Template '%s' for DocumentType '%s' not found."
+                        % (template, doctype)
+                    ),
+                )
                 break
         return results
 
@@ -1373,7 +1371,9 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
                     document_generator: DocumentGenerator = DocumentGenerator(
                         default_document_type=self.doctype,
                     )
-                    results = document_generator.create_documents(document_objects=self.get_objects(), options=options)
+                    results = document_generator.create_documents(
+                        document_objects=self.get_objects(), options=options
+                    )
                 except DocumentCreationError as e:
                     # Handle fatal misconfiguration once, at the view boundary
                     self.error_message = str(e)
@@ -1388,9 +1388,11 @@ class DocumentGeneratorView(CohivaAdminViewMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.error_message:
-            context["response"] = [DocumentCreationResult(status="error", label=self.error_message)]
+            context["response"] = [
+                DocumentCreationResult(status="error", label=self.error_message)
+            ]
         else:
-            context["response"] = self.result   # a list of DocumentCreationResult
+            context["response"] = self.result  # a list of DocumentCreationResult
         return context
 
 
@@ -1504,22 +1506,22 @@ class MemberLetterView(DocumentGeneratorView):
     def get_objects(self):
         """Get all Members with missing Member Letter documents after the cutoff date."""
         objects = []
-        members = (Member
-                    .objects
-                    .filter(date_join__gt=settings.GENO_MEMBER_LETTER_CUTOFF_DATE)
-                    .exclude(date_leave__isnull=False))
+        members = Member.objects.filter(
+            date_join__gt=settings.GENO_MEMBER_LETTER_CUTOFF_DATE
+        ).exclude(date_leave__isnull=False)
         for member in members:
-            doc = (Document
-                    .objects
-                    .filter(object_id=member.pk)
-                    .filter(content_type=ContentType.objects.get(app_label="geno", model="member"))
-                    .filter(doctype__name=self.doctype))
+            doc = (
+                Document.objects.filter(object_id=member.pk)
+                .filter(content_type=ContentType.objects.get(app_label="geno", model="member"))
+                .filter(doctype__name=self.doctype)
+            )
             if doc.count() == 0:
                 objects.append(
                     {
                         "obj": member,
                         "doctype": self.doctype,
-                        "info": "%s, Beitritt %s" % (member, member.date_join.strftime("%d.%m.%Y")),
+                        "info": "%s, Beitritt %s"
+                        % (member, member.date_join.strftime("%d.%m.%Y")),
                     }
                 )
         return objects
@@ -1545,11 +1547,7 @@ class MemberLetterView(DocumentGeneratorView):
                 for item in member_items:
                     # Extract member name and join date from info string
                     # Format is: "Name, Beitritt DD.MM.YYYY"
-                    details = (
-                        ", ".join(str(o) for o in item.detail)
-                        if item.detail
-                        else "—"
-                    )
+                    details = ", ".join(str(o) for o in item.detail) if item.detail else "—"
                     rows.append(
                         [
                             str(item.label),
@@ -1631,11 +1629,7 @@ class ShareConfirmationLetterView(DocumentGeneratorView):
                 rows = []
 
                 for item in share_items:
-                    details = (
-                        ", ".join(str(o) for o in item.detail)
-                        if item.detail
-                        else "—"
-                    )
+                    details = ", ".join(str(o) for o in item.detail) if item.detail else "—"
                     rows.append(
                         [
                             str(item.label),
@@ -1785,11 +1779,7 @@ class ShareReminderLetterView(DocumentGeneratorView):
                 rows = []
 
                 for item in reminder_items:
-                    details = (
-                        ", ".join(str(o) for o in item.detail)
-                        if item.detail
-                        else "—"
-                    )
+                    details = ", ".join(str(o) for o in item.detail) if item.detail else "—"
                     rows.append(
                         [
                             str(item.label),

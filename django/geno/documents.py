@@ -53,6 +53,7 @@ from geno.utils import (
 
 logger = logging.getLogger("geno")
 
+
 class _ContextEncoder(DjangoJSONEncoder):
     """Custom JSON encoder that serializes Django Model instances to their string representation.
 
@@ -64,8 +65,10 @@ class _ContextEncoder(DjangoJSONEncoder):
             return str(obj)
         return super().default(obj)
 
+
 class RenderedDocument:
     """Simple wrapper class for documents that have been rendered."""
+
     def __init__(self):
         self.file = None
         self.filename = None
@@ -78,11 +81,13 @@ class RenderedDocument:
 class DocumentTemplate:
     SUPPORTED_OUTPUT_TYPES = ("odt", "pdf")
 
-    def __init__(self,
-                 template: Template,
-                 doctype: DocumentType=None,
-                 output_format: str=None,
-                 dry_run: bool=False):
+    def __init__(
+        self,
+        template: Template,
+        doctype: DocumentType = None,
+        output_format: str = None,
+        dry_run: bool = False,
+    ):
         self.content_template = template
         self.doctype = doctype
         self.output_format = output_format
@@ -139,6 +144,7 @@ class DocumentTemplate:
 
     def get_share_statement_context(self, recipient):
         from geno.mail import SkipRecipientException
+
         statement_year = datetime.datetime.now().year - 1
         try:
             statement_data = get_share_statement_data(recipient.address, statement_year)
@@ -359,9 +365,7 @@ class DocumentTemplate:
             context = self.get_context(recipient)
             self.log_template_rendering(context)
             temporary_filename = fill_pod_template(
-                self.content_template.file.path,
-                context,
-                output_format="odt"
+                self.content_template.file.path, context, output_format="odt"
             )
             rendered_document.file = temporary_filename
             self.temp_files.append(rendered_document.file)
@@ -382,7 +386,9 @@ class DocumentTemplate:
             rendered_document.doctype = self.doctype
             # Fallback if the doctype has not been set explicitly
             if not rendered_document.doctype and self.content_template:
-                rendered_document.doctype = self.content_template.document_types.filter(active=True).first()
+                rendered_document.doctype = self.content_template.document_types.filter(
+                    active=True
+                ).first()
             rendered_document.content_template = self.content_template
         else:
             # ContentTemplate is not an OpenDocument
@@ -402,52 +408,56 @@ class DocumentTemplate:
             output_dir = f"/tmp/documents_render_qrbill_{settings.GENO_ID}"
             logger.info(f" > render_qrbill({output_dir}/{rendered_document.filename}")
             render_qrbill(
-                        None,
-                        context,
-                        rendered_document.filename,
-                        base_pdf_file=rendered_document.file,
-                        append_pdf_file=None,
-                        output_dir=output_dir,
-                    )
+                None,
+                context,
+                rendered_document.filename,
+                base_pdf_file=rendered_document.file,
+                append_pdf_file=None,
+                output_dir=output_dir,
+            )
             rendered_document.linked_invoice = context["invoice"]
             rendered_document.file = f"{output_dir}/{rendered_document.filename}"
             self.temp_files.append(rendered_document.file)
 
     def log_template_rendering(self, ctx) -> None:
         logger.info(
-                " > fill template %s with context: anrede=%s, name=%s, vorname=%s, org=%s"
-                % (
-                    self.content_template.file.path,
-                    ctx["anrede"],
-                    ctx["name"],
-                    ctx["vorname"],
-                    ctx["organisation"],
-                )
+            " > fill template %s with context: anrede=%s, name=%s, vorname=%s, org=%s"
+            % (
+                self.content_template.file.path,
+                ctx["anrede"],
+                ctx["name"],
+                ctx["vorname"],
+                ctx["organisation"],
             )
+        )
 
     def cleanup(self):
         remove_temp_files(self.temp_files)
 
 
-
 @dataclass
 class DocumentFetchResult:
     """A Result indicating the status of a Document fetching action."""
+
     status: Literal["success", "error"]
     label: str
     detail: list[str] = field(default_factory=list)
 
+
 @dataclass
 class DocumentCreationResult:
     """A Result indicating the status of a Document creation action."""
+
     status: Literal["success", "info", "error", "warning"]
     label: str
     detail: list[str] = field(default_factory=list)
     temporary_file_location: str | None = None
     filename: str | None = None
 
+
 class DocumentCreationError(Exception):
     """A generic error class for failures during document creation."""
+
 
 class DocumentGenerator:
     """Builder class to create Documents.
@@ -455,9 +465,10 @@ class DocumentGenerator:
     Documents are persisted at creation time, so that they remain accessible
     without regeneration.
     """
+
     default_document_type: DocumentType = None
 
-    def __init__(self, default_document_type: DocumentType=None, dry_run: bool=False):
+    def __init__(self, default_document_type: DocumentType = None, dry_run: bool = False):
         self.default_document_type = default_document_type
         self.dry_run = dry_run
         self.temp_files = []
@@ -488,13 +499,13 @@ class DocumentGenerator:
                 break
 
     def create_document(
-            self,
-            document_type: DocumentType,
-            template: DocumentTemplate,
-            context: dict,
-            filename: str=None,
-            existing_file_path: str=None,
-        ) -> DocumentCreationResult:
+        self,
+        document_type: DocumentType,
+        template: DocumentTemplate,
+        context: dict,
+        filename: str = None,
+        existing_file_path: str = None,
+    ) -> DocumentCreationResult:
         """Create a single Document object from a known DocumentType and DocumentTemplate.
 
         The Template is filled upon creation, and the resulting file is persisted, s.t. it can be retrieved later.
@@ -535,7 +546,9 @@ class DocumentGenerator:
                 temporary_file_location = existing_file_path
             else:
                 template_context = context.get("context", context)
-                temporary_file_location = self._fill_template(template, {"context": template_context})
+                temporary_file_location = self._fill_template(
+                    template, {"context": template_context}
+                )
                 self.temp_files.append(temporary_file_location)
             self._persist_document(document)
             self._save_document_file(document, temporary_file_location)
@@ -548,7 +561,7 @@ class DocumentGenerator:
             label=str(document),
             detail=[str(document)],
             temporary_file_location=temporary_file_location,
-            filename=output_filename
+            filename=output_filename,
         )
         return result
 
@@ -591,9 +604,9 @@ class DocumentGenerator:
                 recipient.log.append(msg)
         return results
 
-    def create_documents(self,
-                         document_objects: list[dict],
-                         options: list[dict] | None) -> list[DocumentCreationResult]:
+    def create_documents(
+        self, document_objects: list[dict], options: list[dict] | None
+    ) -> list[DocumentCreationResult]:
         """Create multiple Documents.
 
         Given a list of Document objects, create individual Documents, and persist the result to the database and filesystem.
@@ -643,12 +656,12 @@ class DocumentGenerator:
                 extra_context = document_object["extra_context"]
             else:
                 extra_context = None
-            context = get_context_data(document_type_name, document_object["obj"].pk, extra_context)
+            context = get_context_data(
+                document_type_name, document_object["obj"].pk, extra_context
+            )
             # Create the Document
             result = self.create_document(
-                document_type=document_type,
-                template=content_template,
-                context=context
+                document_type=document_type, template=content_template, context=context
             )
             if result.status == "success":
                 file_count += 1
@@ -661,9 +674,9 @@ class DocumentGenerator:
         if file_count:
             results.append(self._build_zip_summary(options, file_count))
         else:
-            results.append(DocumentCreationResult(
-                    status="warning", label=_("No Documents to be created.")
-                ))
+            results.append(
+                DocumentCreationResult(status="warning", label=_("No Documents to be created."))
+            )
         return results
 
     def _build_zip_summary(self, options: dict, file_count: int) -> DocumentCreationResult:
@@ -753,7 +766,7 @@ class DocumentGenerator:
         return temporary_filename
 
 
-def get_context_data(doctype, obj_id, extra_context: dict=None) -> dict:
+def get_context_data(doctype, obj_id, extra_context: dict = None) -> dict:
     # TODO: review and clean up this function
     if extra_context is None:
         extra_context = dict()
@@ -836,7 +849,9 @@ def get_context_data(doctype, obj_id, extra_context: dict=None) -> dict:
                     nformat(obj.quantity * obj.value),
                 )
             if obj.is_pension_fund:
-                extra_context["betrag_text"] = "%s (aus Mitteln der beruflichen Vorsorge)" % (extra_context["betrag_text"])
+                extra_context["betrag_text"] = (
+                    "%s (aus Mitteln der beruflichen Vorsorge)" % (extra_context["betrag_text"])
+                )
                 extra_context["bvg"] = True
             else:
                 extra_context["bvg"] = False
@@ -860,10 +875,16 @@ def get_context_data(doctype, obj_id, extra_context: dict=None) -> dict:
                 nformat(obj.value, 2),
                 duedate_text,
             )
-            extra_context["betrag_text_zusatz"] = "Aktueller Zinssatz: %s%%" % (nformat(obj.interest(), 2))
+            extra_context["betrag_text_zusatz"] = "Aktueller Zinssatz: %s%%" % (
+                nformat(obj.interest(), 2)
+            )
         elif obj.share_type == stype_deposit:
-            extra_context["betrag_text"] = "Einlage in die Depositenkasse von CHF %s" % (nformat(obj.value, 2))
-            extra_context["betrag_text_zusatz"] = "Aktueller Zinssatz: %s%%" % (nformat(obj.interest(), 2))
+            extra_context["betrag_text"] = "Einlage in die Depositenkasse von CHF %s" % (
+                nformat(obj.value, 2)
+            )
+            extra_context["betrag_text_zusatz"] = "Aktueller Zinssatz: %s%%" % (
+                nformat(obj.interest(), 2)
+            )
         elif obj.share_type == stype_loan_special:
             extra_context["betrag_text"] = "Darlehen von CHF %s%s" % (
                 nformat(obj.value, 2),
@@ -913,6 +934,7 @@ def get_context_data(doctype, obj_id, extra_context: dict=None) -> dict:
         "context": extra_context,
     }
 
+
 def context_format(context, output_format="odt"):
     # TODO: implement
     # for k,v in context.items():
@@ -920,6 +942,7 @@ def context_format(context, output_format="odt"):
     #        if isinstance(context[k], basestring):
     #            context[k] = mark_safe(v.replace('\n', '<text:line-break />'))
     return context
+
 
 ## TODO: Make subclasses of Document
 # class QRBillDocument(Document):
