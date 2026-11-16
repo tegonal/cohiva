@@ -12,6 +12,7 @@ import zipfile
 from collections import OrderedDict
 from datetime import datetime, timedelta
 from operator import add
+from pathlib import Path
 
 ## PDF tools
 from subprocess import PIPE, Popen
@@ -3334,9 +3335,9 @@ class NebenkostenReportGenerator(ReportGenerator):
 
     def add_output_files_to_report(self, update=False):
         for outfile in self._output_files:
-            filename, ext = os.path.splitext(outfile["temp_file"])
-            filename = os.path.basename(filename)  # Remove the path
-            ext = ext[1:]  # Remove the period, e.g. ".csv" -> "csv"
+            path = Path(outfile["temp_file"])
+            filename = path.name
+            ext = path.suffix[1:]  # Remove the period, e.g. ".csv" -> "csv"
             if outfile["temp_file"].startswith(self.output_dir):
                 ## Move temporary file
                 os.replace(outfile["temp_file"], f"{self.root}/{filename}")

@@ -898,7 +898,7 @@ def get_context_data(doctype, obj_id, extra_context: dict = None) -> dict:
                 obj.share_type.name,
                 nformat(obj.value, 2),
             )
-        extra_context["datum_zahlung"] = obj.payment_date.strftime("%d.%m.%Y")
+
         extra_context.update(obj.get_context(include_related_shares=True))
         # Legacy context variables for backward compatibility
         extra_context["datum_zahlung"] = extra_context["payment_date"]
