@@ -33,7 +33,7 @@
       "schedule": ["* * 1 * *"]
     },
 	{
-	  "matchManagers":  ["github-action","dockerfile","docker-compose"],
+	  "matchManagers":  ["github-actions","dockerfile","docker-compose"],
 	  "enabled": false
 	}
   ],
