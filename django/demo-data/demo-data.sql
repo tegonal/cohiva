@@ -283,7 +283,6 @@ INSERT INTO `auth_permission` VALUES (42,'Can view shares',10,'canview_share');
 INSERT INTO `auth_permission` VALUES (43,'Can see share overview',10,'canview_share_overview');
 INSERT INTO `auth_permission` VALUES (44,'Kann Betiligungen bestätigen',10,'confirm_share');
 INSERT INTO `auth_permission` VALUES (45,'Kann Zins-/Kontoauszüge erstellen und Zinsen anpassen',10,'share_interest_statments');
-INSERT INTO `auth_permission` VALUES (46,'Kann Mailing zu Beteiligungen erstellen',10,'share_mailing');
 INSERT INTO `auth_permission` VALUES (47,'Can add Beteiligungstyp',11,'add_sharetype');
 INSERT INTO `auth_permission` VALUES (48,'Can change Beteiligungstyp',11,'change_sharetype');
 INSERT INTO `auth_permission` VALUES (49,'Can delete Beteiligungstyp',11,'delete_sharetype');

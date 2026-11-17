@@ -531,7 +531,7 @@ class GetActiveSharesTests(GenoAdminTestCase):
         self.assertIn(share, result)
 
     def test_single_date_ignores_payment_dates_when_effective_is_set(self):
-        """when effective dates are set the payment/repayment dates should have no effect."""
+        """When effective dates are set the payment/repayment dates should have no effect."""
         share = self._create_share(
             payment_date=self.D1,
             effective_from=self.D2,
