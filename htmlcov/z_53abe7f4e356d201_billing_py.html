@@ -65,7 +65,7 @@
             <a id="nextFileLink" class="nav" href="z_53abe7f4e356d201_checks_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.17.3">coverage.py v7.17.3</a>,
-            created at 2026-11-15 12:42 +0000
+            created at 2026-11-17 10:26 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -138,7 +138,7 @@
     <p class="run run2"><span class="n"><a id="t56" href="#t56">56</a></span><span class="t"><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t57" href="#t57">57</a></span><span class="t"><span class="key">from</span> <span class="op">.</span><span class="nam">utils</span> <span class="key">import</span> <span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t58" href="#t58">58</a></span><span class="t">    <span class="nam">ensure_dir_exists</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run run2"><span class="n"><a id="t59" href="#t59">59</a></span><span class="t">    <span class="nam">fill_template_pod</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run run2"><span class="n"><a id="t59" href="#t59">59</a></span><span class="t">    <span class="nam">fill_pod_template</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t60" href="#t60">60</a></span><span class="t">    <span class="nam">nformat</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t61" href="#t61">61</a></span><span class="t">    <span class="nam">odt2pdf</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t62" href="#t62">62</a></span><span class="t">    <span class="nam">remove_temp_files</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
@@ -2063,7 +2063,7 @@
     <p class="run run2"><span class="n"><a id="t1981" href="#t1981">1981</a></span><span class="t"><span class="op">)</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1982" href="#t1982">1982</a></span><span class="t">    <span class="nam">temp_files</span> <span class="op">=</span> <span class="op">[</span><span class="op">]</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1983" href="#t1983">1983</a></span><span class="t">    <span class="key">if</span> <span class="nam">template</span> <span class="key">and</span> <span class="key">not</span> <span class="nam">base_pdf_file</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t1984" href="#t1984">1984</a></span><span class="t">        <span class="nam">filename</span> <span class="op">=</span> <span class="nam">fill_template_pod</span><span class="op">(</span><span class="nam">template</span><span class="op">.</span><span class="nam">file</span><span class="op">.</span><span class="nam">path</span><span class="op">,</span> <span class="nam">context</span><span class="op">,</span> <span class="nam">output_format</span><span class="op">=</span><span class="str">&quot;odt&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t1984" href="#t1984">1984</a></span><span class="t">        <span class="nam">filename</span> <span class="op">=</span> <span class="nam">fill_pod_template</span><span class="op">(</span><span class="nam">template</span><span class="op">.</span><span class="nam">file</span><span class="op">.</span><span class="nam">path</span><span class="op">,</span> <span class="nam">context</span><span class="op">,</span> <span class="nam">output_format</span><span class="op">=</span><span class="str">&quot;odt&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1985" href="#t1985">1985</a></span><span class="t">        <span class="key">if</span> <span class="key">not</span> <span class="nam">filename</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t1986" href="#t1986">1986</a></span><span class="t">            <span class="key">raise</span> <span class="nam">RuntimeError</span><span class="op">(</span><span class="str">&quot;Could not fill template&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t1987" href="#t1987">1987</a></span><span class="t">        <span class="nam">base_pdf_file</span> <span class="op">=</span> <span class="nam">odt2pdf</span><span class="op">(</span><span class="nam">filename</span><span class="op">,</span> <span class="str">&quot;render_qrbill&quot;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -2187,7 +2187,7 @@
             <a class="nav" href="z_53abe7f4e356d201_checks_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.17.3">coverage.py v7.17.3</a>,
-            created at 2026-11-15 12:42 +0000
+            created at 2026-11-17 10:26 +0000
         </p>
     </div>
 </footer>
