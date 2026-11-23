@@ -5,7 +5,7 @@
 #  \__/\__/\_, /\___/_//_/\_,_/_/         It is licensed under European Union Public License v. 1.2
 #         /___/                           Please report bugs and contribute back your improvements
 #
-#                                         Version: v3.0.2
+#                                         Version: v3.1.0
 ###################################
 name: "gt update"
 
@@ -24,9 +24,10 @@ jobs:
     name: Determine Remotes
     runs-on: ubuntu-latest
 
-    # gt-placeholder-owner-start
-    if: github.repository_owner == 'tegonal'
-    # gt-placeholder-owner-end
+    if: &correct-owner
+      # gt-placeholder-owner-v2-start
+          github.repository_owner == 'tegonal'
+      # gt-placeholder-owner-v2-end
 
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -113,9 +114,17 @@ jobs:
           		exit 1
           	} && false || cd "$currentDir" && rm -r "$tmpDir" && "${result:-false}"
           # end install.doc.sh
+
       #gt-placeholder-gh-action-checkout-2-start
       - uses: actions/checkout@v7
       #gt-placeholder-gh-action-checkout-2-end
+
+      - name: install shfmt if defined
+        if: hashFiles('lib/tegonal-scripts/src/ci/install-shfmt.sh') != ''
+        run: ./lib/tegonal-scripts/src/ci/install-shfmt.sh
+      #gt-placeholder-gh-action-dependencies-start
+      #gt-placeholder-gh-action-dependencies-end
+
       - name: reset gpg keys
         run: gt reset --gpg-only true -r "${{ matrix.remote }}"
       - name: gt update
@@ -128,6 +137,7 @@ jobs:
           gitStatus=$(git status --porcelain)
           (if [[ $gitStatus != "" ]]; then echo "has_changes=1"; else echo "has_changes=0"; fi) >> $GITHUB_OUTPUT
       - id: determine_versions
+        name: determine versions
         if: ${{ steps.has_changes.outputs.has_changes == 1 }}
         run: |
           set -euo pipefail
@@ -186,7 +196,7 @@ jobs:
               }
             done
 
-            newVersionsStr=$(IFS=, printf '%s' "${newTags[*]}")
+            newVersionsStr=$(IFS=,; printf '%s' "${newTags[*]}")
 
             echo "commit_message=update files of remote ${{ matrix.remote }} to version(s) $newVersionsStr via gt" >>"$GITHUB_OUTPUT"
           fi
@@ -223,6 +233,7 @@ jobs:
   signing_key:
     name: "Check signing-key"
     runs-on: ubuntu-latest
+    if: *correct-owner
     steps:
 
       #gt-placeholder-gh-action-checkout-3-start
@@ -263,6 +274,7 @@ jobs:
   trusted_keys:
     name: "Check trusted-key(s)"
     runs-on: ubuntu-latest
+    if: *correct-owner
     steps:
       - name: Import gpg key(s) defined in vars.PUBLIC_GPG_KEYS_WE_TRUST and secrets.PUBLIC_GPG_KEYS_WE_TRUST
         run: |
