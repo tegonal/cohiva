@@ -7,7 +7,7 @@
 #  \__/\__/\_, /\___/_//_/\_,_/_/         It is licensed under Apache License 2.0
 #         /___/                           Please report bugs and contribute back your improvements
 #
-#                                         Version: v4.12.4
+#                                         Version: v5.3.0
 #######  Description  #############
 #
 #  Functions to check declarations
@@ -112,14 +112,8 @@ function checkArgIsArray() {
 	# we are not failing (with || die...) on this line as the if will fail afterwards
 	arrayDefinition="$(recursiveDeclareP checkArgIsArray_arr)" || traceAndDie "could not get array definition of %s" "${!checkArgIsArray_arr}"
 	if ! [[ $arrayDefinition =~ $reg ]]; then
-		local funcName=${FUNCNAME[1]}
-		if [[ $funcName == "exitIfArgIsNotArray" ]]; then
-			funcName=${FUNCNAME[2]}
-		fi
-		if [[ $funcName == "exitIfArgIsNotArrayOrIsEmpty" ]] ||
-			[[ $funcName == "exitIfArgIsNotArrayOrIsNonEmpty" ]]; then
-			funcName=${FUNCNAME[3]}
-		fi
+		local funcName
+		funcName=$(getCallerFuncNameButIgnore "exitIfArgIsNotArray" "exitIfArgIsNotArrayOrIsEmpty" "exitIfArgIsNotArrayOrIsNonEmpty")
 		traceAndReturnDying "the passed array \033[0;36m%s\033[0m is broken.\nThe %s argument to %s needs to be a non-associative array, given:\n%s" \
 			"${!checkArgIsArray_arr}" "$argNumberOrName" "$funcName" "$arrayDefinition"
 	fi
@@ -155,13 +149,13 @@ function checkIsInitialisedArray() {
 }
 
 function checkArgIsArrayWithTuples() {
-	if (($# != 5)); then
-		logError "Five arguments need to be passed to checkArgIsArrayWithTuples, given \033[0;36m%s\033[0m\n" "$#"
+	if (($# != 4)) && (($# != 5)); then
+		logError "Four or five arguments need to be passed to checkArgIsArrayWithTuples, given \033[0;36m%s\033[0m\n" "$#"
 		echo >&2 '1: array            name of the array to check'
 		echo >&2 '2: tupleNum         the number of values of each tuple'
 		echo >&2 '3: tupleRepresents  what does the tuple represent (used in error message)'
 		echo >&2 '4: argNumberOrName  what argument do we check (used in error message)'
-		echo >&2 '5: describeTupleFn  function which describes how the tuples are built up'
+		echo >&2 '5: describeTupleFn  (optional) function which describes how the tuples are built up'
 		printStackTrace
 		exit 9
 	fi
@@ -170,15 +164,20 @@ function checkArgIsArrayWithTuples() {
 	local -r tupleNum=$2
 	local -r tupleRepresents=$3
 	local -r argNumberOrName=$4
-	local -r describeTupleFn=$5
-	shift 5 || traceAndDie "could not shift by 5"
+	shift 4 || traceAndDie "could not shift by 4"
 
-	exitIfArgIsNotFunction "$describeTupleFn" "$argNumberOrName"
-
-	local funcName=${FUNCNAME[1]}
-	if [[ $funcName == "exitIfArgIsNotArrayWithTuples" ]]; then
-		funcName=${FUNCNAME[2]}
+	# shellcheck disable=SC2329	# called by name
+	function checkArgIsArrayWithTuples_noop() {
+		:
+	}
+	local describeTupleFn=checkArgIsArrayWithTuples_noop
+	if (($# == 1)); then
+		describeTupleFn=$1
+		exitIfArgIsNotFunction "$describeTupleFn" "$argNumberOrName"
 	fi
+
+	local funcName
+	funcName=$(getCallerFuncNameButIgnore "exitIfArgIsNotArrayWithTuples")
 
 	local arrayDefinition
 	arrayDefinition=$(recursiveDeclareP checkArgIsArrayWithTuples_paramArr) || traceAndDie "could not get array definition of %s" "${!checkArgIsArrayWithTuples_paramArr}"
@@ -203,7 +202,7 @@ function checkArgIsArrayWithTuples() {
 		exit 9
 	fi
 
-	if ! ((arrLength % tupleNum == 0)); then
+	if ((arrLength % tupleNum != 0)); then
 		logError "the passed array \033[0;36m%s\033[0m is broken" "${!checkArgIsArrayWithTuples_paramArr}"
 		printf >&2 "The %s argument to %s needs to be an array with %s-tuples containing %s, given:\n" "$argNumberOrName" "$funcName" "$tupleNum" "$tupleRepresents"
 		"$describeTupleFn"
@@ -215,7 +214,7 @@ function checkArgIsArrayWithTuples() {
 
 		local -i i j
 		for ((i = 0; i < arrLength; i += tupleNum)); do
-			local -r length=$((i + tupleNum - 1 < arrLength ? i + tupleNum : arrLength))
+			local length=$((i + tupleNum - 1 < arrLength ? i + tupleNum : arrLength))
 			if ((i + tupleNum - 1 >= arrLength)); then
 				printf >&2 "\033[1;33mleftovers:\033[0m\n"
 			fi
@@ -242,10 +241,8 @@ function checkArgIsFunction() {
 	if ! declare -F "$name" >/dev/null; then
 		local declareP
 		declareP=$(declare -p "$name" || printf "failure: \033[0;36m%s\033[0m is not a variable\n" "$name")
-		local funcName=${FUNCNAME[1]}
-		if [[ $funcName == "exitIfArgIsNotFunction" ]]; then
-			funcName=${FUNCNAME[2]}
-		fi
+		local funcName
+		funcName=$(getCallerFuncNameButIgnore "exitIfArgIsNotFunction")
 		traceAndReturnDying "the %s argument to %s needs to be a function/command, \033[0;36m%s\033[0m isn't one\nMaybe it is the name of a variable storing the name of a function?\nFollowing the output of: declare -p %s\n%s" \
 			"$argNumberOrName" "$funcName" "$name" "$name" "$declareP"
 	fi
@@ -262,10 +259,9 @@ function checkArgIsBoolean() {
 	parseFnArgs params "$@" || return $?
 
 	if ! [[ $value =~ ^(true|false)$ ]]; then
-		local funcName=${FUNCNAME[1]}
-		if [[ $funcName == "exitIfArgIsNotBoolean" ]]; then
-			funcName=${FUNCNAME[2]}
-		fi
+		local funcName
+		funcName=$(getCallerFuncNameButIgnore "exitIfArgIsNotBoolean")
+
 		traceAndReturnDying "the %s argument to %s needs to be a boolean (either true or false), %s isn't one" \
 			"$argNumberOrName" "$funcName" "$value"
 	fi
@@ -289,10 +285,9 @@ function checkArgIsVersion() {
 	parseFnArgs params "$@" || return $?
 
 	if ! [[ "$value" =~ $versionRegex ]]; then
-		local funcName=${FUNCNAME[1]}
-		if [[ $funcName == "exitIfArgIsNotVersion" ]]; then
-			funcName=${FUNCNAME[2]}
-		fi
+		local funcName
+		funcName=$(getCallerFuncNameButIgnore "exitIfArgIsNotVersion")
+
 		traceAndReturnDying "the %s argument to %s needs to match vX.Y.Z(-RC...) was %s" \
 			"$argNumberOrName" "$funcName" "$value"
 	fi
@@ -362,4 +357,44 @@ function checkPathNamedIsInsideOf() {
 
 function exitIfPathNamedIsOutsideOf() {
 	checkPathNamedIsInsideOf "$@" || exit $?
+}
+
+function exitIfPathNamedIsOutsideOfCurrentDir() {
+	if ! [[ -v currentDir ]]; then
+		local currentDir
+		currentDir=$(pwd) || die "could not determine currentDir, maybe it does not exist anymore?"
+		local -r currentDir
+	fi
+	checkPathNamedIsInsideOf "$@" "$currentDir" || exit $?
+}
+
+getCallerFuncNameButIgnore() {
+	local -a skipNames=("$@")
+	# 0 is getCallerFuncNameButIgnore itself, 1 is its caller and we want to get the caller of the caller
+	local index=2
+	local funcName skip name
+
+	while ((index < ${#FUNCNAME[@]})); do
+		funcName=${FUNCNAME[$index]}
+		skip=false
+
+		if [[ $funcName == "source" ]]; then
+			skip=true
+		else
+			for name in "${skipNames[@]}"; do
+				if [[ $funcName == "$name" ]]; then
+					skip=true
+					break
+				fi
+			done
+		fi
+
+		if [[ $skip == false ]]; then
+			echo "$funcName"
+			return 0
+		fi
+		((++index))
+	done
+
+	echo "<could not determine function name, see stacktrace below>"
 }

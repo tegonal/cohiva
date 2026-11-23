@@ -7,14 +7,14 @@
 #  \__/\__/\_, /\___/_//_/\_,_/_/         It is licensed under European Union Public License 1.2
 #         /___/                           Please report bugs and contribute back your improvements
 #
-#                                         Version: v4.12.4
+#                                         Version: v5.3.0
 #######  Description  #############
 #
 #  constants intended to be sourced into a function
 #
 ###################################
 
-local -r versionRegex="^(v[0-9]+)\.([0-9]+)\.[0-9]+(-RC[0-9]+)?$"
+local -r versionRegex="^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|RC)(\.[0-9]+)+)?$"
 
 local -r versionParamPatternLong='-v'
 local -r versionParamPattern="$versionParamPatternLong"
@@ -39,6 +39,7 @@ local -r projectsRootDirParamDocu='(optional) The projects directory -- default:
 local -r additionalPatternParamPatternLong='--pattern'
 local -r additionalPatternParamPattern="-p|$additionalPatternParamPatternLong"
 local -r additionalPatternParamDocu='(optional) pattern which is used in a perl command (separator /) to search & replace additional occurrences. It should define two match groups and the replace operation looks as follows: '"\\\${1}\$version\\\${2}"
+local -r additionalPatternDefaultArg=''
 
 local -r nextVersionParamPatternLong='--next-version'
 local -r nextVersionParamPattern="-nv|$nextVersionParamPatternLong"
@@ -70,8 +71,10 @@ local -r afterVersionUpdateHookParamPattern="$afterVersionUpdateHookParamPattern
 local -r afterVersionUpdateHookParamDocu="(optional) if defined, then this function is called after versions were updated and before calling beforePr. \
 The following arguments are passed: $versionParamPatternLong version $projectsRootDirParamPatternLong projectsRootDir and $additionalPatternParamPatternLong additionalPattern"
 
-local -ra afterVersionHookParams=(
-	version "$versionParamPattern" "$versionParamDocu"
-	projectsRootDir "$projectsRootDirParamPattern" "$projectsRootDirParamDocu"
-	additionalPattern "$additionalPatternParamPattern" "$additionalPatternParamDocu"
+local -r repoUrlParamPatternLong='--repo-url'
+local -r repoUrlParamPattern="$repoUrlParamPatternLong"
+local -r repoUrlParamDocu='The url to the repo (e.g. https://github.com/tegonal/scripts)'
+
+local -ra release_hideFromUser=(
+	beforePrFn prepareNextDevCycleFn afterVersionUpdateHook projectsRootDir additionalPattern
 )
