@@ -6,7 +6,7 @@
 #  \__/\__/\_, /\___/_//_/\_,_/_/         It is licensed under Apache License 2.0
 #         /___/                           Please report bugs and contribute back your improvements
 #
-#                                         Version: v4.12.4
+#                                         Version: v5.3.0
 #######  Description  #############
 #
 #  Intended to parse command line arguments. Provides a simple way to parse named arguments including a documentation
@@ -104,35 +104,22 @@ function parse_args_exitIfParameterDefinitionIsNotTriple() {
 
 	exitIfArgIsNotArrayWithTuples "$1" 3 "parameter definitions" "first" "parse_args_describeParameterTriple"
 }
-function parseArgumentsIgnoreUnknown {
-	parseArgumentsInternal 'ignore' "$@"
-}
 
 function parseArguments {
-	parseArgumentsInternal 'error' "$@"
-}
-
-function parseArgumentsInternal {
-	if (($# < 4)); then
+	if (($# < 3)); then
 		logError "At least three arguments need to be passed to parseArguments, given \033[0;36m%s\033[0m\nFollowing a description of the parameters:" "$#"
-		echo >&2 '1: unknownBehaviour   one of: error, ignore'
-		echo >&2 '2: params     				the name of an array which contains the parameter definitions'
-		echo >&2 '3: examples   				a string containing examples (or an empty string)'
-		echo >&2 '4: version    			 	the version which shall be shown if one uses --version'
-		echo >&2 '5... args...  				the arguments as such, typically "$@"'
+		echo >&2 '1: params     				the name of an array which contains the parameter definitions'
+		echo >&2 '2: examples   				a string containing examples (or an empty string)'
+		echo >&2 '3: version    			 	the version which shall be shown if one uses --version'
+		echo >&2 '4... args...  				the arguments as such, typically "$@"'
 		printStackTrace
 		exit 9
 	fi
 
-	local -r parseArguments_unknownBehaviour=$1
-	local -rn parseArguments_paramArr=$2
-	local -r parseArguments_examples=$3
-	local -r parseArguments_version=$4
-	shift 4 || traceAndDie "could not shift by 4"
-
-	if ! [[ "$parseArguments_unknownBehaviour" =~ ^(ignore|error)$ ]]; then
-		traceAndDie "unknownBehaviour needs to be one of 'error' or 'ignore' got \033[0;36m%s\033[0m" "$parseArguments_unknownBehaviour"
-	fi
+	local -rn parseArguments_paramArr=$1
+	local -r parseArguments_examples=$2
+	local -r parseArguments_version=$3
+	shift 3 || traceAndDie "could not shift by 3"
 
 	parse_args_exitIfParameterDefinitionIsNotTriple parseArguments_paramArr
 
@@ -143,21 +130,21 @@ function parseArgumentsInternal {
 
 	local -ri parseArguments_arrLength="${#parseArguments_paramArr[@]}"
 
-	function parseArgumentsInternal_ask_printHelp() {
+	function parseArguments_ask_printHelp() {
 		if askYesOrNo >&2 "Shall I print the help for you?"; then
-			parseArgumentsInternal_printHelp >&2
+			parseArguments_printHelp >&2 5
 		fi
 	}
 
-	function parseArgumentsInternal_printHelp() {
-		parse_args_printHelp parseArguments_paramArr "$parseArguments_examples" "$parseArguments_version" 5
+	function parseArguments_printHelp() {
+		parse_args_printHelp parseArguments_paramArr "$parseArguments_examples" "$parseArguments_version" "$1"
 	}
 
 	local -i parseArguments_numOfArgumentsParsed=0
 	while (($# > 0)); do
 		parseArguments_argName="$1"
 		if [[ $parseArguments_argName == --help ]]; then
-			parseArgumentsInternal_printHelp
+			parseArguments_printHelp 4
 			if ! ((parseArguments_numOfArgumentsParsed == 0)); then
 				logWarning "there were arguments defined prior to --help, they were all ignored and instead the help is shown"
 			elif (($# > 1)); then
@@ -183,7 +170,7 @@ function parseArgumentsInternal {
 				if (($# < 2)); then
 					logError "no value defined for parameter \033[1;36m%s\033[0m (pattern %s) in %s" "$parseArguments_paramName" "$parseArguments_pattern" "${BASH_SOURCE[2]}"
 					printStackTrace
-					parseArgumentsInternal_ask_printHelp
+					parseArguments_ask_printHelp
 					exit 9
 				fi
 				assignToVariableInOuterScope "$parseArguments_paramName" "$2" || die "could not to assign a value to variable in outer scope named %s" "$parseArguments_paramName"
@@ -193,13 +180,13 @@ function parseArgumentsInternal {
 			fi
 		done
 
-		if [[ $parseArguments_unknownBehaviour = 'error' ]] && ((parseArguments_expectedName == 0)); then
+		if ((parseArguments_expectedName == 0)); then
 			if [[ $parseArguments_argName =~ ^- ]] && (($# > 1)); then
 				logError "unknown argument \033[1;36m%s\033[0m (and value %s)" "$parseArguments_argName" "$2"
 			else
 				logError "unknown argument \033[1;36m%s\033[0m" "$parseArguments_argName"
 			fi
-			parseArgumentsInternal_ask_printHelp
+			parseArguments_ask_printHelp
 			exit 9
 		fi
 		shift 1 || traceAndDie "could not shift by 1"
@@ -301,4 +288,33 @@ function exitIfNotAllArgumentsSet {
 		fi
 		exit 1
 	fi
+}
+
+# Puts all local variables which correspond to the params names (first value in the triples) into the outputArr
+# Requires that a variable xyzParamPatternLong exists where Xyz is the name of the param. For instance for a param
+# version there needs to be a variable versionParamPatternLong
+# since 4.13.0
+function addLocalVarMatchingParamNamesToArgs() {
+	if (($# != 2)); then
+		logError "Two arguments need to be passed to addLocalVarMatchingParamNamesToArgs, given \033[0;36m%s\033[0m"
+		echo >&2 '1: params      name of the array with the callee'"'"'s parameter definitions'
+		echo >&2 '2: outputArr   name of the array which receives the reconstructed arguments'
+		printStackTrace
+		exit 9
+	fi
+	local -rn addVarMatchingParamToArgs_params=$1
+	local -n addVarMatchingParamToArgs_out=$2
+	shift 2 || traceAndDie "could not shift by 2"
+	parse_args_exitIfParameterDefinitionIsNotTriple addVarMatchingParamToArgs_params
+	exitIfArgIsNotArrayOrIsNonEmpty addVarMatchingParamToArgs_out 2
+
+	local -ri addVarMatchingParamToArgs_arrLength=${#addVarMatchingParamToArgs_params[@]}
+	local -i i
+	for ((i = 0; i < addVarMatchingParamToArgs_arrLength; i += 3)); do
+		local addVarMatchingParamToArgs_paramName="${addVarMatchingParamToArgs_params[i]}"
+		if [[ -v $addVarMatchingParamToArgs_paramName ]]; then
+			local -n addVarMatchingParamToArgs_paramFlag="${addVarMatchingParamToArgs_paramName}ParamPatternLong"
+			addVarMatchingParamToArgs_out+=("$addVarMatchingParamToArgs_paramFlag" "${!addVarMatchingParamToArgs_paramName}")
+		fi
+	done
 }
