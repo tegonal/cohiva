@@ -17,6 +17,7 @@ if ! [[ -v scriptsDir ]]; then
 	readonly scriptsDir
 fi
 source "$scriptsDir/dirs.source.sh"
+sourceOnce "$scriptsDir/check-help-callable.sh"
 sourceOnce "$scriptsDir/cleanup-on-push-to-main.sh"
 sourceOnce "$scriptsDir/run-shellcheck.sh"
 
@@ -33,18 +34,19 @@ function checkPWA() {
 	fi
 	(
 		cd "$projectDir/pwa"
-		yarn build
-		yarn lint
-		yarn prettier
+		yarn build || die "yarn build failed"
+		yarn lint || die "yarn lint failed"
+		yarn prettier || die "prettier failed"
 	)
 }
 
 function beforePr() {
 	# using && because this function might be used on the left side of an ||
-	customRunShellcheck && \
-	cleanupOnPushToMain && \
-	checkPython && \
-	checkPWA
+	customRunShellcheck &&
+		cleanupOnPushToMain &&
+		checkPython &&
+		checkPWA &&
+		customCheckHelpCallable
 }
 
 ${__SOURCED__:+return}
