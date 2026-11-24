@@ -373,8 +373,9 @@ class ObjectActionsMixin:
 
             dropdown_items = self.get_dropdown_actions(object, request)
 
-            if dropdown_items:
-                response.context_data["actions_detail"].append(
+            actions_detail = response.context_data.get("actions_detail")
+            if dropdown_items and isinstance(actions_detail, list):
+                actions_detail.append(
                     {
                         "title": str(_("Aktionen")),
                         "path": None,
