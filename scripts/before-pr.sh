@@ -16,22 +16,8 @@ if ! [[ -v scriptsDir ]]; then
 	scriptsDir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-$0}")" >/dev/null && pwd 2>/dev/null)"
 	readonly scriptsDir
 fi
-
-if ! [[ -v projectDir ]]; then
-	projectDir="$(realpath "$scriptsDir/../")"
-	readonly projectDir
-fi
-
-if ! [[ -v dir_of_tegonal_scripts ]]; then
-	dir_of_tegonal_scripts="$scriptsDir/../lib/tegonal-scripts/src"
-	source "$dir_of_tegonal_scripts/setup_tegonal_scripts.sh" "$dir_of_tegonal_scripts"
-fi
-
-if ! [[ -v SKIP_PWA ]]; then
-	SKIP_PWA="false"
-	readonly SKIP_PWA
-fi
-
+source "$scriptsDir/dirs.source.sh"
+sourceOnce "$scriptsDir/check-help-callable.sh"
 sourceOnce "$scriptsDir/cleanup-on-push-to-main.sh"
 sourceOnce "$scriptsDir/run-shellcheck.sh"
 
@@ -48,18 +34,19 @@ function checkPWA() {
 	fi
 	(
 		cd "$projectDir/pwa"
-		yarn build
-		yarn lint
-		yarn prettier
+		yarn build || die "yarn build failed"
+		yarn lint || die "yarn lint failed"
+		yarn prettier || die "prettier failed"
 	)
 }
 
 function beforePr() {
 	# using && because this function might be used on the left side of an ||
-	customRunShellcheck && \
-	cleanupOnPushToMain && \
-	checkPython && \
-	checkPWA
+	customRunShellcheck &&
+		cleanupOnPushToMain &&
+		checkPython &&
+		checkPWA &&
+		customCheckHelpCallable
 }
 
 ${__SOURCED__:+return}

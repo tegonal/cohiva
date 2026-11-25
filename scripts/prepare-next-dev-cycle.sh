@@ -17,11 +17,7 @@ if ! [[ -v scriptsDir ]]; then
 	scriptsDir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-$0}")" >/dev/null && pwd 2>/dev/null)"
 	readonly scriptsDir
 fi
-
-if ! [[ -v dir_of_tegonal_scripts ]]; then
-	dir_of_tegonal_scripts="$scriptsDir/../lib/tegonal-scripts/src"
-	source "$dir_of_tegonal_scripts/setup_tegonal_scripts.sh" "$dir_of_tegonal_scripts"
-fi
+source "$scriptsDir/dirs.source.sh"
 sourceOnce "$dir_of_tegonal_scripts/releasing/prepare-next-dev-cycle-template.sh"
 sourceOnce "$scriptsDir/before-pr.sh"
 

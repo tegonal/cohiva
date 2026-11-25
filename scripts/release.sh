@@ -17,15 +17,11 @@ if ! [[ -v scriptsDir ]]; then
 	scriptsDir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-$0}")" >/dev/null && pwd 2>/dev/null)"
 	readonly scriptsDir
 fi
+source "$scriptsDir/dirs.source.sh"
 
 if ! [[ -v projectDir ]]; then
 	projectDir="$(realpath "$scriptsDir/../")"
 	readonly projectDir
-fi
-
-if ! [[ -v dir_of_github_commons ]]; then
-	dir_of_github_commons="$scriptsDir/../lib/tegonal-gh-commons/src"
-	readonly dir_of_github_commons
 fi
 
 if ! [[ -v dir_of_tegonal_scripts ]]; then
